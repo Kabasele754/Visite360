@@ -1,154 +1,300 @@
+{% extends "dashboard/studio_base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ tour.title }} - Builder</title>
-    <link rel="stylesheet" href="{% static 'dashboard/css/tour_builder.css' %}">
-</head>
-<body>
-    <div class="builder-page">
-        <header class="builder-header">
-            <div class="builder-header-left">
-                <div class="tour-badge">360 Builder</div>
-                <div>
-                    <h1 class="tour-title">{{ tour.title }}</h1>
-                    <p class="tour-subtitle">
-                        Place: {{ tour.place.name }} · Status:
-                        <span class="status-pill status-{{ tour.status }}">{{ tour.status|title }}</span>
-                    </p>
-                </div>
-            </div>
 
-            <div class="builder-header-actions">
-                <button class="btn btn-secondary" id="saveDraftBtn">Save Draft</button>
-                <button class="btn btn-dark" id="previewBtn">Preview</button>
-                <button class="btn btn-primary" id="publishBtn">Publish</button>
-            </div>
-        </header>
+{% block title %}{{ tour.title }} - Builder{% endblock %}
 
-        <main class="builder-layout">
-            <aside class="left-sidebar">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2>Scenes</h2>
-                        <button class="mini-btn" id="addSceneBtn">+ Add</button>
-                    </div>
-
-                    <div id="sceneList" class="scene-list">
-                        {% for scene in scenes %}
-                            <button
-                                class="scene-card {% if forloop.first %}active{% endif %}"
-                                data-scene-id="{{ scene.id }}"
-                                data-scene-title="{{ scene.title }}"
-                                data-scene-image="{{ scene.image_360.url }}"
-                            >
-                                <div class="scene-thumb">
-                                    {% if scene.thumbnail_image %}
-                                        <img src="{{ scene.thumbnail_image.url }}" alt="{{ scene.title }}">
-                                    {% else %}
-                                        <div class="thumb-placeholder">360</div>
-                                    {% endif %}
-                                </div>
-                                <div class="scene-meta">
-                                    <strong>{{ scene.title }}</strong>
-                                    <span>Order {{ scene.order }}</span>
-                                </div>
-                            </button>
-                        {% empty %}
-                            <div class="empty-state">No scenes yet.</div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </aside>
-
-            <section class="viewer-section">
-                <div class="viewer-toolbar">
-                    <div class="viewer-toolbar-left">
-                        <button class="tool-btn active" data-tool="move">Move</button>
-                        <button class="tool-btn" data-tool="hotspot">Hotspot</button>
-                        <button class="tool-btn" data-tool="info">Info</button>
-                    </div>
-                    <div class="viewer-toolbar-right">
-                        <span id="activeSceneLabel">Scene preview</span>
-                    </div>
-                </div>
-
-                <div class="viewer-wrapper">
-                    <div id="panoramaViewer" class="panorama-viewer">
-                        <div class="viewer-overlay-center">
-                            <div class="viewer-demo-card">
-                                <h3>Panorama Viewer</h3>
-                                <p>
-                                    Ici on branchera Marzipano pour afficher la scène 360.
-                                </p>
-                                <p id="viewerSceneTitle">Sélectionne une scène</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bottom-panel">
-                    <div class="bottom-card">
-                        <strong>Tips</strong>
-                        <p>
-                            Clique sur une scène à gauche pour la charger. Ensuite, on pourra ajouter les hotspots ici.
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            <aside class="right-sidebar">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2>Properties</h2>
-                    </div>
-
-                    <form id="scenePropertiesForm" class="properties-form">
-                        <div class="form-group">
-                            <label for="sceneTitle">Scene title</label>
-                            <input type="text" id="sceneTitle" placeholder="Scene title">
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="yawDefault">Yaw</label>
-                                <input type="number" step="0.1" id="yawDefault" value="0">
-                            </div>
-                            <div class="form-group">
-                                <label for="pitchDefault">Pitch</label>
-                                <input type="number" step="0.1" id="pitchDefault" value="0">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="hfovDefault">HFOV</label>
-                            <input type="number" step="0.1" id="hfovDefault" value="100">
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" id="saveSceneBtn">
-                                Save Scene
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2>Hotspot inspector</h2>
-                    </div>
-
-                    <div class="empty-state">
-                        Sélectionne ou ajoute un hotspot pour l’éditer ici.
-                    </div>
-                </div>
-            </aside>
-        </main>
+{% block left_panel %}
+<div class="leftpanel-inner">
+    <div class="leftpanel-header">
+        <input type="text" class="search-input" placeholder="Search anything...">
     </div>
 
-    {{ scenes_json|json_script:"scenes-data" }}
-    <script src="{% static 'dashboard/js/tour_builder.js' %}"></script>
-</body>
-</html>
+    <div class="leftpanel-section">
+        <h3>Elements</h3>
+
+        <div class="elements-group">
+            <h4>Navigation Icons</h4>
+            <div class="icon-grid" id="iconLibrary">
+                <button type="button" class="icon-choice active" data-icon="default">
+                    <img src="{% static 'dashboard/icons/default.png' %}" alt="default">
+                </button>
+                <button type="button" class="icon-choice" data-icon="white">
+                    <img src="{% static 'dashboard/icons/white.png' %}" alt="white">
+                </button>
+                <button type="button" class="icon-choice" data-icon="whitetilted">
+                    <img src="{% static 'dashboard/icons/whitetilted.png' %}" alt="whitetilted">
+                </button>
+                <button type="button" class="icon-choice" data-icon="tilted">
+                    <img src="{% static 'dashboard/icons/tilted.png' %}" alt="tilted">
+                </button>
+                <button type="button" class="icon-choice" data-icon="arrowleft">
+                    <img src="{% static 'dashboard/icons/arrowleft.png' %}" alt="arrow left">
+                </button>
+                <button type="button" class="icon-choice" data-icon="arrowright">
+                    <img src="{% static 'dashboard/icons/arrowright.png' %}" alt="arrow right">
+                </button>
+                <button type="button" class="icon-choice" data-icon="arrowdown">
+                    <img src="{% static 'dashboard/icons/arrowdown.png' %}" alt="arrow down">
+                </button>
+                <button type="button" class="icon-choice" data-icon="chevronleft">
+                    <img src="{% static 'dashboard/icons/chevronleft.png' %}" alt="chevron left">
+                </button>
+                <button type="button" class="icon-choice" data-icon="chevronforward">
+                    <img src="{% static 'dashboard/icons/chevronforward.png' %}" alt="chevron forward">
+                </button>
+                <button type="button" class="icon-choice" data-icon="chevronforward-2">
+                    <img src="{% static 'dashboard/icons/chevronforward-2.png' %}" alt="chevron forward 2">
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="leftpanel-section">
+        <h3>Project</h3>
+        <div class="project-card">
+            <strong>{{ tour.title }}</strong>
+            <span>{{ current_place.name }}</span>
+            <small>{{ current_organization.name }}</small>
+        </div>
+    </div>
+
+    <div class="leftpanel-section">
+        <div class="section-title-row">
+            <h3>Scenes</h3>
+            <div class="mini-actions">
+                <button class="mini-btn" type="button" id="addSceneBtn">+ Add pano</button>
+                <input type="file" id="sceneFileInput" accept="image/*" multiple hidden>
+            </div>
+        </div>
+
+        <div id="dropZone" class="drop-zone">
+            Drag & drop panoramas here<br>
+            <small>Multiple files supported</small>
+        </div>
+
+        <div id="sceneList" class="scene-list">
+            {% for scene in scenes %}
+                <button class="scene-card {% if forloop.first %}active{% endif %}"
+                        data-scene-id="{{ scene.id }}"
+                        type="button">
+                    <div class="scene-thumb">
+                        {% if scene.thumbnail_image %}
+                            <img src="{{ scene.thumbnail_image.url }}" alt="{{ scene.title }}">
+                        {% elif scene.image_360 %}
+                            <img src="{{ scene.image_360.url }}" alt="{{ scene.title }}">
+                        {% else %}
+                            <div class="thumb-placeholder">360</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="scene-meta">
+                        <strong>{{ scene.title }}</strong>
+                        <span>Order {{ scene.order }}</span>
+                    </div>
+                </button>
+            {% empty %}
+                <div id="emptySceneState" class="empty-state">
+                    There is no panorama yet.<br>
+                    Drop your panorama file here or use <strong>Add pano</strong>.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block studio_content %}
+<div class="studio-canvas">
+    <div class="viewer-toolbar">
+        <div class="viewer-toolbar-left">
+            <button class="tool-btn active" type="button" data-tool="move">Move</button>
+            <button class="tool-btn" type="button" data-tool="hotspot">Hotspot</button>
+            <button class="tool-btn" type="button" data-tool="navigate">Navigate</button>
+        </div>
+
+        <div class="viewer-toolbar-center camera-controls">
+            <button class="camera-btn" type="button" id="cameraLeftBtn">⟵</button>
+            <button class="camera-btn" type="button" id="cameraUpBtn">⟰</button>
+            <button class="camera-btn" type="button" id="cameraDownBtn">⟱</button>
+            <button class="camera-btn" type="button" id="cameraRightBtn">⟶</button>
+            <button class="camera-btn" type="button" id="zoomInBtn">＋</button>
+            <button class="camera-btn" type="button" id="zoomOutBtn">－</button>
+            <button class="camera-btn" type="button" id="resetViewBtn">Reset</button>
+        </div>
+
+        <div class="viewer-toolbar-right">
+            <span id="activeSceneLabel">Scene preview</span>
+        </div>
+    </div>
+
+    <div class="viewer-stage">
+        <div id="panoramaViewer" class="panorama-viewer">
+            <div id="marzipanoLayerA" class="marzipano-layer active-layer">
+                <div id="marzipanoMountA" class="marzipano-mount"></div>
+            </div>
+
+            <div id="marzipanoLayerB" class="marzipano-layer standby-layer">
+                <div id="marzipanoMountB" class="marzipano-mount"></div>
+            </div>
+
+            <div class="viewer-center-crosshair" id="viewerCenterCrosshair">
+                <div class="crosshair-ring"></div>
+                <div class="crosshair-dot"></div>
+            </div>
+
+            <div class="viewer-overlay-top-info">
+                <div class="viewer-demo-chip">
+                    <strong id="viewerSceneTitle">Sélectionne une scène</strong>
+                    <span>Aligne la vue avec le point central puis enregistre</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="studio-bottom-bar">
+        <button class="pill-btn" type="button" onclick="window.location.href='{{ request.path }}'">Refresh</button>
+        <button class="pill-btn" type="button" onclick="window.location.href='{{ request.path|cut:'/builder/' }}/preview/'">Preview</button>
+        <button class="pill-btn" type="button" id="setCurrentViewBtn">Set current view</button>
+        <button class="pill-btn" type="button" id="createCenterHotspotBtn">Hotspot at center</button>
+        <button class="pill-btn" type="button" id="fullscreenBtn">Fullscreen</button>
+    </div>
+</div>
+
+<div id="hotspotModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Create Hotspot</h3>
+            <button type="button" class="close-btn" id="closeHotspotModal">✕</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="hotspotType">Type</label>
+                <select id="hotspotType">
+                    <option value="info">Info</option>
+                    <option value="navigate">Navigate</option>
+                    <option value="cta">CTA</option>
+                    <option value="product">Product</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="hotspotLabel">Label</label>
+                <input type="text" id="hotspotLabel" placeholder="Hotspot label">
+            </div>
+
+            <div class="form-group">
+                <label for="hotspotTooltip">Tooltip</label>
+                <input type="text" id="hotspotTooltip" placeholder="Tooltip text">
+            </div>
+
+            <div class="form-group">
+                <label for="hotspotTitle">Title</label>
+                <input type="text" id="hotspotTitle" placeholder="Popup title">
+            </div>
+
+            <div class="form-group">
+                <label for="hotspotDescription">Description</label>
+                <textarea id="hotspotDescription" rows="4" placeholder="Description"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="hotspotSelectedIcon">Selected icon</label>
+                <input type="text" id="hotspotSelectedIcon" readonly value="default">
+            </div>
+
+            <div class="form-group">
+                <label for="hotspotTargetScene">Target scene</label>
+                <select id="hotspotTargetScene">
+                    <option value="">No target</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary-modal" id="cancelHotspotBtn">Cancel</button>
+            <button type="button" class="btn-primary-modal" id="saveHotspotBtn">Save Hotspot</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block right_panel %}
+<aside class="studio-rightpanel">
+    <div class="rightpanel-card">
+        <div class="section-title-row">
+            <h3>Scene Properties</h3>
+        </div>
+
+        <form class="properties-form" id="scenePropertiesForm">
+            <div class="form-group">
+                <label for="sceneTitle">Scene title</label>
+                <input type="text" id="sceneTitle" placeholder="Scene title">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="yawDefault">Yaw</label>
+                    <input type="number" step="0.1" id="yawDefault" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="pitchDefault">Pitch</label>
+                    <input type="number" step="0.1" id="pitchDefault" value="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="hfovDefault">HFOV</label>
+                <input type="number" step="0.1" id="hfovDefault" value="100">
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="save-btn" id="saveSceneBtn">Save Scene</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="rightpanel-card">
+        <div class="section-title-row">
+            <h3>Workspace</h3>
+        </div>
+        <ul class="meta-list">
+            <li><strong>Organization:</strong> {{ current_organization.name }}</li>
+            <li><strong>Place:</strong> {{ current_place.name }}</li>
+            <li><strong>Tour:</strong> {{ tour.title }}</li>
+        </ul>
+    </div>
+</aside>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+    window.BUILDER_CONFIG = {
+        organizationSlug: "{{ current_organization.slug }}",
+        tourId: "{{ tour.id }}",
+        uploadScenesUrl: "{% url 'dashboard-upload-scenes-ajax' current_organization.slug tour.id %}",
+        updateSceneBaseUrl: "/dashboard/o/{{ current_organization.slug }}/scenes/",
+        createHotspotBaseUrl: "/dashboard/o/{{ current_organization.slug }}/scenes/",
+        deleteHotspotBaseUrl: "/dashboard/o/{{ current_organization.slug }}/hotspots/",
+        previewUrl: "{% url 'tour-preview' current_organization.slug tour.id %}",
+        iconMap: {
+            default: "{% static 'dashboard/icons/default.png' %}",
+            white: "{% static 'dashboard/icons/white.png' %}",
+            whitetilted: "{% static 'dashboard/icons/whitetilted.png' %}",
+            tilted: "{% static 'dashboard/icons/tilted.png' %}",
+            arrowleft: "{% static 'dashboard/icons/arrowleft.png' %}",
+            arrowright: "{% static 'dashboard/icons/arrowright.png' %}",
+            arrowdown: "{% static 'dashboard/icons/arrowdown.png' %}",
+            chevronleft: "{% static 'dashboard/icons/chevronleft.png' %}",
+            chevronforward: "{% static 'dashboard/icons/chevronforward.png' %}",
+            "chevronforward-2": "{% static 'dashboard/icons/chevronforward-2.png' %}"
+        }
+    };
+</script>
+
+{{ scenes_json|json_script:"scenes-data" }}
+
+<script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
+<script src="{% static 'dashboard/js/studio_builder.js' %}"></script>
+{% endblock %}

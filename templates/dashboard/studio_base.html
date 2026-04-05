@@ -1,0 +1,50 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Studio Builder{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'dashboard/css/studio_builder.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="studio-shell">
+        <header class="studio-topbar">
+            <div class="studio-topbar-left">
+                <button class="icon-btn" type="button">☰</button>
+                <a href="#" class="brand-link">Projects</a>
+                <span class="divider">|</span>
+                <span class="project-name">{{ tour.title|default:"Untitled Tour" }}</span>
+            </div>
+
+            <div class="studio-topbar-right">
+                <a class="top-action ghost" href="{% url 'dashboard-organizations-list' %}">Organizations</a>
+                {% if current_organization %}
+                    <a class="top-action ghost" href="{% url 'dashboard-places-list' current_organization.slug %}">Places</a>
+                    <a class="top-action ghost" href="{% url 'dashboard-tours-list' current_organization.slug %}">Tours</a>
+                {% endif %}
+                <a class="top-action" href="{% url 'tour-preview' current_organization.slug tour.id %}">Preview</a>
+                <button class="top-action primary" type="button">Share</button>
+            </div>
+        </header>
+
+        <div class="studio-body">
+           
+
+            <aside class="studio-leftpanel">
+                {% block left_panel %}{% endblock %}
+            </aside>
+
+            <main class="studio-main">
+                {% block studio_content %}{% endblock %}
+            </main>
+
+            {% block right_panel %}{% endblock %}
+        </div>
+    </div>
+
+    {% block page_scripts %}{% endblock %}
+</body>
+</html>

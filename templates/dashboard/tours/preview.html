@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tour.title }} - Preview</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/tour_preview.css' %}">
+</head>
+<body>
+    <div class="preview-shell">
+        <div class="preview-stage">
+            <div id="previewViewer" class="preview-viewer"></div>
+
+            <div class="preview-brand">
+                {{ tour.title }}
+            </div>
+
+            <div class="preview-bottom-actions">
+                <button type="button" class="preview-pill">Mute</button>
+                <button type="button" class="preview-pill">Share</button>
+                <button type="button" class="preview-pill" id="previewFullscreenBtn">Fullscreen</button>
+            </div>
+        </div>
+    </div>
+
+    {{ scenes_json|json_script:"preview-scenes-data" }}
+    <script src="https://www.marzipano.net/demos/vendor/marzipano.js"></script>
+    <script src="{% static 'dashboard/js/tour_preview.js' %}"></script>
+</body>
+</html>
+
