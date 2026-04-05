@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ tour.title }} - Builder</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/tour_builder.css' %}">
+</head>
+<body>
+    <div class="builder-page">
+        <header class="builder-header">
+            <div class="builder-header-left">
+                <div class="tour-badge">360 Builder</div>
+                <div>
+                    <h1 class="tour-title">{{ tour.title }}</h1>
+                    <p class="tour-subtitle">
+                        Place: {{ tour.place.name }} · Status:
+                        <span class="status-pill status-{{ tour.status }}">{{ tour.status|title }}</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="builder-header-actions">
+                <button class="btn btn-secondary" id="saveDraftBtn">Save Draft</button>
+                <button class="btn btn-dark" id="previewBtn">Preview</button>
+                <button class="btn btn-primary" id="publishBtn">Publish</button>
+            </div>
+        </header>
+
+        <main class="builder-layout">
+            <aside class="left-sidebar">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Scenes</h2>
+                        <button class="mini-btn" id="addSceneBtn">+ Add</button>
+                    </div>
+
+                    <div id="sceneList" class="scene-list">
+                        {% for scene in scenes %}
+                            <button
+                                class="scene-card {% if forloop.first %}active{% endif %}"
+                                data-scene-id="{{ scene.id }}"
+                                data-scene-title="{{ scene.title }}"
+                                data-scene-image="{{ scene.image_360.url }}"
+                            >
+                                <div class="scene-thumb">
+                                    {% if scene.thumbnail_image %}
+                                        <img src="{{ scene.thumbnail_image.url }}" alt="{{ scene.title }}">
+                                    {% else %}
+                                        <div class="thumb-placeholder">360</div>
+                                    {% endif %}
+                                </div>
+                                <div class="scene-meta">
+                                    <strong>{{ scene.title }}</strong>
+                                    <span>Order {{ scene.order }}</span>
+                                </div>
+                            </button>
+                        {% empty %}
+                            <div class="empty-state">No scenes yet.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </aside>
+
+            <section class="viewer-section">
+                <div class="viewer-toolbar">
+                    <div class="viewer-toolbar-left">
+                        <button class="tool-btn active" data-tool="move">Move</button>
+                        <button class="tool-btn" data-tool="hotspot">Hotspot</button>
+                        <button class="tool-btn" data-tool="info">Info</button>
+                    </div>
+                    <div class="viewer-toolbar-right">
+                        <span id="activeSceneLabel">Scene preview</span>
+                    </div>
+                </div>
+
+                <div class="viewer-wrapper">
+                    <div id="panoramaViewer" class="panorama-viewer">
+                        <div class="viewer-overlay-center">
+                            <div class="viewer-demo-card">
+                                <h3>Panorama Viewer</h3>
+                                <p>
+                                    Ici on branchera Marzipano pour afficher la scène 360.
+                                </p>
+                                <p id="viewerSceneTitle">Sélectionne une scène</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bottom-panel">
+                    <div class="bottom-card">
+                        <strong>Tips</strong>
+                        <p>
+                            Clique sur une scène à gauche pour la charger. Ensuite, on pourra ajouter les hotspots ici.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="right-sidebar">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Properties</h2>
+                    </div>
+
+                    <form id="scenePropertiesForm" class="properties-form">
+                        <div class="form-group">
+                            <label for="sceneTitle">Scene title</label>
+                            <input type="text" id="sceneTitle" placeholder="Scene title">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="yawDefault">Yaw</label>
+                                <input type="number" step="0.1" id="yawDefault" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="pitchDefault">Pitch</label>
+                                <input type="number" step="0.1" id="pitchDefault" value="0">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="hfovDefault">HFOV</label>
+                            <input type="number" step="0.1" id="hfovDefault" value="100">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="saveSceneBtn">
+                                Save Scene
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Hotspot inspector</h2>
+                    </div>
+
+                    <div class="empty-state">
+                        Sélectionne ou ajoute un hotspot pour l’éditer ici.
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    {{ scenes_json|json_script:"scenes-data" }}
+    <script src="{% static 'dashboard/js/tour_builder.js' %}"></script>
+</body>
+</html>

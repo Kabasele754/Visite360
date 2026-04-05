@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Organizations{% endblock %}
+{% block page_title %}Organizations{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+    <div>
+        <h2>All organizations</h2>
+        <p class="topbar-subtitle">Create and manage your multi-tenant spaces.</p>
+    </div>
+    <a href="{% url 'dashboard-organizations-create' %}" class="btn btn-primary">+ New Organization</a>
+</div>
+
+<div class="card">
+    {% if organizations %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Slug</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th style="width: 320px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for organization in organizations %}
+                        <tr>
+                            <td>{{ organization.name }}</td>
+                            <td>{{ organization.slug }}</td>
+                            <td>
+                                <span class="status-pill status-{{ organization.status }}">
+                                    {{ organization.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ organization.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="action-link" href="{% url 'dashboard-organizations-edit' organization.slug %}">Edit</a>
+                                    <a class="action-link" href="{% url 'dashboard-places-list' organization.slug %}">Places</a>
+                                    <a class="action-link danger" href="{% url 'dashboard-organizations-delete' organization.slug %}">Delete</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">No organizations yet.</div>
+    {% endif %}
+</div>
+{% endblock %}

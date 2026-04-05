@@ -1,0 +1,53 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Tours{% endblock %}
+{% block page_title %}Tours{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+    <div>
+        <h2>Tours list</h2>
+        <p class="topbar-subtitle">Manage virtual tours for this organization.</p>
+    </div>
+</div>
+
+<div class="card">
+    {% if tours %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Place</th>
+                        <th>Status</th>
+                        <th>Version</th>
+                        <th>Created</th>
+                        <th style="width: 220px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tour in tours %}
+                        <tr>
+                            <td>{{ tour.title }}</td>
+                            <td>{{ tour.place.name }}</td>
+                            <td>{{ tour.status|title }}</td>
+                            <td>{{ tour.version }}</td>
+                            <td>{{ tour.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="action-link" href="{% url 'tour-builder' current_organization.slug tour.id %}">
+                                        Builder
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">No tours yet.</div>
+    {% endif %}
+</div>
+{% endblock %}
+

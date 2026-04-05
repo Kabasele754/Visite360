@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+</head>
+<body>
+    <div class="dashboard-shell">
+        <aside class="dashboard-sidebar">
+            <div class="sidebar-brand">
+                <h2>Visite360</h2>
+                <p>Studio Dashboard</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                {% url 'dashboard-organizations-list' as organizations_url %}
+                {% if organizations_url %}
+                    <a href="{{ organizations_url }}">Organizations</a>
+                {% endif %}
+
+                {% if current_organization %}
+                    {% url 'dashboard-places-list' current_organization.slug as places_url %}
+                    {% if places_url %}
+                        <a href="{{ places_url }}">Places</a>
+                    {% endif %}
+
+                    {% url 'dashboard-tours-list' current_organization.slug as tours_url %}
+                    {% if tours_url %}
+                        <a href="{{ tours_url }}">Tours</a>
+                    {% endif %}
+                {% endif %}
+            </nav>
+        </aside>
+
+        <div class="dashboard-main">
+            <header class="dashboard-topbar">
+                <div>
+                    <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                    {% if current_organization %}
+                        <p class="topbar-subtitle">
+                            Organization: <strong>{{ current_organization.name }}</strong>
+                        </p>
+                    {% endif %}
+                </div>
+
+                <div class="topbar-right">
+                    {% if request.user.is_authenticated %}
+                        <span class="user-badge">{{ request.user.email }}</span>
+                    {% endif %}
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,271 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, Arial, sans-serif;
+    background: #0f1117;
+    color: #eef2f8;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.dashboard-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+}
+
+.dashboard-sidebar {
+    background: linear-gradient(180deg, #141925 0%, #0f141d 100%);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    padding: 24px 18px;
+}
+
+.sidebar-brand h2 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.sidebar-brand p {
+    margin: 6px 0 0;
+    color: #9eabc0;
+    font-size: 14px;
+}
+
+.sidebar-nav {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-nav a {
+    padding: 12px 14px;
+    border-radius: 12px;
+    color: #dce4f5;
+    background: transparent;
+    transition: 0.2s ease;
+}
+
+.sidebar-nav a:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.dashboard-main {
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: #101520;
+}
+
+.dashboard-topbar h1 {
+    margin: 0;
+    font-size: 26px;
+}
+
+.topbar-subtitle {
+    margin: 6px 0 0;
+    color: #9da9bc;
+    font-size: 14px;
+}
+
+.user-badge {
+    background: rgba(104,120,255,0.14);
+    color: #cbd2ff;
+    border: 1px solid rgba(104,120,255,0.28);
+    padding: 10px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.dashboard-content {
+    padding: 24px;
+}
+
+.page-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 12px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 12px;
+    padding: 11px 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #5b6cff, #7f8bff);
+    color: white;
+}
+
+.btn-secondary {
+    background: #1e2636;
+    color: #eef2ff;
+}
+
+.btn-danger {
+    background: #a73434;
+    color: white;
+}
+
+.card {
+    background: #131926;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 20px;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    text-align: left;
+}
+
+.table th {
+    color: #a8b4c8;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.table td {
+    color: #eef2f8;
+}
+
+.row-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.action-link {
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: #1c2433;
+    font-size: 13px;
+}
+
+.action-link.danger {
+    background: rgba(202, 72, 72, 0.18);
+    color: #ffb5b5;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group.full {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 13px;
+    color: #9eabc0;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    background: #0f1521;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #fff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    outline: none;
+}
+
+.form-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+}
+
+.status-pill {
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.status-draft {
+    background: rgba(255,193,7,0.14);
+    color: #ffd76b;
+}
+
+.status-published {
+    background: rgba(25,195,125,0.14);
+    color: #7ef0b9;
+}
+
+.status-archived {
+    background: rgba(255,255,255,0.1);
+    color: #cdd5e2;
+}
+
+.alert {
+    margin-bottom: 16px;
+    background: rgba(94, 255, 183, 0.10);
+    border: 1px solid rgba(94, 255, 183, 0.20);
+    padding: 12px 14px;
+    border-radius: 12px;
+    color: #bff9dd;
+}
+
+.empty-state {
+    color: #97a5ba;
+    padding: 20px 0;
+}
+
+@media (max-width: 900px) {
+    .dashboard-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-sidebar {
+        display: none;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}

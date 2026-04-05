@@ -1,0 +1,61 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Places{% endblock %}
+{% block page_title %}Places{% endblock %}
+
+{% block content %}
+<div class="page-actions">
+    <div>
+        <h2>Places list</h2>
+        <p class="topbar-subtitle">Manage places before creating immersive tours.</p>
+    </div>
+    <a href="{% url 'dashboard-places-create' current_organization.slug %}" class="btn btn-primary">+ New Place</a>
+</div>
+
+<div class="card">
+    {% if places %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>City</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th style="width: 420px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for place in places %}
+                        <tr>
+                            <td>{{ place.name }}</td>
+                            <td>{{ place.get_category_display }}</td>
+                            <td>{{ place.city|default:"-" }}</td>
+                            <td>
+                                <span class="status-pill status-{{ place.status }}">
+                                    {{ place.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ place.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="action-link" href="{% url 'dashboard-places-edit' current_organization.slug place.id %}">Edit</a>
+                                    <a class="action-link" href="{% url 'dashboard-tours-list' current_organization.slug %}?place={{ place.id }}">Tours</a>
+                                    <a class="action-link" href="{% url 'dashboard-places-publish' current_organization.slug place.id %}">Publish</a>
+                                    <a class="action-link" href="{% url 'dashboard-places-unpublish' current_organization.slug place.id %}">Draft</a>
+                                    <a class="action-link" href="{% url 'dashboard-places-archive' current_organization.slug place.id %}">Archive</a>
+                                    <a class="action-link danger" href="{% url 'dashboard-places-delete' current_organization.slug place.id %}">Delete</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">No places yet for this organization.</div>
+    {% endif %}
+</div>
+{% endblock %}
+
