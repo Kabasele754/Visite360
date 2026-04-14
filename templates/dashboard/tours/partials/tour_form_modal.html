@@ -1,0 +1,246 @@
+<div class="custom-modal-overlay">
+    <div class="custom-modal">
+        <div class="custom-modal-header">
+            <div>
+                <h3>{% if page_mode == "edit" %}Edit Tour{% else %}Create Tour{% endif %}</h3>
+                <p>
+                    {% if page_mode == "edit" %}
+                        Update the selected virtual tour.
+                    {% else %}
+                        Add a new virtual tour for this organization.
+                    {% endif %}
+                </p>
+            </div>
+            <button type="button" class="modal-close-btn" data-close-modal>&times;</button>
+        </div>
+
+        <form
+            method="post"
+            enctype="multipart/form-data"
+            action="{% if page_mode == 'edit' %}{% url 'dashboard-tours-edit' current_organization.slug tour.id %}{% else %}{% url 'dashboard-tours-create' current_organization.slug %}{% endif %}">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% for error in form.title.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.place.id_for_label }}">{{ form.place.label }}</label>
+                    {{ form.place }}
+                    {% for error in form.place.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group full">
+                    <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                    {{ form.description }}
+                    {% for error in form.description.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group full">
+                    <label for="{{ form.thumbnail_image.id_for_label }}">{{ form.thumbnail_image.label }}</label>
+                    {{ form.thumbnail_image }}
+
+                    <div class="image-preview-box" id="thumbnailPreviewBox">
+                        {% if form.instance.thumbnail_image %}
+                            <img src="{{ form.instance.thumbnail_image.url }}" id="thumbnailPreview" alt="Thumbnail preview">
+                        {% else %}
+                            <img src="" id="thumbnailPreview" alt="Thumbnail preview" style="display:none;">
+                            <div class="image-preview-placeholder" id="thumbnailPlaceholder">
+                                Thumbnail preview will appear here
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% for error in form.thumbnail_image.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.video_tour.id_for_label }}">{{ form.video_tour.label }}</label>
+                    {{ form.video_tour }}
+                    <div id="videoFileInfo" class="file-info"></div>
+                    {% for error in form.video_tour.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.virtual_tour_url.id_for_label }}">{{ form.virtual_tour_url.label }}</label>
+                    {{ form.virtual_tour_url }}
+                    {% for error in form.virtual_tour_url.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+                    {{ form.status }}
+                    {% for error in form.status.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.version.id_for_label }}">{{ form.version.label }}</label>
+                    {{ form.version }}
+                    {% for error in form.version.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.tour_date.id_for_label }}">{{ form.tour_date.label }}</label>
+                    {{ form.tour_date }}
+                    {% for error in form.tour_date.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.duration.id_for_label }}">{{ form.duration.label }}</label>
+                    {{ form.duration }}
+                    {% for error in form.duration.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+                    {{ form.price }}
+                    {% for error in form.price.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.max_participants.id_for_label }}">{{ form.max_participants.label }}</label>
+                    {{ form.max_participants }}
+                    {% for error in form.max_participants.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.guide_name.id_for_label }}">{{ form.guide_name.label }}</label>
+                    {{ form.guide_name }}
+                    {% for error in form.guide_name.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.contact_email.id_for_label }}">{{ form.contact_email.label }}</label>
+                    {{ form.contact_email }}
+                    {% for error in form.contact_email.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group full">
+                    <label for="{{ form.location.id_for_label }}">{{ form.location.label }}</label>
+
+                    <div class="location-input-row">
+                        {{ form.location }}
+                        <button type="button" class="btn btn-primary btn-validate-location" id="validateLocationBtn">
+                            Validate
+                        </button>
+                    </div>
+
+                    <small class="field-hint">
+                        Type the address manually, then click Validate to locate it on the map.
+                    </small>
+
+                    {% for error in form.location.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.lat.id_for_label }}">{{ form.lat.label }}</label>
+                    {{ form.lat }}
+                    {% for error in form.lat.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.lng.id_for_label }}">{{ form.lng.label }}</label>
+                    {{ form.lng }}
+                    {% for error in form.lng.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.radius.id_for_label }}">{{ form.radius.label }}</label>
+                    {{ form.radius }}
+                    {% for error in form.radius.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group full">
+                    <label>Map Picker</label>
+                    <div id="tourMap" class="tour-map-box"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.chambres.id_for_label }}">{{ form.chambres.label }}</label>
+                    {{ form.chambres }}
+                    {% for error in form.chambres.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.floor_number.id_for_label }}">{{ form.floor_number.label }}</label>
+                    {{ form.floor_number }}
+                    {% for error in form.floor_number.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>{{ form.is_featured }} {{ form.is_featured.label }}</label>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>{{ form.balcon }} {{ form.balcon.label }}</label>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>{{ form.parking }} {{ form.parking.label }}</label>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>{{ form.ascenseur }} {{ form.ascenseur.label }}</label>
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="form-errors">
+                    {% for error in form.non_field_errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    {% if page_mode == "edit" %}Save Changes{% else %}Create Tour{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

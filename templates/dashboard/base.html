@@ -5,14 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Dashboard{% endblock %}</title>
+
     <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="dashboard-shell">
         <aside class="dashboard-sidebar">
             <div class="sidebar-brand">
-                <h2>Visite360</h2>
-                <p>Studio Dashboard</p>
+                <div class="brand-logo">V</div>
+                <div>
+                    <h2>Visite360</h2>
+                    <p>Studio Dashboard</p>
+                </div>
             </div>
 
             <nav class="sidebar-nav">
@@ -29,7 +36,7 @@
 
                     {% url 'dashboard-tours-list' current_organization.slug as tours_url %}
                     {% if tours_url %}
-                        <a href="{{ tours_url }}">Tours</a>
+                        <a href="{{ tours_url }}" class="active">Tours</a>
                     {% endif %}
                 {% endif %}
             </nav>
@@ -37,13 +44,17 @@
 
         <div class="dashboard-main">
             <header class="dashboard-topbar">
-                <div>
-                    <h1>{% block page_title %}Dashboard{% endblock %}</h1>
-                    {% if current_organization %}
-                        <p class="topbar-subtitle">
-                            Organization: <strong>{{ current_organization.name }}</strong>
-                        </p>
-                    {% endif %}
+                <div class="topbar-left">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn" type="button">☰</button>
+
+                    <div>
+                        <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                        {% if current_organization %}
+                            <p class="topbar-subtitle">
+                                Organization: <strong>{{ current_organization.name }}</strong>
+                            </p>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="topbar-right">
@@ -54,15 +65,61 @@
             </header>
 
             <main class="dashboard-content">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-
                 {% block content %}{% endblock %}
             </main>
         </div>
     </div>
+
+    <div class="mobile-drawer-overlay" id="mobileDrawerOverlay"></div>
+
+    <aside class="mobile-drawer" id="mobileDrawer">
+        <div class="mobile-drawer-header">
+            <h3>Visite360</h3>
+            <button type="button" id="closeMobileDrawer">&times;</button>
+        </div>
+
+        <nav class="mobile-drawer-nav">
+            {% url 'dashboard-organizations-list' as organizations_url %}
+            {% if organizations_url %}
+                <a href="{{ organizations_url }}">Organizations</a>
+            {% endif %}
+
+            {% if current_organization %}
+                {% url 'dashboard-places-list' current_organization.slug as places_url %}
+                {% if places_url %}
+                    <a href="{{ places_url }}">Places</a>
+                {% endif %}
+
+                {% url 'dashboard-tours-list' current_organization.slug as tours_url %}
+                {% if tours_url %}
+                    <a href="{{ tours_url }}">Tours</a>
+                {% endif %}
+            {% endif %}
+        </nav>
+    </aside>
+
+    
+
+    {% if messages %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            {% for message in messages %}
+                Swal.fire({
+                    toast: true,
+                    position: "top-end",
+                    icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}success{% endif %}",
+                    title: "{{ message|escapejs }}",
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true,
+                    background: "#131b2b",
+                    color: "#eef2f8"
+                });
+            {% endfor %}
+        });
+    </script>
+    {% endif %}
+
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

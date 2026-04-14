@@ -119,3 +119,6 @@ CORS_ALLOWED_ORIGINS = config(
 )
 
 
+
+GOOGLE_MAPS_API_KEY = config("GOOGLE_MAPS_API_KEY", default="")
+

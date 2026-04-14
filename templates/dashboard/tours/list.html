@@ -4,50 +4,1114 @@
 {% block page_title %}Tours{% endblock %}
 
 {% block content %}
-<div class="page-actions">
+<div class="page-hero">
     <div>
-        <h2>Tours list</h2>
-        <p class="topbar-subtitle">Manage virtual tours for this organization.</p>
+        <h2 class="page-heading">Virtual Tours</h2>
+        <p class="page-text">Create, manage and publish immersive experiences professionally.</p>
+    </div>
+
+    <div class="page-actions">
+        <button type="button" class="btn btn-secondary" id="openAdvancedFiltersBtn">
+            Filters
+        </button>
+
+        <button type="button" class="btn btn-secondary" id="toggleViewBtn" data-view="table">
+            Card View
+        </button>
+
+        <button
+            type="button"
+            class="btn btn-primary"
+            data-modal-url="{% url 'dashboard-tours-create' current_organization.slug %}">
+            + New Tour
+        </button>
     </div>
 </div>
 
-<div class="card">
-    {% if tours %}
-        <div class="table-wrap">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Place</th>
-                        <th>Status</th>
-                        <th>Version</th>
-                        <th>Created</th>
-                        <th style="width: 220px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for tour in tours %}
-                        <tr>
-                            <td>{{ tour.title }}</td>
-                            <td>{{ tour.place.name }}</td>
-                            <td>{{ tour.status|title }}</td>
-                            <td>{{ tour.version }}</td>
-                            <td>{{ tour.created_at|date:"Y-m-d H:i" }}</td>
-                            <td>
-                                <div class="row-actions">
-                                    <a class="action-link" href="{% url 'tour-builder' current_organization.slug tour.id %}">
-                                        Builder
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% else %}
-        <div class="empty-state">No tours yet.</div>
-    {% endif %}
+<div class="stats-grid">
+    <div class="stats-card">
+        <span class="stats-label">Total Tours</span>
+        <strong class="stats-value">{{ total_count }}</strong>
+    </div>
+    <div class="stats-card">
+        <span class="stats-label">Published</span>
+        <strong class="stats-value">{{ published_count }}</strong>
+    </div>
+    <div class="stats-card">
+        <span class="stats-label">Draft</span>
+        <strong class="stats-value">{{ draft_count }}</strong>
+    </div>
+    <div class="stats-card">
+        <span class="stats-label">Inactive</span>
+        <strong class="stats-value">{{ inactive_count }}</strong>
+    </div>
 </div>
+
+<div class="card filter-card">
+    <form method="get" class="toolbar-grid" id="tourFilterForm">
+        <div class="toolbar-search">
+            <input
+                type="text"
+                name="q"
+                value="{{ q }}"
+                placeholder="Search by title, slug, location, guide...">
+        </div>
+
+        <div class="toolbar-select">
+            <select name="place">
+                <option value="">All places</option>
+                {% for place in places %}
+                    <option value="{{ place.id }}" {% if selected_place_id == place.id|stringformat:"s" %}selected{% endif %}>
+                        {{ place.name }}{% if place.city %} — {{ place.city }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="toolbar-actions">
+            <button type="submit" class="btn btn-secondary">Filter</button>
+            <a href="{% url 'dashboard-tours-list' current_organization.slug %}" class="btn btn-secondary">Reset</a>
+        </div>
+    </form>
+
+    <div class="status-tabs">
+        <a href="?q={{ q }}&place={{ selected_place_id }}" class="status-tab {% if not selected_status %}active{% endif %}">
+            All
+        </a>
+        <a href="?status=draft&q={{ q }}&place={{ selected_place_id }}" class="status-tab {% if selected_status == 'draft' %}active{% endif %}">
+            Draft
+        </a>
+        <a href="?status=published&q={{ q }}&place={{ selected_place_id }}" class="status-tab {% if selected_status == 'published' %}active{% endif %}">
+            Published
+        </a>
+        <a href="?status=inactive&q={{ q }}&place={{ selected_place_id }}" class="status-tab {% if selected_status == 'inactive' %}active{% endif %}">
+            Inactive
+        </a>
+    </div>
+
+    <div class="bulk-toolbar">
+        <button type="button" class="btn btn-danger" id="bulkDeleteBtn">
+            Delete Selected
+        </button>
+    </div>
+</div>
+
+<div id="tourListWrapper" class="table-mode">
+    {% include "dashboard/tours/partials/tour_list_content.html" %}
+</div>
+
+<div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
+<aside class="filter-drawer" id="filterDrawer">
+    <div class="filter-drawer-header">
+        <h3>Advanced Filters</h3>
+        <button type="button" id="closeFilterDrawer">&times;</button>
+    </div>
+
+    <form id="advancedFilterForm" class="advanced-filter-form">
+        <div class="form-group">
+            <label>Status</label>
+            <select name="status">
+                <option value="">All</option>
+                <option value="draft" {% if selected_status == 'draft' %}selected{% endif %}>Draft</option>
+                <option value="published" {% if selected_status == 'published' %}selected{% endif %}>Published</option>
+                <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Featured</label>
+            <select name="featured">
+                <option value="">All</option>
+                <option value="1" {% if selected_featured == '1' %}selected{% endif %}>Featured only</option>
+                <option value="0" {% if selected_featured == '0' %}selected{% endif %}>Not featured</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Has video</label>
+            <select name="has_video">
+                <option value="">All</option>
+                <option value="1" {% if selected_has_video == '1' %}selected{% endif %}>With video</option>
+                <option value="0" {% if selected_has_video == '0' %}selected{% endif %}>Without video</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Min price</label>
+            <input type="number" step="0.01" name="min_price" value="{{ selected_min_price }}" placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+            <label>Max price</label>
+            <input type="number" step="0.01" name="max_price" value="{{ selected_max_price }}" placeholder="9999.99">
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <button type="button" class="btn btn-secondary" id="resetAdvancedFiltersBtn">Reset</button>
+        </div>
+    </form>
+</aside>
+
+<div id="modalRoot" class="custom-modal-root"></div>
+
+<script>
+    const bulkDeleteUrl = "{% url 'dashboard-tours-bulk-delete' current_organization.slug %}";
+    const partialListUrl = "{% url 'dashboard-tours-partial' current_organization.slug %}";
+</script>
+
+<script>
+    window.googleMapsReady = false;
+
+    function initGoogleMapsGlobal() {
+        window.googleMapsReady = true;
+        window.dispatchEvent(new Event("google-maps-ready"));
+    }
+</script>
+
+{% if google_maps_api_key %}
+<script
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=initGoogleMapsGlobal"
+    async
+    defer>
+</script>
+{% endif %}
 {% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const modalRoot = document.getElementById("modalRoot");
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function buildSkeletonRows() {
+        return `
+            <div class="card">
+                <div class="skeleton-table">
+                    ${Array.from({ length: 6 }).map(() => `
+                        <div class="skeleton-row">
+                            <div class="skeleton-box"></div>
+                            <div class="skeleton-box skeleton-thumb"></div>
+                            <div class="skeleton-box"></div>
+                            <div class="skeleton-box"></div>
+                            <div class="skeleton-box"></div>
+                            <div class="skeleton-box"></div>
+                            <div class="skeleton-box"></div>
+                            <div class="skeleton-box"></div>
+                        </div>
+                    `).join("")}
+                </div>
+            </div>
+        `;
+    }
+
+    function closeModal() {
+        modalRoot.innerHTML = "";
+        document.body.classList.remove("modal-open");
+    }
+
+    function bindThumbnailPreview() {
+        const fileInput = modalRoot.querySelector('input[name="thumbnail_image"]');
+        const preview = modalRoot.querySelector('#thumbnailPreview');
+        const placeholder = modalRoot.querySelector('#thumbnailPlaceholder');
+
+        if (!fileInput || !preview) return;
+
+        fileInput.addEventListener('change', function () {
+            const file = this.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                preview.style.display = "block";
+                if (placeholder) placeholder.style.display = "none";
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function bindDragDropUpload() {
+        const imageInput = modalRoot.querySelector('input[name="thumbnail_image"]');
+        const videoInput = modalRoot.querySelector('input[name="video_tour"]');
+        const previewBox = modalRoot.querySelector('#thumbnailPreviewBox');
+
+        if (previewBox && imageInput) {
+            previewBox.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                previewBox.classList.add('drag-active');
+            });
+
+            previewBox.addEventListener('dragleave', () => {
+                previewBox.classList.remove('drag-active');
+            });
+
+            previewBox.addEventListener('drop', (e) => {
+                e.preventDefault();
+                previewBox.classList.remove('drag-active');
+
+                const file = e.dataTransfer.files?.[0];
+                if (!file || !file.type.startsWith('image/')) return;
+
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                imageInput.files = dt.files;
+                imageInput.dispatchEvent(new Event('change'));
+            });
+        }
+
+        if (videoInput) {
+            let info = modalRoot.querySelector('#videoFileInfo');
+            if (!info) {
+                info = document.createElement('div');
+                info.id = 'videoFileInfo';
+                info.className = 'file-info';
+                videoInput.parentNode.appendChild(info);
+            }
+
+            videoInput.addEventListener('change', function () {
+                const file = this.files?.[0];
+                info.textContent = file ? `Selected video: ${file.name}` : '';
+            });
+        }
+    }
+function bindMapPicker() {
+    const latInput = modalRoot.querySelector('input[name="lat"]');
+    const lngInput = modalRoot.querySelector('input[name="lng"]');
+    const locationInput = modalRoot.querySelector('input[name="location"]');
+    const validateBtn = modalRoot.querySelector('#validateLocationBtn');
+    const mapEl = modalRoot.querySelector('#tourMap');
+
+    if (!latInput || !lngInput || !mapEl) return;
+
+    function initMapNow() {
+        if (!window.google || !window.google.maps) return;
+
+        const defaultLat = parseFloat(latInput.value || "-4.325");
+        const defaultLng = parseFloat(lngInput.value || "15.322");
+        const center = { lat: defaultLat, lng: defaultLng };
+
+        const map = new google.maps.Map(mapEl, {
+            center: center,
+            zoom: 13,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+        });
+
+        const marker = new google.maps.Marker({
+            position: center,
+            map: map,
+            draggable: true,
+        });
+
+        const geocoder = new google.maps.Geocoder();
+
+        function updateLatLng(lat, lng) {
+            latInput.value = Number(lat).toFixed(6);
+            lngInput.value = Number(lng).toFixed(6);
+        }
+
+        marker.addListener("dragend", () => {
+            const pos = marker.getPosition();
+            updateLatLng(pos.lat(), pos.lng());
+        });
+
+        map.addListener("click", (e) => {
+            marker.setPosition(e.latLng);
+            updateLatLng(e.latLng.lat(), e.latLng.lng());
+        });
+
+        latInput.addEventListener("change", () => {
+            const lat = parseFloat(latInput.value);
+            const lng = parseFloat(lngInput.value);
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const newPos = { lat, lng };
+                marker.setPosition(newPos);
+                map.setCenter(newPos);
+            }
+        });
+
+        lngInput.addEventListener("change", () => {
+            const lat = parseFloat(latInput.value);
+            const lng = parseFloat(lngInput.value);
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const newPos = { lat, lng };
+                marker.setPosition(newPos);
+                map.setCenter(newPos);
+            }
+        });
+
+        if (validateBtn && locationInput) {
+            validateBtn.addEventListener("click", function () {
+                const address = locationInput.value.trim();
+
+                if (!address) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Location required",
+                        text: "Please enter a location before validating.",
+                        background: "#131b2b",
+                        color: "#eef2f8"
+                    });
+                    return;
+                }
+
+                const originalText = validateBtn.innerHTML;
+                validateBtn.disabled = true;
+                validateBtn.innerHTML = "Searching...";
+
+                geocoder.geocode({ address: address }, (results, status) => {
+                    validateBtn.disabled = false;
+                    validateBtn.innerHTML = originalText;
+
+                    if (status === "OK" && results[0]) {
+                        const result = results[0];
+                        const loc = result.geometry.location;
+
+                        const lat = loc.lat();
+                        const lng = loc.lng();
+
+                        updateLatLng(lat, lng);
+                        marker.setPosition({ lat, lng });
+                        map.setCenter({ lat, lng });
+                        map.setZoom(16);
+
+                        if (result.formatted_address) {
+                            locationInput.value = result.formatted_address;
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            position: "top-end",
+                            icon: "success",
+                            title: "Location validated",
+                            showConfirmButton: false,
+                            timer: 1800,
+                            background: "#131b2b",
+                            color: "#eef2f8"
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Location not found",
+                            text: "Unable to find this address. Try another wording.",
+                            background: "#131b2b",
+                            color: "#eef2f8"
+                        });
+                    }
+                });
+            });
+        }
+
+        if (locationInput) {
+            locationInput.setAttribute("placeholder", "Enter address or location manually");
+        }
+
+        setTimeout(() => {
+            google.maps.event.trigger(map, "resize");
+            map.setCenter(marker.getPosition());
+        }, 250);
+    }
+
+    if (window.googleMapsReady && window.google && window.google.maps) {
+        initMapNow();
+    } else {
+        const onReady = () => {
+            initMapNow();
+            window.removeEventListener("google-maps-ready", onReady);
+        };
+        window.addEventListener("google-maps-ready", onReady);
+    }
+}
+
+function bindModalEvents() {
+    const closeButtons = modalRoot.querySelectorAll("[data-close-modal]");
+    closeButtons.forEach(btn => btn.addEventListener("click", closeModal));
+
+    const overlay = modalRoot.querySelector(".custom-modal-overlay");
+    if (overlay) {
+        overlay.addEventListener("click", function (e) {
+            if (e.target === overlay) closeModal();
+        });
+    }
+
+    const form = modalRoot.querySelector("form");
+    if (form) {
+        form.addEventListener("submit", submitModalForm);
+    }
+
+    bindThumbnailPreview();
+    bindDragDropUpload();
+
+    setTimeout(() => {
+        bindMapPicker();
+    }, 100);
+}
+
+    async function openModalFromUrl(url) {
+        try {
+            const response = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+            const data = await response.json();
+
+            if (data.html) {
+                modalRoot.innerHTML = data.html;
+                document.body.classList.add("modal-open");
+                bindModalEvents();
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Unable to load the form.",
+                background: "#131b2b",
+                color: "#eef2f8"
+            });
+        }
+    }
+
+    async function submitModalForm(e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalHtml = submitBtn.innerHTML;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="btn-spinner"></span> Saving...';
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                closeModal();
+
+                if (data.row_html) {
+                    const temp = document.createElement("tbody");
+                    temp.innerHTML = data.row_html.trim();
+                    const newRow = temp.firstElementChild;
+
+                    const tableBody = document.getElementById("tourTableBody");
+                    if (tableBody) {
+                        if (data.tour_id) {
+                            const existingRow = document.getElementById(`tour-row-${data.tour_id}`);
+                            if (existingRow) existingRow.replaceWith(newRow);
+                            else tableBody.prepend(newRow);
+                        } else {
+                            tableBody.prepend(newRow);
+                        }
+                    }
+                }
+
+                if (data.card_html) {
+                    const temp = document.createElement("div");
+                    temp.innerHTML = data.card_html.trim();
+                    const newCard = temp.firstElementChild;
+
+                    const cardsGrid = document.getElementById("tourCardsGrid");
+                    if (cardsGrid) {
+                        if (data.tour_id) {
+                            const existingCard = document.getElementById(`tour-card-${data.tour_id}`);
+                            if (existingCard) existingCard.replaceWith(newCard);
+                            else cardsGrid.prepend(newCard);
+                        } else {
+                            cardsGrid.prepend(newCard);
+                        }
+                    }
+                }
+
+                rebindDynamicEvents();
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Success",
+                    text: data.message,
+                    confirmButtonColor: "#5b6cff",
+                    background: "#131b2b",
+                    color: "#eef2f8"
+                });
+            } else if (data.html) {
+                modalRoot.innerHTML = data.html;
+                document.body.classList.add("modal-open");
+                bindModalEvents();
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Something went wrong while saving.",
+                background: "#131b2b",
+                color: "#eef2f8"
+            });
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalHtml;
+        }
+    }
+
+    async function handleDeleteClick() {
+        const url = this.dataset.deleteUrl;
+        const title = this.dataset.tourTitle;
+        const rowId = this.dataset.tourId;
+
+        const result = await Swal.fire({
+            title: "Delete this tour?",
+            text: `You are about to delete "${title}". This action cannot be undone.`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, delete it",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "#d64545",
+            background: "#131b2b",
+            color: "#eef2f8"
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const row = document.getElementById(`tour-row-${rowId}`);
+                if (row) row.remove();
+
+                const card = document.getElementById(`tour-card-${rowId}`);
+                if (card) card.remove();
+
+                await Swal.fire({
+                    icon: "success",
+                    title: "Deleted",
+                    text: data.message,
+                    confirmButtonColor: "#5b6cff",
+                    background: "#131b2b",
+                    color: "#eef2f8"
+                });
+
+                const tableBody = document.getElementById("tourTableBody");
+                const cardsGrid = document.getElementById("tourCardsGrid");
+                if ((tableBody && !tableBody.querySelector("tr")) || (cardsGrid && !cardsGrid.querySelector(".tour-card"))) {
+                    window.location.reload();
+                }
+            } else {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: data.message || "Unable to delete this tour.",
+                    background: "#131b2b",
+                    color: "#eef2f8"
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Something went wrong while deleting.",
+                background: "#131b2b",
+                color: "#eef2f8"
+            });
+        }
+    }
+
+    async function handleDuplicateClick() {
+        const url = this.dataset.duplicateUrl;
+
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                if (data.row_html) {
+                    const temp = document.createElement("tbody");
+                    temp.innerHTML = data.row_html.trim();
+                    const newRow = temp.firstElementChild;
+                    const tableBody = document.getElementById("tourTableBody");
+                    if (tableBody) tableBody.prepend(newRow);
+                }
+
+                if (data.card_html) {
+                    const temp = document.createElement("div");
+                    temp.innerHTML = data.card_html.trim();
+                    const newCard = temp.firstElementChild;
+                    const cardsGrid = document.getElementById("tourCardsGrid");
+                    if (cardsGrid) cardsGrid.prepend(newCard);
+                }
+
+                rebindDynamicEvents();
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Duplicated",
+                    text: data.message,
+                    background: "#131b2b",
+                    color: "#eef2f8"
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Unable to duplicate the tour.",
+                background: "#131b2b",
+                color: "#eef2f8"
+            });
+        }
+    }
+
+    async function handleToggleStatusClick() {
+        const url = this.dataset.statusUrl;
+        const nextStatus = this.dataset.nextStatus;
+
+        const formData = new FormData();
+        formData.append("status", nextStatus);
+
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                if (data.row_html) {
+                    const temp = document.createElement("tbody");
+                    temp.innerHTML = data.row_html.trim();
+                    const newRow = temp.firstElementChild;
+                    const existingRow = document.getElementById(`tour-row-${data.tour_id}`);
+                    if (existingRow) existingRow.replaceWith(newRow);
+                }
+
+                if (data.card_html) {
+                    const temp = document.createElement("div");
+                    temp.innerHTML = data.card_html.trim();
+                    const newCard = temp.firstElementChild;
+                    const existingCard = document.getElementById(`tour-card-${data.tour_id}`);
+                    if (existingCard) existingCard.replaceWith(newCard);
+                }
+
+                rebindDynamicEvents();
+
+                Swal.fire({
+                    toast: true,
+                    position: "top-end",
+                    icon: "success",
+                    title: data.message,
+                    showConfirmButton: false,
+                    timer: 2200,
+                    background: "#131b2b",
+                    color: "#eef2f8"
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Unable to update status.",
+                background: "#131b2b",
+                color: "#eef2f8"
+            });
+        }
+    }
+
+    async function handleToggleFeaturedClick() {
+        const url = this.dataset.featuredUrl;
+        const tourId = this.dataset.tourId;
+
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                if (data.row_html) {
+                    const temp = document.createElement("tbody");
+                    temp.innerHTML = data.row_html.trim();
+                    const newRow = temp.firstElementChild;
+                    const existingRow = document.getElementById(`tour-row-${tourId}`);
+                    if (existingRow) existingRow.replaceWith(newRow);
+                }
+
+                if (data.card_html) {
+                    const temp = document.createElement("div");
+                    temp.innerHTML = data.card_html.trim();
+                    const newCard = temp.firstElementChild;
+                    const existingCard = document.getElementById(`tour-card-${tourId}`);
+                    if (existingCard) existingCard.replaceWith(newCard);
+                }
+
+                rebindDynamicEvents();
+
+                Swal.fire({
+                    toast: true,
+                    position: "top-end",
+                    icon: "success",
+                    title: data.message,
+                    showConfirmButton: false,
+                    timer: 2000,
+                    background: "#131b2b",
+                    color: "#eef2f8"
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Unable to update featured state.",
+                background: "#131b2b",
+                color: "#eef2f8"
+            });
+        }
+    }
+
+    async function handleBulkDelete() {
+        const checked = Array.from(document.querySelectorAll(".tour-checkbox:checked"));
+        if (!checked.length) {
+            Swal.fire({
+                icon: "info",
+                title: "No selection",
+                text: "Please select at least one tour.",
+                background: "#131b2b",
+                color: "#eef2f8"
+            });
+            return;
+        }
+
+        const ids = checked.map(cb => cb.value);
+
+        const result = await Swal.fire({
+            title: "Delete selected tours?",
+            text: `You are about to delete ${ids.length} tour(s).`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, delete them",
+            confirmButtonColor: "#d64545",
+            background: "#131b2b",
+            color: "#eef2f8"
+        });
+
+        if (!result.isConfirmed) return;
+
+        const formData = new FormData();
+        ids.forEach(id => formData.append("tour_ids[]", id));
+
+        try {
+            const response = await fetch(bulkDeleteUrl, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                data.deleted_ids.forEach(id => {
+                    const row = document.getElementById(`tour-row-${id}`);
+                    if (row) row.remove();
+
+                    const card = document.getElementById(`tour-card-${id}`);
+                    if (card) card.remove();
+                });
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Deleted",
+                    text: data.message,
+                    background: "#131b2b",
+                    color: "#eef2f8"
+                });
+
+                const tableBody = document.getElementById("tourTableBody");
+                if (tableBody && !tableBody.querySelector("tr")) {
+                    window.location.reload();
+                }
+            } else {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: data.message,
+                    background: "#131b2b",
+                    color: "#eef2f8"
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Bulk delete failed.",
+                background: "#131b2b",
+                color: "#eef2f8"
+            });
+        }
+    }
+
+    async function loadTourList(url) {
+        const wrapper = document.getElementById("tourListWrapper");
+        if (!wrapper) return;
+
+        wrapper.innerHTML = buildSkeletonRows();
+
+        try {
+            const response = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                wrapper.innerHTML = data.html;
+                rebindDynamicEvents();
+                bindViewToggle(true);
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Unable to load tours.",
+                background: "#131b2b",
+                color: "#eef2f8"
+            });
+        }
+    }
+
+    function bindModalOpenButtons(scope = document) {
+        scope.querySelectorAll("[data-modal-url]").forEach(button => {
+            button.onclick = function () {
+                openModalFromUrl(this.dataset.modalUrl);
+            };
+        });
+    }
+
+    function bindDeleteButtons(scope = document) {
+        scope.querySelectorAll(".js-delete-tour").forEach(button => {
+            button.onclick = handleDeleteClick;
+        });
+    }
+
+    function bindDuplicateButtons(scope = document) {
+        scope.querySelectorAll(".js-duplicate-tour").forEach(button => {
+            button.onclick = handleDuplicateClick;
+        });
+    }
+
+    function bindToggleStatusButtons(scope = document) {
+        scope.querySelectorAll(".js-toggle-status").forEach(button => {
+            button.onclick = handleToggleStatusClick;
+        });
+    }
+
+    function bindFeaturedButtons(scope = document) {
+        scope.querySelectorAll(".js-toggle-featured").forEach(button => {
+            button.onclick = handleToggleFeaturedClick;
+        });
+    }
+
+    function bindSelectAll() {
+        const selectAll = document.getElementById("selectAllTours");
+        if (!selectAll) return;
+
+        selectAll.onchange = function () {
+            document.querySelectorAll(".tour-checkbox").forEach(cb => {
+                cb.checked = this.checked;
+            });
+        };
+    }
+
+    function bindAjaxPagination() {
+        document.querySelectorAll(".ajax-pagination a, .status-tabs a").forEach(link => {
+            link.onclick = function (e) {
+                e.preventDefault();
+                loadTourList(partialListUrl + this.getAttribute("href"));
+            };
+        });
+    }
+
+    function bindAjaxFilterForm() {
+        const form = document.getElementById("tourFilterForm");
+        if (!form) return;
+
+        form.onsubmit = function (e) {
+            e.preventDefault();
+            const params = new URLSearchParams(new FormData(form));
+            loadTourList(`${partialListUrl}?${params.toString()}`);
+        };
+    }
+
+    function bindBulkDeleteButton() {
+        const btn = document.getElementById("bulkDeleteBtn");
+        if (btn) btn.onclick = handleBulkDelete;
+    }
+
+    function bindMobileDrawer() {
+        const openBtn = document.getElementById("mobileMenuBtn");
+        const closeBtn = document.getElementById("closeMobileDrawer");
+        const drawer = document.getElementById("mobileDrawer");
+        const overlay = document.getElementById("mobileDrawerOverlay");
+
+        if (!openBtn || !drawer || !overlay) return;
+
+        openBtn.onclick = function () {
+            drawer.classList.add("open");
+            overlay.classList.add("open");
+        };
+
+        function closeDrawer() {
+            drawer.classList.remove("open");
+            overlay.classList.remove("open");
+        }
+
+        if (closeBtn) closeBtn.onclick = closeDrawer;
+        overlay.onclick = closeDrawer;
+    }
+
+    function bindFilterDrawer() {
+        const openBtn = document.getElementById("openAdvancedFiltersBtn");
+        const closeBtn = document.getElementById("closeFilterDrawer");
+        const overlay = document.getElementById("filterDrawerOverlay");
+        const drawer = document.getElementById("filterDrawer");
+        const form = document.getElementById("advancedFilterForm");
+        const resetBtn = document.getElementById("resetAdvancedFiltersBtn");
+
+        if (!openBtn || !drawer || !overlay) return;
+
+        openBtn.onclick = () => {
+            drawer.classList.add("open");
+            overlay.classList.add("open");
+        };
+
+        function closeDrawer() {
+            drawer.classList.remove("open");
+            overlay.classList.remove("open");
+        }
+
+        if (closeBtn) closeBtn.onclick = closeDrawer;
+        overlay.onclick = closeDrawer;
+
+        if (form) {
+            form.onsubmit = function (e) {
+                e.preventDefault();
+                const params = new URLSearchParams(new FormData(form));
+                loadTourList(`${partialListUrl}?${params.toString()}`);
+                closeDrawer();
+            };
+        }
+
+        if (resetBtn) {
+            resetBtn.onclick = function () {
+                form.reset();
+            };
+        }
+    }
+
+    function bindViewToggle(reapply = false) {
+        const btn = document.getElementById("toggleViewBtn");
+        const wrapper = document.getElementById("tourListWrapper");
+        if (!btn || !wrapper) return;
+
+        const saved = localStorage.getItem("tourViewMode") || "table";
+
+        function applyViewMode(mode) {
+            btn.dataset.view = mode;
+            btn.textContent = mode === "table" ? "Card View" : "Table View";
+            localStorage.setItem("tourViewMode", mode);
+
+            wrapper.classList.toggle("cards-mode", mode === "card");
+            wrapper.classList.toggle("table-mode", mode !== "card");
+
+            const tableBlock = wrapper.querySelector(".table-view-block");
+            const cardBlock = wrapper.querySelector(".card-view-block");
+
+            if (tableBlock) tableBlock.style.display = mode === "card" ? "none" : "block";
+            if (cardBlock) cardBlock.style.display = mode === "card" ? "block" : "none";
+        }
+
+        if (!reapply) {
+            btn.onclick = function () {
+                const next = btn.dataset.view === "table" ? "card" : "table";
+                applyViewMode(next);
+            };
+        }
+
+        applyViewMode(saved);
+    }
+
+    function rebindDynamicEvents() {
+        bindModalOpenButtons();
+        bindDeleteButtons();
+        bindDuplicateButtons();
+        bindToggleStatusButtons();
+        bindFeaturedButtons();
+        bindSelectAll();
+        bindAjaxPagination();
+    }
+
+    bindModalOpenButtons();
+    bindDeleteButtons();
+    bindDuplicateButtons();
+    bindToggleStatusButtons();
+    bindFeaturedButtons();
+    bindSelectAll();
+    bindAjaxPagination();
+    bindAjaxFilterForm();
+    bindBulkDeleteButton();
+    bindMobileDrawer();
+    bindFilterDrawer();
+    bindViewToggle();
+});
+</script>
+{% endblock %}

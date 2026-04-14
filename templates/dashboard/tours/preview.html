@@ -1,32 +1,262 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ tour.title }} - Preview</title>
-    <link rel="stylesheet" href="{% static 'dashboard/css/tour_preview.css' %}">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfeff',
+                            100: '#cffafe',
+                            200: '#a5f3fc',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            800: '#155e75',
+                            900: '#164e63',
+                        }
+                    },
+                    boxShadow: {
+                        glow: '0 0 0 1px rgba(255,255,255,0.06), 0 18px 40px rgba(0,0,0,0.32)',
+                        premium: '0 30px 90px rgba(0,0,0,0.48)',
+                        soft: '0 12px 28px rgba(0,0,0,0.22)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
 </head>
-<body>
-    <div class="preview-shell">
-        <div class="preview-stage">
-            <div id="previewViewer" class="preview-viewer"></div>
+<body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
+    <div class="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_45%,#01040d_100%)]">
 
-            <div class="preview-brand">
-                {{ tour.title }}
+        <div class="pointer-events-none absolute inset-0 overflow-hidden">
+            <div class="absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl"></div>
+            <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl"></div>
+            <div class="absolute left-0 top-1/3 h-64 w-64 rounded-full bg-sky-400/5 blur-3xl"></div>
+        </div>
+
+        <!-- intro overlay -->
+        <div id="previewIntroOverlay" class="preview-intro-overlay">
+            <div class="preview-intro-glow preview-intro-glow-a"></div>
+            <div class="preview-intro-glow preview-intro-glow-b"></div>
+
+            <div class="preview-intro-card">
+                <div class="preview-intro-logo-wrap">
+                    {% if current_organization.logo %}
+                        <img src="{{ current_organization.logo.url }}" alt="{{ current_organization.name }}" class="preview-intro-logo">
+                    {% else %}
+                        <div class="preview-intro-logo preview-intro-logo-fallback">
+                            {{ current_organization.name|slice:":2"|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="preview-intro-text">
+                    <p class="preview-intro-kicker">Virtual Tour Experience</p>
+                    <h2 class="preview-intro-title">{{ current_organization.name }}</h2>
+                    <p class="preview-intro-subtitle">{{ tour.title }}</p>
+                </div>
+
+                <div class="preview-intro-loader">
+                    <span class="preview-intro-loader-bar"></span>
+                </div>
+            </div>
+        </div>
+
+        <main class="relative h-full w-full">
+            <section class="relative h-full w-full">
+                <div id="previewViewer" class="preview-viewer">
+
+                    <!-- centered brand -->
+                    <div id="brandOverlay"
+                         data-ui="chrome"
+                         class="absolute left-1/2 top-4 z-50 -translate-x-1/2 md:top-5">
+                        <div class="brand-overlay-chip brand-overlay-chip-centered">
+                            {% if current_organization.logo %}
+                                <div class="brand-logo-frame">
+                                    <img src="{{ current_organization.logo.url }}" alt="{{ current_organization.name }}" class="h-full w-full object-cover">
+                                </div>
+                            {% else %}
+                                <div class="brand-logo-frame brand-logo-fallback">
+                                    {{ current_organization.name|slice:":2"|upper }}
+                                </div>
+                            {% endif %}
+
+                            <div class="min-w-0 text-center">
+                                <p class="brand-kicker">Virtual Tour</p>
+                                <h1 class="brand-company-name">{{ current_organization.name }}</h1>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pointer-events-none absolute inset-x-0 top-0 z-[6] h-32 bg-gradient-to-b from-slate-950/40 to-transparent"></div>
+
+                    <div id="previewLayerA" class="preview-layer active-layer">
+                        <div id="previewMountA" class="preview-mount"></div>
+                    </div>
+
+                    <div id="previewLayerB" class="preview-layer standby-layer">
+                        <div id="previewMountB" class="preview-mount"></div>
+                    </div>
+
+                    <!-- info panel -->
+                    <div id="previewInfoBackdrop"
+                         class="info-backdrop pointer-events-none absolute inset-0 z-30 opacity-0"></div>
+
+                    <aside id="previewInfoPanel"
+                           class="info-panel absolute bottom-6 right-6 z-40 w-[420px] max-w-[calc(100%-2rem)] overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/78 shadow-premium backdrop-blur-2xl">
+                        <button id="previewInfoClose"
+                                type="button"
+                                class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white transition hover:bg-black/60">
+                            ✕
+                        </button>
+
+                        <div id="previewInfoMedia" class="h-56 w-full overflow-hidden bg-white/5"></div>
+
+                        <div class="p-5">
+                            <span id="previewInfoBadge"
+                                  class="hidden mb-3 inline-flex rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-200">
+                            </span>
+
+                            <h3 id="previewInfoTitle" class="text-2xl font-black tracking-tight text-white">
+                                Hotspot
+                            </h3>
+
+                            <p id="previewInfoDescription" class="mt-2 text-sm leading-6 text-slate-300"></p>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <span id="previewInfoPrice" class="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white"></span>
+                                <span id="previewInfoSite" class="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white"></span>
+                            </div>
+
+                            <div class="mt-5 flex flex-wrap gap-3">
+                                <a id="previewInfoAction"
+                                   class="hidden inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
+                                   href="#"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Open
+                                </a>
+
+                                <a id="previewInfoWhatsapp"
+                                   class="hidden inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-green-400 to-emerald-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
+                                   href="#"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    WhatsApp
+                                </a>
+
+                                <a id="previewInfoContact"
+                                   class="hidden inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/10"
+                                   href="#"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Contact
+                                </a>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-[6] h-36 bg-gradient-to-t from-slate-950/35 to-transparent"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- bottom dock -->
+        <div id="previewControlDock"
+             data-ui="chrome"
+             class="absolute bottom-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 md:bottom-5 md:w-auto">
+            
+            <!-- scene panel opens upward -->
+            <div id="previewSceneRail" class="scene-stack-panel scene-stack-panel-up">
+                <div class="scene-stack-panel-inner">
+                    <div id="previewScenesList" class="scene-stack-list"></div>
+                </div>
             </div>
 
-            <div class="preview-bottom-actions">
-                <button type="button" class="preview-pill">Mute</button>
-                <button type="button" class="preview-pill">Share</button>
-                <button type="button" class="preview-pill" id="previewFullscreenBtn">Fullscreen</button>
+            <div class="dock-scroll rounded-[28px] border border-white/10 bg-slate-950/60 p-2 shadow-premium backdrop-blur-2xl">
+                <div class="dock-row">
+                    <button id="sceneStackToggle"
+                            type="button"
+                            class="scene-stack-toggle-inline"
+                            aria-label="Afficher les scènes"
+                            title="Scenes">
+                        <div id="sceneStackMiniPreview" class="scene-stack-mini-preview"></div>
+                        <span id="sceneCountBadge" class="scene-stack-badge">0</span>
+                    </button>
+
+                    <div class="dock-divider"></div>
+
+                    <button id="prevSceneBtn" type="button" class="control-btn" title="Scene précédente" aria-label="Scene précédente">◀</button>
+                    <button id="nextSceneBtn" type="button" class="control-btn" title="Scene suivante" aria-label="Scene suivante">▶</button>
+
+                    <div class="dock-divider"></div>
+
+                    <button id="zoomOutBtn" type="button" class="control-btn" title="Zoom arrière" aria-label="Zoom arrière">－</button>
+                    <button id="zoomInBtn" type="button" class="control-btn" title="Zoom avant" aria-label="Zoom avant">＋</button>
+                    <button id="resetViewBtn" type="button" class="control-btn" title="Recentrer" aria-label="Recentrer">⌾</button>
+
+                    <div class="dock-divider"></div>
+
+                    <button id="autorotateBtn" type="button" class="control-btn" title="Auto rotate" aria-label="Auto rotate">⟳</button>
+                    <button id="focusModeBtn" type="button" class="control-btn" title="Mode focus" aria-label="Mode focus">✦</button>
+                    <button id="shareBtn" type="button" class="control-btn" title="Partager" aria-label="Partager">↗</button>
+                    <button id="fullscreenBtn" type="button" class="control-btn" title="Plein écran" aria-label="Plein écran">⤢</button>
+                </div>
             </div>
+        </div>
+
+        <!-- toast -->
+        <div id="previewToast"
+             class="pointer-events-none absolute bottom-24 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-sm font-bold text-white opacity-0 shadow-glow backdrop-blur-xl transition duration-300">
+            Copied
         </div>
     </div>
 
+    <script>
+        window.PREVIEW_CONFIG = {
+            iconMap: {
+                default: "{% static 'dashboard/icons/default.png' %}",
+                white: "{% static 'dashboard/icons/white.png' %}",
+                whitetilted: "{% static 'dashboard/icons/whitetilted.png' %}",
+                tilted: "{% static 'dashboard/icons/tilted.png' %}",
+                arrowleft: "{% static 'dashboard/icons/arrowleft.png' %}",
+                arrowright: "{% static 'dashboard/icons/arrowright.png' %}",
+                arrowdown: "{% static 'dashboard/icons/arrowdown.png' %}",
+                chevronleft: "{% static 'dashboard/icons/chevronleft.png' %}",
+                chevronforward: "{% static 'dashboard/icons/chevronforward.png' %}",
+                "chevronforward-2": "{% static 'dashboard/icons/chevronforward-2.png' %}"
+            },
+            businessIconMap: {
+                info: "{% static 'dashboard/icons/business/info.png' %}",
+                product: "{% static 'dashboard/icons/business/product.png' %}",
+                ad: "{% static 'dashboard/icons/business/ad.png' %}",
+                cta: "{% static 'dashboard/icons/business/cta.png' %}",
+                cart: "{% static 'dashboard/icons/business/cart.png' %}",
+                whatsapp: "{% static 'dashboard/icons/business/whatsapp.png' %}",
+                phone: "{% static 'dashboard/icons/business/phone.png' %}",
+                website: "{% static 'dashboard/icons/business/website.png' %}"
+            }
+        };
+    </script>
+
     {{ scenes_json|json_script:"preview-scenes-data" }}
-    <script src="https://www.marzipano.net/demos/vendor/marzipano.js"></script>
-    <script src="{% static 'dashboard/js/tour_preview.js' %}"></script>
+
+    <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}"></script>
 </body>
 </html>
-

@@ -1,0 +1,54 @@
+{% if tours %}
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAllTours"></th>
+                    <th>Preview</th>
+                    <th>Tour</th>
+                    <th>Place</th>
+                    <th>Status</th>
+                    <th>Version</th>
+                    <th>Price</th>
+                    <th>Created</th>
+                    <th style="width: 340px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tourTableBody">
+                {% for tour in tours %}
+                    {% include "dashboard/tours/partials/tour_table_row.html" with tour=tour %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination-wrap">
+        <div class="pagination-info">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
+
+        <div class="pagination-controls ajax-pagination">
+            {% if page_obj.has_previous %}
+                <a class="pagination-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&place={{ selected_place_id }}&status={{ selected_status }}&featured={{ selected_featured }}&has_video={{ selected_has_video }}&min_price={{ selected_min_price }}&max_price={{ selected_max_price }}">Previous</a>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                    <span class="pagination-link active">{{ num }}</span>
+                {% elif num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+                    <a class="pagination-link" href="?page={{ num }}&q={{ q }}&place={{ selected_place_id }}&status={{ selected_status }}&featured={{ selected_featured }}&has_video={{ selected_has_video }}&min_price={{ selected_min_price }}&max_price={{ selected_max_price }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a class="pagination-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&place={{ selected_place_id }}&status={{ selected_status }}&featured={{ selected_featured }}&has_video={{ selected_has_video }}&min_price={{ selected_min_price }}&max_price={{ selected_max_price }}">Next</a>
+            {% endif %}
+        </div>
+    </div>
+{% else %}
+    <div class="empty-state-box">
+        <div class="empty-state-icon">🎥</div>
+        <h3>No tours found</h3>
+        <p>Try adjusting the filters or create a new tour.</p>
+    </div>
+{% endif %}

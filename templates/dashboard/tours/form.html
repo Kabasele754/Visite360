@@ -1,0 +1,48 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}
+    {% if page_mode == "edit" %}Edit Tour{% else %}Create Tour{% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if page_mode == "edit" %}Edit Tour{% else %}Create Tour{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card form-card">
+    <div class="section-head">
+        <h2>{% if page_mode == "edit" %}Edit Tour{% else %}Create Tour{% endif %}</h2>
+        <p class="topbar-subtitle">
+            {% if page_mode == "edit" %}
+                Update your tour information.
+            {% else %}
+                Fill in the details below to create a new tour.
+            {% endif %}
+        </p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% for field in form %}
+                <div class="form-group {% if field.name == 'description' %}full{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="form-actions">
+            <a class="btn btn-secondary" href="{% url 'dashboard-tours-list' current_organization.slug %}">
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                {% if page_mode == "edit" %}Save Changes{% else %}Create Tour{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

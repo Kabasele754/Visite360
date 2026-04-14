@@ -16,23 +16,51 @@
                 <button class="icon-btn" type="button">☰</button>
                 <a href="#" class="brand-link">Projects</a>
                 <span class="divider">|</span>
-                <span class="project-name">{{ tour.title|default:"Untitled Tour" }}</span>
+
+                <div class="tour-title-editor">
+                    <span id="tourTitleText" class="project-name">
+                        {{ tour.title|default:"Untitled Tour" }}
+                    </span>
+
+                    <input
+                        type="text"
+                        id="tourTitleInput"
+                        class="project-name-input hidden"
+                        value="{{ tour.title|default:'Untitled Tour' }}"
+                        maxlength="255"
+                    >
+
+                    <span id="tourTitleSaving" class="tour-title-saving hidden">
+                        Saving...
+                    </span>
+                </div>
             </div>
 
             <div class="studio-topbar-right">
-                <a class="top-action ghost" href="{% url 'dashboard-organizations-list' %}">Organizations</a>
+                <a class="top-action ghost" href="{% url 'dashboard-organizations-list' %}">
+                    Organizations
+                </a>
+
                 {% if current_organization %}
-                    <a class="top-action ghost" href="{% url 'dashboard-places-list' current_organization.slug %}">Places</a>
-                    <a class="top-action ghost" href="{% url 'dashboard-tours-list' current_organization.slug %}">Tours</a>
+                    <a class="top-action ghost" href="{% url 'dashboard-places-list' current_organization.slug %}">
+                        Places
+                    </a>
+                    <a class="top-action ghost" href="{% url 'dashboard-tours-list' current_organization.slug %}">
+                        Tours
+                    </a>
                 {% endif %}
-                <a class="top-action" href="{% url 'tour-preview' current_organization.slug tour.id %}">Preview</a>
+
+                {% if current_organization and tour %}
+                    <a class="top-action" href="{% url 'tour-preview' current_organization.slug tour.id %}">
+                        Preview
+                    </a>
+                {% endif %}
+
                 <button class="top-action primary" type="button">Share</button>
             </div>
         </header>
 
         <div class="studio-body">
-           
-
             <aside class="studio-leftpanel">
                 {% block left_panel %}{% endblock %}
             </aside>
@@ -41,7 +69,9 @@
                 {% block studio_content %}{% endblock %}
             </main>
 
-            {% block right_panel %}{% endblock %}
+            {% block right_panel %}
+            <aside class="studio-rightpanel"></aside>
+            {% endblock %}
         </div>
     </div>
 

@@ -145,6 +145,31 @@ def handle_uploaded_scenes(tour: Tour, files):
     build_tour_manifest(tour)
     return created_scenes
 
+def reorder_scenes_for_tour(tour: Tour, ordered_scene_ids: list[int]):
+    """
+    Réorganise proprement les scènes d'un tour selon l'ordre reçu.
+    """
+    scenes = list(
+        tour.scenes.all().order_by("order", "id")
+    )
+    existing_ids = {scene.id for scene in scenes}
+
+    cleaned_ids = [int(scene_id) for scene_id in ordered_scene_ids if int(scene_id) in existing_ids]
+
+    remaining_ids = [scene.id for scene in scenes if scene.id not in cleaned_ids]
+    final_ids = cleaned_ids + remaining_ids
+
+    id_to_scene = {scene.id: scene for scene in scenes}
+
+    for index, scene_id in enumerate(final_ids, start=1):
+        scene = id_to_scene[scene_id]
+        if scene.order != index:
+            scene.order = index
+            scene.save(update_fields=["order", "updated_at"])
+
+    build_tour_manifest(tour)
+    return list(tour.scenes.all().order_by("order", "id"))
+
 
 def create_hotspot(
     scene: Scene360,
@@ -182,6 +207,56 @@ def create_hotspot(
     )
 
     build_tour_manifest(scene.tour)
+    return hotspot
+
+def update_hotspot(
+    hotspot: Hotspot,
+    *,
+    hotspot_type=None,
+    label=None,
+    yaw=None,
+    pitch=None,
+    target_scene=None,
+    tooltip_text=None,
+    title=None,
+    description=None,
+    selected_icon=None,
+    payload=None,
+):
+    """
+    Met à jour un hotspot existant et reconstruit le manifest.
+    """
+    if hotspot_type is not None:
+        hotspot.type = hotspot_type
+
+    if label is not None:
+        hotspot.label = label
+
+    if yaw is not None:
+        hotspot.yaw = yaw
+
+    if pitch is not None:
+        hotspot.pitch = pitch
+
+    hotspot.target_scene = target_scene
+
+    if tooltip_text is not None:
+        hotspot.tooltip_text = tooltip_text
+
+    if title is not None:
+        hotspot.title = title
+
+    if description is not None:
+        hotspot.description = description
+
+    if selected_icon is not None:
+        hotspot.selected_icon = selected_icon
+
+    if payload is not None:
+        hotspot.payload = payload
+
+    hotspot.save()
+    build_tour_manifest(hotspot.scene.tour)
     return hotspot
 
 

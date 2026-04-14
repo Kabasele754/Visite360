@@ -1,0 +1,80 @@
+<div class="tour-card" id="tour-card-{{ tour.id }}">
+    <div class="tour-card-image">
+        {% if tour.thumbnail_image %}
+            <img src="{{ tour.thumbnail_image.url }}" alt="{{ tour.title }}">
+        {% else %}
+            <div class="tour-thumb-placeholder">No Image</div>
+        {% endif %}
+    </div>
+
+    <div class="tour-card-body">
+        <div class="tour-card-top">
+            <h3>{{ tour.title }}</h3>
+            <span class="status-pill {% if tour.status == 'draft' %}status-draft{% elif tour.status == 'published' %}status-published{% else %}status-inactive{% endif %}">
+                {{ tour.get_status_display }}
+            </span>
+        </div>
+
+        <p class="tour-card-meta">
+            {{ tour.place.name }}{% if tour.place.city %} · {{ tour.place.city }}{% endif %}
+        </p>
+
+        <div class="tour-meta-inline">
+            {% if tour.is_featured %}
+                <span class="mini-badge featured">Featured</span>
+            {% endif %}
+            {% if tour.virtual_tour_url %}
+                <span class="mini-badge live">360 URL</span>
+            {% endif %}
+            {% if tour.video_tour %}
+                <span class="mini-badge info">Video</span>
+            {% endif %}
+        </div>
+
+        <div class="tour-card-stats">
+            <span>Version: v{{ tour.version }}</span>
+            <span>Price: {% if tour.price %}${{ tour.price }}{% else %}-{% endif %}</span>
+        </div>
+
+        <div class="row-actions">
+            <a class="action-link" href="{% url 'tour-builder' current_organization.slug tour.id %}">Builder</a>
+
+            <button type="button" class="action-link btn-as-link"
+                data-modal-url="{% url 'dashboard-tours-edit' current_organization.slug tour.id %}">
+                Edit
+            </button>
+
+            <button type="button" class="action-link btn-as-link js-duplicate-tour"
+                data-duplicate-url="{% url 'dashboard-tours-duplicate' current_organization.slug tour.id %}">
+                Duplicate
+            </button>
+
+            {% if tour.status == "published" %}
+                <button type="button" class="action-link btn-as-link js-toggle-status"
+                    data-status-url="{% url 'dashboard-tours-toggle-status' current_organization.slug tour.id %}"
+                    data-next-status="inactive">
+                    Unpublish
+                </button>
+            {% else %}
+                <button type="button" class="action-link btn-as-link js-toggle-status"
+                    data-status-url="{% url 'dashboard-tours-toggle-status' current_organization.slug tour.id %}"
+                    data-next-status="published">
+                    Publish
+                </button>
+            {% endif %}
+
+            <button type="button" class="action-link btn-as-link js-toggle-featured"
+                data-tour-id="{{ tour.id }}"
+                data-featured-url="{% url 'dashboard-tours-toggle-featured' current_organization.slug tour.id %}">
+                {% if tour.is_featured %}Unfeature{% else %}Feature{% endif %}
+            </button>
+
+            <button type="button" class="action-link danger btn-as-link js-delete-tour"
+                data-tour-id="{{ tour.id }}"
+                data-delete-url="{% url 'dashboard-tours-delete' current_organization.slug tour.id %}"
+                data-tour-title="{{ tour.title|escapejs }}">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>

@@ -2,6 +2,9 @@ from django.db import models
 from apps.common.models import TimeStampedModel
 from apps.places.models import Place
 from apps.organizations.models import Organization
+from decimal import Decimal
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils.text import slugify
 
 
 class Tour(TimeStampedModel):
@@ -21,40 +24,59 @@ class Tour(TimeStampedModel):
         related_name="tours",
     )
 
-    # identité de la visite
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
 
-    # contenu de visite
-    thumbnail_image = models.ImageField(upload_to="tours/thumbnails/", null=True, blank=True)
-    video_tour = models.FileField(upload_to="tours/videos/", null=True, blank=True)
+    thumbnail_image = models.ImageField(
+        upload_to="tours/thumbnails/",
+        null=True,
+        blank=True
+    )
+    video_tour = models.FileField(
+        upload_to="tours/videos/",
+        null=True,
+        blank=True
+    )
     virtual_tour_url = models.URLField(null=True, blank=True)
 
-    # logique métier / commerciale
     version = models.PositiveIntegerField(default=1)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT
+    )
     manifest = models.JSONField(default=dict, blank=True)
 
     tour_date = models.DateField(null=True, blank=True)
     duration = models.DurationField(null=True, blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        default=Decimal("0.00"),
+    )
     is_featured = models.BooleanField(default=False)
     max_participants = models.PositiveIntegerField(null=True, blank=True)
 
-    rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
+    rating = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(5)],
+    )
     view_count = models.PositiveIntegerField(default=0)
 
     guide_name = models.CharField(max_length=255, null=True, blank=True)
     contact_email = models.EmailField(null=True, blank=True)
 
-    # contexte géo complémentaire si nécessaire pour la visite
     location = models.CharField(max_length=255, blank=True, null=True)
     lat = models.FloatField(null=True, blank=True)
     lng = models.FloatField(null=True, blank=True)
     radius = models.FloatField(default=100)
 
-    # détails utiles selon le type de lieu / immobilier / événementiel
     chambres = models.IntegerField(null=True, blank=True)
     balcon = models.BooleanField(default=False)
     floor_number = models.IntegerField(null=True, blank=True)
@@ -65,6 +87,8 @@ class Tour(TimeStampedModel):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["organization", "status"]),
+            models.Index(fields=["organization", "created_at"]),
+            models.Index(fields=["organization", "is_featured"]),
             models.Index(fields=["place", "status"]),
             models.Index(fields=["slug"]),
             models.Index(fields=["is_featured"]),
@@ -75,14 +99,28 @@ class Tour(TimeStampedModel):
 
     @property
     def thumbnail_image_url(self):
-        if self.thumbnail_image:
-            return self.thumbnail_image.url
-        return None
+        return self.thumbnail_image.url if self.thumbnail_image else None
 
-    # def increment_views(self):
-    #     self.view_count += 1
-    #     self.save(update_fields=["view_count", "updated_at"])
+    @property
+    def display_price(self):
+        return self.price if self.price is not None else Decimal("0.00")
 
+    @property
+    def status_badge_class(self):
+        return {
+            self.Status.DRAFT: "status-draft",
+            self.Status.PUBLISHED: "status-published",
+            self.Status.INACTIVE: "status-inactive",
+        }.get(self.status, "status-draft")
+
+    def save(self, *args, **kwargs):
+        if not self.slug and self.title:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def increment_views(self):
+        self.view_count += 1
+        self.save(update_fields=["view_count", "updated_at"])
 
 class Scene360(TimeStampedModel):
     organization = models.ForeignKey(
