@@ -167,7 +167,7 @@ services:
       - my_network
 
   db:
-    image: postgres:13-alpine
+    image: postgres:16-alpine
     container_name: visite360_postgres_db
     restart: unless-stopped
     volumes:
