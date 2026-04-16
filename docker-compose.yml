@@ -45,6 +45,7 @@ services:
     env_file:
       - .env
     environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
       DB_HOST: db
       DB_NAME: elevateaidb
       DB_USER: elevateaiuser
@@ -75,6 +76,7 @@ services:
     env_file:
       - .env
     environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
       DB_HOST: db
       DB_NAME: elevateaidb
       DB_USER: elevateaiuser
@@ -171,6 +173,7 @@ services:
     volumes:
       - dev-db-data:/var/lib/postgresql/data
     environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
       POSTGRES_DB: elevateaidb
       POSTGRES_USER: elevateaiuser
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
