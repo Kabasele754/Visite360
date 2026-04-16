@@ -8,27 +8,27 @@ services:
     container_name: trustme_app
     restart: unless-stopped
     command: >
-      sh -c "
-      daphne -b 0.0.0.0 -p 8000 config.asgi:application
-      "
+      sh -c "daphne -b 0.0.0.0 -p 8000 config.asgi:application"
     volumes:
       - static-data:/app/static
       - media-data:/app/media
     env_file:
       - .env
     environment:
-      - DB_HOST=db
-      - DB_NAME=trustmedb
-      - DB_USER=trustmeuser
-      - DB_PASS_FILE=/run/secrets/db_password
-      - DB_PORT=5432
-      - DEBUG=0
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
+      DB_HOST: db
+      DB_NAME: trustmedb
+      DB_USER: trustmeuser
+      DB_PASS_FILE: /run/secrets/db_password
+      DB_PORT: 5432
+      DEBUG: 0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - my_network
     secrets:
@@ -37,24 +37,28 @@ services:
   celery_worker:
     build:
       context: .
-      dockerfile: Dockerfile.celery
+      dockerfile: Dockerfile
     container_name: trustme_celery_worker
     restart: unless-stopped
+    command: >
+      sh -c "celery -A config worker -l info"
     env_file:
       - .env
     environment:
-      - DB_HOST=db
-      - DB_NAME=trustmedb
-      - DB_USER=trustmeuser
-      - DB_PASS_FILE=/run/secrets/db_password
-      - DB_PORT=5432
-      - DEBUG=0
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
+      DB_HOST: db
+      DB_NAME: trustmedb
+      DB_USER: trustmeuser
+      DB_PASS_FILE: /run/secrets/db_password
+      DB_PORT: 5432
+      DEBUG: 0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - my_network
     secrets:
@@ -63,24 +67,28 @@ services:
   celery_beat:
     build:
       context: .
-      dockerfile: Dockerfile.celery.beat
+      dockerfile: Dockerfile
     container_name: trustme_celery_beat
     restart: unless-stopped
+    command: >
+      sh -c "celery -A config beat -l info"
     env_file:
       - .env
     environment:
-      - DB_HOST=db
-      - DB_NAME=trustmedb
-      - DB_USER=trustmeuser
-      - DB_PASS_FILE=/run/secrets/db_password
-      - DB_PORT=5432
-      - DEBUG=0
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
+      DB_HOST: db
+      DB_NAME: trustmedb
+      DB_USER: trustmeuser
+      DB_PASS_FILE: /run/secrets/db_password
+      DB_PORT: 5432
+      DEBUG: 0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - my_network
     secrets:
@@ -115,7 +123,8 @@ services:
       - certbot-var:/var/lib/letsencrypt
       - ./certbot/www:/var/www/certbot
       - ./nginx/openssl.cnf:/etc/ssl/openssl.cnf
-    command: certonly --webroot -w /var/www/certbot
+    command: >
+      certonly --webroot -w /var/www/certbot
       -d s4e-elevatai.com
       -d www.s4e-elevatai.com
       -d pgadmin.s4e-elevatai.com
@@ -134,16 +143,21 @@ services:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
       - ./certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h; done;'"
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h; done;'
     networks:
       - my_network
 
   redis:
-    image: redis:latest
+    image: redis:7-alpine
     container_name: trustme_redis
     restart: unless-stopped
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - my_network
 
@@ -154,9 +168,9 @@ services:
     volumes:
       - dev-db-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=trustmedb
-      - POSTGRES_USER=trustmeuser
-      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      POSTGRES_DB: trustmedb
+      POSTGRES_USER: trustmeuser
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U trustmeuser -d trustmedb"]
       interval: 10s
@@ -174,10 +188,11 @@ services:
       - "5051:80"
     restart: unless-stopped
     environment:
-      - PGADMIN_DEFAULT_EMAIL=user@domain.com
-      - PGADMIN_DEFAULT_PASSWORD=SuperSecret
+      PGADMIN_DEFAULT_EMAIL: user@domain.com
+      PGADMIN_DEFAULT_PASSWORD: SuperSecret
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - my_network
 

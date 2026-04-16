@@ -1,43 +1,31 @@
-# ===== ÉTAPE 1 : Builder (compilation des dépendances) =====
-FROM python:3.9-slim as builder
+FROM python:3.11-slim
 
-# Installer TOUTES les dépendances système nécessaires
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Compilation Python
-    gcc \
-    python3-dev \
-    build-essential \
-    pkg-config \
-    # Cairo/pycairo (pour xhtml2pdf, weasyprint)
-    libcairo2-dev \
-    libffi-dev \
-    libpq-dev \
-    # Autres libs courantes
-    libjpeg-dev \
-    zlib1g-dev \
-    libxml2-dev \
-    libxslt1-dev \
-    freetype-dev \
-    libfreetype6-dev \
-    # Utils
-    curl \
-    netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
-# Créer un virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    libpq-dev \
+    libffi-dev \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libgdk-pixbuf-2.0-dev \
+    libjpeg62-turbo-dev \
+    zlib1g-dev \
+    pkg-config \
+    shared-mime-info \
+    && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip et installer wheel
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+COPY requirements.txt /app/
 
-# Copier uniquement requirements.txt pour optimiser le cache
-COPY requirements.txt .
-
-# Installer les dépendances Python dans le venv
-# Utilisation du cache BuildKit pour accélérer les builds suivants
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
+
+COPY . /app/
+
+RUN mkdir -p /app/static /app/media
+
+EXPOSE 8000
