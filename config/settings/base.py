@@ -125,3 +125,25 @@ SPECTACULAR_SETTINGS = {
 
 GOOGLE_MAPS_API_KEY = config("GOOGLE_MAPS_API_KEY", default="")
 
+
+# Configuration de Celery
+CELERY_ENABLE_UTC = True
+CELERY_TIMEZONE = 'UTC' 
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_BROKER_URL = 'redis://redis:6379'  # URL de connexion à Redis pour la file d'attente des tâches
+CELERY_RESULT_BACKEND = 'redis://redis:6379'  # URL de connexion à Redis pour stocker les résultats des tâches
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+
+
+# channel layer redis work on mac and docker
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('redis', 6379)],
+        },
+    },
+}
