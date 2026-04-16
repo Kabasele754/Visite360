@@ -14,6 +14,7 @@ services:
     env_file:
       - .env
     environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
       DB_HOST: db
       DB_NAME: elevateaidb
       DB_USER: elevateaiuser
