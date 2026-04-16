@@ -2,7 +2,7 @@ from .base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['95.111.247.13','www.s4e-elevatai.com','s4e-elevatai.com','api.s4e-elevatai.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['62.171.163.171','www.s4e-elevatai.com','s4e-elevatai.com','api.s4e-elevatai.com', 'localhost', '127.0.0.1']
 # Liste des domaines autorisés pour les connexions
 CSRF_TRUSTED_ORIGINS = [
     "https://s4e-elevatai.com",
@@ -23,8 +23,7 @@ CSP_HEADER = {
     'script-src': ["'self'", "s4e-elevatai.com"],
     'style-src': ["'self'", "s4e-elevatai.com"],
     'img-src': ["'self'", "s4e-elevatai.com"],
-    'font-src': ["'self'", "s4e-elevatai.com"],
-    
+    'font-src': ["'self'", "s4e-elevatai.com"],  
 }
 
 import os
