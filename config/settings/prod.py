@@ -26,19 +26,19 @@ CSP_HEADER = {
     'font-src': ["'self'", "s4e-elevateai.com"],  
 }
 
-import os
+# import os
 
-def read_secret(path, default=""):
-    try:
-        with open(path, "r") as f:
-            return f.read().strip()
-    except Exception:
-        return default
+# def read_secret(path, default=""):
+#     try:
+#         with open(path, "r") as f:
+#             return f.read().strip()
+#     except Exception:
+#         return default
 
-DB_PASSWORD = os.getenv("DB_PASS")
-DB_PASS_FILE = os.getenv("DB_PASS_FILE")
-if DB_PASS_FILE and not DB_PASSWORD:
-    DB_PASSWORD = read_secret(DB_PASS_FILE)
+# DB_PASSWORD = os.getenv("DB_PASS")
+# DB_PASS_FILE = os.getenv("DB_PASS_FILE")
+# if DB_PASS_FILE and not DB_PASSWORD:
+#     DB_PASSWORD = read_secret(DB_PASS_FILE)
 
 # DATABASES = {
 #     "default": {
@@ -57,7 +57,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'elevateaidb'),
         'USER': os.environ.get('DB_USER', 'elevateaiuser'),
-        'PASSWORD': DB_PASSWORD or 'elevateaipass',
+        'PASSWORD': os.environ.get('DB_PASS', 'elevateaipass'),
         'HOST': os.environ.get('DB_HOST', 'db'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
