@@ -114,6 +114,7 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
+
 # CORS_ALLOWED_ORIGINS = config(
 #     "CORS_ALLOWED_ORIGINS",
 #     default="http://localhost:3000,http://localhost:8080",
