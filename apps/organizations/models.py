@@ -2,6 +2,11 @@ from django.conf import settings
 from django.db import models
 from apps.common.models import TimeStampedModel
 
+
+def organization_logo_upload_to(instance, filename):
+    return f"organizations/{instance.slug}/logo/{filename}"
+
+
 class Organization(TimeStampedModel):
     class Status(models.TextChoices):
         ACTIVE = "active", "Active"
@@ -9,10 +14,16 @@ class Organization(TimeStampedModel):
 
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
+    logo = models.ImageField(
+        upload_to=organization_logo_upload_to,
+        null=True,
+        blank=True
+    )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
 
     def __str__(self):
         return self.name
+
 
 class OrganizationMember(TimeStampedModel):
     class Role(models.TextChoices):
@@ -21,8 +32,16 @@ class OrganizationMember(TimeStampedModel):
         EDITOR = "editor", "Editor"
         VIEWER = "viewer", "Viewer"
 
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="memberships")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="organization_memberships")
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="memberships"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="organization_memberships"
+    )
     role = models.CharField(max_length=20, choices=Role.choices)
     is_active = models.BooleanField(default=True)
 

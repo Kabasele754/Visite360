@@ -10,7 +10,7 @@ from .selectors import get_user_organizations
 class OrganizationForm(ModelForm):
     class Meta:
         model = Organization
-        fields = ["name", "slug", "status"]
+        fields = ["name", "slug", "logo", "status"]
 
 
 @login_required
@@ -29,7 +29,7 @@ def organization_list_view(request):
 @login_required
 def organization_create_view(request):
     if request.method == "POST":
-        form = OrganizationForm(request.POST)
+        form = OrganizationForm(request.POST, request.FILES)
         if form.is_valid():
             organization = form.save()
 
@@ -65,7 +65,7 @@ def organization_edit_view(request, organization_slug):
             return render(request, "403.html", status=403)
 
     if request.method == "POST":
-        form = OrganizationForm(request.POST, instance=organization)
+        form = OrganizationForm(request.POST, request.FILES, instance=organization)
         if form.is_valid():
             form.save()
             messages.success(request, "Organization updated successfully.")

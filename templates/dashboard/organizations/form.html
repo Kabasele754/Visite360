@@ -7,7 +7,7 @@
 
 {% block content %}
 <div class="card">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
         <div class="form-grid">
@@ -19,6 +19,21 @@
             <div class="form-group">
                 <label for="{{ form.slug.id_for_label }}">Slug</label>
                 {{ form.slug }}
+            </div>
+
+            <div class="form-group full">
+                <label for="{{ form.logo.id_for_label }}">Logo</label>
+                {{ form.logo }}
+
+                {% if page_mode == "edit" and organization.logo %}
+                    <div style="margin-top: 12px;">
+                        <img
+                            src="{{ organization.logo.url }}"
+                            alt="{{ organization.name }}"
+                            style="max-width: 140px; max-height: 140px; border-radius: 14px; object-fit: cover; border: 1px solid #e5e7eb;"
+                        >
+                    </div>
+                {% endif %}
             </div>
 
             <div class="form-group full">
