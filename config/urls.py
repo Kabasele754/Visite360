@@ -32,3 +32,8 @@ path("", include("apps.tours.dashboard_urls")),
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+
+handler400 = 'apps.public.views.custom_bad_request'
+handler403 = 'apps.public.views.custom_permission_denied'
+handler404 = 'apps.public.views.custom_page_not_found'
+handler500 = 'apps.public.views.custom_server_error'
