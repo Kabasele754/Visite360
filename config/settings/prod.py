@@ -57,7 +57,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'elevateaidb'),
         'USER': os.environ.get('DB_USER', 'elevateaiuser'),
-        'PASSWORD': os.environ.get('DB_PASS', 'elevateaipass'),
+        'PASSWORD': DB_PASSWORD or 'elevateaipass',
         'HOST': os.environ.get('DB_HOST', 'db'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
