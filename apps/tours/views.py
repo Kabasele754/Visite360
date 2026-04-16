@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 
+
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -245,4 +246,8 @@ class OrgTourPhotoDetailView(generics.RetrieveUpdateDestroyAPIView):
         org = get_object_or_404(Organization, slug=self.kwargs["organization_slug"])
         return TourPhoto.objects.filter(organization=org)
     
+    
+
+
+
     

@@ -39,7 +39,13 @@
     </script>
 
     <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
+ <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 </head>
+
+{% include 'public/partials/loader_3d_global.html' %}
+
+<script src="{% static 'public/js/loader_3d_global.js' %}"></script>
+
 <body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
     <div class="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_45%,#01040d_100%)]">
 
@@ -50,7 +56,7 @@
         </div>
 
         <!-- intro overlay -->
-        <div id="previewIntroOverlay" class="preview-intro-overlay">
+        {% comment %} <div id="previewIntroOverlay" class="preview-intro-overlay">
             <div class="preview-intro-glow preview-intro-glow-a"></div>
             <div class="preview-intro-glow preview-intro-glow-b"></div>
 
@@ -75,7 +81,7 @@
                     <span class="preview-intro-loader-bar"></span>
                 </div>
             </div>
-        </div>
+        </div> {% endcomment %}
 
         <main class="relative h-full w-full">
             <section class="relative h-full w-full">

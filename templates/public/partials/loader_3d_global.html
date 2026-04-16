@@ -1,0 +1,66 @@
+{% load static %}
+
+<div id="globalPageLoader" class="global-page-loader" aria-hidden="true">
+    <div class="global-page-loader__bg"></div>
+    <div class="global-page-loader__grid"></div>
+
+    <div class="global-page-loader__inner">
+        <div class="global-page-loader__scene">
+            <div class="loader-3d loader-3d--back"></div>
+            <div class="loader-3d loader-3d--mid"></div>
+            <div class="loader-3d loader-3d--front">
+                <div class="loader-3d__ring"></div>
+                <div class="loader-3d__core"></div>
+                <div class="loader-3d__glow"></div>
+            </div>
+        </div>
+
+        <div class="global-page-loader__content">
+            <div class="global-page-loader__brand">
+                {% if current_organization and current_organization.logo %}
+                    <img
+                        src="{{ current_organization.logo.url }}"
+                        alt="{{ current_organization.name }}"
+                        class="global-page-loader__logo"
+                    >
+                {% elif current_organization %}
+                    <div class="global-page-loader__logo global-page-loader__logo--fallback">
+                        {{ current_organization.name|slice:":2"|upper }}
+                    </div>
+                {% else %}
+                    <div class="global-page-loader__logo global-page-loader__logo--fallback">
+                        VT
+                    </div>
+                {% endif %}
+            </div>
+
+            <p class="global-page-loader__kicker">Virtual Tour Experience</p>
+
+            <h2 class="global-page-loader__title">
+                {% if current_organization %}
+                    {{ current_organization.name }}
+                {% else %}
+                    Virtual Tour
+                {% endif %}
+            </h2>
+
+            <p class="global-page-loader__subtitle">
+                {% if tour %}
+                    {{ tour.title }}
+                {% else %}
+                    Preparing your 360° experience...
+                {% endif %}
+            </p>
+
+            <div class="global-page-loader__progress">
+                <span class="global-page-loader__progress-bar"></span>
+            </div>
+
+            <div class="global-page-loader__status-wrap">
+                <span class="global-page-loader__status" id="globalLoaderStatusText">
+                    Loading panoramic scenes...
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

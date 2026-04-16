@@ -1,0 +1,198 @@
+version: '3.8'
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trustme_app
+    restart: unless-stopped
+    command: >
+      sh -c "
+      daphne -b 0.0.0.0 -p 8000 config.asgi:application
+      "
+    volumes:
+      - static-data:/app/static
+      - media-data:/app/media
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_NAME=trustmedb
+      - DB_USER=trustmeuser
+      - DB_PASS_FILE=/run/secrets/db_password
+      - DB_PORT=5432
+      - DEBUG=0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    depends_on:
+      - db
+      - redis
+    networks:
+      - my_network
+    secrets:
+      - db_password
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: trustme_celery_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_NAME=trustmedb
+      - DB_USER=trustmeuser
+      - DB_PASS_FILE=/run/secrets/db_password
+      - DB_PORT=5432
+      - DEBUG=0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    depends_on:
+      - db
+      - redis
+    networks:
+      - my_network
+    secrets:
+      - db_password
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery.beat
+    container_name: trustme_celery_beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_NAME=trustmedb
+      - DB_USER=trustmeuser
+      - DB_PASS_FILE=/run/secrets/db_password
+      - DB_PORT=5432
+      - DEBUG=0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    depends_on:
+      - db
+      - redis
+    networks:
+      - my_network
+    secrets:
+      - db_password
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.nginx
+    container_name: trustme_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+    volumes:
+      - static-data:/app/static:ro
+      - media-data:/app/media:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-var:/var/lib/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - django
+    networks:
+      - my_network
+
+  certbot:
+    image: certbot/certbot
+    container_name: trustme_certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./nginx/openssl.cnf:/etc/ssl/openssl.cnf
+    command: certonly --webroot -w /var/www/certbot
+      -d s4e-elevatai.com
+      -d www.s4e-elevatai.com
+      -d pgadmin.s4e-elevatai.com
+      -d api.s4e-elevatai.com
+      --email pepexykabasele@gmail.com
+      --agree-tos
+      --non-interactive
+    networks:
+      - my_network
+
+  certbot-renew:
+    image: certbot/certbot
+    container_name: trustme_certbot_renew
+    restart: unless-stopped
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h; done;'"
+    networks:
+      - my_network
+
+  redis:
+    image: redis:latest
+    container_name: trustme_redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - my_network
+
+  db:
+    image: postgres:13-alpine
+    container_name: trustme_postgres_db
+    restart: unless-stopped
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=trustmedb
+      - POSTGRES_USER=trustmeuser
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustmeuser -d trustmedb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - my_network
+    secrets:
+      - db_password
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_server
+    ports:
+      - "5051:80"
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@domain.com
+      - PGADMIN_DEFAULT_PASSWORD=SuperSecret
+    depends_on:
+      - db
+    networks:
+      - my_network
+
+volumes:
+  dev-db-data:
+  static-data:
+  media-data:
+  certbot-etc:
+  certbot-var:
+  redis-data:
+
+networks:
+  my_network:
+    driver: bridge
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt

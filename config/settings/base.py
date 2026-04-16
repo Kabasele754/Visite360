@@ -10,6 +10,8 @@ DEBUG = config("DEBUG", default=True, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="127.0.0.1,localhost", cast=Csv())
 
 INSTALLED_APPS = [
+    'channels',
+    'daphne',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -31,6 +33,7 @@ INSTALLED_APPS = [
     "apps.leads",
     "apps.bookings",
     "apps.analytics",
+    "apps.public"
 ]
 
 MIDDLEWARE = [

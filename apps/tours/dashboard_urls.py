@@ -46,6 +46,16 @@ urlpatterns = [
         tour_preview_view,
         name="tour-preview",
     ),
+    
+      path(
+        "<slug:organization_slug>/tours/<int:tour_id>/preview/",
+        tour_preview_view,
+        name="tour-preview",
+    ),  path(
+        "<slug:organization_slug>/tours/<int:tour_id>/preview/",
+        tour_preview_view,
+        name="tour-preview-public",
+    ),
 
     path(
         "dashboard/o/<slug:organization_slug>/tours/<int:tour_id>/upload-scenes/",

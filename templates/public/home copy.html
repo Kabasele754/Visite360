@@ -1,0 +1,1165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Tours - Home</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdff',
+                            100: '#ccfbff',
+                            200: '#99f6ff',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            800: '#155e75',
+                            900: '#164e63',
+                        }
+                    },
+                    boxShadow: {
+                        glow: '0 14px 40px rgba(34,211,238,0.14)',
+                        premium: '0 30px 80px rgba(15,23,42,0.16)',
+                        soft: '0 12px 30px rgba(15,23,42,0.10)',
+                        glass: '0 18px 45px rgba(15,23,42,0.10)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            color: #0f172a;
+            background:
+                radial-gradient(circle at top, rgba(34,211,238,0.08), transparent 24%),
+                radial-gradient(circle at bottom right, rgba(59,130,246,0.06), transparent 24%),
+                linear-gradient(180deg, #f8fdff 0%, #eef8ff 34%, #ffffff 100%);
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(255,255,255,0.68);
+            border: 1px solid rgba(255,255,255,0.72);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 18px 50px rgba(15,23,42,0.08);
+        }
+
+        .glass-soft {
+            background: rgba(255,255,255,0.56);
+            border: 1px solid rgba(255,255,255,0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 14px 38px rgba(15,23,42,0.08);
+        }
+
+        .glass-search {
+            background: rgba(255,255,255,0.22);
+            border: 1px solid rgba(255,255,255,0.45);
+            backdrop-filter: blur(26px);
+            -webkit-backdrop-filter: blur(26px);
+            box-shadow:
+                0 18px 55px rgba(15,23,42,0.14),
+                inset 0 1px 0 rgba(255,255,255,0.28);
+        }
+
+        .glass-dark {
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.24);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .soft-border {
+            border: 1px solid rgba(15,23,42,0.06);
+        }
+
+        .section-title {
+            color: #0f172a;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-shell {
+            position: relative;
+            overflow: hidden;
+            min-height: 900px;
+            background:
+                radial-gradient(circle at 20% 14%, rgba(255,255,255,0.18), transparent 18%),
+                radial-gradient(circle at 80% 20%, rgba(34,211,238,0.10), transparent 18%),
+                linear-gradient(180deg, #dff7ff 0%, #c9ecff 16%, #d9f3ff 28%, #f2fbff 58%, #ffffff 100%);
+        }
+
+        .hero-canvas-wrap {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        #threeHeroCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .hero-grid {
+            position: relative;
+            z-index: 5;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(255,255,255,0.18), transparent 28%),
+                linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 22%, rgba(11,28,52,0.10) 62%, rgba(11,28,52,0.22) 100%);
+        }
+
+        .hero-grid::before {
+            content: "";
+            position: absolute;
+            right: 6%;
+            top: 6%;
+            width: 240px;
+            height: 240px;
+            border-radius: 999px;
+            background: radial-gradient(circle at center, rgba(103,232,249,0.34), rgba(59,130,246,0.08), transparent 74%);
+            filter: blur(16px);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .hero-kicker {
+            animation: heroFadeUp .8s ease both;
+        }
+
+        .hero-title {
+            animation: heroFadeUp 1s ease .08s both;
+        }
+
+        .hero-text {
+            animation: heroFadeUp 1s ease .18s both;
+        }
+
+        .hero-actions {
+            animation: heroFadeUp 1s ease .28s both;
+        }
+
+        .hero-stats {
+            animation: heroFadeUp 1s ease .38s both;
+        }
+
+        .hero-search-enter {
+            animation: heroFadeUp 1s ease .20s both;
+        }
+
+        @keyframes heroFadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-loader {
+            position: absolute;
+            inset: 0;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                radial-gradient(circle at center, rgba(255,255,255,0.14), rgba(255,255,255,0.02)),
+                linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.05));
+            transition: opacity .8s ease, visibility .8s ease;
+        }
+
+        .hero-loader.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .hero-loader-card {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            padding: 1rem 1.2rem;
+            border-radius: 999px;
+            color: white;
+            background: rgba(11,28,52,0.40);
+            border: 1px solid rgba(255,255,255,0.16);
+            backdrop-filter: blur(14px);
+        }
+
+        .hero-loader-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #67e8f9, #3b82f6);
+            box-shadow: 0 0 0 8px rgba(103,232,249,0.10);
+            animation: pulseDot 1.4s ease infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.18);
+                opacity: 0.78;
+            }
+        }
+
+        .search-field {
+            width: 100%;
+            border-radius: 1rem;
+            border: 1px solid rgba(255,255,255,0.36);
+            background: rgba(255,255,255,0.42);
+            color: #0f172a;
+            padding: 0.9rem 1rem;
+            outline: none;
+            transition: .2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-field::placeholder {
+            color: #64748b;
+        }
+
+        .search-field:focus {
+            border-color: rgba(34,211,238,0.75);
+            box-shadow: 0 0 0 4px rgba(34,211,238,0.14);
+            background: rgba(255,255,255,0.58);
+        }
+
+        .card-hover {
+            transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 22px 52px rgba(15,23,42,0.14);
+        }
+
+        .card-image-overlay {
+            background:
+                linear-gradient(180deg, rgba(15,23,42,0.04) 0%, rgba(15,23,42,0.12) 45%, rgba(15,23,42,0.54) 100%);
+        }
+
+        .tour-card-thumb {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
+                linear-gradient(180deg, rgba(7,16,32,0.02), rgba(7,16,32,0.10));
+        }
+
+        .tour-card-thumb img {
+            transition: transform .7s ease;
+            transform: scale(1.02);
+        }
+
+        .card-hover:hover .tour-card-thumb img {
+            transform: scale(1.06);
+        }
+
+        .tour-scene-badge {
+            background: rgba(255,255,255,0.88);
+            border: 1px solid rgba(255,255,255,0.74);
+            box-shadow: 0 12px 26px rgba(15,23,42,0.10);
+        }
+
+        .hero-badge-glow {
+            box-shadow: 0 0 0 10px rgba(103,232,249,0.12);
+        }
+
+        .floating-card {
+            animation: floatingCard 6.2s ease-in-out infinite;
+        }
+
+        @keyframes floatingCard {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .hero-shell {
+                min-height: 1020px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero-shell {
+                min-height: 1080px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="sticky top-0 z-50 border-b border-white/60 bg-white/60 backdrop-blur-2xl">
+        <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-6">
+            <a href="{% url 'public_home' %}" class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 via-sky-300 to-blue-500 text-slate-950 shadow-glow">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-cyan-700">Virtual Tour</p>
+                    <h1 class="text-lg font-black tracking-tight text-slate-900">Public Showcase</h1>
+                </div>
+            </a>
+
+            <nav class="hidden items-center gap-6 md:flex">
+                <a href="#featured" class="text-sm font-semibold text-slate-600 transition hover:text-slate-900">Featured</a>
+                <a href="#places" class="text-sm font-semibold text-slate-600 transition hover:text-slate-900">Places</a>
+                <a href="#tours" class="text-sm font-semibold text-slate-600 transition hover:text-slate-900">Tours</a>
+                <a href="#organizations" class="text-sm font-semibold text-slate-600 transition hover:text-slate-900">Organizations</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero-shell">
+        {% if hero_tour %}
+            {% url 'tour-preview-public' organization_slug=hero_tour.organization.slug tour_id=hero_tour.id as hero_preview_url %}
+        {% endif %}
+
+        <div class="hero-canvas-wrap">
+            <canvas id="threeHeroCanvas"></canvas>
+        </div>
+
+        <div class="hero-overlay"></div>
+
+        <div id="heroLoader" class="hero-loader">
+            <div class="hero-loader-card">
+                <span class="hero-loader-dot"></span>
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[0.24em] text-cyan-200">Three.js</p>
+                    <p class="text-sm font-semibold text-white/90">Chargement du showroom 3D…</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-grid relative mx-auto max-w-7xl px-4 py-20 lg:px-6 lg:py-28">
+            <div class="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+                <div class="max-w-3xl">
+                    <div class="hero-kicker mb-5 inline-flex items-center gap-2 rounded-full border border-white/26 bg-white/16 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-slate-900 shadow-soft">
+                        <span class="hero-badge-glow h-2.5 w-2.5 rounded-full bg-cyan-400"></span>
+                        3D Experience
+                    </div>
+
+                    <h2 class="hero-title text-4xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+                        Une page publique avec un
+                        <span class="bg-gradient-to-r from-cyan-700 via-sky-700 to-blue-700 bg-clip-text text-transparent">
+                            vrai hero 3D
+                        </span>
+                    </h2>
+
+                    <p class="hero-text mt-5 max-w-2xl text-base leading-8 text-slate-700 sm:text-lg">
+                        Présente tes boutiques, appartements, restaurants et espaces avec un rendu premium, un modèle 3D réel en fond et un accès direct vers la visite virtuelle.
+                    </p>
+
+                    <div class="hero-actions mt-8 flex flex-wrap gap-4">
+                        {% if hero_tour %}
+                            <a href="{{ hero_preview_url }}"
+                               class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-4 text-sm font-black text-slate-950 shadow-premium transition hover:-translate-y-0.5 hover:brightness-110">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5.14v13.72a1 1 0 001.52.85l10.2-6.86a1 1 0 000-1.7L9.52 4.29A1 1 0 008 5.14z"/>
+                                </svg>
+                                Démarrer la visite
+                            </a>
+                        {% endif %}
+
+                        <a href="#tours"
+                           class="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white/70 px-6 py-4 text-sm font-bold text-slate-800 transition hover:bg-white">
+                            Explorer les visites
+                        </a>
+                    </div>
+
+                    <div class="hero-stats mt-10 grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div class="glass floating-card rounded-3xl p-5">
+                            <div class="text-3xl font-black text-slate-900">{{ stats.tour_count }}</div>
+                            <div class="mt-1 text-sm font-semibold text-slate-600">Visites publiées</div>
+                        </div>
+                        <div class="glass floating-card rounded-3xl p-5" style="animation-delay: .6s;">
+                            <div class="text-3xl font-black text-slate-900">{{ stats.place_count }}</div>
+                            <div class="mt-1 text-sm font-semibold text-slate-600">Lieux publiés</div>
+                        </div>
+                        <div class="glass floating-card rounded-3xl p-5" style="animation-delay: 1.1s;">
+                            <div class="text-3xl font-black text-slate-900">{{ stats.organization_count }}</div>
+                            <div class="mt-1 text-sm font-semibold text-slate-600">Organisations</div>
+                        </div>
+                    </div>
+
+                    {% if hero_tour %}
+                        <div class="mt-6 inline-flex flex-wrap items-center gap-3 rounded-[24px] border border-white/40 bg-white/44 px-4 py-3 text-slate-900 backdrop-blur-xl">
+                            <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
+                                À la une
+                            </div>
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-black">{{ hero_tour.title }}</p>
+                                <p class="truncate text-xs text-slate-600">
+                                    {{ hero_tour.organization.name }}
+                                    {% if hero_tour.place.city %} · {{ hero_tour.place.city }}{% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="hero-search-enter">
+                    <div class="glass-search rounded-[32px] p-5 shadow-premium lg:p-6">
+                        <div class="mb-5">
+                            <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-800">Recherche</p>
+                            <h3 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Trouver la visite idéale</h3>
+                            <p class="mt-2 text-sm leading-6 text-slate-700">
+                                Filtre rapidement par mot-clé, catégorie ou ville.
+                            </p>
+                        </div>
+
+                        <form method="get" class="space-y-4">
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-slate-900">Mot-clé</label>
+                                <input
+                                    type="text"
+                                    name="q"
+                                    value="{{ selected_q }}"
+                                    placeholder="Boutique, appartement, restaurant..."
+                                    class="search-field"
+                                >
+                            </div>
+
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label class="mb-2 block text-sm font-bold text-slate-900">Catégorie</label>
+                                    <select name="category" class="search-field">
+                                        <option value="">Toutes les catégories</option>
+                                        {% for value, label in category_choices %}
+                                            <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="mb-2 block text-sm font-bold text-slate-900">Ville</label>
+                                    <select name="city" class="search-field">
+                                        <option value="">Toutes les villes</option>
+                                        {% for city_name in available_cities %}
+                                            <option value="{{ city_name }}" {% if selected_city == city_name %}selected{% endif %}>
+                                                {{ city_name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap gap-3 pt-2">
+                                <button
+                                    type="submit"
+                                    class="inline-flex flex-1 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-5 py-3.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
+                                >
+                                    Rechercher
+                                </button>
+
+                                <a
+                                    href="{% url 'public_home' %}"
+                                    class="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/36 px-5 py-3.5 text-sm font-bold text-slate-800 transition hover:bg-white/52"
+                                >
+                                    Réinitialiser
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="featured" class="mx-auto max-w-7xl px-4 py-16 lg:px-6">
+        <div class="mb-8">
+            <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Highlights</p>
+            <h3 class="section-title mt-2 text-3xl font-black">Featured tours</h3>
+            <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
+                Premium experiences selected to impress the client immediately.
+            </p>
+        </div>
+
+        {% if featured_tours %}
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {% for tour in featured_tours %}
+                    {% url 'tour-preview-public' organization_slug=tour.organization.slug tour_id=tour.id as preview_url %}
+                    <article class="glass card-hover overflow-hidden rounded-[28px] shadow-premium soft-border">
+                        <div class="tour-card-thumb relative aspect-[16/10] overflow-hidden bg-slate-100">
+                            {% if tour.ordered_scenes and tour.ordered_scenes.0.image_360_url %}
+                                <img src="{{ tour.ordered_scenes.0.image_360_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% elif tour.thumbnail_image_url %}
+                                <img src="{{ tour.thumbnail_image_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% elif tour.place.cover_image %}
+                                <img src="{{ tour.place.cover_image }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% else %}
+                                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-slate-500">
+                                    <span class="text-sm font-black tracking-[0.2em] uppercase">No Preview</span>
+                                </div>
+                            {% endif %}
+
+                            <div class="card-image-overlay absolute inset-0"></div>
+
+                            <div class="absolute left-4 top-4 inline-flex items-center rounded-full border border-white/30 bg-white/16 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+                                Featured
+                            </div>
+
+                            {% if tour.place %}
+                                <div class="absolute bottom-4 left-4 rounded-full border border-white/25 bg-white/16 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-xl">
+                                    {{ tour.place.get_category_display }}
+                                </div>
+                            {% endif %}
+
+                            <a href="{{ preview_url }}"
+                               class="tour-scene-badge absolute right-4 top-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-900 transition hover:-translate-y-0.5">
+                                Start visit
+                            </a>
+                        </div>
+
+                        <div class="p-5">
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <span class="truncate text-xs font-black uppercase tracking-[0.22em] text-cyan-700">
+                                    {{ tour.organization.name }}
+                                </span>
+
+                                {% if tour.price %}
+                                    <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">
+                                        {{ tour.display_price }}
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <h4 class="text-xl font-black tracking-tight text-slate-900">
+                                {{ tour.title }}
+                            </h4>
+
+                            <p class="mt-2 line-clamp-3 text-sm leading-7 text-slate-600">
+                                {{ tour.description|default:"Immersive virtual visit experience for modern discovery." }}
+                            </p>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                {% if tour.place.city %}
+                                    <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                                        {{ tour.place.city }}{% if tour.place.country %}, {{ tour.place.country }}{% endif %}
+                                    </span>
+                                {% endif %}
+                                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                                    {{ tour.scene_count }} scene{{ tour.scene_count|pluralize }}
+                                </span>
+                                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                                    {{ tour.view_count }} view{{ tour.view_count|pluralize }}
+                                </span>
+                                {% if tour.rating %}
+                                    <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                        ★ {{ tour.rating }}/5
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="mt-5 flex items-center justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-bold text-slate-900">
+                                        {{ tour.place.name }}
+                                    </p>
+                                    {% if tour.guide_name %}
+                                        <p class="truncate text-xs text-slate-500">Guide: {{ tour.guide_name }}</p>
+                                    {% endif %}
+                                </div>
+
+                                <a href="{{ preview_url }}"
+                                   class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110">
+                                    Open tour
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="glass rounded-[28px] p-8 text-center">
+                <h4 class="text-xl font-black text-slate-900">No featured tour yet</h4>
+                <p class="mt-2 text-sm text-slate-600">Publish a featured tour to display it here.</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section id="places" class="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+        <div class="mb-8">
+            <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Destinations</p>
+            <h3 class="section-title mt-2 text-3xl font-black">Popular places</h3>
+        </div>
+
+        <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            {% for place in top_places %}
+                <div class="glass-soft card-hover rounded-[26px] p-5 soft-border">
+                    <div class="mb-4 flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h4 class="truncate text-lg font-black tracking-tight text-slate-900">{{ place.name }}</h4>
+                            <p class="mt-1 text-sm text-slate-600">{{ place.get_category_display }}</p>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-xs font-black text-cyan-700">
+                            {{ place.published_tour_count }} tour{{ place.published_tour_count|pluralize }}
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 text-sm text-slate-600">
+                        {% if place.city or place.country %}
+                            <p>{{ place.city }}{% if place.city and place.country %}, {% endif %}{{ place.country }}</p>
+                        {% endif %}
+                        {% if place.address_line %}
+                            <p class="line-clamp-2">{{ place.address_line }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="glass rounded-[24px] p-6 text-sm text-slate-600">
+                    No places available.
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section id="tours" class="mx-auto max-w-7xl px-4 py-16 lg:px-6">
+        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+                <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Catalog</p>
+                <h3 class="section-title mt-2 text-3xl font-black">Latest published tours</h3>
+                <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
+                    Browse immersive properties, stores, halls and more.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                {% for value, label in category_choices %}
+                    <a href="?category={{ value }}"
+                       class="rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.15em] transition
+                       {% if selected_category == value %}
+                            border-cyan-300 bg-cyan-50 text-cyan-700
+                       {% else %}
+                            border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900
+                       {% endif %}">
+                        {{ label }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if latest_tours %}
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {% for tour in latest_tours %}
+                    {% url 'tour-preview-public' organization_slug=tour.organization.slug tour_id=tour.id as preview_url %}
+                    <article class="glass-soft card-hover overflow-hidden rounded-[28px] soft-border">
+                        <div class="tour-card-thumb relative aspect-[16/10] overflow-hidden bg-slate-100">
+                            {% if tour.ordered_scenes and tour.ordered_scenes.0.image_360_url %}
+                                <img src="{{ tour.ordered_scenes.0.image_360_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% elif tour.thumbnail_image_url %}
+                                <img src="{{ tour.thumbnail_image_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% elif tour.place.cover_image %}
+                                <img src="{{ tour.place.cover_image }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% else %}
+                                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-slate-500">
+                                    <span class="text-sm font-black tracking-[0.2em] uppercase">No Image</span>
+                                </div>
+                            {% endif %}
+
+                            <div class="card-image-overlay absolute inset-0"></div>
+
+                            {% if tour.is_featured %}
+                                <div class="absolute left-4 top-4 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+                                    Featured
+                                </div>
+                            {% endif %}
+
+                            <a href="{{ preview_url }}"
+                               class="tour-scene-badge absolute right-4 top-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-900 transition hover:-translate-y-0.5">
+                                Visit
+                            </a>
+                        </div>
+
+                        <div class="p-5">
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <span class="truncate text-xs font-black uppercase tracking-[0.20em] text-cyan-700">
+                                    {{ tour.organization.name }}
+                                </span>
+                                {% if tour.rating %}
+                                    <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
+                                        ★ {{ tour.rating }}
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <h4 class="text-xl font-black tracking-tight text-slate-900">{{ tour.title }}</h4>
+
+                            <p class="mt-2 line-clamp-3 text-sm leading-7 text-slate-600">
+                                {{ tour.description|default:"Immersive visit made for elegant client presentation." }}
+                            </p>
+
+                            <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+                                <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700">
+                                    <span class="block text-slate-500">Place</span>
+                                    <span class="mt-1 block font-bold">{{ tour.place.name }}</span>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700">
+                                    <span class="block text-slate-500">Scenes</span>
+                                    <span class="mt-1 block font-bold">{{ tour.scene_count }}</span>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700">
+                                    <span class="block text-slate-500">City</span>
+                                    <span class="mt-1 block font-bold">{{ tour.place.city|default:"—" }}</span>
+                                </div>
+                                <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700">
+                                    <span class="block text-slate-500">Views</span>
+                                    <span class="mt-1 block font-bold">{{ tour.view_count }}</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 flex items-center justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold text-slate-800">
+                                        {{ tour.place.get_category_display }}
+                                    </p>
+                                    {% if tour.price %}
+                                        <p class="truncate text-xs text-slate-500">Price: {{ tour.display_price }}</p>
+                                    {% endif %}
+                                </div>
+
+                                <a href="{{ preview_url }}"
+                                   class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110">
+                                    Start tour
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="glass rounded-[28px] p-10 text-center">
+                <h4 class="text-2xl font-black text-slate-900">No result found</h4>
+                <p class="mt-3 text-sm leading-7 text-slate-600">
+                    Try another keyword, category, or city.
+                </p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section id="organizations" class="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+        <div class="mb-8">
+            <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Brands</p>
+            <h3 class="section-title mt-2 text-3xl font-black">Organizations publishing tours</h3>
+        </div>
+
+        <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            {% for org in top_organizations %}
+                <div class="glass-soft card-hover rounded-[26px] p-5 soft-border">
+                    <div class="flex items-start gap-4">
+                        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-100 to-blue-100 text-lg font-black text-cyan-700">
+                            {{ org.name|slice:":1"|upper }}
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="truncate text-lg font-black tracking-tight text-slate-900">{{ org.name }}</h4>
+                            <p class="mt-1 text-sm text-slate-600">
+                                {{ org.published_tour_count }} tour{{ org.published_tour_count|pluralize }}
+                                ·
+                                {{ org.published_place_count }} place{{ org.published_place_count|pluralize }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="glass rounded-[24px] p-6 text-sm text-slate-600">
+                    No organization available.
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="mx-auto max-w-7xl px-4 py-16 lg:px-6">
+        <div class="relative overflow-hidden rounded-[36px] border border-white/70 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-50 p-8 shadow-premium lg:p-12">
+            <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl"></div>
+            <div class="absolute -bottom-16 left-0 h-48 w-48 rounded-full bg-blue-500/15 blur-3xl"></div>
+
+            <div class="relative max-w-3xl">
+                <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Professional presentation</p>
+                <h3 class="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+                    Give the client a bright, clean and premium virtual showcase
+                </h3>
+                <p class="mt-4 text-sm leading-8 text-slate-600 sm:text-base">
+                    Present stores, apartments, venues, and business spaces with a polished visual experience designed to inspire confidence and action.
+                </p>
+
+                <div class="mt-8 flex flex-wrap gap-4">
+                    <a href="#tours" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110">
+                        Browse tours
+                    </a>
+                    <a href="#featured" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                        View highlights
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="border-t border-slate-200/80 bg-white/70">
+        <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+            <p>© {% now "Y" %} Virtual Tours. Professional public showcase.</p>
+            <div class="flex flex-wrap gap-4">
+                <a href="#featured" class="transition hover:text-slate-900">Featured</a>
+                <a href="#places" class="transition hover:text-slate-900">Places</a>
+                <a href="#tours" class="transition hover:text-slate-900">Tours</a>
+                <a href="#organizations" class="transition hover:text-slate-900">Organizations</a>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module">
+        import * as THREE from "three";
+        import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+        import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
+        import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+        const canvas = document.getElementById("threeHeroCanvas");
+        const heroLoader = document.getElementById("heroLoader");
+
+    function hideLoader() {
+        heroLoader?.classList.add("is-hidden");
+    }
+
+    if (!canvas) {
+        hideLoader();
+        throw new Error("Canvas #threeHeroCanvas introuvable");
+    }
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0xeaf8ff, 12, 34);
+
+    const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+    });
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, canvas.parentElement.offsetHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const camera = new THREE.PerspectiveCamera(
+        35,
+        window.innerWidth / canvas.parentElement.offsetHeight,
+        0.1,
+        100
+    );
+    camera.position.set(0, 1.7, 7.6);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.enableZoom = false;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.42;
+    controls.minPolarAngle = Math.PI / 2.45;
+    controls.maxPolarAngle = Math.PI / 1.85;
+    controls.minAzimuthAngle = -0.55;
+    controls.maxAzimuthAngle = 0.55;
+    controls.target.set(0, 1.25, 0);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xe8fbff, 0x9dc3df, 1.15);
+    hemiLight.position.set(0, 14, 0);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+    keyLight.position.set(5, 8, 6);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 35;
+    keyLight.shadow.camera.left = -10;
+    keyLight.shadow.camera.right = 10;
+    keyLight.shadow.camera.top = 10;
+    keyLight.shadow.camera.bottom = -10;
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0x67e8f9, 1.05);
+    rimLight.position.set(-6, 4, -5);
+    scene.add(rimLight);
+
+    const fillLight = new THREE.PointLight(0xdff8ff, 1.4, 24, 2);
+    fillLight.position.set(0, 3.5, 4);
+    scene.add(fillLight);
+
+    const floor = new THREE.Mesh(
+        new THREE.CircleGeometry(10, 80),
+        new THREE.ShadowMaterial({
+            color: 0x79b9d9,
+            opacity: 0.17
+        })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.25;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const glow = new THREE.Mesh(
+        new THREE.CircleGeometry(4.8, 64),
+        new THREE.MeshBasicMaterial({
+            color: 0xb6f3ff,
+            transparent: true,
+            opacity: 0.18
+        })
+    );
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = -0.23;
+    scene.add(glow);
+
+    const modelRoot = new THREE.Group();
+    scene.add(modelRoot);
+
+    const clock = new THREE.Clock();
+    let mixer = null;
+    let loadedModel = null;
+
+    const MODEL_URL = "{% static 'dashboard/models/showroom.glb' %}";
+    {% comment %} const MODEL_URL = "{% static 'dashboard/models/masjidul_saari_gaafu_alifu_maldives.glb' %}"; {% endcomment %}
+    const HDR_URL = "{% static 'dashboard/hdr/harties_cliff_view_4k.exr' %}";
+
+    console.log("MODEL_URL =", MODEL_URL);
+    console.log("HDR_URL =", HDR_URL);
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+
+    new RGBELoader().load(
+        HDR_URL,
+        (hdrTexture) => {
+            const envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
+            scene.environment = envMap;
+            hdrTexture.dispose();
+            pmremGenerator.dispose();
+            console.log("HDR chargé");
+        },
+        undefined,
+        (error) => {
+            console.warn("Erreur chargement HDR:", error);
+        }
+    );
+
+    const gltfLoader = new GLTFLoader();
+
+    gltfLoader.load(
+        MODEL_URL,
+        (gltf) => {
+    console.log("GLB chargé avec succès", gltf);
+
+    loadedModel = gltf.scene;
+
+    loadedModel.traverse((child) => {
+        if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+
+            if (Array.isArray(child.material)) {
+                child.material.forEach((mat) => {
+                    if (!mat) return;
+                    mat.envMapIntensity = 1.45;
+                    mat.needsUpdate = true;
+                });
+            } else if (child.material) {
+                child.material.envMapIntensity = 1.45;
+                child.material.needsUpdate = true;
+            }
+        }
+    });
+
+    modelRoot.add(loadedModel);
+
+    const box = new THREE.Box3().setFromObject(loadedModel);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+
+    box.getSize(size);
+    box.getCenter(center);
+
+    loadedModel.position.x -= center.x;
+    loadedModel.position.y -= center.y;
+    loadedModel.position.z -= center.z;
+
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const scale = 4 / maxDim;
+    loadedModel.scale.setScalar(scale);
+
+    const newBox = new THREE.Box3().setFromObject(loadedModel);
+    const newCenter = new THREE.Vector3();
+    newBox.getCenter(newCenter);
+
+    loadedModel.position.x -= newCenter.x;
+    loadedModel.position.z -= newCenter.z;
+    loadedModel.position.y = 0.9;
+
+    camera.position.set(0, 1.8, 7);
+    controls.target.set(0, 1.2, 0);
+    controls.update();
+
+    hideLoader();
+},
+        (progress) => {
+            if (progress.total) {
+                const percent = Math.round((progress.loaded / progress.total) * 100);
+                console.log("Chargement GLB:", percent + "%");
+            }
+        },
+        (error) => {
+            console.error("Erreur chargement GLB:", error);
+
+            const fallback = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(1.35, 1),
+                new THREE.MeshPhysicalMaterial({
+                    color: 0xa4eeff,
+                    roughness: 0.08,
+                    metalness: 0.12,
+                    transmission: 0.4,
+                    transparent: true,
+                    opacity: 0.95,
+                    envMapIntensity: 1.5
+                })
+            );
+            fallback.position.set(0, 1.4, 0);
+            fallback.castShadow = true;
+            modelRoot.add(fallback);
+            loadedModel = fallback;
+
+            hideLoader();
+        }
+    );
+
+    let targetCameraX = 0;
+    let targetCameraY = 0;
+    let currentCameraX = 0;
+    let currentCameraY = 0;
+
+    window.addEventListener("mousemove", (e) => {
+        const x = (e.clientX / window.innerWidth) * 2 - 1;
+        const y = -(e.clientY / window.innerHeight) * 2 + 1;
+        targetCameraX = x * 0.22;
+        targetCameraY = y * 0.12;
+    });
+
+    window.addEventListener("touchmove", (e) => {
+        if (!e.touches.length) return;
+        const t = e.touches[0];
+        const x = (t.clientX / window.innerWidth) * 2 - 1;
+        const y = -(t.clientY / window.innerHeight) * 2 + 1;
+        targetCameraX = x * 0.12;
+        targetCameraY = y * 0.08;
+    }, { passive: true });
+
+    function resizeRenderer() {
+        const width = window.innerWidth;
+        const height = canvas.parentElement.offsetHeight;
+        renderer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener("resize", resizeRenderer);
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        const delta = clock.getDelta();
+        const elapsed = clock.getElapsedTime();
+
+        controls.update();
+
+        currentCameraX += (targetCameraX - currentCameraX) * 0.03;
+        currentCameraY += (targetCameraY - currentCameraY) * 0.03;
+
+        camera.position.x = currentCameraX;
+        camera.position.y = 1.7 + currentCameraY;
+
+        if (loadedModel) {
+            loadedModel.position.y = 0.92 + Math.sin(elapsed * 1.12) * 0.08;
+            loadedModel.rotation.y += 0.0022;
+        }
+
+        glow.material.opacity = 0.13 + Math.sin(elapsed * 1.7) * 0.03;
+
+        if (mixer) mixer.update(delta);
+
+        renderer.render(scene, camera);
+    }
+
+    resizeRenderer();
+    animate();
+
+    setTimeout(hideLoader, 2200);
+</script>
+</body>
+</html>

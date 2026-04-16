@@ -72,8 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const MAX_FOV = degToRad(118);
 
     const EXTRA_WIDE_OFFSET = degToRad(12);
-    const INITIAL_START_OFFSET = degToRad(20);
-    const SCENE_SWITCH_START_OFFSET = degToRad(18);
+    const INITIAL_START_OFFSET = degToRad(16);
+    const SCENE_SWITCH_START_OFFSET = degToRad(14);
 
     const MOBILE_EXTRA_WIDE_OFFSET = degToRad(4);
     const MOBILE_PINCH_SENSITIVITY = 0.0045;
@@ -194,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
         previewToast.classList.add("toast-show");
         toastTimer = setTimeout(() => {
             previewToast.classList.remove("toast-show");
-        }, 1800);
+        }, 1700);
     }
 
     function syncZoomButtonsState() {
@@ -217,11 +217,13 @@ document.addEventListener("DOMContentLoaded", () => {
     function openSceneStack() {
         previewSceneRail?.classList.add("open");
         sceneStackToggle?.classList.add("open");
+        document.body.classList.add("scene-rail-open");
     }
 
     function closeSceneStack() {
         previewSceneRail?.classList.remove("open");
         sceneStackToggle?.classList.remove("open");
+        document.body.classList.remove("scene-rail-open");
     }
 
     function toggleSceneStack(event) {
@@ -236,6 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function closeInfoPanel() {
         previewInfoPanel?.classList.remove("open");
         previewInfoBackdrop?.classList.remove("open");
+        document.body.classList.remove("info-panel-open");
     }
 
     function openInfoPanel(hotspot) {
@@ -251,11 +254,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const phone = content.phone || "";
         const email = content.email || "";
         const whatsappNumber = content.whatsapp_number || "";
-        const whatsappMessage = content.whatsapp_message || "Bonjour";
+        const whatsappMessage = content.whatsapp_message || "Hello";
 
         previewInfoMedia.innerHTML = imageUrl
             ? `<img src="${imageUrl}" alt="${hotspot.title || hotspot.label || "Hotspot"}" class="info-media-image">`
-            : `<div class="info-media-empty">No image</div>`;
+            : `<div class="info-media-empty">Preview unavailable</div>`;
 
         previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
         previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
@@ -317,6 +320,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         previewInfoPanel.classList.add("open");
         previewInfoBackdrop?.classList.add("open");
+        document.body.classList.add("info-panel-open");
     }
 
     function stopAutorotate() {
@@ -369,6 +373,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function setFocusMode(enabled) {
         focusMode = !!enabled;
         document.body.classList.toggle("ui-hidden", focusMode);
+        document.body.classList.toggle("preview-focus-mode", focusMode);
         focusModeBtn?.classList.toggle("active", focusMode);
     }
 
@@ -579,19 +584,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     pitch: finalPitch,
                     fov: finalFov
                 },
-                { transitionDuration: 1900 }
+                { transitionDuration: 1600 }
             );
             syncZoomButtonsState();
-        }, 180);
+        }, 140);
 
         setTimeout(() => {
             previewIntroOverlay?.classList.add("is-hidden");
-        }, 900);
+            document.body.classList.add("preview-has-loaded");
+        }, 650);
 
         setTimeout(() => {
             previewViewer.classList.remove("is-cinematic-transition");
             syncZoomButtonsState();
-        }, 2200);
+        }, 1850);
     }
 
     function cinematicSwitchScene(targetScene, options = {}) {
@@ -657,10 +663,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         pitch: endPitch,
                         fov: finalFov
                     },
-                    { transitionDuration: 1450 }
+                    { transitionDuration: 1250 }
                 );
             }
-        }, 120);
+        }, 100);
 
         setTimeout(() => {
             outgoingEl.classList.remove("active-layer", "layer-outgoing");
@@ -676,7 +682,7 @@ document.addEventListener("DOMContentLoaded", () => {
             isTransitioning = false;
             updateAllViewerSizes();
             syncZoomButtonsState();
-        }, 1780);
+        }, 1550);
     }
 
     async function navigateToScene(targetSceneId, hotspot) {
@@ -694,8 +700,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const hotspotPitch = Number(hotspot.pitch ?? currentView.pitch());
 
         const currentFov = currentView.fov();
-        const preSwitchFov = clamp(currentFov + degToRad(10), MIN_FOV, MAX_FOV);
-        const preSwitchFov2 = clamp(currentFov + degToRad(18), MIN_FOV, MAX_FOV);
+        const preSwitchFov = clamp(currentFov + degToRad(8), MIN_FOV, MAX_FOV);
+        const preSwitchFov2 = clamp(currentFov + degToRad(14), MIN_FOV, MAX_FOV);
 
         currentView.setParameters(
             {
@@ -703,7 +709,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 pitch: hotspotPitch,
                 fov: preSwitchFov
             },
-            { transitionDuration: 320 }
+            { transitionDuration: 280 }
         );
 
         setTimeout(() => {
@@ -713,20 +719,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     pitch: hotspotPitch,
                     fov: preSwitchFov2
                 },
-                { transitionDuration: 520 }
+                { transitionDuration: 420 }
             );
             syncZoomButtonsState();
-        }, 180);
+        }, 140);
 
         setTimeout(() => {
             cinematicSwitchScene(targetScene, {
                 fromYaw: hotspotYaw,
                 fromPitch: hotspotPitch
             });
-        }, 620);
+        }, 460);
     }
 
-    function zoomToFov(nextFov, duration = 240) {
+    function zoomToFov(nextFov, duration = 220) {
         const view = getCurrentView();
         if (!view) return;
 
@@ -738,7 +744,7 @@ document.addEventListener("DOMContentLoaded", () => {
         syncZoomButtonsState();
     }
 
-    function zoomBy(deltaDeg, duration = 240) {
+    function zoomBy(deltaDeg, duration = 220) {
         const view = getCurrentView();
         if (!view) return;
 
@@ -759,7 +765,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 pitch: degToRad(scene.pitch_default || 0),
                 fov: getSceneFinalFov(scene)
             },
-            { transitionDuration: 560 }
+            { transitionDuration: 480 }
         );
 
         syncZoomButtonsState();
@@ -782,16 +788,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const currentView = getCurrentView();
         if (currentView) {
-            const widenedFov = clamp(currentView.fov() + degToRad(16), MIN_FOV, MAX_FOV);
+            const widenedFov = clamp(currentView.fov() + degToRad(12), MIN_FOV, MAX_FOV);
             currentView.setParameters(
                 { fov: widenedFov },
-                { transitionDuration: 360 }
+                { transitionDuration: 260 }
             );
             syncZoomButtonsState();
 
             setTimeout(() => {
                 cinematicSwitchScene(targetScene);
-            }, 260);
+            }, 180);
         } else {
             cinematicSwitchScene(targetScene);
         }
@@ -814,9 +820,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             await navigator.clipboard.writeText(shareUrl);
-            showToast("Lien copié");
+            showToast("Link copied");
         } catch (_) {
-            showToast("Impossible de partager");
+            showToast("Share unavailable");
         }
     }
 
@@ -936,7 +942,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             updateAllViewerSizes();
             syncZoomButtonsState();
-        }, 200);
+        }, 180);
     });
 
     document.addEventListener("keydown", (event) => {

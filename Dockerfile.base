@@ -1,0 +1,43 @@
+# ===== ÉTAPE 1 : Builder (compilation des dépendances) =====
+FROM python:3.9-slim as builder
+
+# Installer TOUTES les dépendances système nécessaires
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Compilation Python
+    gcc \
+    python3-dev \
+    build-essential \
+    pkg-config \
+    # Cairo/pycairo (pour xhtml2pdf, weasyprint)
+    libcairo2-dev \
+    libffi-dev \
+    libpq-dev \
+    # Autres libs courantes
+    libjpeg-dev \
+    zlib1g-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    freetype-dev \
+    libfreetype6-dev \
+    # Utils
+    curl \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+WORKDIR /app
+
+# Créer un virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Upgrade pip et installer wheel
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Copier uniquement requirements.txt pour optimiser le cache
+COPY requirements.txt .
+
+# Installer les dépendances Python dans le venv
+# Utilisation du cache BuildKit pour accélérer les builds suivants
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -r requirements.txt

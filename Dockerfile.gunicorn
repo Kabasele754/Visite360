@@ -1,0 +1,22 @@
+# Utilisez une image de base appropriée pour Python
+FROM python:3.9.6-alpine
+ENV PYTHONUNBUFFERED=1
+RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev
+
+# Définissez le répertoire de travail dans le conteneur
+WORKDIR /app
+
+# Copiez les fichiers requis dans le conteneur
+COPY requirements.txt /app/
+
+# Installez les dépendances
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiez le reste du code source dans le conteneur
+COPY . /app/
+
+# Exposez le port sur lequel Gunicorn s'exécutera (par défaut : 8000)
+EXPOSE 8000
+
+# Commande pour lancer Gunicorn
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

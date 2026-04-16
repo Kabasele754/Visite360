@@ -1,0 +1,766 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact | Intelligent Virtual Tours</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    boxShadow: {
+                        premium: "0 20px 60px rgba(15, 23, 42, 0.14)",
+                        soft: "0 14px 34px rgba(15, 23, 42, 0.08)",
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                    },
+                },
+            },
+        };
+    </script>
+
+    <style>
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(103,232,249,0.22), transparent 26%),
+                radial-gradient(circle at top right, rgba(59,130,246,0.18), transparent 22%),
+                linear-gradient(180deg, #f8fbff 0%, #eef6ff 42%, #ffffff 100%);
+            color: #0f172a;
+        }
+
+        .glass-soft {
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255,255,255,0.72);
+            box-shadow: 0 18px 50px rgba(15,23,42,0.08);
+        }
+
+        .soft-border {
+            border: 1px solid rgba(148,163,184,0.14);
+        }
+
+        .page-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 120;
+            padding: 14px 14px 0;
+        }
+
+        .header-shell {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 12px 14px;
+            border-radius: 28px;
+            border: 1px solid rgba(255,255,255,0.48);
+            background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.18));
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 22px 60px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.42);
+        }
+
+        .nav-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 16px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 900;
+            color: #0f172a;
+            background: rgba(255,255,255,0.34);
+            border: 1px solid rgba(255,255,255,0.42);
+            transition: .2s ease;
+        }
+
+        .nav-pill:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,0.58);
+            box-shadow: 0 14px 28px rgba(15,23,42,0.08);
+        }
+
+        .nav-pill.active {
+            color: #083344;
+            background: linear-gradient(135deg, rgba(34,211,238,0.26), rgba(59,130,246,0.18));
+            border-color: rgba(103,232,249,0.52);
+        }
+
+        .header-cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 46px;
+            padding: 0 18px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(34,211,238,0.92), rgba(59,130,246,0.86));
+            color: #082f49;
+            font-size: 13px;
+            font-weight: 900;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.58);
+            box-shadow: 0 18px 35px rgba(59,130,246,0.16);
+            transition: .2s ease;
+        }
+
+        .header-cta:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.04);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 46px;
+            height: 46px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.52);
+            background: rgba(255,255,255,0.28);
+            color: #0f172a;
+            box-shadow: 0 14px 30px rgba(15,23,42,0.10);
+            cursor: pointer;
+        }
+
+        .menu-backdrop,
+        .contact-backdrop {
+            position: fixed;
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: .22s ease;
+            background: rgba(15,23,42,0.26);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+
+        .menu-backdrop { z-index: 130; }
+        .contact-backdrop { z-index: 149; }
+
+        .menu-backdrop.show,
+        .contact-backdrop.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mobile-menu-panel {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            bottom: 14px;
+            width: min(340px, calc(100vw - 28px));
+            z-index: 140;
+            transform: translateX(calc(100% + 24px));
+            transition: transform .28s cubic-bezier(.22,1,.36,1);
+            border-radius: 30px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.90);
+            border: 1px solid rgba(255,255,255,0.80);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            box-shadow: 0 28px 80px rgba(15,23,42,0.20);
+        }
+
+        .mobile-menu-panel.open {
+            transform: translateX(0);
+        }
+
+        .mobile-menu-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 18px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 900;
+            background: rgba(255,255,255,0.54);
+            border: 1px solid rgba(255,255,255,0.72);
+            transition: .18s ease;
+        }
+
+        .hero-grid {
+            background:
+                radial-gradient(circle at 15% 15%, rgba(34,211,238,0.20), transparent 24%),
+                radial-gradient(circle at 85% 20%, rgba(59,130,246,0.16), transparent 24%),
+                linear-gradient(135deg, #0f172a 0%, #13233f 48%, #12314d 100%);
+        }
+
+        .section-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #cffafe;
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+
+        .contact-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 150;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: .24s ease;
+        }
+
+        .contact-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .contact-modal-card {
+            width: min(760px, 100%);
+            max-height: min(90vh, 900px);
+            overflow-y: auto;
+            border-radius: 32px;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(255,255,255,0.85);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 30px 80px rgba(15,23,42,0.20);
+            transform: translateY(18px) scale(.98);
+            transition: .24s ease;
+        }
+
+        .contact-modal.show .contact-modal-card {
+            transform: translateY(0) scale(1);
+        }
+
+        .field {
+            width: 100%;
+            min-height: 54px;
+            border-radius: 18px;
+            border: 1px solid rgba(148,163,184,0.20);
+            background: rgba(255,255,255,0.88);
+            padding: 0 16px;
+            font-size: 14px;
+            color: #0f172a;
+            outline: none;
+            transition: .18s ease;
+        }
+
+        textarea.field {
+            min-height: 140px;
+            padding: 14px 16px;
+            resize: vertical;
+        }
+
+        .field:focus {
+            border-color: rgba(34,211,238,0.58);
+            box-shadow: 0 0 0 4px rgba(34,211,238,0.12);
+        }
+
+        @media (max-width: 768px) {
+            .desktop-nav,
+            .desktop-cta {
+                display: none !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-flex;
+            }
+        }
+    </style>
+ <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
+</head>
+
+{% include 'public/partials/loader_3d_global.html' %}
+
+<script src="{% static 'public/js/loader_3d_global.js' %}"></script>
+<body class="min-h-screen antialiased">
+    <div id="menuBackdrop" class="menu-backdrop"></div>
+    <div id="contactBackdrop" class="contact-backdrop"></div>
+
+    <header class="page-header">
+        <div class="header-shell">
+            <div class="flex items-center justify-between gap-4">
+                <a href="{% url 'public_home' %}" class="flex min-w-0 items-center gap-3 text-slate-900 no-underline">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-[20px] bg-gradient-to-br from-cyan-300 via-sky-300 to-blue-500 text-slate-950 shadow-premium">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15A2.25 2.25 0 002.25 6.75m19.5 0v.243a2.25 2.25 0 01-.97 1.854l-7.5 5.25a2.25 2.25 0 01-2.56 0l-7.5-5.25a2.25 2.25 0 01-.97-1.854V6.75" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="truncate text-[11px] font-black uppercase tracking-[0.28em] text-cyan-700">Virtual Tours</p>
+                        <h1 class="truncate text-lg font-black tracking-tight text-slate-900">Contact</h1>
+                    </div>
+                </a>
+
+                <nav class="desktop-nav hidden items-center gap-2 md:flex">
+                    <a href="{% url 'public_home' %}" class="nav-pill">Home</a>
+                    <a href="{% url 'public_about' %}" class="nav-pill">About</a>
+                    <a href="{% url 'public_services' %}" class="nav-pill">Services</a>
+                    <a href="{% url 'public_contact' %}" class="nav-pill active">Contact</a>
+                </nav>
+
+                <div class="desktop-cta hidden items-center gap-2 md:flex">
+                    <button type="button" class="header-cta" data-open-contact data-contact-topic="General inquiry">
+                        Open contact form
+                    </button>
+                </div>
+
+                <button id="openMenuBtn" type="button" class="mobile-menu-btn md:hidden" aria-label="Open menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <aside id="mobileMenuPanel" class="mobile-menu-panel md:hidden">
+        <div class="flex h-full flex-col">
+            <div class="flex items-center justify-between gap-3 border-b border-white/70 px-5 py-5">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Navigation</p>
+                    <h2 class="mt-1 text-xl font-black tracking-tight text-slate-900">Contact us</h2>
+                </div>
+                <button id="closeMenuBtn" type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/80 text-slate-700">✕</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5">
+                <div class="space-y-3">
+                    <a href="{% url 'public_home' %}" class="mobile-menu-link" data-menu-link><span>Home</span><span>→</span></a>
+                    <a href="{% url 'public_about' %}" class="mobile-menu-link" data-menu-link><span>About</span><span>→</span></a>
+                    <a href="{% url 'public_services' %}" class="mobile-menu-link" data-menu-link><span>Services</span><span>→</span></a>
+                    <a href="{% url 'public_contact' %}" class="mobile-menu-link" data-menu-link><span>Contact</span><span>→</span></a>
+                </div>
+
+                <div class="mt-6 rounded-[28px] border border-white/80 bg-white/64 p-5">
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Get in touch</p>
+                    <h3 class="mt-2 text-xl font-black tracking-tight text-slate-900">Let’s talk about your next immersive experience</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">
+                        Open the form, share your project, and let’s explore how to make your space more engaging and conversion-ready.
+                    </p>
+                    <button type="button" class="mt-4 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-5 py-3 text-sm font-black text-slate-950" data-open-contact data-contact-topic="General inquiry">
+                        Start your request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main>
+        <section class="px-4 pt-32 pb-8 lg:px-6 lg:pt-36">
+            <div class="hero-grid mx-auto max-w-7xl overflow-hidden rounded-[38px] border border-white/14 shadow-premium">
+                <div class="grid gap-10 px-6 py-12 md:px-10 lg:grid-cols-[1.1fr_0.9fr] lg:px-14 lg:py-16">
+                    <div class="text-white">
+                        <div class="section-chip">
+                            <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.8)]"></span>
+                            Contact us
+                        </div>
+                        <h2 class="mt-6 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+                            Let’s turn your space into a premium digital experience
+                        </h2>
+                        <p class="mt-5 max-w-2xl text-base leading-8 text-slate-100 sm:text-lg">
+                            Whether you want to showcase a property, venue, showroom, or destination, we are ready to help you create a more engaging, modern, and business-ready virtual presence.
+                        </p>
+
+                        <div class="mt-8 flex flex-wrap gap-4">
+                            <button type="button" class="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-900 shadow-premium transition hover:-translate-y-0.5 hover:brightness-105" data-open-contact data-contact-topic="General inquiry">
+                                Open the form
+                            </button>
+                            <a href="mailto:hello@virtualtours.com" class="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/16">
+                                Email us directly
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-4 self-center">
+                        <div class="glass-soft rounded-[30px] p-6">
+                            <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Fast response</p>
+                            <h3 class="mt-3 text-2xl font-black tracking-tight text-slate-900">Tell us about your project</h3>
+                            <p class="mt-3 text-sm leading-7 text-slate-600">
+                                Share your needs, goals, and type of space. We will help you identify the right immersive experience for your audience.
+                            </p>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="glass-soft rounded-[28px] p-5 text-center">
+                                <div class="text-3xl font-black text-slate-900">Email</div>
+                                <div class="mt-2 text-sm font-semibold text-slate-600">hello@virtualtours.com</div>
+                            </div>
+                            <div class="glass-soft rounded-[28px] p-5 text-center">
+                                <div class="text-3xl font-black text-slate-900">Call</div>
+                                <div class="mt-2 text-sm font-semibold text-slate-600">+1 (206) 643-8123</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mx-auto max-w-7xl px-4 py-8 lg:px-6 lg:py-12">
+            {% if messages %}
+                <div class="mb-8 space-y-3">
+                    {% for message in messages %}
+                        <div class="rounded-[22px] border px-5 py-4 text-sm font-semibold {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-700{% else %}border-amber-200 bg-amber-50 text-amber-700{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if form.errors %}
+                <div class="mb-8 rounded-[22px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                    <strong>Please fix the following errors:</strong>
+                    <ul class="mt-2 list-disc pl-5">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="grid gap-5 md:grid-cols-3">
+                <article class="glass-soft rounded-[28px] p-6 soft-border">
+                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">General inquiries</p>
+                    <h3 class="mt-3 text-2xl font-black tracking-tight text-slate-900">Ask about your project</h3>
+                    <p class="mt-3 text-sm leading-7 text-slate-600">Tell us what you want to present and what kind of audience you want to attract.</p>
+                    <button type="button" class="mt-5 inline-flex rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white" data-open-contact data-contact-topic="General inquiry">
+                        Contact us
+                    </button>
+                </article>
+
+                <article class="glass-soft rounded-[28px] p-6 soft-border">
+                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Consultation</p>
+                    <h3 class="mt-3 text-2xl font-black tracking-tight text-slate-900">Request a discovery call</h3>
+                    <p class="mt-3 text-sm leading-7 text-slate-600">Let’s discuss your goals and find the best immersive format for your brand, venue, or property.</p>
+                    <button type="button" class="mt-5 inline-flex rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white" data-open-contact data-contact-topic="Discovery call">
+                        Book a call
+                    </button>
+                </article>
+
+                <article class="glass-soft rounded-[28px] p-6 soft-border">
+                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Custom request</p>
+                    <h3 class="mt-3 text-2xl font-black tracking-tight text-slate-900">Need something specific?</h3>
+                    <p class="mt-3 text-sm leading-7 text-slate-600">Share your vision and we will help shape a custom experience around your space and your business goals.</p>
+                    <button type="button" class="mt-5 inline-flex rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white" data-open-contact data-contact-topic="Custom request">
+                        Send request
+                    </button>
+                </article>
+            </div>
+        </section>
+
+        <section class="mx-auto max-w-7xl px-4 py-8 lg:px-6 lg:py-12">
+            <div class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+                <div class="glass-soft rounded-[34px] p-8 soft-border lg:p-10">
+                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Send a message</p>
+                    <h3 class="mt-3 text-3xl font-black tracking-tight text-slate-900">Prefer to contact us directly from the page?</h3>
+                    <p class="mt-4 text-base leading-8 text-slate-600">
+                        Fill out the form below and send us your project details. This form uses the same Django view as the modal form, so everything stays connected.
+                    </p>
+                    <div class="mt-6 space-y-4 text-sm leading-7 text-slate-700">
+                        <p>• Ideal for property showcases, venues, showrooms, and branded spaces</p>
+                        <p>• Perfect if you want a quick inquiry form visible on the page</p>
+                        <p>• Visitors can still use the popup modal if they prefer</p>
+                    </div>
+                </div>
+
+                <div class="glass-soft rounded-[34px] p-8 soft-border lg:p-10">
+                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Contact form</p>
+                    <h3 class="mt-3 text-3xl font-black tracking-tight text-slate-900">Send your request</h3>
+
+                    <form method="post" action="{% url 'public_contact' %}" class="mt-6 space-y-5">
+                        {% csrf_token %}
+
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-slate-900">Full name</label>
+                                <input type="text" name="full_name" class="field" placeholder="Your full name" required>
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-slate-900">Email address</label>
+                                <input type="email" name="email" class="field" placeholder="you@example.com" required>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-slate-900">Phone number</label>
+                                <input type="text" name="phone" class="field" placeholder="+1 234 567 890">
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-bold text-slate-900">Company or brand name</label>
+                                <input type="text" name="company_name" class="field" placeholder="Company or brand name">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-slate-900">What service do you need?</label>
+                            <select name="service_interest" class="field" required>
+                                <option value="">Select a service</option>
+                                <option value="virtual_tour">360° Virtual Tour</option>
+                                <option value="hotspots">Interactive Hotspots</option>
+                                <option value="showcase">Property / Venue Showcase</option>
+                                <option value="lead_capture">Lead Capture & Booking</option>
+                                <option value="branding">Branded Presentation</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-slate-900">Subject</label>
+                            <input type="text" name="subject" class="field" placeholder="Tell us what you need" required>
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-slate-900">Message</label>
+                            <textarea name="message" class="field" placeholder="Describe your project, space, or goals..." required></textarea>
+                        </div>
+
+                        <div class="flex flex-wrap gap-4 pt-2">
+                            <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-4 text-sm font-black text-slate-950">
+                                Send from page
+                            </button>
+                            <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700" data-open-contact data-contact-topic="General inquiry">
+                                Open modal instead
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="contactModal" class="contact-modal" aria-hidden="true">
+        <div class="contact-modal-card">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-6 sm:px-8">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Contact form</p>
+                    <h3 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Tell us about your project</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">Fill out the form and we will get back to you as soon as possible.</p>
+                </div>
+                <button type="button" id="closeContactModalBtn" class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-soft">✕</button>
+            </div>
+
+            <form method="post" action="{% url 'public_contact' %}" class="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
+                {% csrf_token %}
+                <input type="hidden" name="subject" id="contactTopicField" value="General inquiry">
+
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-slate-900">Full name</label>
+                        <input type="text" name="full_name" id="contactNameField" class="field" placeholder="Your full name" required>
+                    </div>
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-slate-900">Email address</label>
+                        <input type="email" name="email" class="field" placeholder="you@example.com" required>
+                    </div>
+                </div>
+
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-slate-900">Phone number</label>
+                        <input type="text" name="phone" class="field" placeholder="+1 234 567 890">
+                    </div>
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-slate-900">Company or brand name</label>
+                        <input type="text" name="company_name" class="field" placeholder="Company or brand name">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-bold text-slate-900">What service do you need?</label>
+                   <select name="service_interest" class="field" required>
+    <option value="">Select a service</option>
+    <option value="virtual_tour">360° Virtual Tour</option>
+    <option value="hotspots">Interactive Hotspots</option>
+    <option value="showcase">Property / Venue Showcase</option>
+    <option value="lead_capture">Lead Capture & Booking</option>
+    <option value="branding">Branded Presentation</option>
+    <option value="other">Other</option>
+</select>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-bold text-slate-900">Message</label>
+                    <textarea name="message" class="field" placeholder="Describe your project, space, or goals..." required></textarea>
+                </div>
+
+                <div class="flex flex-wrap gap-4 pt-2">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-4 text-sm font-black text-slate-950">
+                        Send message
+                    </button>
+                    <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700" data-close-contact>
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="mx-auto max-w-7xl px-4 py-10 text-sm text-slate-500 lg:px-6">
+        <div class="flex flex-col gap-3 border-t border-slate-200/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p>© {% now "Y" %} Virtual Tours. Contact us to build your next immersive experience.</p>
+            <div class="flex flex-wrap gap-4">
+                <a href="{% url 'public_about' %}" class="transition hover:text-slate-900">About</a>
+                <a href="{% url 'public_services' %}" class="transition hover:text-slate-900">Services</a>
+                <a href="{% url 'public_contact' %}" class="transition hover:text-slate-900">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const body = document.body;
+            const openMenuBtn = document.getElementById("openMenuBtn");
+            const closeMenuBtn = document.getElementById("closeMenuBtn");
+            const menuBackdrop = document.getElementById("menuBackdrop");
+            const mobileMenuPanel = document.getElementById("mobileMenuPanel");
+
+            const contactModal = document.getElementById("contactModal");
+            const contactBackdrop = document.getElementById("contactBackdrop");
+            const closeContactModalBtn = document.getElementById("closeContactModalBtn");
+            const contactTopicField = document.getElementById("contactTopicField");
+            const contactNameField = document.getElementById("contactNameField");
+
+            function lockBody() {
+                body.classList.add("overflow-hidden");
+            }
+
+            function unlockBody() {
+                const menuOpen = mobileMenuPanel && mobileMenuPanel.classList.contains("open");
+                const modalOpen = contactModal && contactModal.classList.contains("show");
+                if (!menuOpen && !modalOpen) {
+                    body.classList.remove("overflow-hidden");
+                }
+            }
+
+            function setMobileMenuOpen(isOpen) {
+                if (!menuBackdrop || !mobileMenuPanel) return;
+
+                if (isOpen) {
+                    menuBackdrop.classList.add("show");
+                    mobileMenuPanel.classList.add("open");
+                    lockBody();
+                } else {
+                    menuBackdrop.classList.remove("show");
+                    mobileMenuPanel.classList.remove("open");
+                    unlockBody();
+                }
+            }
+
+            function openContactModal(topic) {
+                if (!contactModal || !contactBackdrop) return;
+
+                contactModal.classList.add("show");
+                contactBackdrop.classList.add("show");
+                contactModal.setAttribute("aria-hidden", "false");
+
+                if (contactTopicField) {
+                    contactTopicField.value = topic || "General inquiry";
+                }
+
+                lockBody();
+
+                window.setTimeout(function () {
+                    if (contactNameField) contactNameField.focus();
+                }, 120);
+            }
+
+            function closeContactModal() {
+                if (!contactModal || !contactBackdrop) return;
+
+                contactModal.classList.remove("show");
+                contactBackdrop.classList.remove("show");
+                contactModal.setAttribute("aria-hidden", "true");
+                unlockBody();
+            }
+
+            if (openMenuBtn) {
+                openMenuBtn.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMobileMenuOpen(true);
+                });
+            }
+
+            if (closeMenuBtn) {
+                closeMenuBtn.addEventListener("click", function () {
+                    setMobileMenuOpen(false);
+                });
+            }
+
+            if (menuBackdrop) {
+                menuBackdrop.addEventListener("click", function () {
+                    setMobileMenuOpen(false);
+                });
+            }
+
+            document.querySelectorAll("[data-menu-link]").forEach(function (link) {
+                link.addEventListener("click", function () {
+                    setMobileMenuOpen(false);
+                });
+            });
+
+            document.querySelectorAll("[data-open-contact]").forEach(function (button) {
+                button.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    const topic = button.getAttribute("data-contact-topic") || "General inquiry";
+                    setMobileMenuOpen(false);
+                    openContactModal(topic);
+                });
+            });
+
+            document.querySelectorAll("[data-close-contact]").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    closeContactModal();
+                });
+            });
+
+            if (closeContactModalBtn) {
+                closeContactModalBtn.addEventListener("click", function () {
+                    closeContactModal();
+                });
+            }
+
+            if (contactBackdrop) {
+                contactBackdrop.addEventListener("click", function () {
+                    closeContactModal();
+                });
+            }
+
+            window.addEventListener("keydown", function (event) {
+                if (event.key === "Escape") {
+                    if (contactModal && contactModal.classList.contains("show")) {
+                        closeContactModal();
+                    } else if (mobileMenuPanel && mobileMenuPanel.classList.contains("open")) {
+                        setMobileMenuOpen(false);
+                    }
+                }
+            });
+
+            window.addEventListener("resize", function () {
+                if (window.innerWidth >= 768) {
+                    setMobileMenuOpen(false);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

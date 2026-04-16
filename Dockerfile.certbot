@@ -1,0 +1,29 @@
+FROM certbot/certbot:latest
+
+# Installer les paquets nécessaires
+RUN apk update && \
+    apk add --no-cache curl bind-tools bash busybox
+
+# Créer un volume pour le répertoire webroot
+VOLUME ["/var/www/certbot"]
+
+# Commande pour générer les certificats initiaux
+CMD ["certbot", "certonly", "--nginx", "-d", "s4e-elevatai.com", "-d", "www.s4e-elevatai.com", "-d", "pgadmin.s4e-elevatai.com", "-d", "www.pgadmin.s4e-elevatai.com", "--agree-tos", "--webroot", "-w", "/var/www/certbot"]
+
+
+# FROM certbot/certbot
+
+# # Installer les paquets nécessaires
+# RUN apk update && \
+#     apk add --no-cache curl bind-tools bash busybox
+
+# # Créer un volume pour le répertoire webroot
+# VOLUME ["/var/www/certbot"]
+
+# # Commande pour générer les certificats initiaux
+# CMD ["certonly", "--webroot", "-w", "/var/www/certbot", \
+#      "-d", "trustmysecurity.com", \
+#      "-d", "www.trustmysecurity.com", \
+#      "-d", "pgadmin.trustmysecurity.com", \
+#      "-d", "www.pgadmin.trustmysecurity.com", \
+#      "--agree-tos", "--email", "pepexykabasele@email.com", "--non-interactive"]
