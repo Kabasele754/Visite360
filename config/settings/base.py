@@ -7,7 +7,6 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 SECRET_KEY = config("SECRET_KEY", default="unsafe-dev-key")
 DEBUG = config("DEBUG", default=True, cast=bool)
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="127.0.0.1,localhost", cast=Csv())
 
 INSTALLED_APPS = [
     'channels',
@@ -115,11 +114,11 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:3000,http://localhost:8080",
-    cast=Csv(),
-)
+# CORS_ALLOWED_ORIGINS = config(
+#     "CORS_ALLOWED_ORIGINS",
+#     default="http://localhost:3000,http://localhost:8080",
+#     cast=Csv(),
+# )
 
 
 
