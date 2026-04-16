@@ -124,10 +124,10 @@ services:
       - ./nginx/openssl.cnf:/etc/ssl/openssl.cnf
     command: >
       certonly --webroot -w /var/www/certbot
-      -d s4e-elevatai.com
-      -d www.s4e-elevatai.com
-      -d pgadmin.s4e-elevatai.com
-      -d api.s4e-elevatai.com
+      -d s4e-elevateai.com
+      -d www.s4e-elevateai.com
+      -d pgadmin.s4e-elevateai.com
+      -d api.s4e-elevateai.com
       --email pepexykabasele@gmail.com
       --agree-tos
       --non-interactive
@@ -167,11 +167,11 @@ services:
     volumes:
       - dev-db-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: trustmedb
-      POSTGRES_USER: trustmeuser
+      POSTGRES_DB: elevateaidb
+      POSTGRES_USER: elevateaiuser
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trustmeuser -d trustmedb"]
+      test: ["CMD-SHELL", "pg_isready -U elevateaiuser -d elevateaidb -h localhost -p 5432"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -2,28 +2,28 @@ from .base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['62.171.163.171','www.s4e-elevatai.com','s4e-elevatai.com','api.s4e-elevatai.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['62.171.163.171','www.s4e-elevateai.com','s4e-elevateai.com','api.s4e-elevateai.com', 'localhost', '127.0.0.1']
 # Liste des domaines autorisés pour les connexions
 CSRF_TRUSTED_ORIGINS = [
-    "https://s4e-elevatai.com",
-    "https://www.s4e-elevatai.com",
-    'https://api.s4e-elevatai.com',
+    "https://s4e-elevateai.com",
+    "https://www.s4e-elevateai.com",
+    'https://api.s4e-elevateai.com',
 ]
 
 CORS_ALLOWED_ORIGINS = [
-  "https://s4e-elevatai.com",
-  "https://www.s4e-elevatai.com",
-  "https://admin.s4e-elevatai.com",
+  "https://s4e-elevateai.com",
+  "https://www.s4e-elevateai.com",
+  "https://admin.s4e-elevateai.com",
 ]
 
 
 # Configuration de la politique de sécurité des contenus (CSP)
 CSP_HEADER = {
-    'default-src': ["'self'", "s4e-elevatai.com"],
-    'script-src': ["'self'", "s4e-elevatai.com"],
-    'style-src': ["'self'", "s4e-elevatai.com"],
-    'img-src': ["'self'", "s4e-elevatai.com"],
-    'font-src': ["'self'", "s4e-elevatai.com"],  
+    'default-src': ["'self'", "s4e-elevateai.com"],
+    'script-src': ["'self'", "s4e-elevateai.com"],
+    'style-src': ["'self'", "s4e-elevateai.com"],
+    'img-src': ["'self'", "s4e-elevateai.com"],
+    'font-src': ["'self'", "s4e-elevateai.com"],  
 }
 
 import os
@@ -55,9 +55,9 @@ if DB_PASS_FILE and not DB_PASSWORD:
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'elevataidb'),
-        'USER': os.environ.get('DB_USER', 'elevataiuser'),
-        'PASSWORD': os.environ.get('DB_PASS', 'elevataipass'),
+        'NAME': os.environ.get('DB_NAME', 'elevateaidb'),
+        'USER': os.environ.get('DB_USER', 'elevateaiuser'),
+        'PASSWORD': os.environ.get('DB_PASS', 'elevateaipass'),
         'HOST': os.environ.get('DB_HOST', 'db'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
