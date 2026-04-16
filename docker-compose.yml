@@ -15,8 +15,8 @@ services:
       - .env
     environment:
       DB_HOST: db
-      DB_NAME: trustmedb
-      DB_USER: trustmeuser
+      DB_NAME: elevateaidb
+      DB_USER: elevateaiuser
       DB_PASS_FILE: /run/secrets/db_password
       DB_PORT: 5432
       DEBUG: 0
@@ -45,8 +45,8 @@ services:
       - .env
     environment:
       DB_HOST: db
-      DB_NAME: trustmedb
-      DB_USER: trustmeuser
+      DB_NAME: elevateaidb
+      DB_USER: elevateaiuser
       DB_PASS_FILE: /run/secrets/db_password
       DB_PORT: 5432
       DEBUG: 0
@@ -75,8 +75,8 @@ services:
       - .env
     environment:
       DB_HOST: db
-      DB_NAME: trustmedb
-      DB_USER: trustmeuser
+      DB_NAME: elevateaidb
+      DB_USER: elevateaiuser
       DB_PASS_FILE: /run/secrets/db_password
       DB_PORT: 5432
       DEBUG: 0
@@ -110,7 +110,10 @@ services:
       - ./certbot/var:/var/lib/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
-      - django
+      django:
+        condition: service_started
+      pgadmin:
+        condition: service_started
     networks:
       - my_network
 
@@ -212,4 +215,3 @@ secrets:
     file: ./secrets/db_password.txt
 
 
-    
