@@ -176,7 +176,8 @@ services:
       DJANGO_SETTINGS_MODULE: config.settings.prod
       POSTGRES_DB: elevateaidb
       POSTGRES_USER: elevateaiuser
-      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_PASSWORD: elevateaipass
+      # POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U elevateaiuser -d elevateaidb -h localhost -p 5432"]
       interval: 10s
