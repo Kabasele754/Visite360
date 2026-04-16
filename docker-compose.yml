@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: trustme_app
+    container_name: visite360_app
     restart: unless-stopped
     command: >
       sh -c "daphne -b 0.0.0.0 -p 8000 config.asgi:application"
@@ -37,7 +37,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: trustme_celery_worker
+    container_name: visite360_celery_worker
     restart: unless-stopped
     command: >
       sh -c "celery -A config worker -l info"
@@ -67,7 +67,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: trustme_celery_beat
+    container_name: visite360_celery_beat
     restart: unless-stopped
     command: >
       sh -c "celery -A config beat -l info"
@@ -97,7 +97,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile.nginx
-    container_name: trustme_nginx
+    container_name: visite360_nginx
     ports:
       - "80:80"
       - "443:443"
@@ -116,7 +116,7 @@ services:
 
   certbot:
     image: certbot/certbot
-    container_name: trustme_certbot
+    container_name: visite360_certbot
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
@@ -136,7 +136,7 @@ services:
 
   certbot-renew:
     image: certbot/certbot
-    container_name: trustme_certbot_renew
+    container_name: visite360_certbot_renew
     restart: unless-stopped
     volumes:
       - certbot-etc:/etc/letsencrypt
@@ -148,7 +148,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: trustme_redis
+    container_name: visite360_redis
     restart: unless-stopped
     volumes:
       - redis-data:/data
@@ -162,7 +162,7 @@ services:
 
   db:
     image: postgres:13-alpine
-    container_name: trustme_postgres_db
+    container_name: visite360_postgres_db
     restart: unless-stopped
     volumes:
       - dev-db-data:/var/lib/postgresql/data
