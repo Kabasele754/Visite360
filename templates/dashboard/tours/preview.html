@@ -947,9 +947,173 @@ body {
         max-height: none;
     }
 }
+@media (max-width: 768px) {
+    #previewControlDock {
+        position: absolute;
+        left: 50%;
+        bottom: max(8px, env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        z-index: 55;
+        width: calc(100% - 12px) !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    #previewControlDock .dock-scroll,
+    #previewControlDock #previewSceneRail,
+    #previewControlDock .scene-stack-panel {
+        pointer-events: auto;
+    }
+
+    #previewControlDock .dock-scroll {
+        width: 100%;
+        max-width: 100%;
+        padding: 6px;
+        border-radius: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: linear-gradient(
+            180deg,
+            rgba(7, 12, 20, 0.22),
+            rgba(7, 12, 20, 0.42)
+        ) !important;
+        backdrop-filter: blur(18px) saturate(160%);
+        -webkit-backdrop-filter: blur(18px) saturate(160%);
+        box-shadow:
+            0 14px 32px rgba(0, 0, 0, 0.22),
+            inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    #previewControlDock .dock-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    #previewControlDock .dock-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    #previewControlDock .dock-divider {
+        width: 1px;
+        height: 24px;
+        flex: 0 0 1px;
+        background: rgba(255,255,255,0.12);
+    }
+
+    #previewControlDock .control-btn,
+    #previewControlDock .scene-stack-toggle-inline {
+        min-width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.10);
+        background: rgba(255,255,255,0.06);
+        color: #fff;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    #previewControlDock .scene-stack-toggle-inline {
+        min-width: 78px;
+        padding: 0 8px;
+    }
+
+    /* PANEL DES SCENES : CENTRÉ ET PROPRE */
+    #previewSceneRail,
+    #previewControlDock .scene-stack-panel {
+        position: absolute !important;
+        left: 50% !important;
+        right: auto !important;
+        bottom: calc(100% + 8px) !important;
+        width: min(420px, calc(100vw - 16px)) !important;
+        max-width: calc(100vw - 16px) !important;
+        margin: 0 !important;
+        transform: translateX(-50%) translateY(12px) !important;
+        transform-origin: bottom center !important;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        z-index: 56;
+        transition:
+            opacity 0.22s ease,
+            transform 0.22s ease,
+            visibility 0.22s ease;
+    }
+
+    #previewSceneRail.open,
+    #previewControlDock .scene-stack-panel.open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateX(-50%) translateY(0) !important;
+    }
+
+    #previewSceneRail .scene-stack-panel-inner,
+    #previewControlDock .scene-stack-panel-inner {
+        max-height: 38vh;
+        overflow-y: auto;
+        padding: 10px;
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: linear-gradient(
+            180deg,
+            rgba(7, 12, 20, 0.45),
+            rgba(7, 12, 20, 0.72)
+        );
+        backdrop-filter: blur(18px) saturate(160%);
+        -webkit-backdrop-filter: blur(18px) saturate(160%);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.28);
+    }
+
+    #previewSceneRail .scene-stack-list,
+    #previewControlDock .scene-stack-list {
+        display: grid;
+        gap: 8px;
+    }
+
+    /* cartes scènes plus propres sur mobile */
+    #previewSceneRail .scene-card,
+    #previewControlDock .scene-card {
+        grid-template-columns: 72px minmax(0, 1fr);
+        padding: 8px;
+        border-radius: 16px;
+    }
+
+    #previewSceneRail .scene-thumb,
+    #previewControlDock .scene-thumb {
+        width: 72px;
+        height: 52px;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    #previewSceneRail .scene-thumb img,
+    #previewControlDock .scene-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    #previewSceneRail .scene-title,
+    #previewControlDock .scene-title {
+        font-size: 13px;
+    }
+
+    #previewSceneRail .scene-subtitle,
+    #previewControlDock .scene-subtitle {
+        font-size: 11px;
+    }
+}
 
 
  </style>
+
+  <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 </head>
 
 <body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
