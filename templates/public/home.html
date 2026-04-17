@@ -660,20 +660,22 @@
 
         <div class="hero-panorama-wrap">
             {% if hero_scene_url %}
-                <div
-                    id="heroMarzipano"
-                    class="hero-panorama-viewer"
-                    data-panorama-url="{{ hero_scene_url|escapejs }}"
-                ></div>
-            {% elif hero_tour and hero_tour.thumbnail_image_url %}
-                <div class="hero-fallback-image">
-                    <img src="{{ hero_tour.thumbnail_image_url }}" alt="{{ hero_tour.title }}">
-                </div>
-            {% elif hero_tour and hero_tour.place.cover_image %}
-                <div class="hero-fallback-image">
-                    <img src="{{ hero_tour.place.cover_image }}" alt="{{ hero_tour.title }}">
-                </div>
-            {% endif %}
+    <div
+        id="heroMarzipano"
+        class="hero-panorama-viewer"
+        data-panorama-url="{{ hero_scene_url|escapejs }}"
+        data-panorama-mobile-url="{{ hero_scene_mobile_url|default:''|escapejs }}"
+        data-panorama-thumb-url="{{ hero_scene_thumbnail_url|default:''|escapejs }}"
+    ></div>
+{% elif hero_tour and hero_tour.thumbnail_image_url %}
+    <div class="hero-fallback-image">
+        <img src="{{ hero_tour.thumbnail_image_url }}" alt="{{ hero_tour.title }}">
+    </div>
+{% elif hero_tour and hero_tour.place.cover_image %}
+    <div class="hero-fallback-image">
+        <img src="{{ hero_tour.place.cover_image }}" alt="{{ hero_tour.title }}">
+    </div>
+{% endif %}
         </div>
 
         <div class="hero-overlay"></div>
@@ -1165,138 +1167,155 @@
 
     <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const heroPanoEl = document.getElementById("heroMarzipano");
-            const heroLoader = document.getElementById("heroLoader");
-            const openMenuBtn = document.getElementById("openMenuBtn");
-            const closeMenuBtn = document.getElementById("closeMenuBtn");
-            const menuBackdrop = document.getElementById("menuBackdrop");
-            const mobileMenuPanel = document.getElementById("mobileMenuPanel");
+document.addEventListener("DOMContentLoaded", () => {
+    const heroPanoEl = document.getElementById("heroMarzipano");
+    const heroLoader = document.getElementById("heroLoader");
+    const openMenuBtn = document.getElementById("openMenuBtn");
+    const closeMenuBtn = document.getElementById("closeMenuBtn");
+    const menuBackdrop = document.getElementById("menuBackdrop");
+    const mobileMenuPanel = document.getElementById("mobileMenuPanel");
 
-            function setMobileMenuOpen(isOpen) {
-                if (!menuBackdrop || !mobileMenuPanel) return;
-                menuBackdrop.classList.toggle("show", isOpen);
-                mobileMenuPanel.classList.toggle("open", isOpen);
-                document.body.classList.toggle("overflow-hidden", isOpen && window.innerWidth < 768);
-            }
+    function setMobileMenuOpen(isOpen) {
+        if (!menuBackdrop || !mobileMenuPanel) return;
+        menuBackdrop.classList.toggle("show", isOpen);
+        mobileMenuPanel.classList.toggle("open", isOpen);
+        document.body.classList.toggle("overflow-hidden", isOpen && window.innerWidth < 768);
+    }
 
-            openMenuBtn?.addEventListener("click", () => setMobileMenuOpen(true));
-            closeMenuBtn?.addEventListener("click", () => setMobileMenuOpen(false));
-            menuBackdrop?.addEventListener("click", () => setMobileMenuOpen(false));
-            document.querySelectorAll("[data-menu-link]").forEach(link => {
-                link.addEventListener("click", () => setMobileMenuOpen(false));
+    openMenuBtn?.addEventListener("click", () => setMobileMenuOpen(true));
+    closeMenuBtn?.addEventListener("click", () => setMobileMenuOpen(false));
+    menuBackdrop?.addEventListener("click", () => setMobileMenuOpen(false));
+    document.querySelectorAll("[data-menu-link]").forEach((link) => {
+        link.addEventListener("click", () => setMobileMenuOpen(false));
+    });
+
+    window.addEventListener("resize", () => {
+        if (window.innerWidth >= 768) {
+            setMobileMenuOpen(false);
+        }
+    });
+
+    function hideHeroLoader() {
+        heroLoader?.classList.add("is-hidden");
+    }
+
+    if (!heroPanoEl || typeof Marzipano === "undefined") {
+        setTimeout(hideHeroLoader, 500);
+        return;
+    }
+
+    const desktopUrl = heroPanoEl.dataset.panoramaUrl || "";
+    const mobileUrl = heroPanoEl.dataset.panoramaMobileUrl || "";
+    const thumbUrl = heroPanoEl.dataset.panoramaThumbUrl || "";
+
+    const isMobileDevice = () =>
+        window.matchMedia("(max-width: 768px)").matches ||
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+    const degToRad = (deg) => deg * Math.PI / 180;
+
+    function getHeroPanoramaUrl() {
+        if (isMobileDevice() && mobileUrl) return mobileUrl;
+        if (desktopUrl) return desktopUrl;
+        return mobileUrl || thumbUrl || "";
+    }
+
+    function buildHeroScene() {
+        const panoramaUrl = getHeroPanoramaUrl();
+        if (!panoramaUrl) {
+            setTimeout(hideHeroLoader, 300);
+            return;
+        }
+
+        try {
+            const mobile = isMobileDevice();
+
+            const viewer = new Marzipano.Viewer(heroPanoEl, {
+                controls: {
+                    mouseViewMode: "drag"
+                }
             });
+
+            const source = Marzipano.ImageUrlSource.fromString(panoramaUrl);
+
+            const geometry = new Marzipano.EquirectGeometry([
+                { width: mobile ? 2048 : 4000 }
+            ]);
+
+            const limiter = Marzipano.RectilinearView.limit.traditional(
+                mobile ? 2048 : 4096,
+                degToRad(mobile ? 114 : 120)
+            );
+
+            const view = new Marzipano.RectilinearView(
+                {
+                    yaw: degToRad(0),
+                    pitch: degToRad(-2),
+                    fov: degToRad(mobile ? 112 : 108)
+                },
+                limiter
+            );
+
+            const scene = viewer.createScene({
+                source,
+                geometry,
+                view,
+                pinFirstLevel: true
+            });
+
+            scene.switchTo({ transitionDuration: 900 });
+
+            const autorotate = Marzipano.autorotate({
+                yawSpeed: mobile ? 0.0075 : 0.0105,
+                targetPitch: degToRad(-2),
+                targetFov: degToRad(mobile ? 110 : 106)
+            });
+
+            viewer.startMovement(autorotate);
+            viewer.setIdleMovement(1200, autorotate);
+
+            setTimeout(() => {
+                view.setParameters(
+                    {
+                        yaw: degToRad(4),
+                        pitch: degToRad(-2),
+                        fov: degToRad(mobile ? 108 : 102)
+                    },
+                    { transitionDuration: 1400 }
+                );
+            }, 240);
+
+            setTimeout(hideHeroLoader, 900);
+
+            heroPanoEl.addEventListener("mouseenter", () => {
+                viewer.stopMovement();
+            });
+
+            heroPanoEl.addEventListener("mouseleave", () => {
+                viewer.startMovement(autorotate);
+            });
+
+            heroPanoEl.addEventListener("touchstart", () => {
+                viewer.stopMovement();
+            }, { passive: true });
+
+            heroPanoEl.addEventListener("touchend", () => {
+                setTimeout(() => viewer.startMovement(autorotate), 900);
+            }, { passive: true });
 
             window.addEventListener("resize", () => {
-                if (window.innerWidth >= 768) {
-                    setMobileMenuOpen(false);
+                if (typeof viewer.updateSize === "function") {
+                    viewer.updateSize();
                 }
             });
+        } catch (error) {
+            console.error("Hero Marzipano init error:", error);
+            setTimeout(hideHeroLoader, 400);
+        }
+    }
 
-            function hideHeroLoader() {
-                if (heroLoader) {
-                    heroLoader.classList.add("is-hidden");
-                }
-            }
-
-            if (!heroPanoEl || typeof Marzipano === "undefined") {
-                setTimeout(hideHeroLoader, 600);
-                return;
-            }
-
-            const panoramaUrl = heroPanoEl.dataset.panoramaUrl;
-            if (!panoramaUrl) {
-                setTimeout(hideHeroLoader, 600);
-                return;
-            }
-
-            const degToRad = (deg) => deg * Math.PI / 180;
-
-            try {
-                const viewer = new Marzipano.Viewer(heroPanoEl, {
-                    controls: {
-                        mouseViewMode: "drag"
-                    }
-                });
-
-                const source = Marzipano.ImageUrlSource.fromString(panoramaUrl);
-                const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
-
-                const limiter = Marzipano.RectilinearView.limit.traditional(
-                    4096,
-                    degToRad(120)
-                );
-
-                const view = new Marzipano.RectilinearView(
-                    {
-                        yaw: degToRad(0),
-                        pitch: degToRad(-2),
-                        fov: degToRad(108)
-                    },
-                    limiter
-                );
-
-                const scene = viewer.createScene({
-                    source,
-                    geometry,
-                    view,
-                    pinFirstLevel: true
-                });
-
-                scene.switchTo({
-                    transitionDuration: 900
-                });
-
-                const autorotate = Marzipano.autorotate({
-                    yawSpeed: 0.0105,
-                    targetPitch: degToRad(-2),
-                    targetFov: degToRad(106)
-                });
-
-                viewer.startMovement(autorotate);
-                viewer.setIdleMovement(1200, autorotate);
-
-                setTimeout(() => {
-                    view.setParameters(
-                        {
-                            yaw: degToRad(4),
-                            pitch: degToRad(-2),
-                            fov: degToRad(102)
-                        },
-                        { transitionDuration: 1400 }
-                    );
-                }, 240);
-
-                setTimeout(hideHeroLoader, 1000);
-
-                heroPanoEl.addEventListener("mouseenter", () => {
-                    viewer.stopMovement();
-                });
-
-                heroPanoEl.addEventListener("mouseleave", () => {
-                    viewer.startMovement(autorotate);
-                });
-
-                heroPanoEl.addEventListener("touchstart", () => {
-                    viewer.stopMovement();
-                }, { passive: true });
-
-                heroPanoEl.addEventListener("touchend", () => {
-                    setTimeout(() => {
-                        viewer.startMovement(autorotate);
-                    }, 900);
-                }, { passive: true });
-
-                window.addEventListener("resize", () => {
-                    if (typeof viewer.updateSize === "function") {
-                        viewer.updateSize();
-                    }
-                });
-            } catch (error) {
-                console.error("Hero Marzipano init error:", error);
-                setTimeout(hideHeroLoader, 500);
-            }
-        });
-    </script>
+    buildHeroScene();
+});
+</script>
 </body>
 </html>

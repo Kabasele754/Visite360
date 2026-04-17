@@ -6,11 +6,8 @@ from decimal import Decimal
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.text import slugify
 
-from io import BytesIO
-from pathlib import Path
+from apps.tours.utils_compress_image import compress_image, generate_thumbnail
 
-from PIL import Image, ImageOps
-from django.core.files.base import ContentFile
 
 
 class Tour(TimeStampedModel):
@@ -173,55 +170,56 @@ class Scene360(TimeStampedModel):
 
     @property
     def image_360_url(self):
-        if self.image_360:
-            return self.image_360.url
-        return None
+        return self.image_360.url if self.image_360 else None
 
     @property
     def image_360_mobile_url(self):
-        if self.image_360_mobile:
-            return self.image_360_mobile.url
-        return None
+        return self.image_360_mobile.url if self.image_360_mobile else None
 
     @property
     def thumbnail_url(self):
-        if self.thumbnail_image:
-            return self.thumbnail_image.url
-        return None
-
-    def _build_mobile_panorama(self, max_width=1536, quality=78):
-        if not self.image_360:
-            return None
-
-        if not hasattr(self.image_360, "path"):
-            return None
-
-        img = Image.open(self.image_360.path)
-        img = ImageOps.exif_transpose(img).convert("RGB")
-
-        if img.width > max_width:
-            new_height = int((max_width / img.width) * img.height)
-            img = img.resize((max_width, new_height), Image.LANCZOS)
-
-        buffer = BytesIO()
-        img.save(buffer, format="JPEG", quality=quality, optimize=True)
-        buffer.seek(0)
-
-        base_name = Path(self.image_360.name).stem
-        return f"{base_name}_mobile.jpg", ContentFile(buffer.read())
+        return self.thumbnail_image.url if self.thumbnail_image else None
 
     def generate_mobile_image(self, save=True):
-        built = self._build_mobile_panorama()
-        if not built:
+        if not self.image_360:
             return
 
-        filename, content = built
-        self.image_360_mobile.save(filename, content, save=False)
+        base_name = Path(self.image_360.name).stem
+
+        mobile_content, mobile_size_kb = compress_image(
+            self.image_360,
+            quality=90,
+            add_watermark=False,
+            max_width=2600,
+            max_height=1300,
+        )
+
+        self.image_360_mobile.save(
+            f"{base_name}_mobile.webp",
+            mobile_content,
+            save=False
+        )
+
+        thumb_content, thumb_size_kb = generate_thumbnail(
+            self.image_360,
+            size=(1200, 600),
+            format="WEBP",
+            quality=88,
+        )
+
+        self.thumbnail_image.save(
+            f"{base_name}_thumb.webp",
+            thumb_content,
+            save=False
+        )
+
+        print(f"Image mobile générée : {mobile_size_kb} Ko")
+        print(f"Thumbnail généré : {thumb_size_kb} Ko")
 
         if save:
             self._skip_mobile_generation = True
             try:
-                super().save(update_fields=["image_360_mobile", "updated_at"])
+                super().save(update_fields=["image_360_mobile", "thumbnail_image", "updated_at"])
             finally:
                 self._skip_mobile_generation = False
 
@@ -237,13 +235,13 @@ class Scene360(TimeStampedModel):
 
         current_image_name = self.image_360.name if self.image_360 else None
         image_changed = bool(current_image_name and current_image_name != previous_image_name)
-
         creating = self.pk is None
 
         super().save(*args, **kwargs)
 
-        if self.image_360 and (creating or image_changed or not self.image_360_mobile):
+        if self.image_360 and (creating or image_changed or not self.image_360_mobile or not self.thumbnail_image):
             self.generate_mobile_image(save=True)
+
 class Hotspot(TimeStampedModel):
     class Type(models.TextChoices):
         NAVIGATE = "navigate", "Navigate"

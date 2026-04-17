@@ -269,10 +269,12 @@
 
     <script>
 
+   
+      
+   
         document.addEventListener("DOMContentLoaded", () => {
     if (typeof Marzipano === "undefined") {
-        debugLog("Marzipano not loaded");
-        showDebugDialog("MARZIPANO_NOT_LOADED", "Le script Marzipano n'a pas été chargé sur cet appareil.");
+        console.error("Marzipano not loaded");
         return;
     }
 
@@ -284,169 +286,7 @@
 
     scenes = scenes.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-    const DEBUG_PREVIEW = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || window.location.search.includes("debug=1");
-    let debugBox = null;
-
-    function ensureDebugBox() {
-        if (!DEBUG_PREVIEW || debugBox) return debugBox;
-
-        debugBox = document.createElement("pre");
-        debugBox.id = "previewMobileDebug";
-        debugBox.style.position = "fixed";
-        debugBox.style.left = "10px";
-        debugBox.style.right = "10px";
-        debugBox.style.bottom = "10px";
-        debugBox.style.zIndex = "999999";
-        debugBox.style.maxHeight = "38vh";
-        debugBox.style.overflow = "auto";
-        debugBox.style.padding = "10px";
-        debugBox.style.margin = "0";
-        debugBox.style.borderRadius = "12px";
-        debugBox.style.background = "rgba(0,0,0,0.86)";
-        debugBox.style.color = "#4ade80";
-        debugBox.style.font = "12px/1.4 monospace";
-        debugBox.style.whiteSpace = "pre-wrap";
-        debugBox.style.wordBreak = "break-word";
-        debugBox.style.boxShadow = "0 8px 30px rgba(0,0,0,0.35)";
-        debugBox.style.pointerEvents = "none";
-        debugBox.textContent = "PREVIEW DEBUG\n";
-        document.body.appendChild(debugBox);
-        return debugBox;
-    }
-
-    function debugLog(...parts) {
-        const line = parts.map((part) => {
-            if (typeof part === "string") return part;
-            try {
-                return JSON.stringify(part);
-            } catch (_) {
-                return String(part);
-            }
-        }).join(" ");
-
-        console.log("[PREVIEW DEBUG]", ...parts);
-
-        if (DEBUG_PREVIEW) {
-            const box = ensureDebugBox();
-            if (box) {
-                box.textContent += line + "\n";
-                box.scrollTop = box.scrollHeight;
-            }
-        }
-    }
-
-    let debugDialogEl = null;
-    let debugDialogBodyEl = null;
-
-    function ensureDebugDialog() {
-        if (debugDialogEl) return debugDialogEl;
-
-        debugDialogEl = document.createElement("div");
-        debugDialogEl.id = "previewDebugDialog";
-        debugDialogEl.style.position = "fixed";
-        debugDialogEl.style.inset = "0";
-        debugDialogEl.style.zIndex = "1000000";
-        debugDialogEl.style.display = "none";
-        debugDialogEl.style.alignItems = "center";
-        debugDialogEl.style.justifyContent = "center";
-        debugDialogEl.style.padding = "18px";
-        debugDialogEl.style.background = "rgba(0,0,0,0.72)";
-
-        const card = document.createElement("div");
-        card.style.width = "100%";
-        card.style.maxWidth = "680px";
-        card.style.maxHeight = "82vh";
-        card.style.overflow = "hidden";
-        card.style.borderRadius = "16px";
-        card.style.background = "#08111f";
-        card.style.color = "#e2e8f0";
-        card.style.boxShadow = "0 20px 60px rgba(0,0,0,0.45)";
-        card.style.display = "flex";
-        card.style.flexDirection = "column";
-        card.style.border = "1px solid rgba(255,255,255,0.08)";
-
-        const header = document.createElement("div");
-        header.style.display = "flex";
-        header.style.alignItems = "center";
-        header.style.justifyContent = "space-between";
-        header.style.gap = "12px";
-        header.style.padding = "14px 16px";
-        header.style.borderBottom = "1px solid rgba(255,255,255,0.08)";
-        header.innerHTML = '<strong style="font:600 15px system-ui;">Preview debug</strong>';
-
-        const actions = document.createElement("div");
-        actions.style.display = "flex";
-        actions.style.gap = "8px";
-
-        const copyBtn = document.createElement("button");
-        copyBtn.type = "button";
-        copyBtn.textContent = "Copy";
-        copyBtn.style.padding = "8px 12px";
-        copyBtn.style.borderRadius = "10px";
-        copyBtn.style.border = "0";
-        copyBtn.style.background = "#16a34a";
-        copyBtn.style.color = "#fff";
-        copyBtn.style.fontWeight = "600";
-        copyBtn.addEventListener("click", async () => {
-            try {
-                await navigator.clipboard.writeText(debugDialogBodyEl?.textContent || "");
-                copyBtn.textContent = "Copied";
-                setTimeout(() => copyBtn.textContent = "Copy", 1200);
-            } catch (_) {
-                copyBtn.textContent = "Failed";
-                setTimeout(() => copyBtn.textContent = "Copy", 1200);
-            }
-        });
-
-        const closeBtn = document.createElement("button");
-        closeBtn.type = "button";
-        closeBtn.textContent = "Close";
-        closeBtn.style.padding = "8px 12px";
-        closeBtn.style.borderRadius = "10px";
-        closeBtn.style.border = "0";
-        closeBtn.style.background = "#334155";
-        closeBtn.style.color = "#fff";
-        closeBtn.style.fontWeight = "600";
-        closeBtn.addEventListener("click", () => {
-            debugDialogEl.style.display = "none";
-        });
-
-        actions.appendChild(copyBtn);
-        actions.appendChild(closeBtn);
-        header.appendChild(actions);
-
-        debugDialogBodyEl = document.createElement("pre");
-        debugDialogBodyEl.style.margin = "0";
-        debugDialogBodyEl.style.padding = "16px";
-        debugDialogBodyEl.style.overflow = "auto";
-        debugDialogBodyEl.style.whiteSpace = "pre-wrap";
-        debugDialogBodyEl.style.wordBreak = "break-word";
-        debugDialogBodyEl.style.font = "12px/1.45 monospace";
-        debugDialogBodyEl.style.color = "#86efac";
-
-        card.appendChild(header);
-        card.appendChild(debugDialogBodyEl);
-        debugDialogEl.appendChild(card);
-        document.body.appendChild(debugDialogEl);
-
-        return debugDialogEl;
-    }
-
-    function showDebugDialog(title, payload) {
-        const dialog = ensureDebugDialog();
-        if (!dialog || !debugDialogBodyEl) return;
-
-        const content = [
-            title,
-            "",
-            typeof payload === "string"
-                ? payload
-                : JSON.stringify(payload, null, 2)
-        ].join("\n");
-
-        debugDialogBodyEl.textContent = content;
-        dialog.style.display = "flex";
-    }
+    function debugLog() {}
 
     function getPreferredImageUrl(sceneData) {
         const mobile = isMobileViewport();
@@ -465,77 +305,6 @@
             ""
         );
     }
-
-    function testImageUrl(url, label = "image") {
-        return new Promise((resolve) => {
-            if (!url) {
-                resolve({ ok: false, label, reason: "empty-url", url });
-                return;
-            }
-
-            const img = new Image();
-            const startedAt = Date.now();
-            let done = false;
-
-            const finalize = (payload) => {
-                if (done) return;
-                done = true;
-                resolve(payload);
-            };
-
-            const timer = setTimeout(() => {
-                finalize({
-                    ok: false,
-                    label,
-                    reason: "timeout",
-                    url,
-                    elapsedMs: Date.now() - startedAt
-                });
-            }, 12000);
-
-            img.onload = () => {
-                clearTimeout(timer);
-                finalize({
-                    ok: true,
-                    label,
-                    url,
-                    width: img.naturalWidth,
-                    height: img.naturalHeight,
-                    elapsedMs: Date.now() - startedAt
-                });
-            };
-
-            img.onerror = () => {
-                clearTimeout(timer);
-                finalize({
-                    ok: false,
-                    label,
-                    reason: "load-error",
-                    url,
-                    elapsedMs: Date.now() - startedAt
-                });
-            };
-
-            img.src = url + (url.includes("?") ? "&" : "?") + "_debug=" + Date.now();
-        });
-    }
-
-    window.addEventListener("error", (event) => {
-        const payload = {
-            message: event.message,
-            file: event.filename,
-            line: event.lineno,
-            col: event.colno
-        };
-        debugLog("JS_ERROR", payload);
-        showDebugDialog("JS_ERROR", payload);
-    });
-
-    window.addEventListener("unhandledrejection", (event) => {
-        const payload = String(event.reason?.stack || event.reason || "unknown");
-        debugLog("PROMISE_REJECTION", payload);
-        showDebugDialog("PROMISE_REJECTION", payload);
-    });
 
     const $ = (id) => document.getElementById(id);
 
@@ -661,7 +430,6 @@
             window.removeEventListener("touchstart", onFirstTouch);
         }, { passive: true });
     }
-
 
     function getLayerEl(key) {
         return key === "A" ? previewLayerA : previewLayerB;
@@ -1026,7 +794,6 @@
         markActiveSceneCard(scene?.id);
     }
 
-
     function stopTouchAndScrollEventPropagation(element) {
         if (!element) return;
 
@@ -1094,7 +861,6 @@
     function ensureViewer(key) {
         const mount = getMountEl(key);
         if (!mount) {
-            debugLog("ensureViewer: missing mount", key);
             return null;
         }
 
@@ -1106,15 +872,12 @@
                     mouseViewMode: "drag"
                 }
             });
-            debugLog("Viewer created", key);
         } catch (error) {
-            debugLog("Viewer creation failed", key, String(error?.message || error));
             return null;
         }
 
         return viewers[key];
     }
-
 
     function getSceneSourceGeometryAndLimiter(sceneData) {
         const mobile = isMobileViewport();
@@ -1193,21 +956,6 @@
             hfov_default: sceneData?.hfov_default
         });
 
-        if (!sceneData?.tiles_url) {
-            testImageUrl(selectedImageUrl, `scene-${sceneData?.id || "unknown"}`).then((result) => {
-                debugLog("Image probe", result);
-
-                if (!result.ok) {
-                    showDebugDialog("IMAGE_PROBE_FAILED", result);
-                    return;
-                }
-
-                if (isMobileViewport() && (result.width > 5000 || result.height > 2500)) {
-                    showDebugDialog("IMAGE_TOO_LARGE_FOR_MOBILE", result);
-                }
-            });
-        }
-
         const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
 
         const yaw = degToRad(sceneData.yaw_default || 0);
@@ -1236,7 +984,6 @@
                 sceneId: sceneData?.id,
                 error: String(error?.message || error)
             };
-            debugLog("createScene/switchTo failed", payload);
             showDebugDialog("CREATE_SCENE_FAILED", payload);
             return null;
         }
@@ -1710,7 +1457,6 @@
         runInitialReveal(initialScene);
     });
 });
-
     </script>
     
     {% comment %} <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=20260417-02"></script> {% endcomment %}

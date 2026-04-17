@@ -1238,3 +1238,146 @@ body {
         backdrop-filter: blur(8px) !important;
     }
 }
+
+
+
+/* ===== MOBILE SAFE DOCK FIX ===== */
+#previewControlDock {
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 70 !important;
+}
+
+#previewControlDock .dock-scroll {
+    max-width: 100%;
+}
+
+#previewToast {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px) !important;
+}
+
+@media (max-width: 768px) {
+    html,
+    body {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    #previewControlDock {
+        width: calc(100vw - 12px) !important;
+        max-width: calc(100vw - 12px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    }
+
+    #previewControlDock .dock-scroll {
+        border-radius: 22px !important;
+        padding: 6px !important;
+    }
+
+    #previewControlDock .dock-row {
+        gap: 6px;
+    }
+
+    #previewControlDock .control-btn {
+        width: 42px;
+        min-width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        font-size: 17px;
+    }
+
+    #previewControlDock .scene-stack-toggle-inline {
+        width: 58px;
+        min-width: 58px;
+        height: 42px;
+        border-radius: 14px;
+    }
+
+    #previewControlDock .scene-stack-mini-preview {
+        width: 28px;
+        height: 28px;
+    }
+
+    #previewControlDock .scene-stack-badge {
+        right: 3px;
+        top: 3px;
+    }
+
+    #previewControlDock .dock-divider {
+        height: 24px;
+        margin: 0 1px;
+    }
+
+    #previewSceneRail.scene-stack-panel {
+        left: 0 !important;
+        width: min(92vw, 330px) !important;
+        bottom: calc(100% + 8px) !important;
+        max-height: min(52vh, 400px) !important;
+    }
+
+    #previewSceneRail .scene-stack-panel-inner {
+        max-height: min(52vh, 400px) !important;
+    }
+
+    .info-panel,
+    #previewInfoPanel {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+    }
+
+    #previewToast {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 76px) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #previewControlDock {
+        width: calc(100vw - 10px) !important;
+        max-width: calc(100vw - 10px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 6px) !important;
+    }
+
+    #previewControlDock .dock-scroll {
+        padding: 5px !important;
+        border-radius: 20px !important;
+    }
+
+    #previewControlDock .dock-row {
+        gap: 5px;
+    }
+
+    #previewControlDock .control-btn {
+        width: 39px;
+        min-width: 39px;
+        height: 39px;
+        border-radius: 13px;
+        font-size: 16px;
+    }
+
+    #previewControlDock .scene-stack-toggle-inline {
+        width: 54px;
+        min-width: 54px;
+        height: 39px;
+        border-radius: 13px;
+    }
+
+    #previewControlDock .scene-stack-mini-preview {
+        width: 25px;
+        height: 25px;
+    }
+
+    #previewControlDock .dock-divider {
+        height: 22px;
+    }
+
+    .info-panel,
+    #previewInfoPanel {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 68px) !important;
+    }
+
+    #previewToast {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+    }
+}

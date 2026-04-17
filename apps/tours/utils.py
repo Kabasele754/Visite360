@@ -12,3 +12,6 @@ def generate_unique_tour_slug(title: str) -> str:
         counter += 1
 
     return slug
+
+
+

@@ -17,18 +17,41 @@ from .forms import ContactLeadForm
 
 
 
+
 class PublicHomeView(TemplateView):
     template_name = "public/home.html"
 
-    def _get_tour_preview_image(self, tour):
+    def _get_tour_preview_images(self, tour):
         first_scene = tour.ordered_scenes[0] if getattr(tour, "ordered_scenes", []) else None
-        if first_scene and first_scene.image_360_url:
-            return first_scene.image_360_url
-        if tour.thumbnail_image_url:
-            return tour.thumbnail_image_url
-        if tour.place and tour.place.cover_image:
-            return tour.place.cover_image
-        return ""
+
+        desktop_url = ""
+        mobile_url = ""
+        thumbnail_url = ""
+
+        if first_scene:
+            desktop_url = getattr(first_scene, "image_360_url", "") or ""
+            mobile_field = getattr(first_scene, "image_360_mobile", None)
+            mobile_url = mobile_field.url if mobile_field else ""
+            thumb_field = getattr(first_scene, "thumbnail_image", None)
+            thumbnail_url = thumb_field.url if thumb_field else ""
+
+        if not desktop_url and getattr(tour, "thumbnail_image_url", ""):
+            desktop_url = tour.thumbnail_image_url
+
+        if not thumbnail_url and getattr(tour, "thumbnail_image_url", ""):
+            thumbnail_url = tour.thumbnail_image_url
+
+        if not desktop_url and tour.place and tour.place.cover_image:
+            desktop_url = tour.place.cover_image
+
+        if not thumbnail_url and tour.place and tour.place.cover_image:
+            thumbnail_url = tour.place.cover_image
+
+        return {
+            "desktop": desktop_url or "",
+            "mobile": mobile_url or "",
+            "thumbnail": thumbnail_url or desktop_url or "",
+        }
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -111,7 +134,11 @@ class PublicHomeView(TemplateView):
         )
 
         hero_tour = featured_tours[0] if featured_tours else (latest_tours[0] if latest_tours else None)
-        hero_scene_url = self._get_tour_preview_image(hero_tour) if hero_tour else None
+        hero_preview_images = self._get_tour_preview_images(hero_tour) if hero_tour else {
+            "desktop": "",
+            "mobile": "",
+            "thumbnail": "",
+        }
 
         catalog_tours = []
         for tour in published_tours:
@@ -122,6 +149,8 @@ class PublicHomeView(TemplateView):
                     "tour_id": tour.id,
                 },
             )
+
+            preview_images = self._get_tour_preview_images(tour)
 
             catalog_tours.append(
                 {
@@ -141,7 +170,9 @@ class PublicHomeView(TemplateView):
                     "rating": float(tour.rating) if tour.rating is not None else None,
                     "price": str(tour.display_price) if tour.display_price is not None else "",
                     "is_featured": bool(tour.is_featured),
-                    "image_url": self._get_tour_preview_image(tour),
+                    "image_url": preview_images["desktop"],
+                    "image_mobile_url": preview_images["mobile"],
+                    "thumbnail_url": preview_images["thumbnail"],
                     "preview_url": preview_url,
                     "created_at": tour.created_at.isoformat() if tour.created_at else "",
                     "search_blob": " ".join(
@@ -164,7 +195,9 @@ class PublicHomeView(TemplateView):
         context.update(
             {
                 "hero_tour": hero_tour,
-                "hero_scene_url": hero_scene_url,
+                "hero_scene_url": hero_preview_images["desktop"],
+                "hero_scene_mobile_url": hero_preview_images["mobile"],
+                "hero_scene_thumbnail_url": hero_preview_images["thumbnail"],
                 "featured_tours": featured_tours,
                 "latest_tours": latest_tours,
                 "top_places": top_places,
@@ -189,7 +222,7 @@ class PublicHomeView(TemplateView):
             }
         )
         return context
-    
+
     
 
 

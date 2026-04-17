@@ -60,18 +60,23 @@ def _unique_place_slug(base: str) -> str:
     return slug
 
 
-def _get_org_or_403(request, organization_slug):
+def _get_org_or_403(request, organization_slug, allow_public=False):
     organization = get_object_or_404(Organization, slug=organization_slug)
 
-    if request.user.is_superuser:
+    if allow_public and not request.user.is_authenticated:
         return organization
+
+    if request.user.is_authenticated and request.user.is_superuser:
+        return organization
+
+    if not request.user.is_authenticated:
+        return None
 
     membership = get_user_membership(request.user, organization_slug)
     if not membership:
         return None
 
     return organization
-
 
 def _get_or_create_default_workspace(user):
     membership = (
@@ -806,7 +811,10 @@ def tour_preview_view(request, organization_slug, tour_id):
             "current_organization": organization,
             "scenes_json": scenes_payload,
         },
-    )
+    ) 
+    
+    
+    
 @login_required
 @require_POST
 def upload_scenes_ajax_view(request, organization_slug, tour_id):
