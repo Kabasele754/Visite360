@@ -12,6 +12,133 @@ document.addEventListener("DOMContentLoaded", () => {
 
     scenes = scenes.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
+    const DEBUG_PREVIEW = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || window.location.search.includes("debug=1");
+    let debugBox = null;
+
+    function ensureDebugBox() {
+        if (!DEBUG_PREVIEW || debugBox) return debugBox;
+
+        debugBox = document.createElement("pre");
+        debugBox.id = "previewMobileDebug";
+        debugBox.style.position = "fixed";
+        debugBox.style.left = "10px";
+        debugBox.style.right = "10px";
+        debugBox.style.bottom = "10px";
+        debugBox.style.zIndex = "999999";
+        debugBox.style.maxHeight = "38vh";
+        debugBox.style.overflow = "auto";
+        debugBox.style.padding = "10px";
+        debugBox.style.margin = "0";
+        debugBox.style.borderRadius = "12px";
+        debugBox.style.background = "rgba(0,0,0,0.86)";
+        debugBox.style.color = "#4ade80";
+        debugBox.style.font = "12px/1.4 monospace";
+        debugBox.style.whiteSpace = "pre-wrap";
+        debugBox.style.wordBreak = "break-word";
+        debugBox.style.boxShadow = "0 8px 30px rgba(0,0,0,0.35)";
+        debugBox.style.pointerEvents = "none";
+        debugBox.textContent = "PREVIEW DEBUG\n";
+        document.body.appendChild(debugBox);
+        return debugBox;
+    }
+
+    function debugLog(...parts) {
+        const line = parts.map((part) => {
+            if (typeof part === "string") return part;
+            try {
+                return JSON.stringify(part);
+            } catch (_) {
+                return String(part);
+            }
+        }).join(" ");
+
+        console.log("[PREVIEW DEBUG]", ...parts);
+
+        if (DEBUG_PREVIEW) {
+            const box = ensureDebugBox();
+            if (box) {
+                box.textContent += line + "\n";
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+    }
+
+    function getPreferredImageUrl(sceneData) {
+        const mobile = isMobileViewport();
+        return (
+            (mobile && sceneData?.image_360_mobile_url) ||
+            sceneData?.image_360_url ||
+            ""
+        );
+    }
+
+    function testImageUrl(url, label = "image") {
+        return new Promise((resolve) => {
+            if (!url) {
+                resolve({ ok: false, label, reason: "empty-url", url });
+                return;
+            }
+
+            const img = new Image();
+            const startedAt = Date.now();
+            let done = false;
+
+            const finalize = (payload) => {
+                if (done) return;
+                done = true;
+                resolve(payload);
+            };
+
+            const timer = setTimeout(() => {
+                finalize({
+                    ok: false,
+                    label,
+                    reason: "timeout",
+                    url,
+                    elapsedMs: Date.now() - startedAt
+                });
+            }, 8000);
+
+            img.onload = () => {
+                clearTimeout(timer);
+                finalize({
+                    ok: true,
+                    label,
+                    url,
+                    width: img.naturalWidth,
+                    height: img.naturalHeight,
+                    elapsedMs: Date.now() - startedAt
+                });
+            };
+
+            img.onerror = () => {
+                clearTimeout(timer);
+                finalize({
+                    ok: false,
+                    label,
+                    reason: "load-error",
+                    url,
+                    elapsedMs: Date.now() - startedAt
+                });
+            };
+
+            img.src = url + (url.includes("?") ? "&" : "?") + "_debug=" + Date.now();
+        });
+    }
+
+    window.addEventListener("error", (event) => {
+        debugLog("JS_ERROR", {
+            message: event.message,
+            file: event.filename,
+            line: event.lineno,
+            col: event.colno
+        });
+    });
+
+    window.addEventListener("unhandledrejection", (event) => {
+        debugLog("PROMISE_REJECTION", String(event.reason?.stack || event.reason || "unknown"));
+    });
+
     const $ = (id) => document.getElementById(id);
 
     const previewViewer = $("previewViewer");
@@ -56,6 +183,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const viewers = { A: null, B: null };
     const views = { A: null, B: null };
     const marzipanoScenes = { A: null, B: null };
+
+    debugLog("INIT", {
+        marzipanoLoaded: typeof Marzipano !== "undefined",
+        scenesCount: scenes.length,
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        userAgent: navigator.userAgent
+    });
 
     let activeLayerKey = "A";
     let currentSceneId = null;
@@ -558,14 +694,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function ensureViewer(key) {
         const mount = getMountEl(key);
-        if (!mount) return null;
+        if (!mount) {
+            debugLog("ensureViewer: missing mount", key);
+            return null;
+        }
 
         mount.innerHTML = "";
-        viewers[key] = new Marzipano.Viewer(mount, {
-            controls: {
-                mouseViewMode: "drag"
-            }
-        });
+
+        try {
+            viewers[key] = new Marzipano.Viewer(mount, {
+                controls: {
+                    mouseViewMode: "drag"
+                }
+            });
+            debugLog("Viewer created", key);
+        } catch (error) {
+            debugLog("Viewer creation failed", key, String(error?.message || error));
+            return null;
+        }
 
         return viewers[key];
     }
@@ -573,6 +719,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getSceneSourceGeometryAndLimiter(sceneData) {
         const mobile = isMobileViewport();
+
+        debugLog("Scene source select", {
+            sceneId: sceneData?.id,
+            title: sceneData?.title,
+            mobile,
+            image_360_url: sceneData?.image_360_url || "",
+            image_360_mobile_url: sceneData?.image_360_mobile_url || "",
+            tiles_url: sceneData?.tiles_url || ""
+        });
 
         if (sceneData?.tiles_url) {
             return {
@@ -600,8 +755,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const textureWidth = mobile ? 1536 : 3072;
         const faceSize = mobile ? 1536 : 3072;
 
+        const preferredImageUrl = getPreferredImageUrl(sceneData);
+
         return {
-            source: Marzipano.ImageUrlSource.fromString(sceneData.image_360_url),
+            source: Marzipano.ImageUrlSource.fromString(preferredImageUrl),
             geometry: new Marzipano.EquirectGeometry([
                 { width: textureWidth }
             ]),
@@ -614,7 +771,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function buildSceneOnLayer(layerKey, sceneData) {
         const viewer = ensureViewer(layerKey);
-        if (!viewer || (!sceneData?.image_360_url && !sceneData?.tiles_url)) return null;
+        if (!viewer || (!sceneData?.image_360_url && !sceneData?.tiles_url)) {
+            debugLog("buildSceneOnLayer skipped", {
+                layerKey,
+                hasViewer: !!viewer,
+                hasImage: !!sceneData?.image_360_url,
+                hasTiles: !!sceneData?.tiles_url
+            });
+            return null;
+        }
+
+        const selectedImageUrl = getPreferredImageUrl(sceneData);
+
+        debugLog("buildSceneOnLayer start", {
+            layerKey,
+            sceneId: sceneData?.id,
+            title: sceneData?.title,
+            selectedImageUrl,
+            tilesUrl: sceneData?.tiles_url || "",
+            hfov_default: sceneData?.hfov_default
+        });
+
+        if (!sceneData?.tiles_url) {
+            testImageUrl(selectedImageUrl, `scene-${sceneData?.id || "unknown"}`).then((result) => {
+                debugLog("Image probe", result);
+            });
+        }
 
         const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
 
@@ -624,14 +806,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         views[layerKey] = new Marzipano.RectilinearView({ yaw, pitch, fov }, limiter);
 
-        marzipanoScenes[layerKey] = viewer.createScene({
-            source,
-            geometry,
-            view: views[layerKey],
-            pinFirstLevel: true
-        });
+        try {
+            marzipanoScenes[layerKey] = viewer.createScene({
+                source,
+                geometry,
+                view: views[layerKey],
+                pinFirstLevel: true
+            });
 
-        marzipanoScenes[layerKey].switchTo();
+            marzipanoScenes[layerKey].switchTo();
+            debugLog("Scene switched", {
+                layerKey,
+                sceneId: sceneData?.id,
+                title: sceneData?.title
+            });
+        } catch (error) {
+            debugLog("createScene/switchTo failed", {
+                layerKey,
+                sceneId: sceneData?.id,
+                error: String(error?.message || error)
+            });
+            return null;
+        }
 
         (sceneData.hotspots || []).forEach((hotspot) => {
             const node = buildHotspotNode(hotspot);
@@ -1084,6 +1280,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const initialScene = getInitialSceneFromUrl() || scenes[0];
     currentSceneId = initialScene.id;
+
+    debugLog("Initial scene chosen", {
+        id: initialScene?.id,
+        title: initialScene?.title,
+        preferredImageUrl: getPreferredImageUrl(initialScene),
+        tilesUrl: initialScene?.tiles_url || ""
+    });
 
     buildSceneOnLayer(activeLayerKey, initialScene);
     updateSceneMeta(initialScene);
