@@ -571,78 +571,54 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-  function getSceneSourceGeometryAndLimiter(sceneData) {
+function getSceneSourceGeometryAndLimiter(sceneData) {
     const mobile = isMobileViewport();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const imageUrl = (sceneData?.image_360_url || "").trim();
-    const tilesUrl = (sceneData?.tiles_url || "").trim();
-
-    const defaultLevels = [
-        { tileSize: 256, size: 256, fallbackOnly: true },
-        { tileSize: 512, size: 512 },
-        { tileSize: 512, size: 1024 },
-        { tileSize: 512, size: 2048 }
-    ];
-
-    // 1) Si on a des tiles, on privilégie ça
-    if (tilesUrl) {
-        const rawLevels = Array.isArray(sceneData.levels) && sceneData.levels.length
-            ? sceneData.levels
-            : defaultLevels;
-
-        // Sur mobile on limite volontairement la taille max
-        const levels = mobile
-            ? rawLevels.filter(level => level.fallbackOnly || level.size <= 1024)
-            : rawLevels;
-
+    // Mode multires / tiles comme le sample Marzipano
+    if (sceneData?.tiles_url) {
         return {
             source: Marzipano.ImageUrlSource.fromString(
-                `${tilesUrl}/{z}/{f}/{y}/{x}.jpg`,
+                `${sceneData.tiles_url}/{z}/{f}/{y}/{x}.jpg`,
                 {
-                    cubeMapPreviewUrl: `${tilesUrl}/preview.jpg`
+                    cubeMapPreviewUrl: `${sceneData.tiles_url}/preview.jpg`
                 }
             ),
-            geometry: new Marzipano.CubeGeometry(levels),
+            geometry: new Marzipano.CubeGeometry(
+                sceneData.levels || [
+                    { tileSize: 256, size: 256, fallbackOnly: true },
+                    { tileSize: 512, size: 512 },
+                    { tileSize: 512, size: 1024 },
+                    { tileSize: 512, size: 2048 }
+                ]
+            ),
             limiter: Marzipano.RectilinearView.limit.traditional(
-                mobile
-                    ? Math.min(sceneData.face_size || 1024, 1024)
-                    : (sceneData.face_size || 1024),
+                sceneData.face_size || (mobile ? 1024 : 2048),
                 MAX_FOV
             )
         };
     }
 
-    // 2) Pas d'image = on arrête proprement
-    if (!imageUrl) {
-        console.warn("Scene has no image_360_url:", sceneData);
-        return null;
-    }
-
-    // 3) Fallback equirectangular beaucoup plus léger sur mobile
-    const mobileWidth = dpr > 1.5 ? 1536 : 1024;
-    const desktopWidth = 4000;
+    // Fallback equirectangular simple
+    const textureWidth = mobile ? 1536 : 3072;
+    const faceSize = mobile ? 1536 : 3072;
 
     return {
-        source: Marzipano.ImageUrlSource.fromString(imageUrl),
+        source: Marzipano.ImageUrlSource.fromString(sceneData.image_360_url),
         geometry: new Marzipano.EquirectGeometry([
-            { width: mobile ? mobileWidth : desktopWidth }
+            { width: textureWidth }
         ]),
         limiter: Marzipano.RectilinearView.limit.traditional(
-            mobile ? mobileWidth : 4096,
+            faceSize,
             MAX_FOV
         )
     };
 }
 
-   function buildSceneOnLayer(layerKey, sceneData) {
+function buildSceneOnLayer(layerKey, sceneData) {
     const viewer = ensureViewer(layerKey);
-    if (!viewer) return null;
+    if (!viewer || (!sceneData?.image_360_url && !sceneData?.tiles_url)) return null;
 
-    const config = getSceneSourceGeometryAndLimiter(sceneData);
-    if (!config) return null;
-
-    const { source, geometry, limiter } = config;
+    const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
 
     const yaw = degToRad(sceneData.yaw_default || 0);
     const pitch = degToRad(sceneData.pitch_default || 0);

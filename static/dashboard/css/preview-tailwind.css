@@ -1217,3 +1217,24 @@ body {
         height: 62px;
     }
 }
+
+
+
+@media (max-width: 768px) {
+    .preview-layer,
+    .preview-layer.layer-outgoing,
+    .preview-layer.layer-incoming {
+        filter: none !important;
+        transform: none !important;
+        transition: opacity .35s ease !important;
+    }
+
+    .brand-overlay-chip,
+    .brand-header-chip,
+    .dock-scroll,
+    .scene-stack-panel-inner,
+    .info-panel,
+    #previewInfoPanel {
+        backdrop-filter: blur(8px) !important;
+    }
+}
