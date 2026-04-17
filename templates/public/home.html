@@ -1107,14 +1107,12 @@
                     </a>
                 </div>
 
-                
-                  <div class="mt-6 rounded-[28px] border border-white/80 bg-white/64 p-5">
-    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Navigation</p>
-    <h3 class="mt-2 text-xl font-black tracking-tight text-slate-900">A premium header built for multi-page navigation</h3>
+         <div class="mt-6 rounded-[28px] border border-white/80 bg-white/64 p-5">
+    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Premium Experience</p>
+    <h3 class="mt-2 text-xl font-black tracking-tight text-slate-900">Show every place at its best</h3>
     <p class="mt-2 text-sm leading-6 text-slate-600">
-        Guide visitors to dedicated pages like About, Services, Tours, Organizations, and Contact with a cleaner and more professional experience.
+        Present your tours, venues, and spaces with a modern 360° experience that feels elegant, immersive, and professional.
     </p>
-               
 </div>
             </div>
         </div>
@@ -1126,17 +1124,17 @@
             <div
                 id="heroMarzipano"
                 class="hero-panorama-viewer"
-                data-panorama-url="{{ hero_scene_url|escapejs }}"
-                data-panorama-mobile-url="{{ hero_scene_mobile_url|default:''|escapejs }}"
-                data-panorama-thumb-url="{{ hero_scene_thumbnail_url|default:''|escapejs }}"
+                data-panorama-url="{{ hero_scene_url }}"
+                data-panorama-mobile-url="{{ hero_scene_mobile_url|default:'' }}"
+                data-panorama-thumb-url="{{ hero_scene_thumbnail_url|default:'' }}"
             ></div>
-        {% elif hero_tour and hero_tour.thumbnail_image_url %}
+        {% elif hero_tour and hero_tour.safe_thumbnail_image_url %}
             <div class="hero-fallback-image">
-                <img src="{{ hero_tour.thumbnail_image_url }}" alt="{{ hero_tour.title }}">
+                <img src="{{ hero_tour.safe_thumbnail_image_url }}" alt="{{ hero_tour.title }}">
             </div>
-        {% elif hero_tour and hero_tour.place.cover_image %}
+        {% elif hero_tour and hero_tour.safe_place_cover_image_url %}
             <div class="hero-fallback-image">
-                <img src="{{ hero_tour.place.cover_image }}" alt="{{ hero_tour.title }}">
+                <img src="{{ hero_tour.safe_place_cover_image_url }}" alt="{{ hero_tour.title }}">
             </div>
         {% endif %}
     </div>
@@ -1233,7 +1231,7 @@
                     </p>
                 </div>
 
-                <form method="get" class="space-y-4">
+                <form id="desktopCatalogFilterForm" method="get" class="space-y-4" data-catalog-filter-form="desktop">
                     <div>
                         <label class="mb-2 block text-sm font-bold text-slate-900">Keyword</label>
                         <input
@@ -1279,12 +1277,13 @@
                             Search
                         </button>
 
-                        <a
-                            href="{% url 'public_home' %}"
+                        <button
+                            type="button"
+                            data-catalog-reset
                             class="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/36 px-5 py-3.5 text-sm font-bold text-slate-800 transition hover:bg-white/52"
                         >
                             Reset
-                        </a>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -1329,7 +1328,7 @@
                 Search by keyword, category, or city to discover the right immersive experience faster.
             </p>
 
-            <form method="get" class="space-y-4">
+            <form id="mobileCatalogFilterForm" method="get" class="space-y-4" data-catalog-filter-form="mobile">
                 <div>
                     <label class="mb-2 block text-sm font-bold text-slate-900">Keyword</label>
                     <input
@@ -1375,12 +1374,13 @@
                         Search
                     </button>
 
-                    <a
-                        href="{% url 'public_home' %}"
+                    <button
+                        type="button"
+                        data-catalog-reset
                         class="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/36 px-5 py-3.5 text-sm font-bold text-slate-800 transition hover:bg-white/52"
                     >
                         Reset
-                    </a>
+                    </button>
                 </div>
             </form>
         </div>
@@ -1403,12 +1403,16 @@
                     {% url 'tour-preview-public' organization_slug=tour.organization.slug tour_id=tour.id as preview_url %}
                     <article class="glass card-hover overflow-hidden rounded-[28px] shadow-premium soft-border">
                         <div class="tour-card-thumb relative aspect-[16/10] overflow-hidden bg-slate-100">
-                            {% if tour.ordered_scenes and tour.ordered_scenes.0.image_360_url %}
-                                <img src="{{ tour.ordered_scenes.0.image_360_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
-                            {% elif tour.thumbnail_image_url %}
-                                <img src="{{ tour.thumbnail_image_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
-                            {% elif tour.place.cover_image %}
-                                <img src="{{ tour.place.cover_image }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% if tour.ordered_scenes and tour.ordered_scenes.0.safe_thumbnail_url %}
+                                <img src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% elif tour.ordered_scenes and tour.ordered_scenes.0.safe_image_360_mobile_url %}
+                                <img src="{{ tour.ordered_scenes.0.safe_image_360_mobile_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% elif tour.ordered_scenes and tour.ordered_scenes.0.safe_image_360_url %}
+                                <img src="{{ tour.ordered_scenes.0.safe_image_360_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% elif tour.safe_thumbnail_image_url %}
+                                <img src="{{ tour.safe_thumbnail_image_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
+                            {% elif tour.safe_place_cover_image_url %}
+                                <img src="{{ tour.safe_place_cover_image_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
                             {% else %}
                                 <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-slate-500">
                                     <span class="text-sm font-black tracking-[0.2em] uppercase">No Preview</span>
@@ -1546,117 +1550,35 @@
                 </p>
             </div>
 
-            <div class="flex flex-wrap gap-2">
+            <div id="catalogCategoryPills" class="flex flex-wrap gap-2">
+                <button type="button" data-category-pill="" class="rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.15em] transition border-cyan-300 bg-cyan-50 text-cyan-700">
+                    All
+                </button>
                 {% for value, label in category_choices %}
-                    <a href="?category={{ value }}"
-                       class="rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.15em] transition
-                       {% if selected_category == value %}
-                            border-cyan-300 bg-cyan-50 text-cyan-700
-                       {% else %}
-                            border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900
-                       {% endif %}">
+                    <button type="button" data-category-pill="{{ value }}" class="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
                         {{ label }}
-                    </a>
+                    </button>
                 {% endfor %}
             </div>
         </div>
 
-        {% if latest_tours %}
-            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {% for tour in latest_tours %}
-                    {% url 'tour-preview-public' organization_slug=tour.organization.slug tour_id=tour.id as preview_url %}
-                    <article class="glass-soft card-hover overflow-hidden rounded-[28px] soft-border">
-                        <div class="tour-card-thumb relative aspect-[16/10] overflow-hidden bg-slate-100">
-                            {% if tour.ordered_scenes and tour.ordered_scenes.0.image_360_url %}
-                                <img src="{{ tour.ordered_scenes.0.image_360_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
-                            {% elif tour.thumbnail_image_url %}
-                                <img src="{{ tour.thumbnail_image_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
-                            {% elif tour.place.cover_image %}
-                                <img src="{{ tour.place.cover_image }}" alt="{{ tour.title }}" class="h-full w-full object-cover">
-                            {% else %}
-                                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-slate-500">
-                                    <span class="text-sm font-black tracking-[0.2em] uppercase">No Image</span>
-                                </div>
-                            {% endif %}
+        {{ catalog_tours|json_script:"catalogToursData" }}
 
-                            <div class="card-image-overlay absolute inset-0"></div>
+        <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div id="catalogResultsMeta" class="text-sm font-semibold text-slate-600"></div>
+            <div id="catalogPaginationSummary" class="text-xs font-black uppercase tracking-[0.18em] text-slate-500"></div>
+        </div>
 
-                            {% if tour.is_featured %}
-                                <div class="absolute left-4 top-4 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
-                                    Featured
-                                </div>
-                            {% endif %}
+        <div id="catalogToursGrid" class="grid gap-6 md:grid-cols-2 xl:grid-cols-3"></div>
 
-                            <a href="{{ preview_url }}"
-                               class="tour-scene-badge absolute right-4 top-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-900 transition hover:-translate-y-0.5">
-                                Visit
-                            </a>
-                        </div>
+        <div id="catalogEmptyState" class="glass rounded-[28px] p-10 text-center hidden">
+            <h4 class="text-2xl font-black text-slate-900">No result found</h4>
+            <p class="mt-3 text-sm leading-7 text-slate-600">
+                Try another keyword, category, or city.
+            </p>
+        </div>
 
-                        <div class="p-5">
-                            <div class="mb-3 flex items-center justify-between gap-3">
-                                <span class="truncate text-xs font-black uppercase tracking-[0.20em] text-cyan-700">
-                                    {{ tour.organization.name }}
-                                </span>
-                                {% if tour.rating %}
-                                    <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
-                                        ★ {{ tour.rating }}
-                                    </span>
-                                {% endif %}
-                            </div>
-
-                            <h4 class="text-xl font-black tracking-tight text-slate-900">{{ tour.title }}</h4>
-
-                            <p class="mt-2 line-clamp-3 text-sm leading-7 text-slate-600">
-                                {{ tour.description|default:"Immersive visit made for elegant client presentation." }}
-                            </p>
-
-                            <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
-                                <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700">
-                                    <span class="block text-slate-500">Place</span>
-                                    <span class="mt-1 block font-bold">{{ tour.place.name }}</span>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700">
-                                    <span class="block text-slate-500">Scenes</span>
-                                    <span class="mt-1 block font-bold">{{ tour.scene_count }}</span>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700">
-                                    <span class="block text-slate-500">City</span>
-                                    <span class="mt-1 block font-bold">{{ tour.place.city|default:"—" }}</span>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700">
-                                    <span class="block text-slate-500">Views</span>
-                                    <span class="mt-1 block font-bold">{{ tour.view_count }}</span>
-                                </div>
-                            </div>
-
-                            <div class="mt-5 flex items-center justify-between gap-4">
-                                <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-slate-800">
-                                        {{ tour.place.get_category_display }}
-                                    </p>
-                                    {% if tour.price %}
-                                        <p class="truncate text-xs text-slate-500">Price: {{ tour.display_price }}</p>
-                                    {% endif %}
-                                </div>
-
-                                <a href="{{ preview_url }}"
-                                   class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110">
-                                    Start tour
-                                </a>
-                            </div>
-                        </div>
-                    </article>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="glass rounded-[28px] p-10 text-center">
-                <h4 class="text-2xl font-black text-slate-900">No result found</h4>
-                <p class="mt-3 text-sm leading-7 text-slate-600">
-                    Try another keyword, category, or city.
-                </p>
-            </div>
-        {% endif %}
+        <div id="catalogPagination" class="mt-8 flex flex-wrap items-center justify-center gap-2"></div>
     </section>
 
     <section id="organizations" class="mx-auto max-w-7xl px-4 py-8 lg:px-6">
@@ -1913,6 +1835,246 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(hideHeroLoader, 400);
     }
 }
+
+
+    const catalogDataNode = document.getElementById("catalogToursData");
+    const catalogGrid = document.getElementById("catalogToursGrid");
+    const catalogPagination = document.getElementById("catalogPagination");
+    const catalogEmptyState = document.getElementById("catalogEmptyState");
+    const catalogResultsMeta = document.getElementById("catalogResultsMeta");
+    const catalogPaginationSummary = document.getElementById("catalogPaginationSummary");
+    const desktopCatalogFilterForm = document.getElementById("desktopCatalogFilterForm");
+    const mobileCatalogFilterForm = document.getElementById("mobileCatalogFilterForm");
+    const categoryPills = Array.from(document.querySelectorAll("[data-category-pill]"));
+    const resetButtons = Array.from(document.querySelectorAll("[data-catalog-reset]"));
+
+    const catalogTours = catalogDataNode ? JSON.parse(catalogDataNode.textContent) : [];
+    const pageSize = 6;
+    const catalogState = {
+        q: (desktopCatalogFilterForm?.querySelector('[name="q"]')?.value || "").trim(),
+        category: (desktopCatalogFilterForm?.querySelector('[name="category"]')?.value || "").trim(),
+        city: (desktopCatalogFilterForm?.querySelector('[name="city"]')?.value || "").trim(),
+        page: 1,
+    };
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function syncForms() {
+        [desktopCatalogFilterForm, mobileCatalogFilterForm].forEach((form) => {
+            if (!form) return;
+            const qInput = form.querySelector('[name="q"]');
+            const categoryInput = form.querySelector('[name="category"]');
+            const cityInput = form.querySelector('[name="city"]');
+            if (qInput) qInput.value = catalogState.q;
+            if (categoryInput) categoryInput.value = catalogState.category;
+            if (cityInput) cityInput.value = catalogState.city;
+        });
+    }
+
+    function syncCategoryPills() {
+        categoryPills.forEach((pill) => {
+            const active = (pill.dataset.categoryPill || "") === catalogState.category;
+            pill.className = active
+                ? "rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.15em] transition border-cyan-300 bg-cyan-50 text-cyan-700"
+                : "rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 transition hover:bg-slate-50 hover:text-slate-900";
+        });
+    }
+
+    function updateUrl() {
+        const params = new URLSearchParams(window.location.search);
+        catalogState.q ? params.set("q", catalogState.q) : params.delete("q");
+        catalogState.category ? params.set("category", catalogState.category) : params.delete("category");
+        catalogState.city ? params.set("city", catalogState.city) : params.delete("city");
+        catalogState.page > 1 ? params.set("page", String(catalogState.page)) : params.delete("page");
+        const query = params.toString();
+        const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}`;
+        window.history.replaceState({}, "", nextUrl);
+    }
+
+    function getFilteredTours() {
+        const q = catalogState.q.toLowerCase();
+        const category = catalogState.category.toLowerCase();
+        const city = catalogState.city.toLowerCase();
+
+        return catalogTours.filter((tour) => {
+            const matchesQ = !q || String(tour.search_blob || "").toLowerCase().includes(q);
+            const matchesCategory = !category || String(tour.category || "").toLowerCase() === category;
+            const matchesCity = !city || String(tour.city || "").toLowerCase() === city;
+            return matchesQ && matchesCategory && matchesCity;
+        });
+    }
+
+    function buildTourCard(tour) {
+        const imageUrl = tour.thumbnail_url || tour.image_mobile_url || tour.image_url || "";
+        const ratingHtml = tour.rating !== null && tour.rating !== undefined
+            ? `<span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">★ ${escapeHtml(tour.rating)}</span>`
+            : "";
+        const featuredHtml = tour.is_featured
+            ? `<div class="absolute left-4 top-4 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">Featured</div>`
+            : "";
+        const imageHtml = imageUrl
+            ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(tour.title)}" class="h-full w-full object-cover">`
+            : `<div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-slate-500"><span class="text-sm font-black tracking-[0.2em] uppercase">No Image</span></div>`;
+        const priceHtml = tour.price
+            ? `<p class="truncate text-xs text-slate-500">Price: ${escapeHtml(tour.price)}</p>`
+            : "";
+
+        return `
+            <article class="glass-soft card-hover overflow-hidden rounded-[28px] soft-border">
+                <div class="tour-card-thumb relative aspect-[16/10] overflow-hidden bg-slate-100">
+                    ${imageHtml}
+                    <div class="card-image-overlay absolute inset-0"></div>
+                    ${featuredHtml}
+                    <a href="${escapeHtml(tour.preview_url)}" class="tour-scene-badge absolute right-4 top-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-900 transition hover:-translate-y-0.5">
+                        Visit
+                    </a>
+                </div>
+                <div class="p-5">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="truncate text-xs font-black uppercase tracking-[0.20em] text-cyan-700">${escapeHtml(tour.organization)}</span>
+                        ${ratingHtml}
+                    </div>
+                    <h4 class="text-xl font-black tracking-tight text-slate-900">${escapeHtml(tour.title)}</h4>
+                    <p class="mt-2 line-clamp-3 text-sm leading-7 text-slate-600">${escapeHtml(tour.description || "Immersive visit made for elegant client presentation.")}</p>
+                    <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+                        <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700"><span class="block text-slate-500">Place</span><span class="mt-1 block font-bold">${escapeHtml(tour.place_name || "—")}</span></div>
+                        <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700"><span class="block text-slate-500">Scenes</span><span class="mt-1 block font-bold">${escapeHtml(tour.scene_count || 0)}</span></div>
+                        <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700"><span class="block text-slate-500">City</span><span class="mt-1 block font-bold">${escapeHtml(tour.city || "—")}</span></div>
+                        <div class="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-slate-700"><span class="block text-slate-500">Views</span><span class="mt-1 block font-bold">${escapeHtml(tour.view_count || 0)}</span></div>
+                    </div>
+                    <div class="mt-5 flex items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold text-slate-800">${escapeHtml(tour.category_label || "—")}</p>
+                            ${priceHtml}
+                        </div>
+                        <a href="${escapeHtml(tour.preview_url)}" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110">
+                            Start tour
+                        </a>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    function buildPaginationButton(label, page, active = false, disabled = false) {
+        const base = active
+            ? "border-cyan-300 bg-cyan-50 text-cyan-700"
+            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900";
+        return `<button type="button" data-page="${page}" ${disabled ? "disabled" : ""} class="min-w-[44px] rounded-2xl border px-4 py-2 text-sm font-black transition ${base} ${disabled ? 'pointer-events-none opacity-40' : ''}">${label}</button>`;
+    }
+
+    function renderCatalog() {
+        if (!catalogGrid || !catalogPagination || !catalogEmptyState) return;
+
+        const filtered = getFilteredTours();
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if (catalogState.page > totalPages) catalogState.page = totalPages;
+        const startIndex = (catalogState.page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const currentItems = filtered.slice(startIndex, endIndex);
+
+        catalogGrid.innerHTML = currentItems.map(buildTourCard).join("");
+        catalogEmptyState.classList.toggle("hidden", total > 0);
+        catalogGrid.classList.toggle("hidden", total === 0);
+        catalogPagination.classList.toggle("hidden", total <= pageSize);
+
+        if (catalogResultsMeta) {
+            catalogResultsMeta.textContent = `${total} tour${total > 1 ? 's' : ''} found`;
+        }
+        if (catalogPaginationSummary) {
+            const from = total ? startIndex + 1 : 0;
+            const to = Math.min(endIndex, total);
+            catalogPaginationSummary.textContent = total ? `Showing ${from}-${to} of ${total}` : "No results";
+        }
+
+        if (total > 0) {
+            const buttons = [];
+            buttons.push(buildPaginationButton("‹", Math.max(1, catalogState.page - 1), false, catalogState.page === 1));
+            for (let page = 1; page <= totalPages; page += 1) {
+                if (page === 1 || page === totalPages || Math.abs(page - catalogState.page) <= 1) {
+                    buttons.push(buildPaginationButton(String(page), page, page === catalogState.page));
+                } else if (Math.abs(page - catalogState.page) === 2) {
+                    buttons.push('<span class="px-1 text-slate-400">…</span>');
+                }
+            }
+            buttons.push(buildPaginationButton("›", Math.min(totalPages, catalogState.page + 1), false, catalogState.page === totalPages));
+            catalogPagination.innerHTML = buttons.join("");
+        } else {
+            catalogPagination.innerHTML = "";
+        }
+
+        syncForms();
+        syncCategoryPills();
+        updateUrl();
+    }
+
+    function applyForm(form) {
+        if (!form) return;
+        catalogState.q = (form.querySelector('[name="q"]')?.value || "").trim();
+        catalogState.category = (form.querySelector('[name="category"]')?.value || "").trim();
+        catalogState.city = (form.querySelector('[name="city"]')?.value || "").trim();
+        catalogState.page = 1;
+        renderCatalog();
+    }
+
+    [desktopCatalogFilterForm, mobileCatalogFilterForm].forEach((form) => {
+        if (!form) return;
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            applyForm(form);
+            document.getElementById("tours")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            if (form === mobileCatalogFilterForm) {
+                setSearchSheetOpen(false);
+            }
+        });
+
+        form.querySelectorAll('input[name="q"], select[name="category"], select[name="city"]').forEach((field) => {
+            const eventName = field.matches('input[name="q"]') ? "input" : "change";
+            field.addEventListener(eventName, () => applyForm(form));
+        });
+    });
+
+    resetButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            catalogState.q = "";
+            catalogState.category = "";
+            catalogState.city = "";
+            catalogState.page = 1;
+            renderCatalog();
+        });
+    });
+
+    categoryPills.forEach((pill) => {
+        pill.addEventListener("click", () => {
+            catalogState.category = pill.dataset.categoryPill || "";
+            catalogState.page = 1;
+            renderCatalog();
+        });
+    });
+
+    catalogPagination?.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-page]");
+        if (!button) return;
+        catalogState.page = Number(button.dataset.page || 1);
+        renderCatalog();
+        document.getElementById("tours")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("q")) catalogState.q = (urlParams.get("q") || "").trim();
+    if (urlParams.has("category")) catalogState.category = (urlParams.get("category") || "").trim();
+    if (urlParams.has("city")) catalogState.city = (urlParams.get("city") || "").trim();
+    if (urlParams.has("page")) catalogState.page = Math.max(1, Number(urlParams.get("page") || 1));
+
+    renderCatalog();
 
     buildHeroScene();
 });

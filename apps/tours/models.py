@@ -1,15 +1,50 @@
+import uuid
+from decimal import Decimal
 from pathlib import Path
 
-from django.db import models
-from apps.common.models import TimeStampedModel
-from apps.places.models import Place
-from apps.organizations.models import Organization
-from decimal import Decimal
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
 from django.utils.text import slugify
 
+from apps.common.models import TimeStampedModel
+from apps.organizations.models import Organization
+from apps.places.models import Place
 from apps.tours.utils_compress_image import compress_image, generate_thumbnail
 
+
+def _safe_filename(filename, fallback="file"):
+    ext = Path(filename).suffix.lower() or ".jpg"
+    stem = slugify(Path(filename).stem) or fallback
+    token = uuid.uuid4().hex[:12]
+    return f"{stem}-{token}{ext}"
+
+
+def tour_thumbnail_upload_to(instance, filename):
+    return f"tours/thumbnails/{_safe_filename(filename, 'tour-thumbnail')}"
+
+
+def tour_video_upload_to(instance, filename):
+    return f"tours/videos/{_safe_filename(filename, 'tour-video')}"
+
+
+def scene_panorama_upload_to(instance, filename):
+    return f"tours/panoramas/{_safe_filename(filename, 'scene-panorama')}"
+
+
+def scene_panorama_mobile_upload_to(instance, filename):
+    return f"tours/panoramas/mobile/{_safe_filename(filename, 'scene-mobile')}"
+
+
+def scene_thumbnail_upload_to(instance, filename):
+    return f"tours/panoramas/thumbs/{_safe_filename(filename, 'scene-thumb')}"
+
+
+def hotspot_ad_upload_to(instance, filename):
+    return f"tours/hotspots/ads/{_safe_filename(filename, 'hotspot-ad')}"
+
+
+def tour_photo_upload_to(instance, filename):
+    return f"tours/photos/{_safe_filename(filename, 'tour-photo')}"
 
 
 class Tour(TimeStampedModel):
@@ -34,14 +69,14 @@ class Tour(TimeStampedModel):
     description = models.TextField(blank=True)
 
     thumbnail_image = models.ImageField(
-        upload_to="tours/thumbnails/",
+        upload_to=tour_thumbnail_upload_to,
         null=True,
-        blank=True
+        blank=True,
     )
     video_tour = models.FileField(
-        upload_to="tours/videos/",
+        upload_to=tour_video_upload_to,
         null=True,
-        blank=True
+        blank=True,
     )
     virtual_tour_url = models.URLField(null=True, blank=True)
 
@@ -49,7 +84,7 @@ class Tour(TimeStampedModel):
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
-        default=Status.DRAFT
+        default=Status.DRAFT,
     )
     manifest = models.JSONField(default=dict, blank=True)
 
@@ -127,6 +162,7 @@ class Tour(TimeStampedModel):
         self.view_count += 1
         self.save(update_fields=["view_count", "updated_at"])
 
+
 class Scene360(TimeStampedModel):
     organization = models.ForeignKey(
         Organization,
@@ -142,16 +178,16 @@ class Scene360(TimeStampedModel):
     scene_id = models.CharField(max_length=100, unique=True, blank=True, null=True)
     title = models.CharField(max_length=255)
 
-    image_360 = models.ImageField(upload_to="tours/panoramas/")
+    image_360 = models.ImageField(upload_to=scene_panorama_upload_to)
     image_360_mobile = models.ImageField(
-        upload_to="tours/panoramas/mobile/",
+        upload_to=scene_panorama_mobile_upload_to,
         null=True,
-        blank=True
+        blank=True,
     )
     thumbnail_image = models.ImageField(
-        upload_to="tours/panoramas/thumbs/",
+        upload_to=scene_thumbnail_upload_to,
         null=True,
-        blank=True
+        blank=True,
     )
 
     order = models.PositiveIntegerField(default=0)
@@ -186,7 +222,7 @@ class Scene360(TimeStampedModel):
         if not self.image_360:
             return
 
-        base_name = Path(self.image_360.name).stem
+        clean_base_name = slugify(self.title) or f"scene-{self.pk or 'new'}"
 
         mobile_content, mobile_size_kb = compress_image(
             self.image_360,
@@ -197,9 +233,9 @@ class Scene360(TimeStampedModel):
         )
 
         self.image_360_mobile.save(
-            f"{base_name}_mobile.webp",
+            f"{clean_base_name}-mobile.webp",
             mobile_content,
-            save=False
+            save=False,
         )
 
         thumb_content, thumb_size_kb = generate_thumbnail(
@@ -210,9 +246,9 @@ class Scene360(TimeStampedModel):
         )
 
         self.thumbnail_image.save(
-            f"{base_name}_thumb.webp",
+            f"{clean_base_name}-thumb.webp",
             thumb_content,
-            save=False
+            save=False,
         )
 
         print(f"Image mobile générée : {mobile_size_kb} Ko")
@@ -243,6 +279,7 @@ class Scene360(TimeStampedModel):
 
         if self.image_360 and (creating or image_changed or not self.image_360_mobile or not self.thumbnail_image):
             self.generate_mobile_image(save=True)
+
 
 class Hotspot(TimeStampedModel):
     class Type(models.TextChoices):
@@ -282,7 +319,11 @@ class Hotspot(TimeStampedModel):
     title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     selected_icon = models.CharField(max_length=255, blank=True, null=True)
-    ad_image = models.ImageField(upload_to="tours/hotspots/ads/", blank=True, null=True)
+    ad_image = models.ImageField(
+        upload_to=hotspot_ad_upload_to,
+        blank=True,
+        null=True,
+    )
 
     payload = models.JSONField(default=dict, blank=True)
 
@@ -297,9 +338,7 @@ class Hotspot(TimeStampedModel):
 
     @property
     def ad_image_url(self):
-        if self.ad_image:
-            return self.ad_image.url
-        return None
+        return self.ad_image.url if self.ad_image else None
 
 
 class TourPhoto(TimeStampedModel):
@@ -313,7 +352,8 @@ class TourPhoto(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name="photos",
     )
-    image = models.ImageField(upload_to="tours/photos/")
+
+    image = models.ImageField(upload_to=tour_photo_upload_to)
     caption = models.CharField(max_length=255, blank=True, null=True)
     order = models.PositiveIntegerField(default=0)
 
@@ -322,5 +362,3 @@ class TourPhoto(TimeStampedModel):
 
     def __str__(self):
         return f"Photo for {self.tour.title}"
-    
-    

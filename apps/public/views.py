@@ -1,5 +1,7 @@
 from django.views.generic import TemplateView
 from django.db.models import Count, Q, Prefetch
+from urllib.parse import unquote
+
 from django.urls import reverse
 from django.contrib import messages
 from django.shortcuts import redirect
@@ -18,10 +20,81 @@ from .forms import ContactLeadForm
 
 
 
+
+
+
+
 class PublicHomeView(TemplateView):
     template_name = "public/home.html"
 
+    def _normalize_media_url(self, value):
+        if not value:
+            return ""
+
+        if hasattr(value, "url"):
+            try:
+                value = value.url
+            except Exception:
+                value = str(value)
+
+        url = unquote(str(value)).strip()
+
+        # Corrige certains anciens chemins mal encodés
+        url = (
+            url.replace("\\u002D", "-")
+               .replace("u002D", "-")
+               .replace("\\u002F", "/")
+               .replace("u002F", "/")
+        )
+
+        while "/media//" in url:
+            url = url.replace("/media//", "/media/")
+
+        return url
+
+    def _get_file_url(self, file_field):
+        if not file_field:
+            return ""
+        try:
+            return file_field.url
+        except Exception:
+            return str(file_field)
+
+    def _decorate_tour_media(self, tour):
+        # Tour thumbnail
+        tour.safe_thumbnail_image_url = self._normalize_media_url(
+            getattr(tour, "thumbnail_image_url", "") or ""
+        )
+
+        # Place cover
+        place_cover = ""
+        if getattr(tour, "place", None) and getattr(tour.place, "cover_image", None):
+            place_cover = self._get_file_url(tour.place.cover_image)
+
+        tour.safe_place_cover_image_url = self._normalize_media_url(place_cover)
+
+        # Scenes
+        for scene in getattr(tour, "ordered_scenes", []):
+            scene.safe_image_360_url = self._normalize_media_url(
+                getattr(scene, "image_360_url", "") or ""
+            )
+            scene.safe_image_360_mobile_url = self._normalize_media_url(
+                getattr(scene, "image_360_mobile_url", "") or ""
+            )
+            scene.safe_thumbnail_url = self._normalize_media_url(
+                getattr(scene, "thumbnail_url", "") or ""
+            )
+
+        return tour
+
     def _get_tour_preview_images(self, tour):
+        if not tour:
+            return {
+                "desktop": "",
+                "mobile": "",
+                "thumbnail": "",
+            }
+
         first_scene = tour.ordered_scenes[0] if getattr(tour, "ordered_scenes", []) else None
 
         desktop_url = ""
@@ -29,28 +102,26 @@ class PublicHomeView(TemplateView):
         thumbnail_url = ""
 
         if first_scene:
-            desktop_url = getattr(first_scene, "image_360_url", "") or ""
-            mobile_field = getattr(first_scene, "image_360_mobile", None)
-            mobile_url = mobile_field.url if mobile_field else ""
-            thumb_field = getattr(first_scene, "thumbnail_image", None)
-            thumbnail_url = thumb_field.url if thumb_field else ""
+            desktop_url = getattr(first_scene, "safe_image_360_url", "") or ""
+            mobile_url = getattr(first_scene, "safe_image_360_mobile_url", "") or ""
+            thumbnail_url = getattr(first_scene, "safe_thumbnail_url", "") or ""
 
-        if not desktop_url and getattr(tour, "thumbnail_image_url", ""):
-            desktop_url = tour.thumbnail_image_url
+        if not desktop_url:
+            desktop_url = getattr(tour, "safe_thumbnail_image_url", "") or ""
 
-        if not thumbnail_url and getattr(tour, "thumbnail_image_url", ""):
-            thumbnail_url = tour.thumbnail_image_url
+        if not thumbnail_url:
+            thumbnail_url = getattr(tour, "safe_thumbnail_image_url", "") or ""
 
-        if not desktop_url and tour.place and tour.place.cover_image:
-            desktop_url = tour.place.cover_image
+        if not desktop_url:
+            desktop_url = getattr(tour, "safe_place_cover_image_url", "") or ""
 
-        if not thumbnail_url and tour.place and tour.place.cover_image:
-            thumbnail_url = tour.place.cover_image
+        if not thumbnail_url:
+            thumbnail_url = getattr(tour, "safe_place_cover_image_url", "") or desktop_url or ""
 
         return {
-            "desktop": desktop_url or "",
-            "mobile": mobile_url or "",
-            "thumbnail": thumbnail_url or desktop_url or "",
+            "desktop": self._normalize_media_url(desktop_url),
+            "mobile": self._normalize_media_url(mobile_url),
+            "thumbnail": self._normalize_media_url(thumbnail_url),
         }
 
     def get_context_data(self, **kwargs):
@@ -81,7 +152,27 @@ class PublicHomeView(TemplateView):
             .order_by("-is_featured", "-created_at")
         )
 
+        if q:
+            published_tours_qs = published_tours_qs.filter(
+                Q(title__icontains=q)
+                | Q(description__icontains=q)
+                | Q(guide_name__icontains=q)
+                | Q(place__name__icontains=q)
+                | Q(place__city__icontains=q)
+                | Q(place__country__icontains=q)
+                | Q(organization__name__icontains=q)
+            )
+
+        if category:
+            published_tours_qs = published_tours_qs.filter(place__category=category)
+
+        if city:
+            published_tours_qs = published_tours_qs.filter(place__city__iexact=city)
+
         published_tours = list(published_tours_qs)
+
+        for tour in published_tours:
+            self._decorate_tour_media(tour)
 
         featured_tours = [tour for tour in published_tours if tour.is_featured][:6]
         latest_tours = published_tours[:12]
@@ -134,11 +225,7 @@ class PublicHomeView(TemplateView):
         )
 
         hero_tour = featured_tours[0] if featured_tours else (latest_tours[0] if latest_tours else None)
-        hero_preview_images = self._get_tour_preview_images(hero_tour) if hero_tour else {
-            "desktop": "",
-            "mobile": "",
-            "thumbnail": "",
-        }
+        hero_preview_images = self._get_tour_preview_images(hero_tour)
 
         catalog_tours = []
         for tour in published_tours:
@@ -221,9 +308,7 @@ class PublicHomeView(TemplateView):
                 },
             }
         )
-        return context
-
-    
+        return context 
 
 
 
