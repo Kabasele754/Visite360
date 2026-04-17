@@ -3,10 +3,9 @@
 <html lang="fr" class="h-full">
 <head>
     <meta charset="UTF-8">
-    {% comment %} <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> {% endcomment %}
-    <meta name="viewport" content="target-densitydpi=device-dpi, width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <style> @-ms-viewport { width: device-width; } </style>
-    <link rel="stylesheet" href="//www.marzipano.net/demos/common/reset.css">
+    <link rel="stylesheet" href="https://www.marzipano.net/demos/common/reset.css">
     <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
     <title>{{ tour.title }} - Preview</title>
 
@@ -46,12 +45,11 @@
  <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 </head>
 
-{% include 'public/partials/loader_3d_global.html' %}
-
-<script src="{% static 'public/js/loader_3d_global.js' %}"></script>
-
 <body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
-    <div class="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_45%,#01040d_100%)]">
+    {% include 'public/partials/loader_3d_global.html' %}
+    <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
+
+    <div class="preview-page-shell relative w-screen min-h-[100dvh] overflow-hidden bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_45%,#01040d_100%)]">
 
         <div class="pointer-events-none absolute inset-0 overflow-hidden">
             <div class="absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl"></div>

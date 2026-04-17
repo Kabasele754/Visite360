@@ -366,6 +366,11 @@ class PublicContactView(FormView):
     def form_invalid(self, form):
         messages.error(self.request, "Please correct the form errors and try again.")
         return self.render_to_response(self.get_context_data(form=form))
+    
+    
+    
+
+
 
 
 

@@ -101,6 +101,33 @@ document.addEventListener("DOMContentLoaded", () => {
     function isMobileViewport() {
         return window.matchMedia("(max-width: 768px)").matches;
     }
+    function setupResponsiveMode() {
+        if (!window.matchMedia) return;
+
+        const mql = window.matchMedia("(max-width: 768px), (max-height: 700px)");
+
+        function applyMode() {
+            document.body.classList.toggle("mobile", mql.matches);
+            document.body.classList.toggle("desktop", !mql.matches);
+        }
+
+        applyMode();
+
+        if (mql.addEventListener) {
+            mql.addEventListener("change", applyMode);
+        } else if (mql.addListener) {
+            mql.addListener(applyMode);
+        }
+
+        document.body.classList.add("no-touch");
+
+        window.addEventListener("touchstart", function onFirstTouch() {
+            document.body.classList.remove("no-touch");
+            document.body.classList.add("touch");
+            window.removeEventListener("touchstart", onFirstTouch);
+        }, { passive: true });
+    }
+
 
     function getLayerEl(key) {
         return key === "A" ? previewLayerA : previewLayerB;
@@ -464,6 +491,27 @@ document.addEventListener("DOMContentLoaded", () => {
         markActiveSceneCard(scene?.id);
     }
 
+
+    function stopTouchAndScrollEventPropagation(element) {
+        if (!element) return;
+
+        [
+            "touchstart",
+            "touchmove",
+            "touchend",
+            "touchcancel",
+            "pointerdown",
+            "pointermove",
+            "pointerup",
+            "pointercancel",
+            "wheel"
+        ].forEach((eventName) => {
+            element.addEventListener(eventName, (event) => {
+                event.stopPropagation();
+            }, { passive: true });
+        });
+    }
+
     function buildHotspotNode(hotspot) {
         const display = hotspot.payload?.display || {};
         const variant = display.variant || "pin";
@@ -491,6 +539,8 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             node.appendChild(img);
         }
+
+        stopTouchAndScrollEventPropagation(node);
 
         node.addEventListener("click", async (event) => {
             event.stopPropagation();
@@ -520,16 +570,50 @@ document.addEventListener("DOMContentLoaded", () => {
         return viewers[key];
     }
 
+
+    function getSceneSourceGeometryAndLimiter(sceneData) {
+        const mobile = isMobileViewport();
+
+        if (sceneData?.tiles_url) {
+            return {
+                source: Marzipano.ImageUrlSource.fromString(
+                    `${sceneData.tiles_url}/{z}/{f}/{y}/{x}.jpg`,
+                    {
+                        cubeMapPreviewUrl: `${sceneData.tiles_url}/preview.jpg`
+                    }
+                ),
+                geometry: new Marzipano.CubeGeometry(
+                    sceneData.levels || [
+                        { tileSize: 256, size: 256, fallbackOnly: true },
+                        { tileSize: 512, size: 512 },
+                        { tileSize: 512, size: 1024 },
+                        { tileSize: 512, size: 2048 }
+                    ]
+                ),
+                limiter: Marzipano.RectilinearView.limit.traditional(
+                    sceneData.face_size || 1024,
+                    MAX_FOV
+                )
+            };
+        }
+
+        return {
+            source: Marzipano.ImageUrlSource.fromString(sceneData.image_360_url),
+            geometry: new Marzipano.EquirectGeometry([
+                { width: mobile ? 2048 : 4000 }
+            ]),
+            limiter: Marzipano.RectilinearView.limit.traditional(
+                mobile ? 2048 : 4096,
+                MAX_FOV
+            )
+        };
+    }
+
     function buildSceneOnLayer(layerKey, sceneData) {
         const viewer = ensureViewer(layerKey);
-        if (!viewer || !sceneData?.image_360_url) return null;
+        if (!viewer || (!sceneData?.image_360_url && !sceneData?.tiles_url)) return null;
 
-        const source = Marzipano.ImageUrlSource.fromString(sceneData.image_360_url);
-        // mobile plus sûr
-    const geometry = new Marzipano.EquirectGeometry([{ width: 2048 }]);
-    const limiter = Marzipano.RectilinearView.limit.traditional(2048, MAX_FOV);
-        //const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
-        //const limiter = Marzipano.RectilinearView.limit.traditional(4096, MAX_FOV);
+        const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
 
         const yaw = degToRad(sceneData.yaw_default || 0);
         const pitch = degToRad(sceneData.pitch_default || 0);
@@ -941,6 +1025,20 @@ document.addEventListener("DOMContentLoaded", () => {
         syncZoomButtonsState();
     });
 
+    window.addEventListener("orientationchange", () => {
+        setTimeout(() => {
+            updateAllViewerSizes();
+            syncZoomButtonsState();
+        }, 260);
+    });
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", () => {
+            updateAllViewerSizes();
+            syncZoomButtonsState();
+        });
+    }
+
     document.addEventListener("fullscreenchange", () => {
         setTimeout(() => {
             updateAllViewerSizes();
@@ -970,6 +1068,8 @@ document.addEventListener("DOMContentLoaded", () => {
             zoomBy(8);
         }
     });
+
+    setupResponsiveMode();
 
     if (!scenes.length) {
         if (sceneCountBadge) sceneCountBadge.textContent = "0";
