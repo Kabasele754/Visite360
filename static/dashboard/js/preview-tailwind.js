@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     if (typeof Marzipano === "undefined") {
-        console.error("Marzipano not loaded");
+        debugLog("Marzipano not loaded");
+        showDebugDialog("MARZIPANO_NOT_LOADED", "Le script Marzipano n'a pas été chargé sur cet appareil.");
         return;
     }
 
@@ -61,6 +62,119 @@ document.addEventListener("DOMContentLoaded", () => {
                 box.scrollTop = box.scrollHeight;
             }
         }
+    }
+
+    let debugDialogEl = null;
+    let debugDialogBodyEl = null;
+
+    function ensureDebugDialog() {
+        if (debugDialogEl) return debugDialogEl;
+
+        debugDialogEl = document.createElement("div");
+        debugDialogEl.id = "previewDebugDialog";
+        debugDialogEl.style.position = "fixed";
+        debugDialogEl.style.inset = "0";
+        debugDialogEl.style.zIndex = "1000000";
+        debugDialogEl.style.display = "none";
+        debugDialogEl.style.alignItems = "center";
+        debugDialogEl.style.justifyContent = "center";
+        debugDialogEl.style.padding = "18px";
+        debugDialogEl.style.background = "rgba(0,0,0,0.72)";
+
+        const card = document.createElement("div");
+        card.style.width = "100%";
+        card.style.maxWidth = "680px";
+        card.style.maxHeight = "82vh";
+        card.style.overflow = "hidden";
+        card.style.borderRadius = "16px";
+        card.style.background = "#08111f";
+        card.style.color = "#e2e8f0";
+        card.style.boxShadow = "0 20px 60px rgba(0,0,0,0.45)";
+        card.style.display = "flex";
+        card.style.flexDirection = "column";
+        card.style.border = "1px solid rgba(255,255,255,0.08)";
+
+        const header = document.createElement("div");
+        header.style.display = "flex";
+        header.style.alignItems = "center";
+        header.style.justifyContent = "space-between";
+        header.style.gap = "12px";
+        header.style.padding = "14px 16px";
+        header.style.borderBottom = "1px solid rgba(255,255,255,0.08)";
+        header.innerHTML = '<strong style="font:600 15px system-ui;">Preview debug</strong>';
+
+        const actions = document.createElement("div");
+        actions.style.display = "flex";
+        actions.style.gap = "8px";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.textContent = "Copy";
+        copyBtn.style.padding = "8px 12px";
+        copyBtn.style.borderRadius = "10px";
+        copyBtn.style.border = "0";
+        copyBtn.style.background = "#16a34a";
+        copyBtn.style.color = "#fff";
+        copyBtn.style.fontWeight = "600";
+        copyBtn.addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(debugDialogBodyEl?.textContent || "");
+                copyBtn.textContent = "Copied";
+                setTimeout(() => copyBtn.textContent = "Copy", 1200);
+            } catch (_) {
+                copyBtn.textContent = "Failed";
+                setTimeout(() => copyBtn.textContent = "Copy", 1200);
+            }
+        });
+
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.textContent = "Close";
+        closeBtn.style.padding = "8px 12px";
+        closeBtn.style.borderRadius = "10px";
+        closeBtn.style.border = "0";
+        closeBtn.style.background = "#334155";
+        closeBtn.style.color = "#fff";
+        closeBtn.style.fontWeight = "600";
+        closeBtn.addEventListener("click", () => {
+            debugDialogEl.style.display = "none";
+        });
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(closeBtn);
+        header.appendChild(actions);
+
+        debugDialogBodyEl = document.createElement("pre");
+        debugDialogBodyEl.style.margin = "0";
+        debugDialogBodyEl.style.padding = "16px";
+        debugDialogBodyEl.style.overflow = "auto";
+        debugDialogBodyEl.style.whiteSpace = "pre-wrap";
+        debugDialogBodyEl.style.wordBreak = "break-word";
+        debugDialogBodyEl.style.font = "12px/1.45 monospace";
+        debugDialogBodyEl.style.color = "#86efac";
+
+        card.appendChild(header);
+        card.appendChild(debugDialogBodyEl);
+        debugDialogEl.appendChild(card);
+        document.body.appendChild(debugDialogEl);
+
+        return debugDialogEl;
+    }
+
+    function showDebugDialog(title, payload) {
+        const dialog = ensureDebugDialog();
+        if (!dialog || !debugDialogBodyEl) return;
+
+        const content = [
+            title,
+            "",
+            typeof payload === "string"
+                ? payload
+                : JSON.stringify(payload, null, 2)
+        ].join("\n");
+
+        debugDialogBodyEl.textContent = content;
+        dialog.style.display = "flex";
     }
 
     function getPreferredImageUrl(sceneData) {
@@ -127,16 +241,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     window.addEventListener("error", (event) => {
-        debugLog("JS_ERROR", {
+        const payload = {
             message: event.message,
             file: event.filename,
             line: event.lineno,
             col: event.colno
-        });
+        };
+        debugLog("JS_ERROR", payload);
+        showDebugDialog("JS_ERROR", payload);
     });
 
     window.addEventListener("unhandledrejection", (event) => {
-        debugLog("PROMISE_REJECTION", String(event.reason?.stack || event.reason || "unknown"));
+        const payload = String(event.reason?.stack || event.reason || "unknown");
+        debugLog("PROMISE_REJECTION", payload);
+        showDebugDialog("PROMISE_REJECTION", payload);
     });
 
     const $ = (id) => document.getElementById(id);
@@ -795,6 +913,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!sceneData?.tiles_url) {
             testImageUrl(selectedImageUrl, `scene-${sceneData?.id || "unknown"}`).then((result) => {
                 debugLog("Image probe", result);
+
+                if (!result.ok) {
+                    showDebugDialog("IMAGE_PROBE_FAILED", result);
+                    return;
+                }
+
+                if (isMobileViewport() && (result.width > 5000 || result.height > 2500)) {
+                    showDebugDialog("IMAGE_TOO_LARGE_FOR_MOBILE", result);
+                }
             });
         }
 
@@ -821,11 +948,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 title: sceneData?.title
             });
         } catch (error) {
-            debugLog("createScene/switchTo failed", {
+            const payload = {
                 layerKey,
                 sceneId: sceneData?.id,
                 error: String(error?.message || error)
-            });
+            };
+            debugLog("createScene/switchTo failed", payload);
+            showDebugDialog("CREATE_SCENE_FAILED", payload);
             return null;
         }
 
