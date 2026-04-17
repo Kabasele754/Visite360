@@ -525,8 +525,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!viewer || !sceneData?.image_360_url) return null;
 
         const source = Marzipano.ImageUrlSource.fromString(sceneData.image_360_url);
-        const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
-        const limiter = Marzipano.RectilinearView.limit.traditional(4096, MAX_FOV);
+        // mobile plus sûr
+    const geometry = new Marzipano.EquirectGeometry([{ width: 2048 }]);
+    const limiter = Marzipano.RectilinearView.limit.traditional(2048, MAX_FOV);
+        //const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
+        //const limiter = Marzipano.RectilinearView.limit.traditional(4096, MAX_FOV);
 
         const yaw = degToRad(sceneData.yaw_default || 0);
         const pitch = degToRad(sceneData.pitch_default || 0);

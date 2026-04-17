@@ -3,7 +3,11 @@
 <html lang="fr" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% comment %} <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> {% endcomment %}
+    <meta name="viewport" content="target-densitydpi=device-dpi, width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+    <style> @-ms-viewport { width: device-width; } </style>
+    <link rel="stylesheet" href="//www.marzipano.net/demos/common/reset.css">
+    <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
     <title>{{ tour.title }} - Preview</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -262,7 +266,7 @@
 
     {{ scenes_json|json_script:"preview-scenes-data" }}
 
-    <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
+    {% comment %} <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script> {% endcomment %}
     <script src="{% static 'dashboard/js/preview-tailwind.js' %}"></script>
 </body>
 </html>

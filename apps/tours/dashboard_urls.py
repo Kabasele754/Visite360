@@ -25,7 +25,7 @@ from .dashboard_views import (
 urlpatterns = [
     path("dashboard/studio/", studio_home_view, name="dashboard-studio-home"),
 
-     path("<slug:organization_slug>/tours/", tour_list_view, name="dashboard-tours-list"),
+    path("<slug:organization_slug>/tours/", tour_list_view, name="dashboard-tours-list"),
     path("<slug:organization_slug>/tours/partial/", tour_list_partial_view, name="dashboard-tours-partial"),
     path("<slug:organization_slug>/tours/create/", tour_create_view, name="dashboard-tours-create"),
     path("<slug:organization_slug>/tours/bulk-delete/", tour_bulk_delete_view, name="dashboard-tours-bulk-delete"),

@@ -48,13 +48,21 @@ body {
 /* ===== VIEWER ===== */
 .preview-viewer {
     position: relative;
-    width: 100%;
-    height: 100vh;
+     height: 100vh;   /* fallback */
+  height: 100dvh;  /* mobile moderne */
+  min-height: 100svh;
     overflow: hidden;
     background:
         radial-gradient(circle at center, rgba(103, 232, 249, 0.12), transparent 32%),
         linear-gradient(180deg, #081426 0%, #0a1d35 48%, #0b2240 100%);
     isolation: isolate;
+}
+
+
+@supports (-webkit-touch-callout: none) {
+  .preview-viewer {
+    min-height: -webkit-fill-available;
+  }
 }
 
 .preview-viewer::before {
