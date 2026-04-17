@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.db import models
 from apps.common.models import TimeStampedModel
 from apps.places.models import Place
