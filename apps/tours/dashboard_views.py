@@ -754,7 +754,7 @@ def tour_builder_view(request, organization_slug, tour_id):
 
 # @login_required
 def tour_preview_view(request, organization_slug, tour_id):
-    organization = _get_org_or_403(request, organization_slug)
+    organization = _get_org_or_403(request, organization_slug,  True)
     if not organization:
         return render(request, "403.html", status=403)
 

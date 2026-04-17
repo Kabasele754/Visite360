@@ -40,511 +40,976 @@
     </script>
 
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        min-height: 100vh;
+        color: #0f172a;
+        background:
+            radial-gradient(circle at top, rgba(34,211,238,0.10), transparent 26%),
+            radial-gradient(circle at bottom right, rgba(59,130,246,0.08), transparent 24%),
+            linear-gradient(180deg, #f8fdff 0%, #eef8ff 34%, #ffffff 100%);
+    }
+
+    .glass {
+        background: rgba(255,255,255,0.68);
+        border: 1px solid rgba(255,255,255,0.72);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 18px 50px rgba(15,23,42,0.08);
+    }
+
+    .glass-soft {
+        background: rgba(255,255,255,0.54);
+        border: 1px solid rgba(255,255,255,0.70);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        box-shadow: 0 14px 38px rgba(15,23,42,0.08);
+    }
+
+    .glass-search {
+        background: rgba(255,255,255,0.28);
+        border: 1px solid rgba(255,255,255,0.50);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        box-shadow:
+            0 18px 55px rgba(15,23,42,0.14),
+            inset 0 1px 0 rgba(255,255,255,0.30);
+    }
+
+    .glass-dark {
+        background: rgba(255,255,255,0.14);
+        border: 1px solid rgba(255,255,255,0.24);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+    }
+
+    .card-hover {
+        transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+    }
+
+    .card-hover:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 22px 52px rgba(15,23,42,0.14);
+    }
+
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .hero-shell {
+        position: relative;
+        overflow: hidden;
+        min-height: 860px;
+    }
+
+    .hero-panorama-wrap {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
+            linear-gradient(180deg, rgba(5,15,30,0.05) 0%, rgba(5,15,30,0.15) 100%);
+    }
+
+    .hero-panorama-viewer,
+    .hero-fallback-image {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* IMAGE PLUS PROPRE */
+    .hero-fallback-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scale(1.015) translateZ(0);
+        filter: saturate(1.08) contrast(1.04) brightness(1.02);
+        image-rendering: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+
+    .hero-panorama-viewer canvas {
+        width: 100% !important;
+        height: 100% !important;
+        transform: translateZ(0);
+        filter: saturate(1.05) contrast(1.03) brightness(1.02);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+
+    .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(180deg, rgba(246,252,255,0.12) 0%, rgba(18,43,77,0.10) 30%, rgba(12,27,50,0.26) 68%, rgba(10,23,41,0.40) 100%),
+            radial-gradient(circle at 20% 18%, rgba(255,255,255,0.20), transparent 18%),
+            radial-gradient(circle at 80% 20%, rgba(34,211,238,0.10), transparent 20%);
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .hero-grid {
+        position: relative;
+        z-index: 5;
+    }
+
+    .hero-kicker { animation: heroFadeUp .8s ease both; }
+    .hero-title { animation: heroFadeUp 1s ease .08s both; }
+    .hero-text { animation: heroFadeUp 1s ease .18s both; }
+    .hero-actions { animation: heroFadeUp 1s ease .28s both; }
+    .hero-stats { animation: heroFadeUp 1s ease .38s both; }
+    .hero-search { animation: heroFadeUp 1s ease .20s both; }
+
+    @keyframes heroFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hero-loader {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+            radial-gradient(circle at center, rgba(255,255,255,0.10), rgba(8,18,35,0.28)),
+            linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.18));
+        transition: opacity .8s ease, visibility .8s ease;
+    }
+
+    .hero-loader.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .hero-loader-card {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        padding: 1rem 1.2rem;
+        border-radius: 999px;
+        color: white;
+        background: rgba(10,23,41,0.42);
+        border: 1px solid rgba(255,255,255,0.16);
+        backdrop-filter: blur(14px);
+    }
+
+    .hero-loader-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #67e8f9, #3b82f6);
+        box-shadow: 0 0 0 8px rgba(103,232,249,0.10);
+        animation: pulseDot 1.4s ease infinite;
+    }
+
+    @keyframes pulseDot {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.18);
+            opacity: 0.78;
+        }
+    }
+
+    .hero-mini-panel {
+        background: rgba(255,255,255,0.14);
+        border: 1px solid rgba(255,255,255,0.24);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+    }
+
+    .search-field {
+        width: 100%;
+        border-radius: 1rem;
+        border: 1px solid rgba(255,255,255,0.40);
+        background: rgba(255,255,255,0.42);
+        color: #0f172a;
+        padding: 0.9rem 1rem;
+        outline: none;
+        transition: .2s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .search-field::placeholder {
+        color: #64748b;
+    }
+
+    .search-field:focus {
+        border-color: rgba(34,211,238,0.75);
+        box-shadow: 0 0 0 4px rgba(34,211,238,0.14);
+        background: rgba(255,255,255,0.58);
+    }
+
+    .card-image-overlay {
+        background:
+            linear-gradient(180deg, rgba(15,23,42,0.02) 0%, rgba(15,23,42,0.08) 45%, rgba(15,23,42,0.44) 100%);
+    }
+
+    .section-glow {
+        position: relative;
+    }
+
+    .section-glow::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        pointer-events: none;
+        background: linear-gradient(135deg, rgba(103,232,249,0.10), rgba(59,130,246,0.04), rgba(255,255,255,0.08));
+        opacity: 0.9;
+    }
+
+    .soft-border {
+        border: 1px solid rgba(15,23,42,0.06);
+    }
+
+    .section-title {
+        color: #0f172a;
+        letter-spacing: -0.03em;
+    }
+
+    .soft-text {
+        color: #475569;
+    }
+
+    .tour-card-thumb {
+        position: relative;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
+            linear-gradient(180deg, rgba(7,16,32,0.02), rgba(7,16,32,0.10));
+    }
+
+    .tour-card-thumb img {
+        transition: transform .7s ease, filter .35s ease;
+        filter: saturate(1.06) contrast(1.03) brightness(1.015);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+
+    .tour-card-thumb:hover img {
+        transform: scale(1.04);
+    }
+
+    .tour-scene-badge {
+        background: rgba(255,255,255,0.88);
+        border: 1px solid rgba(255,255,255,0.74);
+        box-shadow: 0 12px 26px rgba(15,23,42,0.10);
+    }
+
+    .app-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 90;
+        padding: 14px 14px 0;
+        pointer-events: none;
+    }
+
+    .header-shell {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 12px 14px;
+        border-radius: 28px;
+        border: 1px solid rgba(255,255,255,0.48);
+        background: linear-gradient(180deg, rgba(255,255,255,0.36), rgba(255,255,255,0.18));
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        box-shadow:
+            0 22px 60px rgba(15,23,42,0.12),
+            inset 0 1px 0 rgba(255,255,255,0.42);
+        pointer-events: auto;
+    }
+
+    .brand-mark {
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 18px 42px rgba(34,211,238,0.22);
+    }
+
+    .brand-mark::after {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        border-radius: inherit;
+        border: 1px solid rgba(255,255,255,0.34);
+        pointer-events: none;
+    }
+
+    .nav-pill {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: 0.01em;
+        background: rgba(255,255,255,0.34);
+        border: 1px solid rgba(255,255,255,0.42);
+        transition: .2s ease;
+    }
+
+    .nav-pill:hover {
+        transform: translateY(-1px);
+        background: rgba(255,255,255,0.56);
+        box-shadow: 0 14px 28px rgba(15,23,42,0.08);
+    }
+
+    .nav-pill.active {
+        color: #083344;
+        background: linear-gradient(135deg, rgba(34,211,238,0.26), rgba(59,130,246,0.18));
+        border-color: rgba(103,232,249,0.50);
+        box-shadow: 0 12px 28px rgba(34,211,238,0.10);
+    }
+
+    .header-cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 46px;
+        padding: 0 18px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(34,211,238,0.92), rgba(59,130,246,0.86));
+        color: #082f49;
+        font-size: 13px;
+        font-weight: 900;
+        text-decoration: none;
+        border: 1px solid rgba(255,255,255,0.58);
+        box-shadow: 0 18px 35px rgba(59,130,246,0.16);
+        transition: .2s ease;
+    }
+
+    .header-cta:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.04);
+    }
+
+    .mobile-menu-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        height: 46px;
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,0.52);
+        background: rgba(255,255,255,0.28);
+        color: #0f172a;
+        box-shadow: 0 14px 30px rgba(15,23,42,0.10);
+    }
+
+    .menu-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 97;
+        opacity: 0;
+        pointer-events: none;
+        transition: .22s ease;
+        background: rgba(15,23,42,0.26);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    .menu-backdrop.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .mobile-menu-panel {
+        position: fixed;
+        top: 14px;
+        right: 14px;
+        bottom: 14px;
+        width: min(340px, calc(100vw - 28px));
+        z-index: 98;
+        transform: translateX(calc(100% + 24px));
+        transition: transform .28s cubic-bezier(.22,1,.36,1);
+        border-radius: 30px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.78);
+        border: 1px solid rgba(255,255,255,0.80);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        box-shadow: 0 28px 80px rgba(15,23,42,0.20);
+    }
+
+    .mobile-menu-panel.open {
+        transform: translateX(0);
+    }
+
+    .mobile-menu-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        border-radius: 20px;
+        text-decoration: none;
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 900;
+        background: rgba(255,255,255,0.54);
+        border: 1px solid rgba(255,255,255,0.72);
+        transition: .18s ease;
+    }
+
+    .mobile-menu-link:hover {
+        transform: translateX(-2px);
+        background: rgba(255,255,255,0.74);
+    }
+
+    /* DESKTOP SEARCH */
+    .desktop-hero-search {
+        display: block;
+    }
+
+    /* MOBILE BOTTOM SHEET */
+    .mobile-search-trigger {
+        position: fixed;
+        left: 50%;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        z-index: 94;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 56px;
+        padding: 0 18px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.58);
+        background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.52));
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        box-shadow: 0 18px 40px rgba(15,23,42,0.18);
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    .mobile-search-trigger.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%) translateY(18px);
+    }
+
+    .search-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 95;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .24s ease;
+        background: rgba(15,23,42,0.28);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    .search-sheet-backdrop.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .search-sheet-panel {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 96;
+        transform: translateY(105%);
+        transition: transform .30s cubic-bezier(.22,1,.36,1);
+        pointer-events: none;
+        border-radius: 28px 28px 0 0;
+        background: linear-gradient(180deg, rgba(245,250,255,0.98), rgba(255,255,255,0.96));
+        border: 1px solid rgba(255,255,255,0.88);
+        box-shadow: 0 -24px 60px rgba(15,23,42,0.22);
+        overflow: hidden;
+        max-height: min(82vh, 760px);
+    }
+
+    .search-sheet-panel.open {
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .search-sheet-handle {
+        width: 62px;
+        height: 6px;
+        border-radius: 999px;
+        margin: 10px auto 0;
+        background: rgba(100,116,139,0.32);
+    }
+
+    .search-sheet-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 18px 12px;
+    }
+
+    .search-sheet-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.84);
+        background: rgba(255,255,255,0.78);
+        color: #334155;
+        box-shadow: 0 12px 24px rgba(15,23,42,0.08);
+    }
+
+    .search-sheet-body {
+        overflow-y: auto;
+        padding: 0 16px 18px;
+    }
+
+    #featured,
+    #places,
+    #tours,
+    #organizations {
+        scroll-margin-top: 124px;
+    }
+
+    @media (max-width: 1024px) {
+        .hero-shell {
+            min-height: 980px;
         }
 
-        body {
-            min-height: 100vh;
-            color: #0f172a;
-            background:
-                radial-gradient(circle at top, rgba(34,211,238,0.10), transparent 26%),
-                radial-gradient(circle at bottom right, rgba(59,130,246,0.08), transparent 24%),
-                linear-gradient(180deg, #f8fdff 0%, #eef8ff 34%, #ffffff 100%);
+        .app-header {
+            padding: 12px 12px 0;
         }
 
-        .glass {
-            background: rgba(255,255,255,0.68);
-            border: 1px solid rgba(255,255,255,0.72);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            box-shadow: 0 18px 50px rgba(15,23,42,0.08);
+        .header-shell {
+            border-radius: 24px;
+            padding: 10px 12px;
+        }
+    }
+
+    @media (max-width: 1023px) {
+        .desktop-hero-search {
+            display: none !important;
         }
 
-        .glass-soft {
-            background: rgba(255,255,255,0.54);
-            border: 1px solid rgba(255,255,255,0.70);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            box-shadow: 0 14px 38px rgba(15,23,42,0.08);
+        .mobile-search-trigger {
+            display: inline-flex;
         }
 
-        .glass-search {
-            background: rgba(255,255,255,0.28);
-            border: 1px solid rgba(255,255,255,0.50);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            box-shadow:
-                0 18px 55px rgba(15,23,42,0.14),
-                inset 0 1px 0 rgba(255,255,255,0.30);
-        }
-
-        .glass-dark {
-            background: rgba(255,255,255,0.14);
-            border: 1px solid rgba(255,255,255,0.24);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-        }
-
-        .card-hover {
-            transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
-        }
-
-        .card-hover:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 22px 52px rgba(15,23,42,0.14);
-        }
-
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .line-clamp-3 {
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        .hero-grid {
+            padding-bottom: 110px;
         }
 
         .hero-shell {
-            position: relative;
-            overflow: hidden;
+            min-height: auto;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .desktop-nav,
+        .desktop-cta {
+            display: none !important;
+        }
+
+        .mobile-menu-btn {
+            display: inline-flex;
+        }
+
+        .app-header {
+            padding: 10px 10px 0;
+        }
+
+        .header-shell {
+            border-radius: 22px;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .hero-shell {
+            min-height: 920px;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .mobile-search-trigger,
+        .search-sheet-backdrop,
+        .search-sheet-panel {
+            display: none !important;
+        }
+    }
+</style>
+
+<style>
+    .hero-shell {
+        position: relative;
+        overflow: hidden;
+        min-height: 860px;
+    }
+
+    .hero-panorama-wrap {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
+            linear-gradient(180deg, rgba(5,15,30,0.05) 0%, rgba(5,15,30,0.15) 100%);
+    }
+
+    .hero-panorama-viewer,
+    .hero-fallback-image {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .hero-panorama-viewer {
+        touch-action: none;
+        cursor: grab;
+    }
+
+    .hero-panorama-viewer:active {
+        cursor: grabbing;
+    }
+
+    .hero-fallback-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+        transform: scale(1.02) translateZ(0);
+        filter: saturate(1.08) contrast(1.04) brightness(1.02);
+        image-rendering: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+
+    .hero-panorama-viewer canvas {
+        width: 100% !important;
+        height: 100% !important;
+        transform: translateZ(0);
+        filter: saturate(1.05) contrast(1.03) brightness(1.02);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+
+    .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(180deg, rgba(246,252,255,0.10) 0%, rgba(18,43,77,0.10) 30%, rgba(12,27,50,0.26) 68%, rgba(10,23,41,0.40) 100%),
+            radial-gradient(circle at 20% 18%, rgba(255,255,255,0.18), transparent 18%),
+            radial-gradient(circle at 80% 20%, rgba(34,211,238,0.10), transparent 20%);
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .hero-grid {
+        position: relative;
+        z-index: 5;
+    }
+
+    .hero-kicker { animation: heroFadeUp .8s ease both; }
+    .hero-title { animation: heroFadeUp 1s ease .08s both; }
+    .hero-text { animation: heroFadeUp 1s ease .18s both; }
+    .hero-actions { animation: heroFadeUp 1s ease .28s both; }
+    .hero-stats { animation: heroFadeUp 1s ease .38s both; }
+    .hero-search { animation: heroFadeUp 1s ease .20s both; }
+
+    @keyframes heroFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hero-loader {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+            radial-gradient(circle at center, rgba(255,255,255,0.10), rgba(8,18,35,0.28)),
+            linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.18));
+        transition: opacity .8s ease, visibility .8s ease;
+    }
+
+    .hero-loader.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .hero-loader-card {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        padding: 1rem 1.2rem;
+        border-radius: 999px;
+        color: white;
+        background: rgba(10,23,41,0.42);
+        border: 1px solid rgba(255,255,255,0.16);
+        backdrop-filter: blur(14px);
+    }
+
+    .hero-loader-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #67e8f9, #3b82f6);
+        box-shadow: 0 0 0 8px rgba(103,232,249,0.10);
+        animation: pulseDot 1.4s ease infinite;
+    }
+
+    @keyframes pulseDot {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.18);
+            opacity: 0.78;
+        }
+    }
+
+    .search-field {
+        width: 100%;
+        border-radius: 1rem;
+        border: 1px solid rgba(255,255,255,0.40);
+        background: rgba(255,255,255,0.42);
+        color: #0f172a;
+        padding: 0.9rem 1rem;
+        outline: none;
+        transition: .2s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .search-field::placeholder {
+        color: #64748b;
+    }
+
+    .search-field:focus {
+        border-color: rgba(34,211,238,0.75);
+        box-shadow: 0 0 0 4px rgba(34,211,238,0.14);
+        background: rgba(255,255,255,0.58);
+    }
+
+    .desktop-hero-search {
+        display: block;
+        pointer-events: auto;
+    }
+
+    .desktop-hero-search * {
+        pointer-events: auto;
+    }
+
+    .hero-copy-floating {
+        pointer-events: none;
+    }
+
+    .hero-copy-floating a,
+    .hero-copy-floating button {
+        pointer-events: auto;
+    }
+
+    .hero-title,
+    .hero-text {
+        text-shadow:
+            0 10px 30px rgba(15,23,42,0.22),
+            0 4px 14px rgba(15,23,42,0.18);
+    }
+
+    .mobile-search-trigger {
+        position: fixed;
+        left: 50%;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        z-index: 94;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 56px;
+        padding: 0 18px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.58);
+        background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.52));
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        box-shadow: 0 18px 40px rgba(15,23,42,0.18);
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    .mobile-search-trigger.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%) translateY(18px);
+    }
+
+    .search-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 95;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .24s ease;
+        background: rgba(15,23,42,0.28);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    .search-sheet-backdrop.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .search-sheet-panel {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 96;
+        transform: translateY(105%);
+        transition: transform .30s cubic-bezier(.22,1,.36,1);
+        pointer-events: none;
+        border-radius: 28px 28px 0 0;
+        background: linear-gradient(180deg, rgba(245,250,255,0.98), rgba(255,255,255,0.96));
+        border: 1px solid rgba(255,255,255,0.88);
+        box-shadow: 0 -24px 60px rgba(15,23,42,0.22);
+        overflow: hidden;
+        max-height: min(82vh, 760px);
+    }
+
+    .search-sheet-panel.open {
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .search-sheet-handle {
+        width: 62px;
+        height: 6px;
+        border-radius: 999px;
+        margin: 10px auto 0;
+        background: rgba(100,116,139,0.32);
+    }
+
+    .search-sheet-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 18px 12px;
+    }
+
+    .search-sheet-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.84);
+        background: rgba(255,255,255,0.78);
+        color: #334155;
+        box-shadow: 0 12px 24px rgba(15,23,42,0.08);
+    }
+
+    .search-sheet-body {
+        overflow-y: auto;
+        padding: 0 16px 18px;
+    }
+
+    @media (max-width: 1023px) {
+        .desktop-hero-search {
+            display: none !important;
+        }
+
+        .mobile-search-trigger {
+            display: inline-flex;
+        }
+
+        .hero-grid {
+            padding-bottom: 110px;
+        }
+
+        .hero-shell {
+            min-height: 920px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hero-shell {
             min-height: 860px;
         }
 
         .hero-panorama-wrap {
-            position: absolute;
-            inset: 0;
-            overflow: hidden;
             background:
-                radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
-                linear-gradient(180deg, rgba(5,15,30,0.08) 0%, rgba(5,15,30,0.18) 100%);
+                radial-gradient(circle at center, rgba(255,255,255,0.04), transparent 46%),
+                linear-gradient(180deg, rgba(5,15,30,0.04) 0%, rgba(5,15,30,0.14) 100%);
         }
 
-        .hero-panorama-viewer,
-        .hero-fallback-image {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-        }
-
+        .hero-panorama-viewer canvas,
         .hero-fallback-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scale(1.05);
-        }
-
-        .hero-panorama-viewer canvas {
-            width: 100% !important;
-            height: 100% !important;
+            filter: saturate(1.06) contrast(1.04) brightness(1.03);
         }
 
         .hero-overlay {
-            position: absolute;
-            inset: 0;
             background:
-                linear-gradient(180deg, rgba(246,252,255,0.18) 0%, rgba(18,43,77,0.14) 30%, rgba(12,27,50,0.34) 68%, rgba(10,23,41,0.48) 100%),
-                radial-gradient(circle at 20% 18%, rgba(255,255,255,0.26), transparent 18%),
-                radial-gradient(circle at 80% 20%, rgba(34,211,238,0.14), transparent 20%);
-            z-index: 2;
-            pointer-events: none;
+                linear-gradient(180deg, rgba(246,252,255,0.08) 0%, rgba(18,43,77,0.08) 30%, rgba(12,27,50,0.22) 68%, rgba(10,23,41,0.34) 100%),
+                radial-gradient(circle at 20% 18%, rgba(255,255,255,0.12), transparent 18%),
+                radial-gradient(circle at 80% 20%, rgba(34,211,238,0.08), transparent 20%);
         }
+    }
 
-        .hero-grid {
-            position: relative;
-            z-index: 5;
+    @media (min-width: 1024px) {
+        .mobile-search-trigger,
+        .search-sheet-backdrop,
+        .search-sheet-panel {
+            display: none !important;
         }
-
-        .hero-kicker {
-            animation: heroFadeUp .8s ease both;
-        }
-
-        .hero-title {
-            animation: heroFadeUp 1s ease .08s both;
-        }
-
-        .hero-text {
-            animation: heroFadeUp 1s ease .18s both;
-        }
-
-        .hero-actions {
-            animation: heroFadeUp 1s ease .28s both;
-        }
-
-        .hero-stats {
-            animation: heroFadeUp 1s ease .38s both;
-        }
-
-        .hero-search {
-            animation: heroFadeUp 1s ease .20s both;
-        }
-
-        @keyframes heroFadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(24px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .hero-loader {
-            position: absolute;
-            inset: 0;
-            z-index: 4;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background:
-                radial-gradient(circle at center, rgba(255,255,255,0.10), rgba(8,18,35,0.28)),
-                linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.18));
-            transition: opacity .8s ease, visibility .8s ease;
-        }
-
-        .hero-loader.is-hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .hero-loader-card {
-            display: flex;
-            align-items: center;
-            gap: 0.9rem;
-            padding: 1rem 1.2rem;
-            border-radius: 999px;
-            color: white;
-            background: rgba(10,23,41,0.42);
-            border: 1px solid rgba(255,255,255,0.16);
-            backdrop-filter: blur(14px);
-        }
-
-        .hero-loader-dot {
-            width: 14px;
-            height: 14px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, #67e8f9, #3b82f6);
-            box-shadow: 0 0 0 8px rgba(103,232,249,0.10);
-            animation: pulseDot 1.4s ease infinite;
-        }
-
-        @keyframes pulseDot {
-            0%, 100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.18);
-                opacity: 0.78;
-            }
-        }
-
-        .hero-mini-panel {
-            background: rgba(255,255,255,0.14);
-            border: 1px solid rgba(255,255,255,0.24);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-        }
-
-        .search-field {
-            width: 100%;
-            border-radius: 1rem;
-            border: 1px solid rgba(255,255,255,0.40);
-            background: rgba(255,255,255,0.42);
-            color: #0f172a;
-            padding: 0.9rem 1rem;
-            outline: none;
-            transition: .2s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .search-field::placeholder {
-            color: #64748b;
-        }
-
-        .search-field:focus {
-            border-color: rgba(34,211,238,0.75);
-            box-shadow: 0 0 0 4px rgba(34,211,238,0.14);
-            background: rgba(255,255,255,0.58);
-        }
-
-        .card-image-overlay {
-            background:
-                linear-gradient(180deg, rgba(15,23,42,0.04) 0%, rgba(15,23,42,0.12) 45%, rgba(15,23,42,0.54) 100%);
-        }
-
-        .section-glow {
-            position: relative;
-        }
-
-        .section-glow::before {
-            content: "";
-            position: absolute;
-            inset: -1px;
-            border-radius: inherit;
-            pointer-events: none;
-            background: linear-gradient(135deg, rgba(103,232,249,0.10), rgba(59,130,246,0.04), rgba(255,255,255,0.08));
-            opacity: 0.9;
-        }
-
-        .soft-border {
-            border: 1px solid rgba(15,23,42,0.06);
-        }
-
-        .section-title {
-            color: #0f172a;
-            letter-spacing: -0.03em;
-        }
-
-        .soft-text {
-            color: #475569;
-        }
-
-        .tour-card-thumb {
-            position: relative;
-            overflow: hidden;
-            background:
-                radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
-                linear-gradient(180deg, rgba(7,16,32,0.02), rgba(7,16,32,0.10));
-        }
-
-        .tour-card-thumb img {
-            transition: transform .7s ease;
-        }
-
-        .tour-card-thumb:hover img {
-            transform: scale(1.06);
-        }
-
-        .tour-scene-badge {
-            background: rgba(255,255,255,0.88);
-            border: 1px solid rgba(255,255,255,0.74);
-            box-shadow: 0 12px 26px rgba(15,23,42,0.10);
-        }
-
-        @media (max-width: 1024px) {
-            .hero-shell {
-                min-height: 980px;
-            }
-        }
-
-        .app-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 90;
-            padding: 14px 14px 0;
-            pointer-events: none;
-        }
-
-        .header-shell {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 12px 14px;
-            border-radius: 28px;
-            border: 1px solid rgba(255,255,255,0.48);
-            background: linear-gradient(180deg, rgba(255,255,255,0.36), rgba(255,255,255,0.18));
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            box-shadow:
-                0 22px 60px rgba(15,23,42,0.12),
-                inset 0 1px 0 rgba(255,255,255,0.42);
-            pointer-events: auto;
-        }
-
-        .brand-mark {
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 18px 42px rgba(34,211,238,0.22);
-        }
-
-        .brand-mark::after {
-            content: "";
-            position: absolute;
-            inset: 1px;
-            border-radius: inherit;
-            border: 1px solid rgba(255,255,255,0.34);
-            pointer-events: none;
-        }
-
-        .nav-pill {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 44px;
-            padding: 0 16px;
-            border-radius: 999px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 900;
-            color: #0f172a;
-            letter-spacing: 0.01em;
-            background: rgba(255,255,255,0.34);
-            border: 1px solid rgba(255,255,255,0.42);
-            transition: .2s ease;
-        }
-
-        .nav-pill:hover {
-            transform: translateY(-1px);
-            background: rgba(255,255,255,0.56);
-            box-shadow: 0 14px 28px rgba(15,23,42,0.08);
-        }
-
-        .nav-pill.active {
-            color: #083344;
-            background: linear-gradient(135deg, rgba(34,211,238,0.26), rgba(59,130,246,0.18));
-            border-color: rgba(103,232,249,0.50);
-            box-shadow: 0 12px 28px rgba(34,211,238,0.10);
-        }
-
-        .header-cta {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 46px;
-            padding: 0 18px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, rgba(34,211,238,0.92), rgba(59,130,246,0.86));
-            color: #082f49;
-            font-size: 13px;
-            font-weight: 900;
-            text-decoration: none;
-            border: 1px solid rgba(255,255,255,0.58);
-            box-shadow: 0 18px 35px rgba(59,130,246,0.16);
-            transition: .2s ease;
-        }
-
-        .header-cta:hover {
-            transform: translateY(-1px);
-            filter: brightness(1.04);
-        }
-
-        .mobile-menu-btn {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            width: 46px;
-            height: 46px;
-            border-radius: 18px;
-            border: 1px solid rgba(255,255,255,0.52);
-            background: rgba(255,255,255,0.28);
-            color: #0f172a;
-            box-shadow: 0 14px 30px rgba(15,23,42,0.10);
-        }
-
-        .menu-backdrop {
-            position: fixed;
-            inset: 0;
-            z-index: 97;
-            opacity: 0;
-            pointer-events: none;
-            transition: .22s ease;
-            background: rgba(15,23,42,0.26);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-        }
-
-        .menu-backdrop.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .mobile-menu-panel {
-            position: fixed;
-            top: 14px;
-            right: 14px;
-            bottom: 14px;
-            width: min(340px, calc(100vw - 28px));
-            z-index: 98;
-            transform: translateX(calc(100% + 24px));
-            transition: transform .28s cubic-bezier(.22,1,.36,1);
-            border-radius: 30px;
-            overflow: hidden;
-            background: rgba(255,255,255,0.78);
-            border: 1px solid rgba(255,255,255,0.80);
-            backdrop-filter: blur(22px);
-            -webkit-backdrop-filter: blur(22px);
-            box-shadow: 0 28px 80px rgba(15,23,42,0.20);
-        }
-
-        .mobile-menu-panel.open {
-            transform: translateX(0);
-        }
-
-        .mobile-menu-link {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 16px 18px;
-            border-radius: 20px;
-            text-decoration: none;
-            color: #0f172a;
-            font-size: 15px;
-            font-weight: 900;
-            background: rgba(255,255,255,0.54);
-            border: 1px solid rgba(255,255,255,0.72);
-            transition: .18s ease;
-        }
-
-        .mobile-menu-link:hover {
-            transform: translateX(-2px);
-            background: rgba(255,255,255,0.74);
-        }
-
-        #featured,
-        #places,
-        #tours,
-        #organizations {
-            scroll-margin-top: 124px;
-        }
-
-        @media (max-width: 1024px) {
-            .app-header {
-                padding: 12px 12px 0;
-            }
-
-            .header-shell {
-                border-radius: 24px;
-                padding: 10px 12px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .desktop-nav,
-            .desktop-cta {
-                display: none !important;
-            }
-
-            .mobile-menu-btn {
-                display: inline-flex;
-            }
-
-            .app-header {
-                padding: 10px 10px 0;
-            }
-
-            .header-shell {
-                border-radius: 22px;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .hero-shell {
-                min-height: 980px;
-            }
-        }
-    </style>
+    }
+</style>
 
     <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 </head>
@@ -598,6 +1063,8 @@
             </div>
         </div>
     </header>
+
+  
 
     <aside id="mobileMenuPanel" class="mobile-menu-panel md:hidden">
         <div class="flex h-full flex-col">
@@ -653,177 +1120,273 @@
         </div>
     </aside>
 
-    <section class="hero-shell">
-        {% if hero_tour %}
-            {% url 'tour-preview-public' organization_slug=hero_tour.organization.slug tour_id=hero_tour.id as hero_preview_url %}
-        {% endif %}
-
-        <div class="hero-panorama-wrap">
-            {% if hero_scene_url %}
-    <div
-        id="heroMarzipano"
-        class="hero-panorama-viewer"
-        data-panorama-url="{{ hero_scene_url|escapejs }}"
-        data-panorama-mobile-url="{{ hero_scene_mobile_url|default:''|escapejs }}"
-        data-panorama-thumb-url="{{ hero_scene_thumbnail_url|default:''|escapejs }}"
-    ></div>
-{% elif hero_tour and hero_tour.thumbnail_image_url %}
-    <div class="hero-fallback-image">
-        <img src="{{ hero_tour.thumbnail_image_url }}" alt="{{ hero_tour.title }}">
-    </div>
-{% elif hero_tour and hero_tour.place.cover_image %}
-    <div class="hero-fallback-image">
-        <img src="{{ hero_tour.place.cover_image }}" alt="{{ hero_tour.title }}">
-    </div>
-{% endif %}
-        </div>
-
-        <div class="hero-overlay"></div>
-
-        <div id="heroLoader" class="hero-loader">
-            <div class="hero-loader-card">
-                <span class="hero-loader-dot"></span>
-                <div>
-                    <p class="text-xs font-black uppercase tracking-[0.24em] text-cyan-200">360 Preview</p>
-                    <p class="text-sm font-semibold text-white/90">Loading your immersive experience...</p>
-                </div>
+   <section class="hero-shell">
+    <div class="hero-panorama-wrap">
+        {% if hero_scene_url %}
+            <div
+                id="heroMarzipano"
+                class="hero-panorama-viewer"
+                data-panorama-url="{{ hero_scene_url|escapejs }}"
+                data-panorama-mobile-url="{{ hero_scene_mobile_url|default:''|escapejs }}"
+                data-panorama-thumb-url="{{ hero_scene_thumbnail_url|default:''|escapejs }}"
+            ></div>
+        {% elif hero_tour and hero_tour.thumbnail_image_url %}
+            <div class="hero-fallback-image">
+                <img src="{{ hero_tour.thumbnail_image_url }}" alt="{{ hero_tour.title }}">
             </div>
-        </div>
+        {% elif hero_tour and hero_tour.place.cover_image %}
+            <div class="hero-fallback-image">
+                <img src="{{ hero_tour.place.cover_image }}" alt="{{ hero_tour.title }}">
+            </div>
+        {% endif %}
+    </div>
 
-        <div class="hero-grid relative mx-auto max-w-7xl px-4 py-24 lg:px-6 lg:py-32">
-            <div class="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-                <div class="max-w-3xl">
-                    <div class="hero-kicker mb-5 inline-flex items-center gap-2 rounded-full border border-white/24 bg-white/14 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-white shadow-soft">
-                        <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.8)]"></span>
-                        Premium 360 Experience
+    <div class="hero-overlay"></div>
+
+    <div id="heroLoader" class="hero-loader">
+        <div class="hero-loader-card">
+            <span class="hero-loader-dot"></span>
+            <span class="text-sm font-bold">Loading immersive experience...</span>
+        </div>
+    </div>
+
+    <div class="hero-grid relative mx-auto max-w-7xl px-4 py-24 lg:px-6 lg:py-32">
+        <div class="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+            <div class="hero-copy-floating max-w-3xl relative z-10">
+                <div class="hero-kicker mb-6 inline-flex items-center gap-3 rounded-full border border-white/22 bg-white/10 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.26em] text-white backdrop-blur-md shadow-[0_12px_28px_rgba(15,23,42,0.16)]">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-300/15 ring-1 ring-white/20">
+                        <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_16px_rgba(103,232,249,0.9)]"></span>
+                    </span>
+                    Premium 360 Experience
+                </div>
+
+                <h2 class="hero-title max-w-2xl text-4xl font-black leading-[0.98] tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl">
+                    Turn your space into a
+                    <span class="mt-2 block bg-gradient-to-r from-cyan-200 via-sky-200 to-white bg-clip-text text-transparent">
+                        stunning virtual experience
+                    </span>
+                </h2>
+
+                <div class="mt-6 flex max-w-xl items-center gap-3">
+                    <div class="h-1.5 w-24 rounded-full bg-gradient-to-r from-cyan-300 via-sky-300 to-white shadow-[0_0_26px_rgba(103,232,249,0.45)]"></div>
+                    <div class="h-px flex-1 bg-gradient-to-r from-white/40 to-transparent"></div>
+                </div>
+
+                <p class="hero-text mt-6 max-w-2xl text-base leading-8 text-slate-100 sm:text-lg">
+                    Showcase shops, apartments, restaurants, event venues, and professional spaces with a modern, elegant, and high-converting presentation designed to impress every visitor.
+                </p>
+
+                <div class="hero-actions mt-8 flex flex-wrap gap-4">
+                    {% if hero_tour %}
+                        <a href="{{ hero_preview_url }}"
+                           class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-300 to-white px-6 py-4 text-sm font-black text-slate-950 shadow-[0_20px_45px_rgba(103,232,249,0.22)] transition duration-300 hover:-translate-y-1 hover:brightness-105">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5.14v13.72a1 1 0 001.52.85l10.2-6.86a1 1 0 000-1.7L9.52 4.29A1 1 0 008 5.14z"/>
+                            </svg>
+                            Start the Tour
+                        </a>
+                    {% endif %}
+
+                    <a href="/explorer/"
+                       class="inline-flex items-center justify-center rounded-2xl border border-white/22 bg-white/10 px-6 py-4 text-sm font-bold text-white backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:bg-white/18">
+                        Explore Tours
+                    </a>
+                </div>
+
+                <div class="hero-stats mt-10 hidden max-w-2xl grid-cols-1 gap-4 sm:grid sm:grid-cols-3">
+                    <div class="rounded-3xl border border-white/18 bg-white/10 p-5 backdrop-blur-md">
+                        <div class="text-3xl font-black text-white">{{ stats.tour_count }}</div>
+                        <div class="mt-1 text-sm font-semibold text-slate-100">Published Tour</div>
+                    </div>
+                    <div class="rounded-3xl border border-white/18 bg-white/10 p-5 backdrop-blur-md">
+                        <div class="text-3xl font-black text-white">{{ stats.place_count }}</div>
+                        <div class="mt-1 text-sm font-semibold text-slate-100">Published Places</div>
+                    </div>
+                    <div class="rounded-3xl border border-white/18 bg-white/10 p-5 backdrop-blur-md">
+                        <div class="text-3xl font-black text-white">{{ stats.organization_count }}</div>
+                        <div class="mt-1 text-sm font-semibold text-slate-100">Active Organizations</div>
+                    </div>
+                </div>
+
+                {% if hero_tour %}
+                    <div class="mt-6 inline-flex flex-wrap items-center gap-3 rounded-[24px] border border-white/20 bg-white/12 px-4 py-3 text-white backdrop-blur-xl">
+                        <div class="rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-100 bg-white/10 border border-white/10">
+                           Featured Tour
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-black">{{ hero_tour.title }}</p>
+                            <p class="truncate text-xs text-slate-200">
+                                {{ hero_tour.organization.name }}
+                                {% if hero_tour.place.city %} · {{ hero_tour.place.city }}{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="hero-search desktop-hero-search glass-search rounded-[32px] p-5 shadow-premium lg:p-6">
+                <div class="mb-5">
+                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-800">Smart Search</p>
+                    <h3 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Find the Perfect Tour</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-700">
+                       Search by keyword, category, or city to discover the right immersive experience faster.
+                    </p>
+                </div>
+
+                <form method="get" class="space-y-4">
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-slate-900">Keyword</label>
+                        <input
+                            type="text"
+                            name="q"
+                            value="{{ selected_q }}"
+                            placeholder="Boutique, appartement, restaurant..."
+                            class="search-field"
+                        >
                     </div>
 
-                    <h2 class="hero-title text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-                         Turn your space into a
-                        <span class="bg-gradient-to-r from-cyan-200 via-sky-200 to-white bg-clip-text text-transparent">
-                           stunning virtual experience
-                        </span>
-                    </h2>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-slate-900">Category</label>
+                            <select name="category" class="search-field">
+                                <option value="">All Categories</option>
+                                {% for value, label in category_choices %}
+                                    <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-                    <p class="hero-text mt-5 max-w-2xl text-base leading-8 text-slate-100 sm:text-lg">
-                         Showcase shops, apartments, restaurants, event venues, and professional spaces with a modern, elegant, and high-converting presentation designed to impress every visitor.
-                    </p>
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-slate-900">City</label>
+                            <select name="city" class="search-field">
+                                <option value="">All Cities</option>
+                                {% for city_name in available_cities %}
+                                    <option value="{{ city_name }}" {% if selected_city == city_name %}selected{% endif %}>
+                                        {{ city_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
 
-                    <div class="hero-actions mt-8 flex flex-wrap gap-4">
-                        {% if hero_tour %}
-                            <a href="{{ hero_preview_url }}"
-                               class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-900 shadow-premium transition hover:-translate-y-0.5 hover:brightness-105">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M8 5.14v13.72a1 1 0 001.52.85l10.2-6.86a1 1 0 000-1.7L9.52 4.29A1 1 0 008 5.14z"/>
-                                </svg>
-                               Start the Tour
-                            </a>
-                        {% endif %}
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <button
+                            type="submit"
+                            class="inline-flex flex-1 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-5 py-3.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
+                        >
+                            Search
+                        </button>
 
-                        <a href="/explorer/"
-                           class="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/16">
-                           Explore Tours
+                        <a
+                            href="{% url 'public_home' %}"
+                            class="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/36 px-5 py-3.5 text-sm font-bold text-slate-800 transition hover:bg-white/52"
+                        >
+                            Reset
                         </a>
                     </div>
-
-                    <div class="hero-stats mt-10 grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
-                        <div class="glass-dark rounded-3xl p-5">
-                            <div class="text-3xl font-black text-white">{{ stats.tour_count }}</div>
-                            <div class="mt-1 text-sm font-semibold text-slate-100">Published Tour</div>
-                        </div>
-                        <div class="glass-dark rounded-3xl p-5">
-                            <div class="text-3xl font-black text-white">{{ stats.place_count }}</div>
-                            <div class="mt-1 text-sm font-semibold text-slate-100">Published Places</div>
-                        </div>
-                        <div class="glass-dark rounded-3xl p-5">
-                            <div class="text-3xl font-black text-white">{{ stats.organization_count }}</div>
-                            <div class="mt-1 text-sm font-semibold text-slate-100">Active Organizations</div>
-                        </div>
-                    </div>
-
-                    {% if hero_tour %}
-                        <div class="mt-6 inline-flex flex-wrap items-center gap-3 rounded-[24px] border border-white/20 bg-white/12 px-4 py-3 text-white backdrop-blur-xl">
-                            <div class="hero-mini-panel rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-100">
-                               Featured Tour
-                            </div>
-                            <div class="min-w-0">
-                                <p class="truncate text-sm font-black">{{ hero_tour.title }}</p>
-                                <p class="truncate text-xs text-slate-200">
-                                    {{ hero_tour.organization.name }}
-                                    {% if hero_tour.place.city %} · {{ hero_tour.place.city }}{% endif %}
-                                </p>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="hero-search glass-search rounded-[32px] p-5 shadow-premium lg:p-6">
-                    <div class="mb-5">
-                        <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-800">Smart Search</p>
-                        <h3 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Find the Perfect Tour</h3>
-                        <p class="mt-2 text-sm leading-6 text-slate-700">
-                           Search by keyword, category, or city to discover the right immersive experience faster.
-                        </p>
-                    </div>
-
-                    <form method="get" class="space-y-4">
-                        <div>
-                            <label class="mb-2 block text-sm font-bold text-slate-900">Keyword</label>
-                            <input
-                                type="text"
-                                name="q"
-                                value="{{ selected_q }}"
-                                placeholder="Boutique, appartement, restaurant..."
-                                class="search-field"
-                            >
-                        </div>
-
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div>
-                                <label class="mb-2 block text-sm font-bold text-slate-900">Category</label>
-                                <select name="category" class="search-field">
-                                    <option value="">All Categories</option>
-                                    {% for value, label in category_choices %}
-                                        <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>
-                                            {{ label }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-bold text-slate-900">City</label>
-                                <select name="city" class="search-field">
-                                    <option value="">All Cities</option>
-                                    {% for city_name in available_cities %}
-                                        <option value="{{ city_name }}" {% if selected_city == city_name %}selected{% endif %}>
-                                            {{ city_name }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-3 pt-2">
-                            <button
-                                type="submit"
-                                class="inline-flex flex-1 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-5 py-3.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
-                            >
-                                Search
-                            </button>
-
-                            <a
-                                href="{% url 'public_home' %}"
-                                class="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/36 px-5 py-3.5 text-sm font-bold text-slate-800 transition hover:bg-white/52"
-                            >
-                                Reset
-                            </a>
-                        </div>
-                    </form>
-                </div>
+                </form>
             </div>
         </div>
-    </section>
+    </div>
+</section>
+
+<button
+    id="openSearchSheetBtn"
+    type="button"
+    class="mobile-search-trigger lg:hidden"
+    aria-label="Open search filters"
+>
+    <span>🔎</span>
+    <span>Open filters</span>
+</button>
+
+<div id="searchSheetBackdrop" class="search-sheet-backdrop lg:hidden"></div>
+
+<div id="searchSheetPanel" class="search-sheet-panel lg:hidden" aria-hidden="true">
+    <div class="search-sheet-handle"></div>
+
+    <div class="search-sheet-header">
+        <div>
+            <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Smart Search</p>
+            <h3 class="mt-1 text-xl font-black tracking-tight text-slate-900">Find the Perfect Tour</h3>
+        </div>
+
+        <button
+            id="closeSearchSheetBtn"
+            type="button"
+            class="search-sheet-close"
+            aria-label="Close search filters"
+        >
+            ✕
+        </button>
+    </div>
+
+    <div class="search-sheet-body">
+        <div class="glass-search rounded-[28px] p-5 shadow-premium">
+            <p class="mb-4 text-sm leading-6 text-slate-700">
+                Search by keyword, category, or city to discover the right immersive experience faster.
+            </p>
+
+            <form method="get" class="space-y-4">
+                <div>
+                    <label class="mb-2 block text-sm font-bold text-slate-900">Keyword</label>
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ selected_q }}"
+                        placeholder="Boutique, appartement, restaurant..."
+                        class="search-field"
+                    >
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-slate-900">Category</label>
+                        <select name="category" class="search-field">
+                            <option value="">All Categories</option>
+                            {% for value, label in category_choices %}
+                                <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-slate-900">City</label>
+                        <select name="city" class="search-field">
+                            <option value="">All Cities</option>
+                            {% for city_name in available_cities %}
+                                <option value="{{ city_name }}" {% if selected_city == city_name %}selected{% endif %}>
+                                    {{ city_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-3 pt-2">
+                    <button
+                        type="submit"
+                        class="inline-flex flex-1 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-5 py-3.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
+                    >
+                        Search
+                    </button>
+
+                    <a
+                        href="{% url 'public_home' %}"
+                        class="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/36 px-5 py-3.5 text-sm font-bold text-slate-800 transition hover:bg-white/52"
+                    >
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
     <section id="featured" class="mx-auto max-w-7xl px-4 py-16 lg:px-6">
         <div class="mb-8">
@@ -1170,28 +1733,65 @@
 document.addEventListener("DOMContentLoaded", () => {
     const heroPanoEl = document.getElementById("heroMarzipano");
     const heroLoader = document.getElementById("heroLoader");
+
     const openMenuBtn = document.getElementById("openMenuBtn");
     const closeMenuBtn = document.getElementById("closeMenuBtn");
     const menuBackdrop = document.getElementById("menuBackdrop");
     const mobileMenuPanel = document.getElementById("mobileMenuPanel");
 
+    const openSearchSheetBtn = document.getElementById("openSearchSheetBtn");
+    const closeSearchSheetBtn = document.getElementById("closeSearchSheetBtn");
+    const searchSheetBackdrop = document.getElementById("searchSheetBackdrop");
+    const searchSheetPanel = document.getElementById("searchSheetPanel");
+
+    function syncBodyLock() {
+        const menuOpen = mobileMenuPanel?.classList.contains("open");
+        const searchOpen = searchSheetPanel?.classList.contains("open");
+        const shouldLock = (menuOpen || searchOpen) && window.innerWidth < 1024;
+        document.body.classList.toggle("overflow-hidden", shouldLock);
+    }
+
     function setMobileMenuOpen(isOpen) {
         if (!menuBackdrop || !mobileMenuPanel) return;
         menuBackdrop.classList.toggle("show", isOpen);
         mobileMenuPanel.classList.toggle("open", isOpen);
-        document.body.classList.toggle("overflow-hidden", isOpen && window.innerWidth < 768);
+        syncBodyLock();
+    }
+
+    function setSearchSheetOpen(isOpen) {
+        if (!searchSheetBackdrop || !searchSheetPanel) return;
+        searchSheetBackdrop.classList.toggle("show", isOpen);
+        searchSheetPanel.classList.toggle("open", isOpen);
+        searchSheetPanel.setAttribute("aria-hidden", isOpen ? "false" : "true");
+        openSearchSheetBtn?.classList.toggle("is-hidden", isOpen);
+        syncBodyLock();
     }
 
     openMenuBtn?.addEventListener("click", () => setMobileMenuOpen(true));
     closeMenuBtn?.addEventListener("click", () => setMobileMenuOpen(false));
     menuBackdrop?.addEventListener("click", () => setMobileMenuOpen(false));
+
     document.querySelectorAll("[data-menu-link]").forEach((link) => {
         link.addEventListener("click", () => setMobileMenuOpen(false));
+    });
+
+    openSearchSheetBtn?.addEventListener("click", () => setSearchSheetOpen(true));
+    closeSearchSheetBtn?.addEventListener("click", () => setSearchSheetOpen(false));
+    searchSheetBackdrop?.addEventListener("click", () => setSearchSheetOpen(false));
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            setMobileMenuOpen(false);
+            setSearchSheetOpen(false);
+        }
     });
 
     window.addEventListener("resize", () => {
         if (window.innerWidth >= 768) {
             setMobileMenuOpen(false);
+        }
+        if (window.innerWidth >= 1024) {
+            setSearchSheetOpen(false);
         }
     });
 
@@ -1220,99 +1820,99 @@ document.addEventListener("DOMContentLoaded", () => {
         return mobileUrl || thumbUrl || "";
     }
 
-    function buildHeroScene() {
-        const panoramaUrl = getHeroPanoramaUrl();
-        if (!panoramaUrl) {
-            setTimeout(hideHeroLoader, 300);
-            return;
-        }
-
-        try {
-            const mobile = isMobileDevice();
-
-            const viewer = new Marzipano.Viewer(heroPanoEl, {
-                controls: {
-                    mouseViewMode: "drag"
-                }
-            });
-
-            const source = Marzipano.ImageUrlSource.fromString(panoramaUrl);
-
-            const geometry = new Marzipano.EquirectGeometry([
-                { width: mobile ? 2048 : 4000 }
-            ]);
-
-            const limiter = Marzipano.RectilinearView.limit.traditional(
-                mobile ? 2048 : 4096,
-                degToRad(mobile ? 114 : 120)
-            );
-
-            const view = new Marzipano.RectilinearView(
-                {
-                    yaw: degToRad(0),
-                    pitch: degToRad(-2),
-                    fov: degToRad(mobile ? 112 : 108)
-                },
-                limiter
-            );
-
-            const scene = viewer.createScene({
-                source,
-                geometry,
-                view,
-                pinFirstLevel: true
-            });
-
-            scene.switchTo({ transitionDuration: 900 });
-
-            const autorotate = Marzipano.autorotate({
-                yawSpeed: mobile ? 0.0075 : 0.0105,
-                targetPitch: degToRad(-2),
-                targetFov: degToRad(mobile ? 110 : 106)
-            });
-
-            viewer.startMovement(autorotate);
-            viewer.setIdleMovement(1200, autorotate);
-
-            setTimeout(() => {
-                view.setParameters(
-                    {
-                        yaw: degToRad(4),
-                        pitch: degToRad(-2),
-                        fov: degToRad(mobile ? 108 : 102)
-                    },
-                    { transitionDuration: 1400 }
-                );
-            }, 240);
-
-            setTimeout(hideHeroLoader, 900);
-
-            heroPanoEl.addEventListener("mouseenter", () => {
-                viewer.stopMovement();
-            });
-
-            heroPanoEl.addEventListener("mouseleave", () => {
-                viewer.startMovement(autorotate);
-            });
-
-            heroPanoEl.addEventListener("touchstart", () => {
-                viewer.stopMovement();
-            }, { passive: true });
-
-            heroPanoEl.addEventListener("touchend", () => {
-                setTimeout(() => viewer.startMovement(autorotate), 900);
-            }, { passive: true });
-
-            window.addEventListener("resize", () => {
-                if (typeof viewer.updateSize === "function") {
-                    viewer.updateSize();
-                }
-            });
-        } catch (error) {
-            console.error("Hero Marzipano init error:", error);
-            setTimeout(hideHeroLoader, 400);
-        }
+ function buildHeroScene() {
+    const panoramaUrl = getHeroPanoramaUrl();
+    if (!panoramaUrl) {
+        setTimeout(hideHeroLoader, 300);
+        return;
     }
+
+    try {
+        const mobile = isMobileDevice();
+
+        const viewer = new Marzipano.Viewer(heroPanoEl, {
+            controls: {
+                mouseViewMode: "drag"
+            }
+        });
+
+        const source = Marzipano.ImageUrlSource.fromString(panoramaUrl);
+
+        const geometry = new Marzipano.EquirectGeometry([
+            { width: mobile ? 2048 : 4000 }
+        ]);
+
+        const limiter = Marzipano.RectilinearView.limit.traditional(
+            mobile ? 2048 : 4096,
+            degToRad(mobile ? 114 : 120)
+        );
+
+        const view = new Marzipano.RectilinearView(
+            {
+                yaw: degToRad(0),
+                pitch: degToRad(-2),
+                fov: degToRad(mobile ? 112 : 108)
+            },
+            limiter
+        );
+
+        const scene = viewer.createScene({
+            source,
+            geometry,
+            view,
+            pinFirstLevel: true
+        });
+
+        scene.switchTo({ transitionDuration: 900 });
+
+        const autorotate = Marzipano.autorotate({
+            yawSpeed: mobile ? 0.0075 : 0.0105,
+            targetPitch: degToRad(-2),
+            targetFov: degToRad(mobile ? 110 : 106)
+        });
+
+        viewer.startMovement(autorotate);
+        viewer.setIdleMovement(1200, autorotate);
+
+        setTimeout(() => {
+            view.setParameters(
+                {
+                    yaw: degToRad(4),
+                    pitch: degToRad(-2),
+                    fov: degToRad(mobile ? 108 : 102)
+                },
+                { transitionDuration: 1400 }
+            );
+        }, 240);
+
+        setTimeout(hideHeroLoader, 900);
+
+        heroPanoEl.addEventListener("mouseenter", () => {
+            viewer.stopMovement();
+        });
+
+        heroPanoEl.addEventListener("mouseleave", () => {
+            viewer.startMovement(autorotate);
+        });
+
+        heroPanoEl.addEventListener("touchstart", () => {
+            viewer.stopMovement();
+        }, { passive: true });
+
+        heroPanoEl.addEventListener("touchend", () => {
+            setTimeout(() => viewer.startMovement(autorotate), 1000);
+        }, { passive: true });
+
+        window.addEventListener("resize", () => {
+            if (typeof viewer.updateSize === "function") {
+                viewer.updateSize();
+            }
+        });
+    } catch (error) {
+        console.error("Hero Marzipano init error:", error);
+        setTimeout(hideHeroLoader, 400);
+    }
+}
 
     buildHeroScene();
 });

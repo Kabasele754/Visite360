@@ -43,6 +43,92 @@
         }
     </script>
 
+    <style>
+        #previewControlDock {
+    width: 100vw;
+    max-width: 100vw;
+    pointer-events: none;
+}
+
+#previewControlDock .dock-scroll,
+#previewControlDock .scene-stack-panel {
+    pointer-events: auto;
+}
+
+#previewControlDock .dock-scroll {
+    margin: 0 auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+#previewControlDock .dock-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    #previewControlDock {
+        left: 0 !important;
+        right: 0 !important;
+        transform: none !important;
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    #previewControlDock .dock-scroll {
+        width: calc(100vw - 12px);
+        max-width: calc(100vw - 12px);
+        padding: 8px;
+        border-radius: 24px;
+    }
+
+    #previewControlDock .dock-row {
+        min-width: max-content;
+        gap: 6px;
+    }
+
+    #previewControlDock .control-btn {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        min-height: 42px;
+        border-radius: 14px;
+        font-size: 18px;
+    }
+
+    #previewControlDock .scene-stack-toggle-inline {
+        min-width: 58px;
+        height: 42px;
+        padding: 6px;
+        border-radius: 14px;
+    }
+
+    #previewControlDock .dock-divider {
+        height: 28px;
+    }
+
+    #previewSceneRail {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: calc(100% + 8px);
+        width: 100%;
+        max-height: 45vh;
+    }
+}
+
+@media (min-width: 769px) {
+    #previewControlDock {
+        width: auto;
+        max-width: none;
+    }
+
+    #previewControlDock .dock-scroll {
+        width: auto;
+        max-width: none;
+    }
+}
+    </style>
+
  <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 </head>
 
@@ -186,48 +272,49 @@
         </main>
 
         <!-- bottom dock -->
-        <div id="previewControlDock"
-             data-ui="chrome"
-             class="absolute bottom-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 md:bottom-5 md:w-auto">
-            
-            <!-- scene panel opens upward -->
-            <div id="previewSceneRail" class="scene-stack-panel scene-stack-panel-up">
-                <div class="scene-stack-panel-inner">
-                    <div id="previewScenesList" class="scene-stack-list"></div>
-                </div>
-            </div>
+<div id="previewControlDock"
+     data-ui="chrome"
+     class="fixed inset-x-0 bottom-0 z-[70] px-2 md:left-1/2 md:right-auto md:bottom-5 md:w-auto md:-translate-x-1/2 md:px-0"
+     style="padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));">
 
-            <div class="dock-scroll rounded-[28px] border border-white/10 bg-slate-950/60 p-2 shadow-premium backdrop-blur-2xl">
-                <div class="dock-row">
-                    <button id="sceneStackToggle"
-                            type="button"
-                            class="scene-stack-toggle-inline"
-                            aria-label="Afficher les scènes"
-                            title="Scenes">
-                        <div id="sceneStackMiniPreview" class="scene-stack-mini-preview"></div>
-                        <span id="sceneCountBadge" class="scene-stack-badge">0</span>
-                    </button>
-
-                    <div class="dock-divider"></div>
-
-                    <button id="prevSceneBtn" type="button" class="control-btn" title="Scene précédente" aria-label="Scene précédente">◀</button>
-                    <button id="nextSceneBtn" type="button" class="control-btn" title="Scene suivante" aria-label="Scene suivante">▶</button>
-
-                    <div class="dock-divider"></div>
-
-                    <button id="zoomOutBtn" type="button" class="control-btn" title="Zoom arrière" aria-label="Zoom arrière">－</button>
-                    <button id="zoomInBtn" type="button" class="control-btn" title="Zoom avant" aria-label="Zoom avant">＋</button>
-                    <button id="resetViewBtn" type="button" class="control-btn" title="Recentrer" aria-label="Recentrer">⌾</button>
-
-                    <div class="dock-divider"></div>
-
-                    <button id="autorotateBtn" type="button" class="control-btn" title="Auto rotate" aria-label="Auto rotate">⟳</button>
-                    <button id="focusModeBtn" type="button" class="control-btn" title="Mode focus" aria-label="Mode focus">✦</button>
-                    <button id="shareBtn" type="button" class="control-btn" title="Partager" aria-label="Partager">↗</button>
-                    <button id="fullscreenBtn" type="button" class="control-btn" title="Plein écran" aria-label="Plein écran">⤢</button>
-                </div>
-            </div>
+    <!-- scene panel opens upward -->
+    <div id="previewSceneRail" class="scene-stack-panel scene-stack-panel-up">
+        <div class="scene-stack-panel-inner">
+            <div id="previewScenesList" class="scene-stack-list"></div>
         </div>
+    </div>
+
+    <div class="dock-scroll w-full overflow-x-auto rounded-[24px] border border-white/10 bg-slate-950/70 p-2 shadow-premium backdrop-blur-2xl md:w-auto md:rounded-[28px]">
+        <div class="dock-row flex min-w-max items-center gap-2">
+            <button id="sceneStackToggle"
+                    type="button"
+                    class="scene-stack-toggle-inline"
+                    aria-label="Afficher les scènes"
+                    title="Scenes">
+                <div id="sceneStackMiniPreview" class="scene-stack-mini-preview"></div>
+                <span id="sceneCountBadge" class="scene-stack-badge">0</span>
+            </button>
+
+            <div class="dock-divider"></div>
+
+            <button id="prevSceneBtn" type="button" class="control-btn" title="Scene précédente" aria-label="Scene précédente">◀</button>
+            <button id="nextSceneBtn" type="button" class="control-btn" title="Scene suivante" aria-label="Scene suivante">▶</button>
+
+            <div class="dock-divider"></div>
+
+            <button id="zoomOutBtn" type="button" class="control-btn" title="Zoom arrière" aria-label="Zoom arrière">－</button>
+            <button id="zoomInBtn" type="button" class="control-btn" title="Zoom avant" aria-label="Zoom avant">＋</button>
+            <button id="resetViewBtn" type="button" class="control-btn" title="Recentrer" aria-label="Recentrer">⌾</button>
+
+            <div class="dock-divider"></div>
+
+            <button id="autorotateBtn" type="button" class="control-btn" title="Auto rotate" aria-label="Auto rotate">⟳</button>
+            <button id="focusModeBtn" type="button" class="control-btn" title="Mode focus" aria-label="Mode focus">✦</button>
+            <button id="shareBtn" type="button" class="control-btn" title="Partager" aria-label="Partager">↗</button>
+            <button id="fullscreenBtn" type="button" class="control-btn" title="Plein écran" aria-label="Plein écran">⤢</button>
+        </div>
+    </div>
+</div>
 
         <!-- toast -->
         <div id="previewToast"
