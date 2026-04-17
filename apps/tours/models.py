@@ -6,6 +6,12 @@ from decimal import Decimal
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.text import slugify
 
+from io import BytesIO
+from pathlib import Path
+
+from PIL import Image, ImageOps
+from django.core.files.base import ContentFile
+
 
 class Tour(TimeStampedModel):
     class Status(models.TextChoices):
@@ -138,7 +144,16 @@ class Scene360(TimeStampedModel):
     title = models.CharField(max_length=255)
 
     image_360 = models.ImageField(upload_to="tours/panoramas/")
-    thumbnail_image = models.ImageField(upload_to="tours/panoramas/thumbs/", null=True, blank=True)
+    image_360_mobile = models.ImageField(
+        upload_to="tours/panoramas/mobile/",
+        null=True,
+        blank=True
+    )
+    thumbnail_image = models.ImageField(
+        upload_to="tours/panoramas/thumbs/",
+        null=True,
+        blank=True
+    )
 
     order = models.PositiveIntegerField(default=0)
 
@@ -163,12 +178,72 @@ class Scene360(TimeStampedModel):
         return None
 
     @property
+    def image_360_mobile_url(self):
+        if self.image_360_mobile:
+            return self.image_360_mobile.url
+        return None
+
+    @property
     def thumbnail_url(self):
         if self.thumbnail_image:
             return self.thumbnail_image.url
         return None
 
+    def _build_mobile_panorama(self, max_width=1536, quality=78):
+        if not self.image_360:
+            return None
 
+        if not hasattr(self.image_360, "path"):
+            return None
+
+        img = Image.open(self.image_360.path)
+        img = ImageOps.exif_transpose(img).convert("RGB")
+
+        if img.width > max_width:
+            new_height = int((max_width / img.width) * img.height)
+            img = img.resize((max_width, new_height), Image.LANCZOS)
+
+        buffer = BytesIO()
+        img.save(buffer, format="JPEG", quality=quality, optimize=True)
+        buffer.seek(0)
+
+        base_name = Path(self.image_360.name).stem
+        return f"{base_name}_mobile.jpg", ContentFile(buffer.read())
+
+    def generate_mobile_image(self, save=True):
+        built = self._build_mobile_panorama()
+        if not built:
+            return
+
+        filename, content = built
+        self.image_360_mobile.save(filename, content, save=False)
+
+        if save:
+            self._skip_mobile_generation = True
+            try:
+                super().save(update_fields=["image_360_mobile", "updated_at"])
+            finally:
+                self._skip_mobile_generation = False
+
+    def save(self, *args, **kwargs):
+        if getattr(self, "_skip_mobile_generation", False):
+            return super().save(*args, **kwargs)
+
+        previous_image_name = None
+        if self.pk:
+            old = type(self).objects.filter(pk=self.pk).only("image_360").first()
+            if old and old.image_360:
+                previous_image_name = old.image_360.name
+
+        current_image_name = self.image_360.name if self.image_360 else None
+        image_changed = bool(current_image_name and current_image_name != previous_image_name)
+
+        creating = self.pk is None
+
+        super().save(*args, **kwargs)
+
+        if self.image_360 and (creating or image_changed or not self.image_360_mobile):
+            self.generate_mobile_image(save=True)
 class Hotspot(TimeStampedModel):
     class Type(models.TextChoices):
         NAVIGATE = "navigate", "Navigate"

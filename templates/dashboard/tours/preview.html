@@ -457,6 +457,15 @@
         );
     }
 
+    function getScenePreviewThumb(sceneData) {
+        return (
+            sceneData?.thumbnail_url ||
+            sceneData?.image_360_mobile_url ||
+            sceneData?.image_360_url ||
+            ""
+        );
+    }
+
     function testImageUrl(url, label = "image") {
         return new Promise((resolve) => {
             if (!url) {
@@ -482,7 +491,7 @@
                     url,
                     elapsedMs: Date.now() - startedAt
                 });
-            }, 8000);
+            }, 12000);
 
             img.onload = () => {
                 clearTimeout(timer);
@@ -948,8 +957,9 @@
         miniScenes.slice(0, 3).forEach((scene) => {
             const card = document.createElement("div");
             card.className = "scene-stack-mini-card";
-            card.innerHTML = scene.thumbnail_url || scene.image_360_url
-                ? `<img src="${scene.thumbnail_url || scene.image_360_url}" alt="${scene.title || 'Scene'}">`
+            const thumbUrl = getScenePreviewThumb(scene);
+            card.innerHTML = thumbUrl
+                ? `<img src="${thumbUrl}" alt="${scene.title || 'Scene'}">`
                 : `<div class="scene-thumb-placeholder">360</div>`;
             sceneStackMiniPreview.appendChild(card);
         });
@@ -968,8 +978,8 @@
             button.innerHTML = `
                 <div class="scene-thumb">
                     ${
-                        scene.thumbnail_url || scene.image_360_url
-                            ? `<img src="${scene.thumbnail_url || scene.image_360_url}" alt="${scene.title}">`
+                        getScenePreviewThumb(scene)
+                            ? `<img src="${getScenePreviewThumb(scene)}" alt="${scene.title}">`
                             : `<div class="scene-thumb-placeholder">360</div>`
                     }
                 </div>
@@ -1160,17 +1170,19 @@
 
     function buildSceneOnLayer(layerKey, sceneData) {
         const viewer = ensureViewer(layerKey);
-        if (!viewer || (!sceneData?.image_360_url && !sceneData?.tiles_url)) {
+        const selectedImageUrl = getPreferredImageUrl(sceneData);
+
+        if (!viewer || (!selectedImageUrl && !sceneData?.tiles_url)) {
             debugLog("buildSceneOnLayer skipped", {
                 layerKey,
                 hasViewer: !!viewer,
-                hasImage: !!sceneData?.image_360_url,
+                hasImage: !!selectedImageUrl,
+                hasMobileImage: !!sceneData?.image_360_mobile_url,
+                hasDesktopImage: !!sceneData?.image_360_url,
                 hasTiles: !!sceneData?.tiles_url
             });
             return null;
         }
-
-        const selectedImageUrl = getPreferredImageUrl(sceneData);
 
         debugLog("buildSceneOnLayer start", {
             layerKey,

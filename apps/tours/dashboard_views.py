@@ -790,6 +790,7 @@ def tour_preview_view(request, organization_slug, tour_id):
             "title": scene.title,
             "order": scene.order,
             "image_360_url": scene.image_360.url if scene.image_360 else "",
+            "image_360_mobile_url": scene.image_360_mobile.url if getattr(scene, "image_360_mobile", None) else "",
             "thumbnail_url": scene.thumbnail_image.url if getattr(scene, "thumbnail_image", None) else "",
             "yaw_default": scene.yaw_default if scene.yaw_default is not None else 0,
             "pitch_default": scene.pitch_default if scene.pitch_default is not None else 0,
@@ -806,7 +807,6 @@ def tour_preview_view(request, organization_slug, tour_id):
             "scenes_json": scenes_payload,
         },
     )
-
 @login_required
 @require_POST
 def upload_scenes_ajax_view(request, organization_slug, tour_id):
