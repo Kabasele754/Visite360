@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <style> @-ms-viewport { width: device-width; } </style>
+    
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
     <link rel="stylesheet" href="https://www.marzipano.net/demos/common/reset.css">
     <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
     <title>{{ tour.title }} - Preview</title>
@@ -41,7 +43,6 @@
         }
     </script>
 
-    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
  <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 </head>
 
@@ -264,6 +265,7 @@
 
     {{ scenes_json|json_script:"preview-scenes-data" }}
 
-    <script type="module" src="{% static 'dashboard/js/preview-three-tailwind.js' %}"></script>
+    {% comment %} <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script> {% endcomment %}
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}"></script>
 </body>
 </html>
