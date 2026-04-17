@@ -571,85 +571,83 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-function getSceneSourceGeometryAndLimiter(sceneData) {
-    const mobile = isMobileViewport();
+    function getSceneSourceGeometryAndLimiter(sceneData) {
+        const mobile = isMobileViewport();
 
-    // Mode multires / tiles comme le sample Marzipano
-    if (sceneData?.tiles_url) {
+        if (sceneData?.tiles_url) {
+            return {
+                source: Marzipano.ImageUrlSource.fromString(
+                    `${sceneData.tiles_url}/{z}/{f}/{y}/{x}.jpg`,
+                    {
+                        cubeMapPreviewUrl: `${sceneData.tiles_url}/preview.jpg`
+                    }
+                ),
+                geometry: new Marzipano.CubeGeometry(
+                    sceneData.levels || [
+                        { tileSize: 256, size: 256, fallbackOnly: true },
+                        { tileSize: 512, size: 512 },
+                        { tileSize: 512, size: 1024 },
+                        { tileSize: 512, size: 2048 }
+                    ]
+                ),
+                limiter: Marzipano.RectilinearView.limit.traditional(
+                    sceneData.face_size || (mobile ? 1024 : 2048),
+                    MAX_FOV
+                )
+            };
+        }
+
+        const textureWidth = mobile ? 1536 : 3072;
+        const faceSize = mobile ? 1536 : 3072;
+
         return {
-            source: Marzipano.ImageUrlSource.fromString(
-                `${sceneData.tiles_url}/{z}/{f}/{y}/{x}.jpg`,
-                {
-                    cubeMapPreviewUrl: `${sceneData.tiles_url}/preview.jpg`
-                }
-            ),
-            geometry: new Marzipano.CubeGeometry(
-                sceneData.levels || [
-                    { tileSize: 256, size: 256, fallbackOnly: true },
-                    { tileSize: 512, size: 512 },
-                    { tileSize: 512, size: 1024 },
-                    { tileSize: 512, size: 2048 }
-                ]
-            ),
+            source: Marzipano.ImageUrlSource.fromString(sceneData.image_360_url),
+            geometry: new Marzipano.EquirectGeometry([
+                { width: textureWidth }
+            ]),
             limiter: Marzipano.RectilinearView.limit.traditional(
-                sceneData.face_size || (mobile ? 1024 : 2048),
+                faceSize,
                 MAX_FOV
             )
         };
     }
 
-    // Fallback equirectangular simple
-    const textureWidth = mobile ? 1536 : 3072;
-    const faceSize = mobile ? 1536 : 3072;
+    function buildSceneOnLayer(layerKey, sceneData) {
+        const viewer = ensureViewer(layerKey);
+        if (!viewer || (!sceneData?.image_360_url && !sceneData?.tiles_url)) return null;
 
-    return {
-        source: Marzipano.ImageUrlSource.fromString(sceneData.image_360_url),
-        geometry: new Marzipano.EquirectGeometry([
-            { width: textureWidth }
-        ]),
-        limiter: Marzipano.RectilinearView.limit.traditional(
-            faceSize,
-            MAX_FOV
-        )
-    };
-}
+        const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
 
-function buildSceneOnLayer(layerKey, sceneData) {
-    const viewer = ensureViewer(layerKey);
-    if (!viewer || (!sceneData?.image_360_url && !sceneData?.tiles_url)) return null;
+        const yaw = degToRad(sceneData.yaw_default || 0);
+        const pitch = degToRad(sceneData.pitch_default || 0);
+        const fov = getSceneFinalFov(sceneData);
 
-    const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
+        views[layerKey] = new Marzipano.RectilinearView({ yaw, pitch, fov }, limiter);
 
-    const yaw = degToRad(sceneData.yaw_default || 0);
-    const pitch = degToRad(sceneData.pitch_default || 0);
-    const fov = getSceneFinalFov(sceneData);
-
-    views[layerKey] = new Marzipano.RectilinearView({ yaw, pitch, fov }, limiter);
-
-    marzipanoScenes[layerKey] = viewer.createScene({
-        source,
-        geometry,
-        view: views[layerKey],
-        pinFirstLevel: true
-    });
-
-    marzipanoScenes[layerKey].switchTo();
-
-    (sceneData.hotspots || []).forEach((hotspot) => {
-        const node = buildHotspotNode(hotspot);
-        marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
-            yaw: hotspot.yaw,
-            pitch: hotspot.pitch
+        marzipanoScenes[layerKey] = viewer.createScene({
+            source,
+            geometry,
+            view: views[layerKey],
+            pinFirstLevel: true
         });
-    });
 
-    requestAnimationFrame(() => {
-        updateAllViewerSizes();
-        syncZoomButtonsState();
-    });
+        marzipanoScenes[layerKey].switchTo();
 
-    return marzipanoScenes[layerKey];
-}
+        (sceneData.hotspots || []).forEach((hotspot) => {
+            const node = buildHotspotNode(hotspot);
+            marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
+                yaw: hotspot.yaw,
+                pitch: hotspot.pitch
+            });
+        });
+
+        requestAnimationFrame(() => {
+            updateAllViewerSizes();
+            syncZoomButtonsState();
+        });
+
+        return marzipanoScenes[layerKey];
+    }
 
     function runInitialReveal(scene) {
         const view = getCurrentView();
