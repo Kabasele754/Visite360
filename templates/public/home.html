@@ -1107,12 +1107,14 @@
                     </a>
                 </div>
 
-         <div class="mt-6 rounded-[28px] border border-white/80 bg-white/64 p-5">
-    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Premium Experience</p>
-    <h3 class="mt-2 text-xl font-black tracking-tight text-slate-900">Show every place at its best</h3>
+                
+                  <div class="mt-6 rounded-[28px] border border-white/80 bg-white/64 p-5">
+    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Navigation</p>
+    <h3 class="mt-2 text-xl font-black tracking-tight text-slate-900">A premium header built for multi-page navigation</h3>
     <p class="mt-2 text-sm leading-6 text-slate-600">
-        Present your tours, venues, and spaces with a modern 360° experience that feels elegant, immersive, and professional.
+        Guide visitors to dedicated pages like About, Services, Tours, Organizations, and Contact with a cleaner and more professional experience.
     </p>
+               
 </div>
             </div>
         </div>
@@ -1742,97 +1744,227 @@ document.addEventListener("DOMContentLoaded", () => {
         return mobileUrl || thumbUrl || "";
     }
 
- function buildHeroScene() {
-    const panoramaUrl = getHeroPanoramaUrl();
+ let heroViewer = null;
+let heroAutorotate = null;
+let heroScene = null;
+let heroView = null;
+let heroContextLost = false;
+let heroHoverBound = false;
+let heroResizeBound = false;
+let heroVisibilityBound = false;
+
+function destroyHeroScene() {
+    try {
+        if (heroViewer) {
+            heroViewer.stopMovement();
+            heroViewer.setIdleMovement && heroViewer.setIdleMovement(0, null);
+            if (typeof heroViewer.destroy === "function") {
+                heroViewer.destroy();
+            }
+        }
+    } catch (error) {
+        console.warn("Hero viewer destroy warning:", error);
+    }
+
+    heroViewer = null;
+    heroAutorotate = null;
+    heroScene = null;
+    heroView = null;
+}
+
+function showHeroFallback(reason = "fallback") {
+    console.warn("Hero fallback mode:", reason);
+    destroyHeroScene();
+
+    if (!heroPanoEl) return;
+
+    const thumb = heroPanoEl.dataset.panoramaThumbUrl || "";
+    heroPanoEl.innerHTML = "";
+    heroPanoEl.classList.add("hero-panorama-fallback-mode");
+    heroPanoEl.style.backgroundPosition = "center";
+    heroPanoEl.style.backgroundRepeat = "no-repeat";
+    heroPanoEl.style.backgroundSize = "cover";
+    heroPanoEl.style.backgroundColor = "#0f172a";
+
+    if (thumb) {
+        heroPanoEl.style.backgroundImage = `linear-gradient(180deg, rgba(15,23,42,0.10), rgba(15,23,42,0.26)), url("${thumb}")`;
+    }
+
+    setTimeout(hideHeroLoader, 180);
+}
+
+function preloadHeroAsset(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(url);
+        img.onerror = () => reject(new Error(`Failed to load panorama: ${url}`));
+        img.src = url;
+    });
+}
+
+function chooseHeroPanoramaUrl() {
+    const desktopUrl = (heroPanoEl?.dataset.panoramaUrl || "").trim();
+    const mobileUrl = (heroPanoEl?.dataset.panoramaMobileUrl || "").trim();
+    const isMobile = isMobileDevice();
+    const lowMemory = typeof navigator.deviceMemory === "number" && navigator.deviceMemory <= 4;
+    return (isMobile || lowMemory) ? (mobileUrl || desktopUrl) : (desktopUrl || mobileUrl);
+}
+
+async function buildHeroScene() {
+    const panoramaUrl = chooseHeroPanoramaUrl();
     if (!panoramaUrl) {
-        setTimeout(hideHeroLoader, 300);
+        showHeroFallback("missing-url");
+        return;
+    }
+
+    try {
+        await preloadHeroAsset(panoramaUrl);
+    } catch (error) {
+        console.error("Hero panorama preload error:", error);
+        showHeroFallback("asset-404");
         return;
     }
 
     try {
         const mobile = isMobileDevice();
+        const lowMemory = typeof navigator.deviceMemory === "number" && navigator.deviceMemory <= 4;
+        const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-        const viewer = new Marzipano.Viewer(heroPanoEl, {
+        destroyHeroScene();
+        heroContextLost = false;
+        heroPanoEl.classList.remove("hero-panorama-fallback-mode");
+        heroPanoEl.style.backgroundImage = "";
+
+        heroViewer = new Marzipano.Viewer(heroPanoEl, {
             controls: {
                 mouseViewMode: "drag"
             }
         });
 
         const source = Marzipano.ImageUrlSource.fromString(panoramaUrl);
-
-        const geometry = new Marzipano.EquirectGeometry([
-            { width: mobile ? 2048 : 4000 }
-        ]);
-
+        const levelWidth = mobile ? 1536 : (lowMemory ? 2048 : 3072);
+        const geometry = new Marzipano.EquirectGeometry([{ width: levelWidth }]);
         const limiter = Marzipano.RectilinearView.limit.traditional(
-            mobile ? 2048 : 4096,
-            degToRad(mobile ? 114 : 120)
+            lowMemory ? 3072 : 4096,
+            degToRad(mobile ? 112 : 118)
         );
 
-        const view = new Marzipano.RectilinearView(
+        heroView = new Marzipano.RectilinearView(
             {
                 yaw: degToRad(0),
                 pitch: degToRad(-2),
-                fov: degToRad(mobile ? 112 : 108)
+                fov: degToRad(mobile ? 110 : 104)
             },
             limiter
         );
 
-        const scene = viewer.createScene({
+        heroScene = heroViewer.createScene({
             source,
             geometry,
-            view,
+            view: heroView,
             pinFirstLevel: true
         });
 
-        scene.switchTo({ transitionDuration: 900 });
+        heroScene.switchTo({ transitionDuration: 700 });
 
-        const autorotate = Marzipano.autorotate({
-            yawSpeed: mobile ? 0.0075 : 0.0105,
+        heroAutorotate = Marzipano.autorotate({
+            yawSpeed: mobile ? 0.0065 : 0.0085,
             targetPitch: degToRad(-2),
-            targetFov: degToRad(mobile ? 110 : 106)
+            targetFov: degToRad(mobile ? 108 : 102)
         });
 
-        viewer.startMovement(autorotate);
-        viewer.setIdleMovement(1200, autorotate);
+        if (!prefersReducedMotion) {
+            heroViewer.startMovement(heroAutorotate);
+            heroViewer.setIdleMovement(1400, heroAutorotate);
 
-        setTimeout(() => {
-            view.setParameters(
-                {
-                    yaw: degToRad(4),
-                    pitch: degToRad(-2),
-                    fov: degToRad(mobile ? 108 : 102)
-                },
-                { transitionDuration: 1400 }
-            );
-        }, 240);
+            setTimeout(() => {
+                if (!heroView || heroContextLost) return;
+                heroView.setParameters(
+                    {
+                        yaw: degToRad(3),
+                        pitch: degToRad(-2),
+                        fov: degToRad(mobile ? 106 : 100)
+                    },
+                    { transitionDuration: 1200 }
+                );
+            }, 220);
+        }
 
-        setTimeout(hideHeroLoader, 900);
+        const canvas = heroPanoEl.querySelector("canvas");
+        if (canvas && !canvas.dataset.webglGuardBound) {
+            canvas.dataset.webglGuardBound = "1";
 
-        heroPanoEl.addEventListener("mouseenter", () => {
-            viewer.stopMovement();
-        });
+            canvas.addEventListener("webglcontextlost", (event) => {
+                event.preventDefault();
+                heroContextLost = true;
+                console.warn("Hero WebGL context lost");
+                showHeroFallback("context-lost");
+            }, { passive: false });
 
-        heroPanoEl.addEventListener("mouseleave", () => {
-            viewer.startMovement(autorotate);
-        });
+            canvas.addEventListener("webglcontextrestored", () => {
+                if (heroContextLost) {
+                    heroContextLost = false;
+                    buildHeroScene();
+                }
+            });
+        }
 
-        heroPanoEl.addEventListener("touchstart", () => {
-            viewer.stopMovement();
-        }, { passive: true });
+        if (!heroHoverBound) {
+            heroHoverBound = true;
 
-        heroPanoEl.addEventListener("touchend", () => {
-            setTimeout(() => viewer.startMovement(autorotate), 1000);
-        }, { passive: true });
+            heroPanoEl.addEventListener("mouseenter", () => {
+                if (heroViewer) heroViewer.stopMovement();
+            });
 
-        window.addEventListener("resize", () => {
-            if (typeof viewer.updateSize === "function") {
-                viewer.updateSize();
-            }
-        });
+            heroPanoEl.addEventListener("mouseleave", () => {
+                if (heroViewer && heroAutorotate && !heroContextLost) {
+                    heroViewer.startMovement(heroAutorotate);
+                }
+            });
+
+            heroPanoEl.addEventListener("touchstart", () => {
+                if (heroViewer) heroViewer.stopMovement();
+            }, { passive: true });
+
+            heroPanoEl.addEventListener("touchend", () => {
+                setTimeout(() => {
+                    if (heroViewer && heroAutorotate && !heroContextLost) {
+                        heroViewer.startMovement(heroAutorotate);
+                    }
+                }, 800);
+            }, { passive: true });
+        }
+
+        if (!heroResizeBound) {
+            heroResizeBound = true;
+            window.addEventListener("resize", () => {
+                if (!heroViewer || heroContextLost) return;
+                try {
+                    if (typeof heroViewer.updateSize === "function") {
+                        heroViewer.updateSize();
+                    }
+                } catch (error) {
+                    console.warn("Hero resize warning:", error);
+                }
+            });
+        }
+
+        if (!heroVisibilityBound) {
+            heroVisibilityBound = true;
+            document.addEventListener("visibilitychange", () => {
+                if (!heroViewer || heroContextLost || !heroAutorotate) return;
+                if (document.hidden) {
+                    heroViewer.stopMovement();
+                } else {
+                    heroViewer.startMovement(heroAutorotate);
+                }
+            });
+        }
+
+        setTimeout(hideHeroLoader, 650);
     } catch (error) {
         console.error("Hero Marzipano init error:", error);
-        setTimeout(hideHeroLoader, 400);
+        showHeroFallback("init-error");
     }
 }
 
