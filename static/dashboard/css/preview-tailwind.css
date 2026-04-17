@@ -1219,35 +1219,22 @@ body {
 }
 
 
-/* ===== THREE.JS VIEWER OVERLAY ===== */
-.preview-hotspot-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 14;
-    pointer-events: none;
-}
 
-.preview-hotspot-overlay .preview-hotspot {
-    position: absolute;
-    width: 52px;
-    height: 52px;
-    transform: translate(-50%, -50%);
-    pointer-events: auto;
-}
+@media (max-width: 768px) {
+    .preview-layer,
+    .preview-layer.layer-outgoing,
+    .preview-layer.layer-incoming {
+        filter: none !important;
+        transform: none !important;
+        transition: opacity .35s ease !important;
+    }
 
-.preview-hotspot-overlay .preview-hotspot.variant-label {
-    width: auto;
-    height: auto;
-}
-
-.preview-webgl-canvas {
-    width: 100% !important;
-    height: 100% !important;
-    display: block;
-    touch-action: none;
-    outline: none;
-}
-
-.preview-hidden-layer {
-    display: none !important;
+    .brand-overlay-chip,
+    .brand-header-chip,
+    .dock-scroll,
+    .scene-stack-panel-inner,
+    .info-panel,
+    #previewInfoPanel {
+        backdrop-filter: blur(8px) !important;
+    }
 }

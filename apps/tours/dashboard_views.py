@@ -747,56 +747,7 @@ def tour_builder_view(request, organization_slug, tour_id):
     return render(request, "dashboard/tours/builder.html", context)
 
 
-
-from pathlib import Path
-
-from django.conf import settings
-from django.shortcuts import get_object_or_404, render
-
-
-def _get_scene_multires_payload(scene):
-    """
-    Retourne les infos multiresolution à la manière du sample-tour.
-    Hypothèse de structure :
-    media/
-      tours/
-        multires/
-          scene_<id>/
-            preview.jpg
-            0/
-            1/
-            2/
-            ...
-    """
-    base_rel = f"tours/multires/scene_{scene.id}"
-    base_abs = Path(settings.MEDIA_ROOT) / "tours" / "multires" / f"scene_{scene.id}"
-    preview_abs = base_abs / "preview.jpg"
-
-    if not preview_abs.exists():
-        return {
-            "tiles_url": "",
-            "levels": [],
-            "face_size": None,
-        }
-
-    # Ajuste ces niveaux selon ton vrai export Marzipano Tool
-    levels = [
-        {"tileSize": 256, "size": 256, "fallbackOnly": True},
-        {"tileSize": 512, "size": 512},
-        {"tileSize": 512, "size": 1024},
-        {"tileSize": 512, "size": 2048},
-    ]
-
-    media_url = settings.MEDIA_URL.rstrip("/")
-    tiles_url = f"{media_url}/{base_rel}"
-
-    return {
-        "tiles_url": tiles_url,
-        "levels": levels,
-        "face_size": 1024,
-    }
-
-
+# @login_required
 def tour_preview_view(request, organization_slug, tour_id):
     organization = _get_org_or_403(request, organization_slug)
     if not organization:
@@ -833,8 +784,6 @@ def tour_preview_view(request, organization_slug, tour_id):
                 "payload": hotspot.payload or {},
             })
 
-        multires_payload = _get_scene_multires_payload(scene)
-
         scenes_payload.append({
             "id": scene.id,
             "scene_id": scene.scene_id,
@@ -846,11 +795,6 @@ def tour_preview_view(request, organization_slug, tour_id):
             "pitch_default": scene.pitch_default if scene.pitch_default is not None else 0,
             "hfov_default": scene.hfov_default if scene.hfov_default is not None else 100,
             "hotspots": scene_hotspots,
-
-            # nouveau: compatible sample-tour
-            "tiles_url": multires_payload["tiles_url"],
-            "levels": multires_payload["levels"],
-            "face_size": multires_payload["face_size"],
         })
 
     return render(
@@ -862,68 +806,6 @@ def tour_preview_view(request, organization_slug, tour_id):
             "scenes_json": scenes_payload,
         },
     )
-
-
-# @login_required
-# def tour_preview_view(request, organization_slug, tour_id):
-#     organization = _get_org_or_403(request, organization_slug)
-#     if not organization:
-#         return render(request, "403.html", status=403)
-
-#     tour = get_object_or_404(
-#         Tour.objects.select_related("place", "organization").prefetch_related(
-#             "scenes__hotspots",
-#             "scenes__hotspots__target_scene",
-#         ),
-#         id=tour_id,
-#         organization=organization,
-#     )
-
-#     scenes = tour.scenes.all().order_by("order", "id")
-
-#     scenes_payload = []
-#     for scene in scenes:
-#         scene_hotspots = []
-
-#         for hotspot in scene.hotspots.all():
-#             scene_hotspots.append({
-#                 "id": hotspot.id,
-#                 "type": hotspot.type,
-#                 "label": hotspot.label,
-#                 "yaw": hotspot.yaw,
-#                 "pitch": hotspot.pitch,
-#                 "target_scene": hotspot.target_scene_id,
-#                 "selected_icon": hotspot.selected_icon or "default",
-#                 "title": hotspot.title or "",
-#                 "description": hotspot.description or "",
-#                 "tooltip_text": hotspot.tooltip_text or "",
-#                 "ad_image_url": hotspot.ad_image.url if getattr(hotspot, "ad_image", None) else "",
-#                 "payload": hotspot.payload or {},
-#             })
-
-#         scenes_payload.append({
-#             "id": scene.id,
-#             "scene_id": scene.scene_id,
-#             "title": scene.title,
-#             "order": scene.order,
-#             "image_360_url": scene.image_360.url if scene.image_360 else "",
-#             "thumbnail_url": scene.thumbnail_image.url if getattr(scene, "thumbnail_image", None) else "",
-#             "yaw_default": scene.yaw_default if scene.yaw_default is not None else 0,
-#             "pitch_default": scene.pitch_default if scene.pitch_default is not None else 0,
-#             "hfov_default": scene.hfov_default if scene.hfov_default is not None else 100,
-#             "hotspots": scene_hotspots,
-#         })
-
-#     return render(
-#         request,
-#         "dashboard/tours/preview.html",
-#         {
-#             "tour": tour,
-#             "current_organization": organization,
-#             "scenes_json": scenes_payload,
-#         },
-#     )
-
 
 @login_required
 @require_POST
