@@ -46,8 +46,7 @@
  {% comment %} <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}"> {% endcomment %}
 
  <style>
-
-    html,
+html,
 body {
     margin: 0;
     padding: 0;
@@ -85,6 +84,7 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(8, 16, 27, 0.88);
     backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     z-index: 50;
 }
 
@@ -141,8 +141,8 @@ body {
     gap: 8px;
     padding: 4px;
     border-radius: 14px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     flex-wrap: wrap;
 }
 
@@ -155,11 +155,11 @@ body {
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
-    transition: 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 .device-btn:hover {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .device-btn.active {
@@ -188,6 +188,7 @@ body {
     overflow-y: auto;
     transition: width 0.28s ease, opacity 0.28s ease, transform 0.28s ease;
     backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     min-width: 0;
 }
 
@@ -322,7 +323,6 @@ body {
     z-index: 2;
 }
 
-/* safe area overlays */
 .device-safe-top,
 .device-safe-bottom {
     position: absolute;
@@ -359,10 +359,10 @@ body {
     aspect-ratio: 820 / 1180;
     border-radius: 28px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow:
-        0 20px 50px rgba(0,0,0,0.35),
-        0 0 0 10px rgba(255,255,255,0.03);
+        0 20px 50px rgba(0, 0, 0, 0.35),
+        0 0 0 10px rgba(255, 255, 255, 0.03);
     background: #0b1420;
 }
 
@@ -373,10 +373,10 @@ body {
     aspect-ratio: 1180 / 820;
     border-radius: 28px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow:
-        0 20px 50px rgba(0,0,0,0.35),
-        0 0 0 10px rgba(255,255,255,0.03);
+        0 20px 50px rgba(0, 0, 0, 0.35),
+        0 0 0 10px rgba(255, 255, 255, 0.03);
     background: #0b1420;
 }
 
@@ -387,10 +387,10 @@ body {
     aspect-ratio: 430 / 880;
     border-radius: 36px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.14);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     box-shadow:
-        0 20px 60px rgba(0,0,0,0.42),
-        0 0 0 10px rgba(255,255,255,0.03);
+        0 20px 60px rgba(0, 0, 0, 0.42),
+        0 0 0 10px rgba(255, 255, 255, 0.03);
     background: #0b1420;
 }
 
@@ -401,10 +401,10 @@ body {
     aspect-ratio: 880 / 430;
     border-radius: 30px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.14);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     box-shadow:
-        0 20px 60px rgba(0,0,0,0.42),
-        0 0 0 10px rgba(255,255,255,0.03);
+        0 20px 60px rgba(0, 0, 0, 0.42),
+        0 0 0 10px rgba(255, 255, 255, 0.03);
     background: #0b1420;
 }
 
@@ -415,10 +415,10 @@ body {
     aspect-ratio: 412 / 915;
     border-radius: 30px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow:
-        0 20px 60px rgba(0,0,0,0.42),
-        0 0 0 10px rgba(255,255,255,0.03);
+        0 20px 60px rgba(0, 0, 0, 0.42),
+        0 0 0 10px rgba(255, 255, 255, 0.03);
     background: #0b1420;
 }
 
@@ -429,14 +429,14 @@ body {
     aspect-ratio: 915 / 412;
     border-radius: 24px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow:
-        0 20px 60px rgba(0,0,0,0.42),
-        0 0 0 10px rgba(255,255,255,0.03);
+        0 20px 60px rgba(0, 0, 0, 0.42),
+        0 0 0 10px rgba(255, 255, 255, 0.03);
     background: #0b1420;
 }
 
-/* Safe areas */
+/* SAFE AREAS */
 .preview-device-frame.has-safe-area .device-safe-top,
 .preview-device-frame.has-safe-area .device-safe-bottom {
     display: block;
@@ -444,56 +444,56 @@ body {
 
 .preview-device-frame.device-iphone-portrait.has-safe-area .device-safe-top {
     height: 34px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.95), rgba(5,11,20,0.55));
+    background: linear-gradient(180deg, rgba(5, 11, 20, 0.95), rgba(5, 11, 20, 0.55));
     border-bottom-left-radius: 18px;
     border-bottom-right-radius: 18px;
 }
 
 .preview-device-frame.device-iphone-portrait.has-safe-area .device-safe-bottom {
     height: 20px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.92), rgba(5,11,20,0.35));
+    background: linear-gradient(0deg, rgba(5, 11, 20, 0.92), rgba(5, 11, 20, 0.35));
 }
 
 .preview-device-frame.device-iphone-landscape.has-safe-area .device-safe-top {
     height: 18px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.95), rgba(5,11,20,0.45));
+    background: linear-gradient(180deg, rgba(5, 11, 20, 0.95), rgba(5, 11, 20, 0.45));
 }
 
 .preview-device-frame.device-iphone-landscape.has-safe-area .device-safe-bottom {
     height: 12px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.92), rgba(5,11,20,0.25));
+    background: linear-gradient(0deg, rgba(5, 11, 20, 0.92), rgba(5, 11, 20, 0.25));
 }
 
 .preview-device-frame.device-android-portrait.has-safe-area .device-safe-top {
     height: 26px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.90), rgba(5,11,20,0.42));
+    background: linear-gradient(180deg, rgba(5, 11, 20, 0.90), rgba(5, 11, 20, 0.42));
 }
 
 .preview-device-frame.device-android-portrait.has-safe-area .device-safe-bottom {
     height: 12px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.80), rgba(5,11,20,0.20));
+    background: linear-gradient(0deg, rgba(5, 11, 20, 0.80), rgba(5, 11, 20, 0.20));
 }
 
 .preview-device-frame.device-android-landscape.has-safe-area .device-safe-top {
     height: 16px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.90), rgba(5,11,20,0.35));
+    background: linear-gradient(180deg, rgba(5, 11, 20, 0.90), rgba(5, 11, 20, 0.35));
 }
 
 .preview-device-frame.device-android-landscape.has-safe-area .device-safe-bottom {
     height: 10px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.80), rgba(5,11,20,0.20));
+    background: linear-gradient(0deg, rgba(5, 11, 20, 0.80), rgba(5, 11, 20, 0.20));
 }
 
 .preview-device-frame.device-ipad-portrait.has-safe-area .device-safe-top,
 .preview-device-frame.device-ipad-landscape.has-safe-area .device-safe-top {
     height: 20px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.78), rgba(5,11,20,0.18));
+    background: linear-gradient(180deg, rgba(5, 11, 20, 0.78), rgba(5, 11, 20, 0.18));
 }
 
 .preview-device-frame.device-ipad-portrait.has-safe-area .device-safe-bottom,
 .preview-device-frame.device-ipad-landscape.has-safe-area .device-safe-bottom {
     height: 10px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.52), rgba(5,11,20,0.12));
+    background: linear-gradient(0deg, rgba(5, 11, 20, 0.52), rgba(5, 11, 20, 0.12));
 }
 
 /* =========================
@@ -611,6 +611,7 @@ body {
     padding: 10px 16px;
     z-index: 10;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
     max-width: calc(100% - 32px);
 }
@@ -637,46 +638,146 @@ body {
 
 /* =========================
    HOTSPOTS
+   Stable desktop + animated product/info only
 ========================= */
 
 .preview-hotspot {
+    position: relative;
+    isolation: isolate;
     display: grid;
     place-items: center;
     cursor: pointer;
-    transition: transform 0.18s ease, opacity 0.18s ease;
-    will-change: transform;
+    transform-origin: center center;
+    transition: opacity 0.18s ease, filter 0.18s ease;
+    will-change: auto;
+    touch-action: manipulation;
 }
 
+/* Important: no transform on hover.
+   Marzipano uses transform to position hotspots. */
 .preview-hotspot:hover {
-    transform: scale(1.05);
+    opacity: 0.98;
 }
 
 .preview-hotspot img {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
     filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
 }
 
+/* Internal wrapper used by JS */
+.hotspot-grow-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    transform-origin: center center;
+    transition: filter 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+}
+
+.preview-hotspot:hover .hotspot-grow-wrap,
+.preview-hotspot:hover > img {
+    filter: brightness(1.08) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.28));
+}
+
+/* Product + Info hotspots: white background */
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap {
+    width: 100%;
+    height: 100%;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.28),
+        0 0 0 6px rgba(255, 255, 255, 0.16),
+        0 0 22px rgba(34, 211, 238, 0.18);
+    animation: hotspotProductInfoFloat 2.4s ease-in-out infinite;
+}
+
+/* Product + Info icon inside white circle */
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap img,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 9px;
+    border-radius: 999px;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.16));
+}
+
+/* Pulse ring only for product and info */
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    border-radius: 999px;
+    border: 1px solid rgba(34, 211, 238, 0.38);
+    opacity: 0;
+    pointer-events: none;
+    animation: hotspotProductInfoPulse 2.4s ease-out infinite;
+}
+
+/* Hover effect only on wrapper, not the parent hotspot */
+.preview-hotspot.hotspot-kind-product:hover .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-info:hover .hotspot-grow-wrap {
+    filter: brightness(1.04);
+    box-shadow:
+        0 16px 34px rgba(0, 0, 0, 0.34),
+        0 0 0 7px rgba(255, 255, 255, 0.20),
+        0 0 28px rgba(34, 211, 238, 0.26);
+}
+
+/* Label hotspot */
 .preview-hotspot.variant-label {
+    width: auto !important;
+    height: auto !important;
     min-width: 70px;
     padding: 8px 12px;
     border-radius: 999px;
-    background: rgba(10,20,35,0.70);
-    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(10, 20, 35, 0.70);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     color: white;
     font-size: 12px;
     font-weight: 700;
-    display: flex;
+    display: inline-flex;
     gap: 8px;
     align-items: center;
     backdrop-filter: blur(8px);
-    box-shadow: 0 10px 18px rgba(0,0,0,0.18);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+}
+
+.preview-hotspot.variant-label .hotspot-grow-wrap {
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    animation: none !important;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.preview-hotspot.variant-label .hotspot-grow-wrap::after {
+    display: none;
 }
 
 .preview-hotspot.variant-label img {
     width: 22px;
     height: 22px;
+    flex: 0 0 auto;
+    padding: 0;
 }
 
 .preview-hotspot.variant-flat img {
@@ -688,8 +789,135 @@ body {
     filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.22));
 }
 
+/* Hotspot animations */
+@keyframes hotspotProductInfoFloat {
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-3px) scale(1.035);
+    }
+}
+
+@keyframes hotspotProductInfoPulse {
+    0% {
+        opacity: 0.58;
+        transform: scale(0.86);
+    }
+
+    70% {
+        opacity: 0;
+        transform: scale(1.34);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.34);
+    }
+}
+
 /* =========================
-   POPUP
+   INFO PANEL / HOTSPOT PRODUCT PANEL
+========================= */
+
+.info-panel {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(18px) scale(0.98);
+    transition:
+        opacity 0.26s ease,
+        transform 0.26s ease,
+        visibility 0.26s ease;
+    max-height: calc(100dvh - 120px);
+    display: flex;
+    flex-direction: column;
+}
+
+.info-panel.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.info-panel > .p-5 {
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.info-backdrop.open {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: rgba(2, 6, 23, 0.28);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+#previewInfoMedia {
+    position: relative;
+    height: 250px !important;
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at top, rgba(34, 211, 238, 0.12), transparent 42%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+}
+
+#previewInfoMedia::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 38%),
+        radial-gradient(circle at 50% 100%, rgba(34, 211, 238, 0.10), transparent 42%);
+    pointer-events: none;
+}
+
+.info-media-image {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain !important;
+    object-position: center center !important;
+    padding: 14px;
+    display: block;
+}
+
+.info-panel.is-ad .info-media-image {
+    object-fit: cover !important;
+    padding: 0;
+}
+
+.info-panel.is-product #previewInfoMedia,
+.info-panel.is-info #previewInfoMedia {
+    background:
+        radial-gradient(circle at top left, rgba(34, 211, 238, 0.18), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.16), transparent 38%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.85), rgba(2, 6, 23, 0.98));
+}
+
+.info-panel.is-product .info-media-image,
+.info-panel.is-info .info-media-image {
+    object-fit: contain !important;
+    padding: 18px;
+}
+
+.info-media-empty {
+    position: relative;
+    z-index: 1;
+    color: #9fb4cf;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* =========================
+   LEGACY POPUP
 ========================= */
 
 .preview-hotspot-popup {
@@ -704,6 +932,7 @@ body {
     overflow: hidden;
     z-index: 20;
     backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
 }
 
@@ -723,7 +952,7 @@ body {
     border-radius: 999px;
     cursor: pointer;
     z-index: 3;
-    transition: 0.18s ease;
+    transition: background 0.18s ease;
 }
 
 .popup-close:hover {
@@ -743,7 +972,7 @@ body {
 .popup-media img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .popup-empty-media {
@@ -795,7 +1024,7 @@ body {
     display: inline-flex;
     padding: 4px 10px;
     border-radius: 999px;
-    background: rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.08);
     color: #f3f8ff;
     font-size: 12px;
     font-weight: 600;
@@ -839,8 +1068,36 @@ body {
 }
 
 .popup-action.contact {
-    background: rgba(255,255,255,0.12);
+    background: rgba(255, 255, 255, 0.12);
     color: white;
+}
+
+/* =========================
+   PRODUCT CARDS IMAGE FIX
+========================= */
+
+.product-card,
+.hotspot-product-card {
+    overflow: hidden;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.product-card img,
+.hotspot-product-card img,
+.product-card-image {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    object-fit: contain !important;
+    object-position: center center !important;
+    padding: 12px;
+    background:
+        radial-gradient(circle at top, rgba(34, 211, 238, 0.10), transparent 42%),
+        rgba(2, 6, 23, 0.45);
 }
 
 /* =========================
@@ -872,7 +1129,7 @@ body {
         bottom: 0;
         width: 280px;
         z-index: 40;
-        box-shadow: 12px 0 30px rgba(0,0,0,0.24);
+        box-shadow: 12px 0 30px rgba(0, 0, 0, 0.24);
     }
 
     .preview-scenes-drawer.collapsed {
@@ -887,6 +1144,222 @@ body {
 
     .preview-viewer {
         height: calc(100vh - 120px);
+    }
+}
+
+@media (max-width: 768px) {
+    .preview-hotspot.hotspot-kind-product .hotspot-grow-wrap,
+    .preview-hotspot.hotspot-kind-info .hotspot-grow-wrap {
+        box-shadow:
+            0 10px 22px rgba(0, 0, 0, 0.24),
+            0 0 0 5px rgba(255, 255, 255, 0.14),
+            0 0 18px rgba(34, 211, 238, 0.16);
+    }
+
+    .preview-hotspot.hotspot-kind-product .hotspot-grow-wrap img,
+    .preview-hotspot.hotspot-kind-info .hotspot-grow-wrap img {
+        padding: 7px;
+    }
+
+    .info-panel {
+        position: fixed !important;
+        left: 10px !important;
+        right: 10px !important;
+        bottom: max(82px, env(safe-area-inset-bottom)) !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: calc(100dvh - 112px);
+        z-index: 75 !important;
+        border-radius: 26px !important;
+    }
+
+    #previewInfoMedia {
+        height: clamp(190px, 42dvh, 330px) !important;
+        min-height: 190px;
+    }
+
+    .info-panel.is-product #previewInfoMedia,
+    .info-panel.is-info #previewInfoMedia {
+        height: clamp(220px, 48dvh, 360px) !important;
+    }
+
+    .info-media-image {
+        padding: 12px;
+    }
+
+    .info-panel.is-product .info-media-image,
+    .info-panel.is-info .info-media-image {
+        padding: 14px;
+    }
+
+    .info-panel > .p-5 {
+        padding: 16px !important;
+    }
+
+    .product-card img,
+    .hotspot-product-card img,
+    .product-card-image {
+        aspect-ratio: 1 / 1;
+        padding: 10px;
+    }
+
+    #previewControlDock {
+        position: absolute;
+        left: 50%;
+        bottom: max(8px, env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        z-index: 55;
+        width: calc(100% - 12px) !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    #previewControlDock .dock-scroll,
+    #previewControlDock #previewSceneRail,
+    #previewControlDock .scene-stack-panel {
+        pointer-events: auto;
+    }
+
+    #previewControlDock .dock-scroll {
+        width: 100%;
+        max-width: 100%;
+        padding: 6px;
+        border-radius: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: linear-gradient(
+            180deg,
+            rgba(7, 12, 20, 0.22),
+            rgba(7, 12, 20, 0.42)
+        ) !important;
+        backdrop-filter: blur(18px) saturate(160%);
+        -webkit-backdrop-filter: blur(18px) saturate(160%);
+        box-shadow:
+            0 14px 32px rgba(0, 0, 0, 0.22),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    #previewControlDock .dock-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    #previewControlDock .dock-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    #previewControlDock .dock-divider {
+        width: 1px;
+        height: 24px;
+        flex: 0 0 1px;
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    #previewControlDock .control-btn,
+    #previewControlDock .scene-stack-toggle-inline {
+        min-width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        background: rgba(255, 255, 255, 0.06);
+        color: #fff;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    #previewControlDock .scene-stack-toggle-inline {
+        min-width: 78px;
+        padding: 0 8px;
+    }
+
+    #previewSceneRail,
+    #previewControlDock .scene-stack-panel {
+        position: absolute !important;
+        left: 50% !important;
+        right: auto !important;
+        bottom: calc(100% + 8px) !important;
+        width: min(420px, calc(100vw - 16px)) !important;
+        max-width: calc(100vw - 16px) !important;
+        margin: 0 !important;
+        transform: translateX(-50%) translateY(12px) !important;
+        transform-origin: bottom center !important;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        z-index: 56;
+        transition:
+            opacity 0.22s ease,
+            transform 0.22s ease,
+            visibility 0.22s ease;
+    }
+
+    #previewSceneRail.open,
+    #previewControlDock .scene-stack-panel.open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateX(-50%) translateY(0) !important;
+    }
+
+    #previewSceneRail .scene-stack-panel-inner,
+    #previewControlDock .scene-stack-panel-inner {
+        max-height: 38vh;
+        overflow-y: auto;
+        padding: 10px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: linear-gradient(
+            180deg,
+            rgba(7, 12, 20, 0.45),
+            rgba(7, 12, 20, 0.72)
+        );
+        backdrop-filter: blur(18px) saturate(160%);
+        -webkit-backdrop-filter: blur(18px) saturate(160%);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+    }
+
+    #previewSceneRail .scene-stack-list,
+    #previewControlDock .scene-stack-list {
+        display: grid;
+        gap: 8px;
+    }
+
+    #previewSceneRail .scene-card,
+    #previewControlDock .scene-card {
+        grid-template-columns: 72px minmax(0, 1fr);
+        padding: 8px;
+        border-radius: 16px;
+    }
+
+    #previewSceneRail .scene-thumb,
+    #previewControlDock .scene-thumb {
+        width: 72px;
+        height: 52px;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    #previewSceneRail .scene-thumb img,
+    #previewControlDock .scene-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    #previewSceneRail .scene-title,
+    #previewControlDock .scene-title {
+        font-size: 13px;
+    }
+
+    #previewSceneRail .scene-subtitle,
+    #previewControlDock .scene-subtitle {
+        font-size: 11px;
     }
 }
 
@@ -947,171 +1420,28 @@ body {
         max-height: none;
     }
 }
-@media (max-width: 768px) {
-    #previewControlDock {
-        position: absolute;
-        left: 50%;
-        bottom: max(8px, env(safe-area-inset-bottom));
-        transform: translateX(-50%);
-        z-index: 55;
-        width: calc(100% - 12px) !important;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        pointer-events: none;
+
+@media (max-width: 420px) {
+    #previewInfoMedia {
+        height: clamp(180px, 40dvh, 300px) !important;
     }
 
-    #previewControlDock .dock-scroll,
-    #previewControlDock #previewSceneRail,
-    #previewControlDock .scene-stack-panel {
-        pointer-events: auto;
-    }
-
-    #previewControlDock .dock-scroll {
-        width: 100%;
-        max-width: 100%;
-        padding: 6px;
-        border-radius: 22px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        background: linear-gradient(
-            180deg,
-            rgba(7, 12, 20, 0.22),
-            rgba(7, 12, 20, 0.42)
-        ) !important;
-        backdrop-filter: blur(18px) saturate(160%);
-        -webkit-backdrop-filter: blur(18px) saturate(160%);
-        box-shadow:
-            0 14px 32px rgba(0, 0, 0, 0.22),
-            inset 0 1px 0 rgba(255,255,255,0.06);
-    }
-
-    #previewControlDock .dock-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    #previewControlDock .dock-row::-webkit-scrollbar {
-        display: none;
-    }
-
-    #previewControlDock .dock-divider {
-        width: 1px;
-        height: 24px;
-        flex: 0 0 1px;
-        background: rgba(255,255,255,0.12);
-    }
-
-    #previewControlDock .control-btn,
-    #previewControlDock .scene-stack-toggle-inline {
-        min-width: 40px;
-        height: 40px;
-        border-radius: 14px;
-        border: 1px solid rgba(255,255,255,0.10);
-        background: rgba(255,255,255,0.06);
-        color: #fff;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
-
-    #previewControlDock .scene-stack-toggle-inline {
-        min-width: 78px;
-        padding: 0 8px;
-    }
-
-    /* PANEL DES SCENES : CENTRÉ ET PROPRE */
-    #previewSceneRail,
-    #previewControlDock .scene-stack-panel {
-        position: absolute !important;
-        left: 50% !important;
-        right: auto !important;
-        bottom: calc(100% + 8px) !important;
-        width: min(420px, calc(100vw - 16px)) !important;
-        max-width: calc(100vw - 16px) !important;
-        margin: 0 !important;
-        transform: translateX(-50%) translateY(12px) !important;
-        transform-origin: bottom center !important;
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-        z-index: 56;
-        transition:
-            opacity 0.22s ease,
-            transform 0.22s ease,
-            visibility 0.22s ease;
-    }
-
-    #previewSceneRail.open,
-    #previewControlDock .scene-stack-panel.open {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: translateX(-50%) translateY(0) !important;
-    }
-
-    #previewSceneRail .scene-stack-panel-inner,
-    #previewControlDock .scene-stack-panel-inner {
-        max-height: 38vh;
-        overflow-y: auto;
-        padding: 10px;
-        border-radius: 20px;
-        border: 1px solid rgba(255,255,255,0.12);
-        background: linear-gradient(
-            180deg,
-            rgba(7, 12, 20, 0.45),
-            rgba(7, 12, 20, 0.72)
-        );
-        backdrop-filter: blur(18px) saturate(160%);
-        -webkit-backdrop-filter: blur(18px) saturate(160%);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.28);
-    }
-
-    #previewSceneRail .scene-stack-list,
-    #previewControlDock .scene-stack-list {
-        display: grid;
-        gap: 8px;
-    }
-
-    /* cartes scènes plus propres sur mobile */
-    #previewSceneRail .scene-card,
-    #previewControlDock .scene-card {
-        grid-template-columns: 72px minmax(0, 1fr);
-        padding: 8px;
-        border-radius: 16px;
-    }
-
-    #previewSceneRail .scene-thumb,
-    #previewControlDock .scene-thumb {
-        width: 72px;
-        height: 52px;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
-    #previewSceneRail .scene-thumb img,
-    #previewControlDock .scene-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    #previewSceneRail .scene-title,
-    #previewControlDock .scene-title {
-        font-size: 13px;
-    }
-
-    #previewSceneRail .scene-subtitle,
-    #previewControlDock .scene-subtitle {
-        font-size: 11px;
+    .info-panel.is-product #previewInfoMedia,
+    .info-panel.is-info #previewInfoMedia {
+        height: clamp(210px, 46dvh, 330px) !important;
     }
 }
 
-
- </style>
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+    .preview-hotspot.hotspot-kind-product .hotspot-grow-wrap,
+    .preview-hotspot.hotspot-kind-info .hotspot-grow-wrap,
+    .preview-hotspot.hotspot-kind-product .hotspot-grow-wrap::after,
+    .preview-hotspot.hotspot-kind-info .hotspot-grow-wrap::after {
+        animation: none !important;
+    }
+}
+</style>
 
   <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 </head>
@@ -1640,87 +1970,133 @@ body {
         document.body.classList.remove("info-panel-open");
     }
 
-    function openInfoPanel(hotspot) {
-        if (!previewInfoPanel) return;
+function openInfoPanel(hotspot) {
+    if (!previewInfoPanel) return;
 
-        const content = hotspot.payload?.content || {};
-        const imageUrl = content.image_url || hotspot.ad_image_url || "";
-        const ctaUrl = content.cta_url || "";
-        const buttonText = content.button_text || "Open";
-        const badge = content.badge || "";
-        const price = content.price || "";
-        const siteName = content.site_name || "";
-        const phone = content.phone || "";
-        const email = content.email || "";
-        const whatsappNumber = content.whatsapp_number || "";
-        const whatsappMessage = content.whatsapp_message || "Hello";
+    const content = hotspot.payload?.content || {};
 
-        previewInfoMedia.innerHTML = imageUrl
-            ? `<img src="${imageUrl}" alt="${hotspot.title || hotspot.label || "Hotspot"}" class="info-media-image">`
-            : `<div class="info-media-empty">Preview unavailable</div>`;
+    const imageUrl =
+        content.image_url ||
+        content.product_image_url ||
+        content.photo_url ||
+        hotspot.image_url ||
+        hotspot.ad_image_url ||
+        "";
 
-        previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
-        previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
+    const ctaUrl = content.cta_url || "";
+    const buttonText = content.button_text || "Open";
+    const badge = content.badge || "";
+    const price = content.price || "";
+    const siteName = content.site_name || "";
+    const phone = content.phone || "";
+    const email = content.email || "";
+    const whatsappNumber = content.whatsapp_number || "";
+    const whatsappMessage = content.whatsapp_message || "Hello";
 
-        if (badge) {
-            previewInfoBadge.textContent = badge;
-            previewInfoBadge.classList.remove("hidden");
-        } else {
-            previewInfoBadge.classList.add("hidden");
-            previewInfoBadge.textContent = "";
-        }
+    const hotspotKind = String(
+        hotspot.type ||
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        "info"
+    ).toLowerCase();
 
-        if (price) {
-            previewInfoPrice.textContent = price;
-            previewInfoPrice.classList.remove("hidden");
-        } else {
-            previewInfoPrice.classList.add("hidden");
-            previewInfoPrice.textContent = "";
-        }
+    previewInfoPanel.classList.remove(
+        "is-product",
+        "is-info",
+        "is-ad",
+        "is-cta",
+        "is-cart",
+        "is-whatsapp",
+        "is-phone",
+        "is-website"
+    );
 
-        if (siteName) {
-            previewInfoSite.textContent = siteName;
-            previewInfoSite.classList.remove("hidden");
-        } else {
-            previewInfoSite.classList.add("hidden");
-            previewInfoSite.textContent = "";
-        }
+    previewInfoPanel.classList.add(`is-${hotspotKind}`);
+    previewInfoPanel.dataset.hotspotKind = hotspotKind;
 
-        if (ctaUrl) {
-            previewInfoAction.href = ctaUrl;
-            previewInfoAction.textContent = buttonText;
-            previewInfoAction.classList.remove("hidden");
-        } else {
-            previewInfoAction.classList.add("hidden");
-            previewInfoAction.removeAttribute("href");
-        }
+    previewInfoMedia.innerHTML = "";
 
-        if (whatsappNumber) {
-            const cleanNumber = String(whatsappNumber).replace(/[^\d]/g, "");
-            previewInfoWhatsapp.href = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(whatsappMessage)}`;
-            previewInfoWhatsapp.classList.remove("hidden");
-        } else {
-            previewInfoWhatsapp.classList.add("hidden");
-            previewInfoWhatsapp.removeAttribute("href");
-        }
+    if (imageUrl) {
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.alt = hotspot.title || hotspot.label || "Hotspot";
+        img.className = "info-media-image";
+        img.loading = "lazy";
+        img.decoding = "async";
 
-        if (phone) {
-            previewInfoContact.href = `tel:${phone}`;
-            previewInfoContact.textContent = "Call";
-            previewInfoContact.classList.remove("hidden");
-        } else if (email) {
-            previewInfoContact.href = `mailto:${email}`;
-            previewInfoContact.textContent = "Email";
-            previewInfoContact.classList.remove("hidden");
-        } else {
-            previewInfoContact.classList.add("hidden");
-            previewInfoContact.removeAttribute("href");
-        }
+        img.onerror = () => {
+            previewInfoMedia.innerHTML = `<div class="info-media-empty">Image unavailable</div>`;
+        };
 
-        previewInfoPanel.classList.add("open");
-        previewInfoBackdrop?.classList.add("open");
-        document.body.classList.add("info-panel-open");
+        previewInfoMedia.appendChild(img);
+    } else {
+        previewInfoMedia.innerHTML = `<div class="info-media-empty">Preview unavailable</div>`;
     }
+
+    previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
+    previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
+
+    if (badge) {
+        previewInfoBadge.textContent = badge;
+        previewInfoBadge.classList.remove("hidden");
+    } else {
+        previewInfoBadge.classList.add("hidden");
+        previewInfoBadge.textContent = "";
+    }
+
+    if (price) {
+        previewInfoPrice.textContent = price;
+        previewInfoPrice.classList.remove("hidden");
+    } else {
+        previewInfoPrice.classList.add("hidden");
+        previewInfoPrice.textContent = "";
+    }
+
+    if (siteName) {
+        previewInfoSite.textContent = siteName;
+        previewInfoSite.classList.remove("hidden");
+    } else {
+        previewInfoSite.classList.add("hidden");
+        previewInfoSite.textContent = "";
+    }
+
+    if (ctaUrl) {
+        previewInfoAction.href = ctaUrl;
+        previewInfoAction.textContent = buttonText;
+        previewInfoAction.classList.remove("hidden");
+    } else {
+        previewInfoAction.classList.add("hidden");
+        previewInfoAction.removeAttribute("href");
+    }
+
+    if (whatsappNumber) {
+        const cleanNumber = String(whatsappNumber).replace(/[^\d]/g, "");
+        previewInfoWhatsapp.href = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+        previewInfoWhatsapp.classList.remove("hidden");
+    } else {
+        previewInfoWhatsapp.classList.add("hidden");
+        previewInfoWhatsapp.removeAttribute("href");
+    }
+
+    if (phone) {
+        previewInfoContact.href = `tel:${phone}`;
+        previewInfoContact.textContent = "Call";
+        previewInfoContact.classList.remove("hidden");
+    } else if (email) {
+        previewInfoContact.href = `mailto:${email}`;
+        previewInfoContact.textContent = "Email";
+        previewInfoContact.classList.remove("hidden");
+    } else {
+        previewInfoContact.classList.add("hidden");
+        previewInfoContact.removeAttribute("href");
+    }
+
+    closeSceneStack();
+
+    previewInfoPanel.classList.add("open");
+    previewInfoBackdrop?.classList.add("open");
+    document.body.classList.add("info-panel-open");
+}
 
     function stopAutorotate() {
         autorotateEnabled = false;
@@ -1884,49 +2260,99 @@ body {
         });
     }
 
-    function buildHotspotNode(hotspot) {
-        const display = hotspot.payload?.display || {};
-        const variant = display.variant || "pin";
-        const size = Number(display.size || 58);
-        const rotation = Number(display.rotation || 0);
-        const offsetX = Number(display.offset_x || 0);
-        const offsetY = Number(display.offset_y || 0);
-        const anchor = display.anchor || "bottom";
+function buildHotspotNode(hotspot, hotspotIndex = 0) {
+    const display = hotspot.payload?.display || {};
+    const variant = display.variant || "pin";
 
-        const node = document.createElement("div");
-        node.className = `preview-hotspot variant-${variant} anchor-${anchor}`;
-        node.style.width = `${size}px`;
-        node.style.height = variant === "label" ? "auto" : `${size}px`;
-        node.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`;
+    const isMobile = isMobileViewport();
 
-        const img = document.createElement("img");
-        img.src = resolveIcon(hotspot.selected_icon || hotspot.icon || "default");
-        img.alt = hotspot.label || hotspot.title || "Hotspot";
+    const defaultSize =
+        hotspot.type === "product" ? 66 :
+        hotspot.type === "info" ? 60 :
+        58;
 
-        if (variant === "label") {
-            const span = document.createElement("span");
-            span.textContent = hotspot.label || hotspot.title || "Hotspot";
-            node.appendChild(img);
-            node.appendChild(span);
-        } else {
-            node.appendChild(img);
+    const rawSize = Number(display.size || defaultSize);
+
+    const size = clamp(
+        rawSize,
+        36,
+        isMobile ? 64 : 92
+    );
+
+    const rotation = Number(display.rotation || 0);
+    const offsetX = Number(display.offset_x || 0);
+    const offsetY = Number(display.offset_y || 0);
+    const anchor = display.anchor || "bottom";
+
+    const hotspotKind = String(
+        hotspot.type ||
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        "default"
+    ).toLowerCase();
+
+    const node = document.createElement("div");
+    node.className = `preview-hotspot variant-${variant} anchor-${anchor} hotspot-kind-${hotspotKind}`;
+    node.dataset.hotspotType = hotspotKind;
+
+    node.style.width = `${size}px`;
+    node.style.height = variant === "label" ? "auto" : `${size}px`;
+
+    node.style.setProperty(
+        "--hotspot-base-transform",
+        `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`
+    );
+
+    node.style.transform = "var(--hotspot-base-transform)";
+    node.style.setProperty("--hotspot-grow-delay", `${Math.min(hotspotIndex * 70, 420)}ms`);
+
+    const wrap = document.createElement("span");
+    wrap.className = "hotspot-grow-wrap";
+
+    const img = document.createElement("img");
+
+    img.src = resolveIcon(
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        hotspot.type ||
+        "default"
+    );
+
+    img.alt = hotspot.label || hotspot.title || "Hotspot";
+    img.loading = "lazy";
+    img.decoding = "async";
+
+    img.onerror = () => {
+        img.src = resolveIcon("default");
+    };
+
+    if (variant === "label") {
+        const span = document.createElement("span");
+        span.textContent = hotspot.label || hotspot.title || "Hotspot";
+
+        wrap.appendChild(img);
+        wrap.appendChild(span);
+        node.appendChild(wrap);
+    } else {
+        wrap.appendChild(img);
+        node.appendChild(wrap);
+    }
+
+    stopTouchAndScrollEventPropagation(node);
+
+    node.addEventListener("click", async (event) => {
+        event.stopPropagation();
+
+        if (hotspot.type === "navigate" && hotspot.target_scene) {
+            await navigateToScene(hotspot.target_scene, hotspot);
+            return;
         }
 
-        stopTouchAndScrollEventPropagation(node);
+        openInfoPanel(hotspot);
+    });
 
-        node.addEventListener("click", async (event) => {
-            event.stopPropagation();
-
-            if (hotspot.type === "navigate" && hotspot.target_scene) {
-                await navigateToScene(hotspot.target_scene, hotspot);
-                return;
-            }
-
-            openInfoPanel(hotspot);
-        });
-
-        return node;
-    }
+    return node;
+}
 
     function ensureViewer(key) {
         const mount = getMountEl(key);
@@ -2058,13 +2484,14 @@ body {
             return null;
         }
 
-        (sceneData.hotspots || []).forEach((hotspot) => {
-            const node = buildHotspotNode(hotspot);
-            marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
-                yaw: hotspot.yaw,
-                pitch: hotspot.pitch
-            });
-        });
+       (sceneData.hotspots || []).forEach((hotspot, hotspotIndex) => {
+    const node = buildHotspotNode(hotspot, hotspotIndex);
+
+    marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
+        yaw: hotspot.yaw,
+        pitch: hotspot.pitch
+    });
+});
 
         requestAnimationFrame(() => {
             updateAllViewerSizes();
