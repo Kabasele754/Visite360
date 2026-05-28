@@ -229,23 +229,36 @@ def _normalize_tiles_manifest(request, scene):
 
 def _scene_assets_payload(request, scene):
     """
-    Payload principal pour le chargement progressif :
-    preview -> mobile/desktop -> tiles.
+    Payload progressif propre :
+    - light/preview/thumbnail = image légère pour affichage immédiat.
+    - mobile = panorama léger pour téléphone.
+    - desktop = panorama haute qualité pour ordinateur.
+
+    Important : on ne transforme pas automatiquement `mobile` en `desktop` dans
+    les champs principaux, sinon le front croit avoir une vraie version mobile
+    alors qu'il télécharge une grosse image.
     """
     preview = _safe_file_url(request, getattr(scene, "image_360_preview", None))
+    thumbnail = _safe_file_url(request, getattr(scene, "thumbnail_image", None))
     mobile = _safe_file_url(request, getattr(scene, "image_360_mobile", None))
     desktop = _safe_file_url(request, getattr(scene, "image_360", None))
-    thumbnail = _safe_file_url(request, getattr(scene, "thumbnail_image", None))
     original = _safe_file_url(request, getattr(scene, "image_360_original", None))
 
+    light = preview or thumbnail or mobile
+    viewer_mobile = mobile or desktop or original or preview or thumbnail
+    viewer_desktop = desktop or original or mobile or preview or thumbnail
+    fallback = light or viewer_mobile or viewer_desktop
+
     return {
-        "preview": preview or thumbnail or mobile or desktop or original,
-        "thumbnail": thumbnail or preview or mobile or desktop or original,
-        "mobile": mobile or desktop or preview or thumbnail or original,
-        "desktop": desktop or mobile or preview or thumbnail or original,
-        "fallback": preview or mobile or desktop or thumbnail or original,
+        "preview": preview,
+        "thumbnail": thumbnail,
+        "light": light or fallback,
+        "mobile": mobile,
+        "desktop": desktop,
+        "viewer_mobile": viewer_mobile,
+        "viewer_desktop": viewer_desktop,
+        "fallback": fallback,
         "original": original,
-        
     }
 
 
@@ -359,11 +372,12 @@ def _serialize_scene_payload(request, scene, include_hotspots=True, prefetch=Non
         "status": getattr(scene, "status", ""),
         "is_public": bool(getattr(scene, "is_public", True)),
 
-        # Ancien format gardé pour ne pas casser le JS existant
-        "image_360_url": assets["desktop"],
-        "image_360_mobile_url": assets["mobile"],
-        "image_360_preview_url": assets["preview"],
-        "thumbnail_url": assets["thumbnail"],
+        # Ancien format gardé pour ne pas casser le JS existant,
+        # mais avec une vraie sélection progressive.
+        "image_360_url": assets["viewer_desktop"],
+        "image_360_mobile_url": assets["viewer_mobile"],
+        "image_360_preview_url": assets["light"],
+        "thumbnail_url": assets["thumbnail"] or assets["light"],
 
         # Nouveau format recommandé
         "assets": assets,
