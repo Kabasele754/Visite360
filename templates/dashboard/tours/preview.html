@@ -3344,6 +3344,44 @@ body,
     }
 }
 
+
+/* =========================================================
+   PATCH FINAL — ZOOM STABLE DESKTOP + MOBILE
+   Garder à la fin du style pour écraser les règles anciennes.
+========================================================= */
+html,
+body {
+    overscroll-behavior: none !important;
+}
+
+#previewViewer,
+.preview-viewer,
+#previewLayerA,
+#previewLayerB,
+.preview-layer,
+#previewMountA,
+#previewMountB,
+.preview-mount,
+#previewViewer canvas {
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+    overscroll-behavior: none !important;
+}
+
+/* Les contrôles gardent leurs clics normaux */
+#previewControlDock,
+#previewControlDock *,
+#previewSceneRail,
+#previewSceneRail * {
+    touch-action: manipulation !important;
+}
+
+/* Le panel garde le scroll vertical */
+#previewInfoPanel,
+#previewInfoPanel * {
+    touch-action: pan-y !important;
+}
+
 </style>
 
   <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
@@ -3759,10 +3797,10 @@ body,
     let focusMode = false;
     let toastTimer = null;
 
-    const MIN_FOV = degToRad(28);
-    const MAX_FOV = degToRad(118);
+    const MIN_FOV = degToRad(6);
+    const MAX_FOV = degToRad(132);
 
-    const EXTRA_WIDE_OFFSET = degToRad(12);
+    const EXTRA_WIDE_OFFSET = degToRad(0);
 
     // Cinématique:
     // - ouverture: la première scène commence large puis zoome doucement vers la vue finale
@@ -3772,8 +3810,8 @@ body,
     const NAVIGATION_ZOOM_IN_OFFSET_2 = degToRad(13);
     const SCENE_INCOMING_DEZOOM_OFFSET = degToRad(9);
 
-    const MOBILE_EXTRA_WIDE_OFFSET = degToRad(4);
-    const MOBILE_PINCH_SENSITIVITY = 1.35;
+    const MOBILE_EXTRA_WIDE_OFFSET = degToRad(0);
+    const MOBILE_PINCH_SENSITIVITY = 2.15;
 
     const pinchState = {
         active: false,
@@ -4052,6 +4090,8 @@ body,
             zoomOutBtn.classList.toggle("opacity-40", zoomOutBtn.disabled);
         }
     }
+
+    let zoomAnimationFrame = null;
 
     function setZoomInstant(nextFov) {
         const view = getCurrentView();
@@ -4559,32 +4599,46 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
             useTiles: !!tilesData.useTiles
         });
 
+        // Zoom build-like : on garde une résolution logique élevée.
+        // Sinon Marzipano limite le zoom avant, surtout avec image_360_mobile.
+        const logicalMaxResolution = Math.max(
+            Number(sceneData?.face_size || 0),
+            Number(sceneData?.max_resolution || 0),
+            Number(tilesData?.faceSize || 0),
+            4096
+        );
+
         // Desktop: tiles si disponibles. Mobile: image_360_mobile en priorité pour garder
-        // la visite rapide et fluide.
+        // la visite rapide et fluide, mais sans brider le zoom.
         if (tilesData.ready && tilesData.useTiles) {
             return {
                 source: Marzipano.ImageUrlSource.fromString(
                     tilesData.urlTemplate,
                     { cubeMapPreviewUrl: tilesData.previewUrl || undefined }
                 ),
-                geometry: new Marzipano.CubeGeometry(tilesData.levels),
+                geometry: new Marzipano.CubeGeometry(
+                    tilesData.levels || [
+                        { tileSize: 256, size: 256, fallbackOnly: true },
+                        { tileSize: 512, size: 512 },
+                        { tileSize: 512, size: 1024 },
+                        { tileSize: 512, size: 2048 },
+                        { tileSize: 512, size: 4096 }
+                    ]
+                ),
                 limiter: Marzipano.RectilinearView.limit.traditional(
-                    tilesData.faceSize || 2048,
+                    logicalMaxResolution,
                     MAX_FOV
                 )
             };
         }
 
-        const textureWidth = mobile ? 1536 : 3072;
-        const faceSize = mobile ? 1536 : 3072;
-
         return {
             source: Marzipano.ImageUrlSource.fromString(selectedImageUrl),
             geometry: new Marzipano.EquirectGeometry([
-                { width: textureWidth }
+                { width: 4096 }
             ]),
             limiter: Marzipano.RectilinearView.limit.traditional(
-                faceSize,
+                logicalMaxResolution,
                 MAX_FOV
             )
         };
@@ -4986,12 +5040,17 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
     function setupMobileZoomGestures() {
         if (!previewViewer) return;
 
-        // Mobile zoom fort et stable.
-        // On capture sur previewViewer ET document pour ne pas perdre le pinch
-        // quand le doigt passe sur un layer Marzipano/hotspot.
         previewViewer.style.touchAction = "none";
         previewViewer.style.webkitUserSelect = "none";
         previewViewer.style.userSelect = "none";
+
+        // On applique aussi sur les couches/canvas, car sur mobile l'événement part parfois du canvas WebGL.
+        [previewLayerA, previewLayerB, previewMountA, previewMountB].forEach((el) => {
+            if (!el) return;
+            el.style.touchAction = "none";
+            el.style.webkitUserSelect = "none";
+            el.style.userSelect = "none";
+        });
 
         let lastTapTs = 0;
 
@@ -4999,7 +5058,8 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
             return !!(
                 target?.closest?.("#previewControlDock") ||
                 target?.closest?.("#previewInfoPanel") ||
-                target?.closest?.("#previewSceneRail")
+                target?.closest?.("#previewSceneRail") ||
+                target?.closest?.("[data-ui='chrome']")
             );
         }
 
@@ -5030,18 +5090,9 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
             const currentDistance = getTouchDistance(event.touches);
             if (!pinchState.startDistance || !currentDistance) return;
 
-            // Ratio plus stable que delta pixels.
-            // currentDistance > startDistance => les doigts s'écartent => zoom avant => FOV diminue.
             const ratio = currentDistance / pinchState.startDistance;
-
-            // log2 donne une courbe naturelle; sensibilité en degrés convertie en radians.
-            const zoomDelta = Math.log2(ratio) * degToRad(42) * MOBILE_PINCH_SENSITIVITY;
-
-            const nextFov = clamp(
-                pinchState.startFov - zoomDelta,
-                MIN_FOV,
-                MAX_FOV
-            );
+            const zoomDelta = Math.log2(ratio) * degToRad(58) * MOBILE_PINCH_SENSITIVITY;
+            const nextFov = clamp(pinchState.startFov - zoomDelta, MIN_FOV, MAX_FOV);
 
             setZoomInstant(nextFov);
         }
@@ -5068,10 +5119,10 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
                 return;
             }
 
-            // Double tap mobile: zoom rapide pratique si pinch navigateur est capricieux.
+            // Double tap: utile sur certains navigateurs où le pinch est trop sensible ou capturé.
             if (event.touches && event.touches.length === 1 && !shouldIgnoreSingleTouchTarget(event.target)) {
                 const now = Date.now();
-                if (now - lastTapTs < 280) {
+                if (now - lastTapTs < 290) {
                     event.preventDefault();
                     event.stopPropagation();
 
@@ -5079,12 +5130,13 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
                     if (view) {
                         stopAutorotate();
                         const currentFov = view.fov();
-                        const targetFov = currentFov > degToRad(70)
-                            ? clamp(currentFov - degToRad(22), MIN_FOV, MAX_FOV)
-                            : getSceneFinalFov(findScene(currentSceneId) || scenes[0]);
+                        const defaultFov = getSceneFinalFov(findScene(currentSceneId) || scenes[0]);
+                        const targetFov = currentFov > degToRad(58)
+                            ? clamp(currentFov - degToRad(30), MIN_FOV, MAX_FOV)
+                            : defaultFov;
 
-                        view.setParameters({ fov: targetFov }, { transitionDuration: 180 });
-                        setTimeout(syncZoomButtonsState, 190);
+                        view.setParameters({ fov: targetFov }, { transitionDuration: 160 });
+                        setTimeout(syncZoomButtonsState, 180);
                     }
                 }
                 lastTapTs = now;
@@ -5097,17 +5149,11 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
             }
         }
 
-        function onTouchEnd(event) {
-            endPinch(event);
-        }
-
-        // Capture sur viewer
         previewViewer.addEventListener("touchstart", onTouchStart, { passive: false, capture: true });
         previewViewer.addEventListener("touchmove", onTouchMove, { passive: false, capture: true });
-        previewViewer.addEventListener("touchend", onTouchEnd, { passive: false, capture: true });
+        previewViewer.addEventListener("touchend", endPinch, { passive: false, capture: true });
         previewViewer.addEventListener("touchcancel", cancelPinch, { passive: false, capture: true });
 
-        // Capture globale seulement quand le pinch est actif ou commence dans le viewer.
         document.addEventListener("touchstart", (event) => {
             if (event.touches && event.touches.length === 2 && previewViewer.contains(event.target)) {
                 startPinch(event);
@@ -5115,15 +5161,94 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
         }, { passive: false, capture: true });
 
         document.addEventListener("touchmove", (event) => {
-            if (pinchState.active) {
-                movePinch(event);
-            }
+            if (pinchState.active) movePinch(event);
         }, { passive: false, capture: true });
 
         document.addEventListener("touchend", endPinch, { passive: false, capture: true });
         document.addEventListener("touchcancel", cancelPinch, { passive: false, capture: true });
 
-        // iOS Safari gesture events: utile sur certains iPhone/iPad.
+        // Fallback Pointer Events: certains Android/Chrome déclenchent plus proprement pointer que touch.
+        const activePointers = new Map();
+        const pointerPinch = {
+            active: false,
+            startDistance: 0,
+            startFov: 0
+        };
+
+        function getPointerDistance() {
+            const points = Array.from(activePointers.values());
+            if (points.length < 2) return 0;
+            const dx = points[0].clientX - points[1].clientX;
+            const dy = points[0].clientY - points[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function startPointerPinch(event) {
+            const view = getCurrentView();
+            if (!view) return;
+            stopAutorotate();
+            pointerPinch.active = true;
+            pointerPinch.startDistance = getPointerDistance();
+            pointerPinch.startFov = view.fov();
+            try { event.target.setPointerCapture?.(event.pointerId); } catch (_) {}
+        }
+
+        previewViewer.addEventListener("pointerdown", (event) => {
+            if (event.pointerType !== "touch") return;
+            if (shouldIgnoreSingleTouchTarget(event.target)) return;
+
+            activePointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (activePointers.size === 2) {
+                event.preventDefault();
+                event.stopPropagation();
+                startPointerPinch(event);
+            }
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("pointermove", (event) => {
+            if (event.pointerType !== "touch" || !activePointers.has(event.pointerId)) return;
+
+            activePointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (!pointerPinch.active || activePointers.size < 2) return;
+
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const currentDistance = getPointerDistance();
+            if (!pointerPinch.startDistance || !currentDistance) return;
+
+            const ratio = currentDistance / pointerPinch.startDistance;
+            const zoomDelta = Math.log2(ratio) * degToRad(58) * MOBILE_PINCH_SENSITIVITY;
+            setZoomInstant(pointerPinch.startFov - zoomDelta);
+        }, { passive: false, capture: true });
+
+        function endPointer(event) {
+            if (event.pointerType !== "touch") return;
+            activePointers.delete(event.pointerId);
+            if (activePointers.size < 2) {
+                pointerPinch.active = false;
+                pointerPinch.startDistance = 0;
+                pointerPinch.startFov = 0;
+            }
+            syncZoomButtonsState();
+        }
+
+        previewViewer.addEventListener("pointerup", endPointer, { passive: false, capture: true });
+        previewViewer.addEventListener("pointercancel", endPointer, { passive: false, capture: true });
+        previewViewer.addEventListener("pointerleave", endPointer, { passive: false, capture: true });
+
+        // iOS Safari gesture events.
         let gestureStartFov = 0;
 
         previewViewer.addEventListener("gesturestart", (event) => {
@@ -5145,7 +5270,7 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
             event.stopPropagation();
 
             const scale = event.scale || 1;
-            const zoomDelta = Math.log2(scale) * degToRad(46) * MOBILE_PINCH_SENSITIVITY;
+            const zoomDelta = Math.log2(scale) * degToRad(60) * MOBILE_PINCH_SENSITIVITY;
             setZoomInstant(gestureStartFov - zoomDelta);
         }, { passive: false, capture: true });
 
@@ -5173,12 +5298,7 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
             stopAutorotate();
 
             const direction = event.deltaY > 0 ? 1 : -1;
-            const nextFov = clamp(
-                view.fov() + degToRad(direction * 6),
-                MIN_FOV,
-                MAX_FOV
-            );
-
+            const nextFov = clamp(view.fov() + degToRad(direction * 7), MIN_FOV, MAX_FOV);
             setZoomInstant(nextFov);
         }, { passive: false, capture: true });
     }
@@ -5188,14 +5308,24 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
     prevSceneBtn?.addEventListener("click", () => goToRelativeScene(-1));
     nextSceneBtn?.addEventListener("click", () => goToRelativeScene(1));
 
-    zoomOutBtn?.addEventListener("click", () => {
+    function bindZoomButton(button, handler) {
+        if (!button) return;
+
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            handler();
+        }, { passive: false });
+    }
+
+    bindZoomButton(zoomOutBtn, () => {
         stopAutorotate();
-        zoomBy(8);
+        zoomBy(isMobileViewport() ? 8 : 10);
     });
 
-    zoomInBtn?.addEventListener("click", () => {
+    bindZoomButton(zoomInBtn, () => {
         stopAutorotate();
-        zoomBy(-8);
+        zoomBy(isMobileViewport() ? -8 : -10);
     });
 
     resetViewBtn?.addEventListener("click", resetCurrentView);

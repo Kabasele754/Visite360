@@ -1,0 +1,3367 @@
+{% comment %}
+Preview final builder-like: double couche Marzipano A/B, transition cinématique, zoom mobile stable.
+Remplacer ton template preview par ce fichier.
+{% endcomment %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <style> @-ms-viewport { width: device-width; } </style>
+    
+    <link rel="stylesheet" href="https://www.marzipano.net/demos/common/reset.css">
+    <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
+    <title>{{ tour.title }} - Preview</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfeff',
+                            100: '#cffafe',
+                            200: '#a5f3fc',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            800: '#155e75',
+                            900: '#164e63',
+                        }
+                    },
+                    boxShadow: {
+                        glow: '0 0 0 1px rgba(255,255,255,0.06), 0 18px 40px rgba(0,0,0,0.32)',
+                        premium: '0 30px 90px rgba(0,0,0,0.48)',
+                        soft: '0 12px 28px rgba(0,0,0,0.22)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
+
+    <!-- WALK CINEMATIC PATCH: effet comme une personne qui avance dans la scène -->
+    <style id="preview-walk-cinematic-patch">
+        .preview-viewer {
+            perspective: 1200px;
+            transform-style: preserve-3d;
+        }
+
+        .preview-layer {
+            transform-origin: 50% 50% !important;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .preview-viewer.walk-cinematic-running .preview-layer,
+        .preview-viewer.mobile-cinematic-running .preview-layer {
+            will-change: transform, opacity, filter;
+        }
+
+        .preview-walk-cinema-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 18;
+            pointer-events: none;
+            opacity: 0;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.00) 34%, rgba(2,6,23,0.08) 54%, rgba(2,6,23,0.30) 100%),
+                linear-gradient(90deg, rgba(2,6,23,0.32), transparent 18%, transparent 82%, rgba(2,6,23,0.32));
+            mix-blend-mode: normal;
+        }
+
+        .preview-walk-cinema-overlay::before,
+        .preview-walk-cinema-overlay::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 22%;
+            opacity: 0;
+            background: linear-gradient(90deg, rgba(2,6,23,0.42), transparent);
+        }
+
+        .preview-walk-cinema-overlay::before { left: 0; }
+        .preview-walk-cinema-overlay::after {
+            right: 0;
+            transform: scaleX(-1);
+        }
+
+        .preview-viewer.walk-cinematic-running .preview-walk-cinema-overlay::before,
+        .preview-viewer.walk-cinematic-running .preview-walk-cinema-overlay::after,
+        .preview-viewer.mobile-cinematic-running .preview-walk-cinema-overlay::before,
+        .preview-viewer.mobile-cinematic-running .preview-walk-cinema-overlay::after {
+            animation: previewSideWalkPulse 1380ms cubic-bezier(.22,1,.36,1) both;
+        }
+
+        @keyframes previewSideWalkPulse {
+            0% { opacity: 0; transform: translateX(0) scaleX(1); }
+            35% { opacity: .55; transform: translateX(0) scaleX(1.08); }
+            70% { opacity: .32; transform: translateX(-3px) scaleX(1.16); }
+            100% { opacity: 0; transform: translateX(-8px) scaleX(1.22); }
+        }
+
+        .preview-viewer.transitioning .layer-outgoing {
+            animation: previewWalkOutgoing 1420ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+            filter: brightness(1) saturate(1) !important;
+        }
+
+        .preview-viewer.transitioning .layer-incoming {
+            animation: previewWalkIncoming 1420ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+            filter: brightness(1) saturate(1) !important;
+        }
+
+        @keyframes previewWalkOutgoing {
+            0% {
+                transform: translate3d(0, 0, 0) scale(1);
+                opacity: 1;
+                filter: brightness(1) saturate(1);
+            }
+            18% {
+                transform: translate3d(0, 0, 0) scale(1.055);
+                opacity: 1;
+                filter: brightness(1.01) saturate(1.02);
+            }
+            44% {
+                transform: translate3d(0, -0.6%, 0) scale(1.18);
+                opacity: .96;
+                filter: brightness(1) saturate(1.02);
+            }
+            68% {
+                transform: translate3d(0, -1.4%, 0) scale(1.34);
+                opacity: .36;
+                filter: brightness(.94) saturate(.98);
+            }
+            100% {
+                transform: translate3d(0, -2.4%, 0) scale(1.54);
+                opacity: 0;
+                filter: brightness(.88) saturate(.96);
+            }
+        }
+
+        @keyframes previewWalkIncoming {
+            0%, 34% {
+                transform: translate3d(0, 1.8%, 0) scale(1.105);
+                opacity: 0;
+                filter: brightness(.94) saturate(.98);
+            }
+            52% {
+                transform: translate3d(0, .9%, 0) scale(1.070);
+                opacity: .28;
+                filter: brightness(.97) saturate(1);
+            }
+            78% {
+                transform: translate3d(0, .25%, 0) scale(1.025);
+                opacity: .86;
+                filter: brightness(1) saturate(1);
+            }
+            100% {
+                transform: translate3d(0, 0, 0) scale(1);
+                opacity: 1;
+                filter: brightness(1) saturate(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .preview-viewer.transitioning .layer-outgoing,
+            .preview-viewer.transitioning .layer-incoming {
+                animation: none !important;
+            }
+
+            .preview-walk-cinema-overlay {
+                background:
+                    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.00) 31%, rgba(2,6,23,0.10) 52%, rgba(2,6,23,0.34) 100%),
+                    linear-gradient(90deg, rgba(2,6,23,0.36), transparent 20%, transparent 80%, rgba(2,6,23,0.36));
+            }
+
+            .preview-viewer.mobile-cinematic-running {
+                overflow: hidden;
+                contain: layout paint size;
+            }
+
+            .preview-viewer.mobile-cinematic-running .preview-layer.mobile-wa-layer {
+                transform-origin: 50% 50% !important;
+                will-change: transform, opacity;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+                transform: translate3d(0,0,0);
+                -webkit-transform: translate3d(0,0,0);
+            }
+
+            .preview-viewer.mobile-cinematic-running .preview-walk-cinema-overlay {
+                z-index: 22;
+            }
+
+        }
+    </style>
+
+
+ {% comment %} <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}"> {% endcomment %}
+
+    {# Le design complet est maintenant dans dashboard/css/preview-tailwind.css #}
+
+
+  <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
+
+
+    <!-- HOTSPOT PNG + PREMIUM ANIMATION + STABLE POSITION PATCH -->
+    <style id="stable-hotspots-animation-patch">
+        /*
+           Très important : Marzipano positionne .preview-hotspot avec transform.
+           Donc on ne transforme jamais le parent. Toute animation reste à l'intérieur.
+        */
+        .preview-hotspot {
+            position: relative !important;
+            display: grid !important;
+            place-items: center !important;
+            isolation: isolate !important;
+            cursor: pointer !important;
+            touch-action: manipulation !important;
+            pointer-events: auto !important;
+            transform-origin: center center !important;
+            transition: opacity .18s ease, filter .18s ease !important;
+            will-change: auto !important;
+            overflow: visible !important;
+        }
+
+        .preview-hotspot.is-preparing {
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+
+        .hotspot-grow-wrap {
+            position: absolute !important;
+            inset: 0 !important;
+            display: grid !important;
+            place-items: center !important;
+            transform-origin: center center !important;
+            will-change: transform, opacity !important;
+            transform: var(--hotspot-base-transform, translate(0,0) rotate(0deg));
+        }
+
+        .hotspot-visual-animated {
+            position: relative !important;
+            width: 100% !important;
+            height: 100% !important;
+            display: grid !important;
+            place-items: center !important;
+            border-radius: 999px !important;
+            overflow: visible !important;
+            background: rgba(255, 255, 255, .13) !important;
+            border: 1.4px solid rgba(255, 255, 255, .88) !important;
+            box-shadow:
+                0 16px 36px rgba(0, 0, 0, .30),
+                inset 0 1px 0 rgba(255, 255, 255, .34),
+                0 0 0 6px rgba(255, 255, 255, .10) !important;
+            backdrop-filter: blur(14px) !important;
+            -webkit-backdrop-filter: blur(14px) !important;
+            animation:
+                hotspotPremiumEnter 520ms cubic-bezier(.22, 1, .36, 1) both,
+                hotspotPremiumBreath 2450ms ease-in-out infinite !important;
+            animation-delay:
+                var(--hotspot-grow-delay, 0ms),
+                calc(var(--hotspot-grow-delay, 0ms) + 520ms) !important;
+        }
+
+        .hotspot-visual-animated::after {
+            content: "";
+            position: absolute;
+            inset: -8px;
+            border-radius: inherit;
+            border: 1px solid rgba(255, 255, 255, .42);
+            opacity: .54;
+            pointer-events: none;
+            animation: hotspotPremiumPulse 2200ms ease-out infinite;
+            animation-delay: calc(var(--hotspot-grow-delay, 0ms) + 280ms);
+        }
+
+        .hotspot-png-icon {
+            position: relative !important;
+            z-index: 2 !important;
+            display: block !important;
+            width: 94% !important;
+            height: 94% !important;
+            max-width: none !important;
+            max-height: none !important;
+            object-fit: contain !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            pointer-events: none !important;
+            user-select: none !important;
+            -webkit-user-drag: none !important;
+            filter: drop-shadow(0 7px 13px rgba(0, 0, 0, .28)) !important;
+        }
+
+        .preview-hotspot:hover .hotspot-visual-animated {
+            background: rgba(255, 255, 255, .20) !important;
+            box-shadow:
+                0 20px 44px rgba(0, 0, 0, .34),
+                inset 0 1px 0 rgba(255, 255, 255, .44),
+                0 0 0 8px rgba(255, 255, 255, .13) !important;
+        }
+
+        .preview-hotspot:hover .hotspot-png-icon {
+            filter: brightness(1.08) drop-shadow(0 9px 16px rgba(0, 0, 0, .30)) !important;
+        }
+
+        /* Hotspots business : info, produit, pub, WhatsApp, etc. */
+        .hotspot-kind-product .hotspot-visual-animated,
+        .hotspot-kind-info .hotspot-visual-animated,
+        .hotspot-kind-ad .hotspot-visual-animated,
+        .hotspot-kind-ads .hotspot-visual-animated,
+        .hotspot-kind-cta .hotspot-visual-animated,
+        .hotspot-kind-cart .hotspot-visual-animated,
+        .hotspot-kind-whatsapp .hotspot-visual-animated,
+        .hotspot-kind-phone .hotspot-visual-animated,
+        .hotspot-kind-website .hotspot-visual-animated {
+            background: rgba(255, 255, 255, .16) !important;
+            border-color: rgba(255, 255, 255, .94) !important;
+        }
+
+        .hotspot-kind-product .hotspot-png-icon,
+        .hotspot-kind-info .hotspot-png-icon,
+        .hotspot-kind-ad .hotspot-png-icon,
+        .hotspot-kind-ads .hotspot-png-icon,
+        .hotspot-kind-cta .hotspot-png-icon,
+        .hotspot-kind-cart .hotspot-png-icon,
+        .hotspot-kind-whatsapp .hotspot-png-icon,
+        .hotspot-kind-phone .hotspot-png-icon,
+        .hotspot-kind-website .hotspot-png-icon {
+            width: 99% !important;
+            height: 99% !important;
+        }
+
+        /* Navigation : reste stable et plus discret. */
+        .hotspot-kind-navigate .hotspot-visual-animated,
+        .hotspot-kind-navigation .hotspot-visual-animated {
+            background: rgba(255, 255, 255, .08) !important;
+            border-color: rgba(255, 255, 255, .74) !important;
+            box-shadow:
+                0 12px 26px rgba(0, 0, 0, .24),
+                inset 0 1px 0 rgba(255, 255, 255, .22) !important;
+        }
+
+        .hotspot-kind-navigate .hotspot-png-icon,
+        .hotspot-kind-navigation .hotspot-png-icon {
+            width: 82% !important;
+            height: 82% !important;
+        }
+
+        .hotspot-label-text {
+            position: absolute !important;
+            left: 50% !important;
+            top: calc(100% + 7px) !important;
+            transform: translateX(-50%) !important;
+            max-width: 140px !important;
+            padding: 5px 9px !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(255, 255, 255, .42) !important;
+            background: rgba(2, 6, 23, .52) !important;
+            color: #fff !important;
+            font-size: 11px !important;
+            font-weight: 900 !important;
+            line-height: 1.15 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            text-shadow: 0 1px 8px rgba(0, 0, 0, .48) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            pointer-events: none !important;
+        }
+
+        @keyframes hotspotPremiumEnter {
+            0% { opacity: 0; transform: scale(.58) translateY(8px); filter: blur(2px) brightness(.92); }
+            58% { opacity: 1; transform: scale(1.12) translateY(-2px); filter: blur(0) brightness(1.06); }
+            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0) brightness(1); }
+        }
+
+        @keyframes hotspotPremiumBreath {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.045) translateY(-3px); }
+        }
+
+        @keyframes hotspotPremiumPulse {
+            0% { opacity: .48; transform: scale(.82); }
+            72% { opacity: 0; transform: scale(1.38); }
+            100% { opacity: 0; transform: scale(1.38); }
+        }
+
+        @media (max-width: 768px) {
+            .hotspot-visual-animated {
+                border-width: 1.2px !important;
+                box-shadow:
+                    0 12px 28px rgba(0, 0, 0, .28),
+                    inset 0 1px 0 rgba(255, 255, 255, .28),
+                    0 0 0 5px rgba(255, 255, 255, .10) !important;
+                backdrop-filter: blur(10px) !important;
+                -webkit-backdrop-filter: blur(10px) !important;
+            }
+
+            .hotspot-png-icon {
+                width: 96% !important;
+                height: 96% !important;
+            }
+
+            .hotspot-kind-product .hotspot-png-icon,
+            .hotspot-kind-info .hotspot-png-icon,
+            .hotspot-kind-ad .hotspot-png-icon,
+            .hotspot-kind-ads .hotspot-png-icon,
+            .hotspot-kind-cta .hotspot-png-icon,
+            .hotspot-kind-cart .hotspot-png-icon,
+            .hotspot-kind-whatsapp .hotspot-png-icon,
+            .hotspot-kind-phone .hotspot-png-icon,
+            .hotspot-kind-website .hotspot-png-icon {
+                width: 99% !important;
+                height: 99% !important;
+            }
+
+            .hotspot-kind-navigate .hotspot-png-icon,
+            .hotspot-kind-navigation .hotspot-png-icon {
+                width: 80% !important;
+                height: 80% !important;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .hotspot-visual-animated,
+            .hotspot-visual-animated::after {
+                animation: none !important;
+            }
+        }
+    </style>
+
+
+    <!-- FINAL HOTSPOT PNG IMAGE + BEAUTIFUL ANIMATION OVERRIDE -->
+    <style id="final-hotspot-png-image-animation-override">
+        /* Ce bloc garde la position Marzipano stable et anime uniquement l'intérieur. */
+        .preview-hotspot {
+            overflow: visible !important;
+            background: transparent !important;
+            border: 0 !important;
+        }
+
+        .preview-hotspot .hotspot-grow-wrap {
+            transform: var(--hotspot-base-transform, translate(0,0) rotate(0deg)) !important;
+            animation: hotspotWrapFloatIn 560ms cubic-bezier(.22, 1, .36, 1) both !important;
+            animation-delay: var(--hotspot-grow-delay, 0ms) !important;
+        }
+
+        .preview-hotspot .hotspot-visual-animated {
+            overflow: visible !important;
+            background:
+                radial-gradient(circle at 35% 25%, rgba(255,255,255,.35), rgba(255,255,255,.12) 38%, rgba(255,255,255,.08) 100%) !important;
+            border: 1.5px solid rgba(255,255,255,.92) !important;
+            box-shadow:
+                0 18px 38px rgba(0,0,0,.34),
+                inset 0 1px 0 rgba(255,255,255,.46),
+                0 0 0 5px rgba(255,255,255,.10),
+                0 0 22px rgba(255,255,255,.12) !important;
+            transform: translateZ(0) !important;
+        }
+
+        .preview-hotspot .hotspot-visual-animated::before {
+            content: "";
+            position: absolute;
+            inset: 12%;
+            border-radius: 999px;
+            background: rgba(255,255,255,.10);
+            filter: blur(3px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .preview-hotspot .hotspot-visual-animated::after {
+            inset: -10px !important;
+            border-color: rgba(255,255,255,.46) !important;
+            animation: hotspotPremiumPulse 2050ms ease-out infinite !important;
+        }
+
+        .preview-hotspot .hotspot-png-icon {
+            width: 104% !important;
+            height: 104% !important;
+            object-fit: contain !important;
+            object-position: center !important;
+            opacity: 1 !important;
+            mix-blend-mode: normal !important;
+            transform: translateZ(0) scale(1.02) !important;
+            filter:
+                drop-shadow(0 7px 14px rgba(0,0,0,.32))
+                drop-shadow(0 1px 0 rgba(255,255,255,.18)) !important;
+        }
+
+        .hotspot-kind-product .hotspot-png-icon,
+        .hotspot-kind-info .hotspot-png-icon,
+        .hotspot-kind-ad .hotspot-png-icon,
+        .hotspot-kind-cta .hotspot-png-icon,
+        .hotspot-kind-cart .hotspot-png-icon,
+        .hotspot-kind-whatsapp .hotspot-png-icon,
+        .hotspot-kind-phone .hotspot-png-icon,
+        .hotspot-kind-website .hotspot-png-icon {
+            width: 112% !important;
+            height: 112% !important;
+            transform: translateZ(0) scale(1.06) !important;
+        }
+
+        .hotspot-kind-navigate .hotspot-png-icon,
+        .hotspot-kind-navigation .hotspot-png-icon {
+            width: 86% !important;
+            height: 86% !important;
+            transform: translateZ(0) scale(1) !important;
+        }
+
+        .preview-hotspot:hover .hotspot-grow-wrap {
+            transform: var(--hotspot-base-transform, translate(0,0) rotate(0deg)) scale(1.08) !important;
+        }
+
+        @keyframes hotspotWrapFloatIn {
+            0% {
+                opacity: 0;
+                transform: var(--hotspot-base-transform, translate(0,0) rotate(0deg)) scale(.58) translateY(8px);
+            }
+            58% {
+                opacity: 1;
+                transform: var(--hotspot-base-transform, translate(0,0) rotate(0deg)) scale(1.14) translateY(-2px);
+            }
+            100% {
+                opacity: 1;
+                transform: var(--hotspot-base-transform, translate(0,0) rotate(0deg)) scale(1) translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .preview-hotspot .hotspot-visual-animated {
+                border-width: 1.25px !important;
+                backdrop-filter: blur(10px) !important;
+                -webkit-backdrop-filter: blur(10px) !important;
+            }
+
+            .preview-hotspot .hotspot-png-icon {
+                width: 108% !important;
+                height: 108% !important;
+            }
+
+            .hotspot-kind-product .hotspot-png-icon,
+            .hotspot-kind-info .hotspot-png-icon,
+            .hotspot-kind-ad .hotspot-png-icon,
+            .hotspot-kind-cta .hotspot-png-icon,
+            .hotspot-kind-cart .hotspot-png-icon,
+            .hotspot-kind-whatsapp .hotspot-png-icon,
+            .hotspot-kind-phone .hotspot-png-icon,
+            .hotspot-kind-website .hotspot-png-icon {
+                width: 116% !important;
+                height: 116% !important;
+            }
+        }
+
+
+        /* Fallback visible si un PNG n'est pas encore collecté / chargé */
+        .hotspot-icon-fallback-letter {
+            position: relative !important;
+            z-index: 3 !important;
+            display: none !important;
+            width: 76% !important;
+            height: 76% !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 999px !important;
+            background: rgba(255,255,255,.18) !important;
+            color: #fff !important;
+            font-size: 12px !important;
+            font-weight: 950 !important;
+            letter-spacing: .02em !important;
+            text-transform: uppercase !important;
+            text-shadow: 0 2px 10px rgba(0,0,0,.45) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.25) !important;
+        }
+
+        .preview-hotspot.icon-image-failed .hotspot-png-icon { display: none !important; }
+        .preview-hotspot.icon-image-failed .hotspot-icon-fallback-letter { display: flex !important; }
+
+        .hotspot-visual-animated .hotspot-shine {
+            position: absolute !important;
+            inset: 0 !important;
+            border-radius: inherit !important;
+            pointer-events: none !important;
+            overflow: hidden !important;
+            z-index: 1 !important;
+        }
+
+        .hotspot-visual-animated .hotspot-shine::before {
+            content: "";
+            position: absolute;
+            top: -35%;
+            bottom: -35%;
+            left: -78%;
+            width: 52%;
+            transform: rotate(24deg);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.42), transparent);
+            opacity: .62;
+            animation: hotspotPremiumShine 3150ms ease-in-out infinite;
+            animation-delay: calc(var(--hotspot-grow-delay, 0ms) + 900ms);
+        }
+
+        .hotspot-kind-info .hotspot-visual-animated,
+        .hotspot-kind-product .hotspot-visual-animated,
+        .hotspot-kind-ad .hotspot-visual-animated,
+        .hotspot-kind-cta .hotspot-visual-animated,
+        .hotspot-kind-cart .hotspot-visual-animated,
+        .hotspot-kind-whatsapp .hotspot-visual-animated,
+        .hotspot-kind-phone .hotspot-visual-animated,
+        .hotspot-kind-website .hotspot-visual-animated {
+            animation:
+                hotspotPremiumEnter 520ms cubic-bezier(.22, 1, .36, 1) both,
+                hotspotBusinessBreath 2200ms ease-in-out infinite !important;
+            animation-delay:
+                var(--hotspot-grow-delay, 0ms),
+                calc(var(--hotspot-grow-delay, 0ms) + 620ms) !important;
+        }
+
+        .hotspot-kind-whatsapp .hotspot-visual-animated {
+            box-shadow:
+                0 18px 38px rgba(0,0,0,.34),
+                inset 0 1px 0 rgba(255,255,255,.46),
+                0 0 0 5px rgba(255,255,255,.10),
+                0 0 28px rgba(34,197,94,.24) !important;
+        }
+
+        @keyframes hotspotPremiumShine {
+            0%, 42% { transform: translateX(0) rotate(24deg); opacity: 0; }
+            52% { opacity: .62; }
+            72% { transform: translateX(330%) rotate(24deg); opacity: 0; }
+            100% { transform: translateX(330%) rotate(24deg); opacity: 0; }
+        }
+
+        @keyframes hotspotBusinessBreath {
+            0%, 100% { transform: scale(1) translateY(0); }
+            45% { transform: scale(1.075) translateY(-4px); }
+            70% { transform: scale(1.025) translateY(-1px); }
+        }
+
+    </style>
+
+
+    <!-- HOTSPOT IMAGE VISIBILITY PATCH: affiche aussi les images uploadées dans /media/ -->
+    <style id="hotspot-uploaded-image-visibility-patch">
+        .preview-hotspot .hotspot-png-icon {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: block !important;
+        }
+
+        .preview-hotspot.hotspot-uses-uploaded-image .hotspot-visual-animated {
+            overflow: hidden !important;
+            background: rgba(255, 255, 255, .16) !important;
+        }
+
+        .preview-hotspot.hotspot-uses-uploaded-image .hotspot-png-icon {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            object-position: center !important;
+            border-radius: 999px !important;
+            padding: 2px !important;
+            background: transparent !important;
+        }
+
+        .preview-hotspot.icon-image-failed .hotspot-visual-animated {
+            background:
+                radial-gradient(circle at 35% 25%, rgba(34,211,238,.30), rgba(15,23,42,.70) 52%, rgba(2,6,23,.78) 100%) !important;
+        }
+    </style>
+
+</head>
+
+<body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
+    {% include 'public/partials/loader_3d_global.html' %}
+    <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
+
+    <div class="preview-page-shell relative w-screen min-h-[100dvh] overflow-hidden bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_45%,#01040d_100%)]">
+
+        <div class="pointer-events-none absolute inset-0 overflow-hidden">
+            <div class="absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl"></div>
+            <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl"></div>
+            <div class="absolute left-0 top-1/3 h-64 w-64 rounded-full bg-sky-400/5 blur-3xl"></div>
+        </div>
+
+        <!-- intro overlay -->
+        {% comment %} <div id="previewIntroOverlay" class="preview-intro-overlay">
+            <div class="preview-intro-glow preview-intro-glow-a"></div>
+            <div class="preview-intro-glow preview-intro-glow-b"></div>
+
+            <div class="preview-intro-card">
+                <div class="preview-intro-logo-wrap">
+                    {% if current_organization.logo %}
+                        <img src="{{ current_organization.logo.url }}" alt="{{ current_organization.name }}" class="preview-intro-logo">
+                    {% else %}
+                        <div class="preview-intro-logo preview-intro-logo-fallback">
+                            {{ current_organization.name|slice:":2"|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="preview-intro-text">
+                    <p class="preview-intro-kicker">Virtual Tour Experience</p>
+                    <h2 class="preview-intro-title">{{ current_organization.name }}</h2>
+                    <p class="preview-intro-subtitle">{{ tour.title }}</p>
+                </div>
+
+                <div class="preview-intro-loader">
+                    <span class="preview-intro-loader-bar"></span>
+                </div>
+            </div>
+        </div> {% endcomment %}
+
+        <main class="relative h-full w-full">
+            <section class="relative h-full w-full">
+                <div id="previewViewer" class="preview-viewer">
+
+                    <!-- progressive panorama preview: thumbnail first, real panorama after -->
+                    <div id="previewSceneLoadingOverlay" class="preview-scene-loading-overlay" aria-hidden="true">
+                        <img id="previewSceneLoadingImage" alt="" class="preview-scene-loading-image">
+                        <div class="preview-scene-loading-shade"></div>
+                        <div class="preview-scene-loading-chip">
+                            <span class="preview-scene-loading-dot"></span>
+                            <span id="previewSceneLoadingText">Loading panorama</span>
+                        </div>
+                    </div>
+
+                    <!-- centered brand -->
+                    <div id="brandOverlay"
+                         data-ui="chrome"
+                         class="absolute left-1/2 top-4 z-50 -translate-x-1/2 md:top-5">
+                        <div class="brand-overlay-chip brand-overlay-chip-centered">
+                            {% if current_organization.logo %}
+                                <div class="brand-logo-frame">
+                                    <img src="{{ current_organization.logo.url }}" alt="{{ current_organization.name }}" class="h-full w-full object-cover">
+                                </div>
+                            {% else %}
+                                <div class="brand-logo-frame brand-logo-fallback">
+                                    {{ current_organization.name|slice:":2"|upper }}
+                                </div>
+                            {% endif %}
+
+                            <div class="min-w-0 text-center">
+                                <p class="brand-kicker">Virtual Tour</p>
+                                <h1 class="brand-company-name">{{ current_organization.name }}</h1>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pointer-events-none absolute inset-x-0 top-0 z-[6] h-32 bg-gradient-to-b from-slate-950/40 to-transparent"></div>
+
+                    <div id="previewLayerA" class="preview-layer active-layer">
+                        <div id="previewMountA" class="preview-mount"></div>
+                    </div>
+
+                    <div id="previewLayerB" class="preview-layer standby-layer">
+                        <div id="previewMountB" class="preview-mount"></div>
+                    </div>
+
+                    <!-- info panel -->
+                    <div id="previewInfoBackdrop"
+                         class="info-backdrop pointer-events-none absolute inset-0 z-30 opacity-0"></div>
+
+                    <aside id="previewInfoPanel"
+                           class="info-panel absolute bottom-6 right-6 z-40 w-[420px] max-w-[calc(100%-2rem)] overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/78 shadow-premium backdrop-blur-2xl">
+                        <button id="previewInfoClose"
+                                type="button"
+                                class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white transition hover:bg-black/60">
+                            ✕
+                        </button>
+
+                        <div id="previewInfoMedia" class="h-56 w-full overflow-hidden bg-white/5"></div>
+
+                        <div class="p-5">
+                            <span id="previewInfoBadge"
+                                  class="hidden mb-3 inline-flex rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-200">
+                            </span>
+
+                            <h3 id="previewInfoTitle" class="text-2xl font-black tracking-tight text-white">
+                                Hotspot
+                            </h3>
+
+                            <p id="previewInfoDescription" class="mt-2 text-sm leading-6 text-slate-300"></p>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <span id="previewInfoPrice" class="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white"></span>
+                                <span id="previewInfoSite" class="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white"></span>
+                            </div>
+
+                            <div class="mt-5 flex flex-wrap gap-3">
+                                <a id="previewInfoAction"
+                                   class="hidden inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
+                                   href="#"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Open
+                                </a>
+
+                                <a id="previewInfoWhatsapp"
+                                   class="hidden inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-green-400 to-emerald-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
+                                   href="#"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    WhatsApp
+                                </a>
+
+                                <a id="previewInfoContact"
+                                   class="hidden inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/10"
+                                   href="#"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Contact
+                                </a>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-[6] h-36 bg-gradient-to-t from-slate-950/35 to-transparent"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- bottom dock -->
+        <div id="previewControlDock"
+             data-ui="chrome"
+             class="absolute bottom-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 md:bottom-5 md:w-auto">
+            
+            <!-- scene panel opens upward -->
+            <div id="previewSceneRail" class="scene-stack-panel scene-stack-panel-up">
+                <div class="scene-stack-panel-inner">
+                    <div id="previewScenesList" class="scene-stack-list"></div>
+                </div>
+            </div>
+
+            <div class="dock-scroll rounded-[28px] border border-white/10 bg-slate-950/60 p-2 shadow-premium backdrop-blur-2xl">
+                <div class="dock-row">
+                    <button id="sceneStackToggle"
+                            type="button"
+                            class="scene-stack-toggle-inline"
+                            aria-label="Afficher les scènes"
+                            title="Scenes">
+                        <div id="sceneStackMiniPreview" class="scene-stack-mini-preview"></div>
+                        <span id="sceneCountBadge" class="scene-stack-badge">0</span>
+                    </button>
+
+                    <div class="dock-divider"></div>
+
+                    <button id="prevSceneBtn" type="button" class="control-btn" title="Scene précédente" aria-label="Scene précédente">◀</button>
+                    <button id="nextSceneBtn" type="button" class="control-btn" title="Scene suivante" aria-label="Scene suivante">▶</button>
+
+                    <div class="dock-divider"></div>
+
+                    <button id="zoomOutBtn" type="button" class="control-btn" title="Zoom arrière" aria-label="Zoom arrière">－</button>
+                    <button id="zoomInBtn" type="button" class="control-btn" title="Zoom avant" aria-label="Zoom avant">＋</button>
+                    <button id="resetViewBtn" type="button" class="control-btn" title="Recentrer" aria-label="Recentrer">⌾</button>
+
+                    <div class="dock-divider"></div>
+
+                    <button id="autorotateBtn" type="button" class="control-btn" title="Auto rotate" aria-label="Auto rotate">⟳</button>
+                    <button id="focusModeBtn" type="button" class="control-btn" title="Mode focus" aria-label="Mode focus">✦</button>
+                    <button id="shareBtn" type="button" class="control-btn" title="Partager" aria-label="Partager">↗</button>
+                    <button id="fullscreenBtn" type="button" class="control-btn" title="Plein écran" aria-label="Plein écran">⤢</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- toast -->
+        <div id="previewToast"
+             class="pointer-events-none absolute bottom-24 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-sm font-bold text-white opacity-0 shadow-glow backdrop-blur-xl transition duration-300">
+            Copied
+        </div>
+    </div>
+
+    <script>
+        window.PREVIEW_CONFIG = {
+            staticIconRoot: "{% static 'dashboard/icons/' %}",
+            staticBusinessIconRoot: "{% static 'dashboard/icons/business/' %}",
+            iconMap: {
+                default: "{% static 'dashboard/icons/default.png' %}",
+                white: "{% static 'dashboard/icons/white.png' %}",
+                whitetilted: "{% static 'dashboard/icons/whitetilted.png' %}",
+                tilted: "{% static 'dashboard/icons/tilted.png' %}",
+                arrowleft: "{% static 'dashboard/icons/arrowleft.png' %}",
+                arrowright: "{% static 'dashboard/icons/arrowright.png' %}",
+                arrowdown: "{% static 'dashboard/icons/arrowdown.png' %}",
+                chevronleft: "{% static 'dashboard/icons/chevronleft.png' %}",
+                chevronforward: "{% static 'dashboard/icons/chevronforward.png' %}",
+                "chevronforward-2": "{% static 'dashboard/icons/chevronforward-2.png' %}"
+            },
+            businessIconMap: {
+                info: "{% static 'dashboard/icons/business/info.png' %}",
+                product: "{% static 'dashboard/icons/business/product.png' %}",
+                ad: "{% static 'dashboard/icons/business/ad.png' %}",
+                cta: "{% static 'dashboard/icons/business/cta.png' %}",
+                cart: "{% static 'dashboard/icons/business/cart.png' %}",
+                whatsapp: "{% static 'dashboard/icons/business/whatsapp.png' %}",
+                phone: "{% static 'dashboard/icons/business/phone.png' %}",
+                website: "{% static 'dashboard/icons/business/website.png' %}"
+            }
+        };
+    </script>
+
+    {{ scenes_json|json_script:"preview-scenes-data" }}
+    {{ scene_list_json|json_script:"preview-scene-list-data" }}
+
+    {% comment %} <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script> {% endcomment %}
+
+    <script>
+
+   
+      
+   
+        document.addEventListener("DOMContentLoaded", () => {
+    if (typeof Marzipano === "undefined") {
+        console.error("Marzipano not loaded");
+        return;
+    }
+
+    const config = window.PREVIEW_CONFIG || {};
+    const scenesDataEl = document.getElementById("preview-scenes-data");
+    const sceneListDataEl = document.getElementById("preview-scene-list-data");
+
+    // scenes = toutes les scènes envoyées au preview.
+    // Elles restent disponibles pour Marzipano, les hotspots et les URLs directes.
+    let scenes = scenesDataEl ? JSON.parse(scenesDataEl.textContent) : [];
+
+    // dockScenes = seulement les scènes à afficher dans la liste du dock bottom.
+    // Ces données viennent de scene_list_json côté Django.
+    let dockScenes = sceneListDataEl ? JSON.parse(sceneListDataEl.textContent) : [];
+
+    if (!Array.isArray(scenes)) scenes = [];
+    if (!Array.isArray(dockScenes)) dockScenes = [];
+
+    scenes = scenes
+        .slice()
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    dockScenes = dockScenes
+        .filter(scene => scene && scene.is_public !== false)
+        .slice()
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    // Sécurité : si le backend n’envoie pas encore scene_list_json,
+    // on construit la liste visible depuis scenes.
+    if (!dockScenes.length) {
+        dockScenes = scenes
+            .filter(scene => scene && scene.is_public !== false)
+            .slice()
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+
+    function debugLog() {}
+
+    function getPreferredImageUrl(sceneData) {
+        const mobile = isMobileViewport();
+        return (
+            (mobile && sceneData?.image_360_mobile_url) ||
+            sceneData?.image_360_url ||
+            ""
+        );
+    }
+
+    function getScenePreviewThumb(sceneData) {
+        const tilesPreview = sceneData?.tiles_url
+            ? `${String(sceneData.tiles_url).replace(/\/$/, "")}/preview.jpg`
+            : "";
+
+        return (
+            sceneData?.thumbnail_url ||
+            tilesPreview ||
+            sceneData?.image_360_mobile_url ||
+            sceneData?.image_360_url ||
+            ""
+        );
+    }
+
+    const $ = (id) => document.getElementById(id);
+
+    const previewViewer = $("previewViewer");
+    const previewLayerA = $("previewLayerA");
+    const previewLayerB = $("previewLayerB");
+    const previewMountA = $("previewMountA");
+    const previewMountB = $("previewMountB");
+
+    const previewIntroOverlay = $("previewIntroOverlay");
+
+    const previewScenesList = $("previewScenesList");
+    const sceneCountBadge = $("sceneCountBadge");
+    const sceneStackToggle = $("sceneStackToggle");
+    const previewSceneRail = $("previewSceneRail");
+    const sceneStackMiniPreview = $("sceneStackMiniPreview");
+
+    const prevSceneBtn = $("prevSceneBtn");
+    const nextSceneBtn = $("nextSceneBtn");
+    const zoomOutBtn = $("zoomOutBtn");
+    const zoomInBtn = $("zoomInBtn");
+    const resetViewBtn = $("resetViewBtn");
+    const autorotateBtn = $("autorotateBtn");
+    const focusModeBtn = $("focusModeBtn");
+    const shareBtn = $("shareBtn");
+    const fullscreenBtn = $("fullscreenBtn");
+
+    const previewToast = $("previewToast");
+
+    const previewSceneLoadingOverlay = $("previewSceneLoadingOverlay");
+    const previewSceneLoadingImage = $("previewSceneLoadingImage");
+    const previewSceneLoadingText = $("previewSceneLoadingText");
+
+    const previewInfoBackdrop = $("previewInfoBackdrop");
+    const previewInfoPanel = $("previewInfoPanel");
+    const previewInfoClose = $("previewInfoClose");
+    const previewInfoMedia = $("previewInfoMedia");
+    const previewInfoBadge = $("previewInfoBadge");
+    const previewInfoTitle = $("previewInfoTitle");
+    const previewInfoDescription = $("previewInfoDescription");
+    const previewInfoPrice = $("previewInfoPrice");
+    const previewInfoSite = $("previewInfoSite");
+    const previewInfoAction = $("previewInfoAction");
+    const previewInfoWhatsapp = $("previewInfoWhatsapp");
+    const previewInfoContact = $("previewInfoContact");
+
+    const viewers = { A: null, B: null };
+    const views = { A: null, B: null };
+    const marzipanoScenes = { A: null, B: null };
+
+    debugLog("INIT", {
+        marzipanoLoaded: typeof Marzipano !== "undefined",
+        scenesCount: scenes.length,
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        userAgent: navigator.userAgent
+    });
+
+    let activeLayerKey = "A";
+    let currentSceneId = null;
+    let isTransitioning = false;
+
+    // Sur mobile, les animations CSS sur un canvas WebGL peuvent être sautées par Safari/Chrome.
+    // On garde le CSS pour desktop, mais on force le mobile avec Web Animations API.
+    let runningLayerAnimations = [];
+
+    let autorotateEnabled = false;
+    let autorotateFrame = null;
+    let autorotateLastTs = 0;
+
+    let focusMode = false;
+    let toastTimer = null;
+
+    // Zoom réellement utilisable sur mobile.
+    // Important: le limiter Marzipano plus bas utilise aussi une résolution haute,
+    // sinon Marzipano bloque le zoom avant même si MIN_FOV est petit.
+    const MIN_FOV = degToRad(6);
+    const MAX_FOV = degToRad(132);
+
+    const EXTRA_WIDE_OFFSET = degToRad(0);
+
+    // Cinématique:
+    // - ouverture: la première scène commence large puis zoome doucement vers la vue finale
+    // - navigation: la scène actuelle zoome vers le hotspot, puis la nouvelle scène dézoome vers la vue finale
+    const INITIAL_OPEN_ZOOM_OFFSET = degToRad(12);
+
+    // Effet marche / walk-through:
+    // 1) on oriente la caméra vers le hotspot,
+    // 2) on avance comme si la personne entrait dans la scène,
+    // 3) la scène actuelle disparaît en restant nette,
+    // 4) la scène suivante apparaît déjà proche puis dézoome.
+    const NAVIGATION_ZOOM_IN_OFFSET_1 = degToRad(14);
+    const NAVIGATION_ZOOM_IN_OFFSET_2 = degToRad(30);
+    const NAVIGATION_ZOOM_IN_OFFSET_3 = degToRad(42);
+    const SCENE_INCOMING_DEZOOM_OFFSET = degToRad(30);
+    const SCENE_OUTGOING_ZOOM_OFFSET = degToRad(36);
+
+    const MOBILE_EXTRA_WIDE_OFFSET = degToRad(0);
+    const MOBILE_PINCH_SENSITIVITY = 2.15;
+
+    const pinchState = {
+        active: false,
+        startDistance: 0,
+        startFov: 0
+    };
+
+    function degToRad(deg) {
+        return deg * Math.PI / 180;
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    function normalizeAngle(rad) {
+        while (rad > Math.PI) rad -= 2 * Math.PI;
+        while (rad < -Math.PI) rad += 2 * Math.PI;
+        return rad;
+    }
+
+    function isMobileViewport() {
+        return window.matchMedia("(max-width: 768px)").matches;
+    }
+
+    function getSceneTransitionDuration() {
+        // Desktop garde l'effet long. Mobile doit rester plus léger pour éviter
+        // les saccades du canvas WebGL pendant la transition.
+        return isMobileViewport() ? 1080 : 1420;
+    }
+
+    function getIncomingCameraDuration() {
+        // Mobile: stabilisation plus courte, effet marche plus propre.
+        return isMobileViewport() ? 760 : 1080;
+    }
+    function setupResponsiveMode() {
+        if (!window.matchMedia) return;
+
+        const mql = window.matchMedia("(max-width: 768px), (max-height: 700px)");
+
+        function applyMode() {
+            document.body.classList.toggle("mobile", mql.matches);
+            document.body.classList.toggle("desktop", !mql.matches);
+        }
+
+        applyMode();
+
+        if (mql.addEventListener) {
+            mql.addEventListener("change", applyMode);
+        } else if (mql.addListener) {
+            mql.addListener(applyMode);
+        }
+
+        document.body.classList.add("no-touch");
+
+        window.addEventListener("touchstart", function onFirstTouch() {
+            document.body.classList.remove("no-touch");
+            document.body.classList.add("touch");
+            window.removeEventListener("touchstart", onFirstTouch);
+        }, { passive: true });
+    }
+
+    function getLayerEl(key) {
+        return key === "A" ? previewLayerA : previewLayerB;
+    }
+
+    function getMountEl(key) {
+        return key === "A" ? previewMountA : previewMountB;
+    }
+
+    function standbyLayerKey() {
+        return activeLayerKey === "A" ? "B" : "A";
+    }
+
+    function getSceneIdentifier(scene) {
+        return String(scene.slug || scene.uuid || scene.id);
+    }
+
+    function getSceneShareUrl(scene) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("s", getSceneIdentifier(scene));
+        return url.toString();
+    }
+
+    function syncSceneInUrl(scene) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("s", getSceneIdentifier(scene));
+        window.history.replaceState({}, "", url.toString());
+    }
+
+    function getInitialSceneFromUrl() {
+        const url = new URL(window.location.href);
+        const sceneParam = url.searchParams.get("s");
+        if (!sceneParam) return null;
+
+        return scenes.find(scene =>
+            String(scene.id) === String(sceneParam) ||
+            String(scene.slug) === String(sceneParam) ||
+            String(scene.uuid) === String(sceneParam)
+        ) || null;
+    }
+
+    function findScene(sceneId) {
+        return scenes.find(scene =>
+            String(scene.id) === String(sceneId) ||
+            String(scene.scene_id) === String(sceneId) ||
+            String(scene.uuid) === String(sceneId) ||
+            String(scene.slug) === String(sceneId)
+        );
+    }
+
+    function findSceneIndex(sceneId) {
+        return scenes.findIndex(scene =>
+            String(scene.id) === String(sceneId) ||
+            String(scene.scene_id) === String(sceneId) ||
+            String(scene.uuid) === String(sceneId) ||
+            String(scene.slug) === String(sceneId)
+        );
+    }
+
+    function findDockSceneIndex(sceneId) {
+        return dockScenes.findIndex(scene =>
+            String(scene.id) === String(sceneId) ||
+            String(scene.scene_id) === String(sceneId) ||
+            String(scene.uuid) === String(sceneId) ||
+            String(scene.slug) === String(sceneId)
+        );
+    }
+
+    function getVisibleDockScenes() {
+        return dockScenes.length ? dockScenes : scenes;
+    }
+
+    function normalizeUrlString(value) {
+        if (value === null || value === undefined) return "";
+
+        let v = "";
+
+        // Le backend peut parfois envoyer un objet {url: "..."} ou {src: "..."}.
+        if (typeof value === "object") {
+            v = value.url || value.src || value.path || value.href || value.image_url || "";
+        } else {
+            v = String(value);
+        }
+
+        return v
+            .trim()
+            .replace(/&amp;/g, "&")
+            .replace(/^["']+|["']+$/g, "")
+            .replace(/\\/g, "/");
+    }
+
+    function normalizeRelativeMediaStaticUrl(value) {
+        const v = normalizeUrlString(value);
+        if (!v) return "";
+
+        if (
+            v.startsWith("http://") ||
+            v.startsWith("https://") ||
+            v.startsWith("data:image") ||
+            v.startsWith("blob:") ||
+            v.startsWith("/")
+        ) {
+            return v;
+        }
+
+        if (v.startsWith("//")) {
+            return `${window.location.protocol}${v}`;
+        }
+
+        // Très important : si Django renvoie "media/..." ou "static/..." sans slash,
+        // le navigateur cherche sinon dans /preview/media/... et l'image ne s'affiche pas.
+        if (
+            v.startsWith("media/") ||
+            v.startsWith("static/") ||
+            v.startsWith("uploads/") ||
+            v.startsWith("dashboard/")
+        ) {
+            return `/${v}`;
+        }
+
+        if (v.includes("/media/") || v.includes("/static/")) {
+            return v.startsWith("/") ? v : `/${v}`;
+        }
+
+        return v;
+    }
+
+    function normalizeIconKey(value) {
+        const aliasMap = {
+            ads: "ad",
+            advert: "ad",
+            advertising: "ad",
+            pub: "ad",
+            publicity: "ad",
+            produit: "product",
+            produits: "product",
+            products: "product",
+            information: "info",
+            infos: "info",
+            url: "website",
+            link: "website",
+            web: "website",
+            site: "website",
+            navigation: "navigate",
+            nav: "navigate",
+            arrow: "navigate",
+            wa: "whatsapp",
+            whats: "whatsapp",
+            call: "phone",
+            tel: "phone",
+            telephone: "phone"
+        };
+
+        let key = normalizeUrlString(value)
+            .split("?")[0]
+            .split("#")[0]
+            .trim()
+            .toLowerCase();
+
+        if (!key) return "";
+
+        // Supporte "business/info.png", "/static/dashboard/icons/business/info.png",
+        // "dashboard/icons/whatsapp.png", etc.
+        key = key
+            .replace(/^\/+/, "")
+            .replace(/^static\//, "")
+            .replace(/^media\//, "")
+            .replace(/^dashboard\/icons\/business\//, "")
+            .replace(/^dashboard\/icons\//, "")
+            .replace(/^icons\/business\//, "")
+            .replace(/^icons\//, "")
+            .replace(/^business\//, "");
+
+        // Si c'est encore un chemin, on garde le nom du fichier.
+        if (key.includes("/")) {
+            key = key.split("/").filter(Boolean).pop() || key;
+        }
+
+        key = key
+            .replace(/\.(png|webp|jpg|jpeg|svg)$/i, "")
+            .replace(/\s+/g, "-");
+
+        return aliasMap[key] || key;
+    }
+
+    function hasImageExtension(value) {
+        const v = normalizeUrlString(value).split("?")[0].split("#")[0].toLowerCase();
+        return /\.(png|webp|jpg|jpeg|svg|gif)$/.test(v);
+    }
+
+    function isDirectImageUrl(value) {
+        const v = normalizeUrlString(value);
+        if (!v) return false;
+
+        return !!(
+            v.startsWith("http://") ||
+            v.startsWith("https://") ||
+            v.startsWith("/") ||
+            v.startsWith("//") ||
+            v.startsWith("data:image") ||
+            v.startsWith("blob:") ||
+            v.startsWith("media/") ||
+            v.startsWith("static/") ||
+            v.startsWith("uploads/") ||
+            v.includes("/media/") ||
+            v.includes("/static/")
+        );
+    }
+
+    function uniqueValues(values) {
+        const seen = new Set();
+
+        return values
+            .map(normalizeRelativeMediaStaticUrl)
+            .filter((value) => {
+                const v = String(value || "").trim();
+                if (!v || seen.has(v)) return false;
+                seen.add(v);
+                return true;
+            });
+    }
+
+    function getIconCandidates(rawIcon, rawFallback = "default") {
+        const iconRoot = String(config.staticIconRoot || "/static/dashboard/icons/").replace(/\/?$/, "/");
+        const businessRoot = String(config.staticBusinessIconRoot || "/static/dashboard/icons/business/").replace(/\/?$/, "/");
+
+        const original = normalizeUrlString(rawIcon);
+        const fallbackOriginal = normalizeUrlString(rawFallback || "default");
+        const normalizedIcon = normalizeIconKey(original);
+        const normalizedFallback = normalizeIconKey(fallbackOriginal || "default") || "default";
+
+        const candidates = [];
+
+        // 1) Image exacte envoyée par Django: /media/..., /static/..., https://...
+        if (isDirectImageUrl(original)) {
+            candidates.push(normalizeRelativeMediaStaticUrl(original));
+        }
+
+        // 2) Si le backend envoie un chemin relatif avec extension, on teste aussi tel quel.
+        if (!isDirectImageUrl(original) && hasImageExtension(original) && original.includes("/")) {
+            candidates.push(normalizeRelativeMediaStaticUrl(original));
+        }
+
+        // 3) Icône métier connue.
+        if (normalizedIcon && !["default", "null", "undefined", "none"].includes(normalizedIcon)) {
+            if (config.businessIconMap && config.businessIconMap[normalizedIcon]) candidates.push(config.businessIconMap[normalizedIcon]);
+            if (config.iconMap && config.iconMap[normalizedIcon]) candidates.push(config.iconMap[normalizedIcon]);
+
+            candidates.push(`${businessRoot}${normalizedIcon}.png`);
+            candidates.push(`${iconRoot}${normalizedIcon}.png`);
+            candidates.push(`${businessRoot}${normalizedIcon}.webp`);
+            candidates.push(`${iconRoot}${normalizedIcon}.webp`);
+            candidates.push(`${businessRoot}${normalizedIcon}.svg`);
+            candidates.push(`${iconRoot}${normalizedIcon}.svg`);
+        }
+
+        // 4) Fallback selon le type du hotspot.
+        if (config.businessIconMap && config.businessIconMap[normalizedFallback]) candidates.push(config.businessIconMap[normalizedFallback]);
+        if (config.iconMap && config.iconMap[normalizedFallback]) candidates.push(config.iconMap[normalizedFallback]);
+
+        if (normalizedFallback && normalizedFallback !== "default") {
+            candidates.push(`${businessRoot}${normalizedFallback}.png`);
+            candidates.push(`${iconRoot}${normalizedFallback}.png`);
+            candidates.push(`${businessRoot}${normalizedFallback}.webp`);
+            candidates.push(`${iconRoot}${normalizedFallback}.webp`);
+            candidates.push(`${businessRoot}${normalizedFallback}.svg`);
+            candidates.push(`${iconRoot}${normalizedFallback}.svg`);
+        }
+
+        // 5) Dernier recours.
+        if (config.iconMap && config.iconMap.default) candidates.push(config.iconMap.default);
+        candidates.push(`${iconRoot}default.png`);
+        candidates.push(`${iconRoot}white.png`);
+        candidates.push(`${businessRoot}info.png`);
+
+        return uniqueValues(candidates);
+    }
+
+    function resolveIcon(rawIcon, rawFallback = "default") {
+        return getIconCandidates(rawIcon, rawFallback)[0] || "";
+    }
+
+    function getHotspotKind(hotspot) {
+        const display = hotspot?.payload?.display || {};
+        const content = hotspot?.payload?.content || {};
+        return normalizeIconKey(
+            hotspot?.kind ||
+            hotspot?.type ||
+            hotspot?.payload?.kind ||
+            hotspot?.payload?.type ||
+            display.kind ||
+            display.type ||
+            display.icon_type ||
+            content.kind ||
+            content.type ||
+            content.icon_type ||
+            hotspot?.selected_icon ||
+            hotspot?.icon ||
+            "default"
+        ) || "default";
+    }
+
+    function getFirstValidHotspotImageValue(values) {
+        for (const value of values) {
+            const cleaned = normalizeUrlString(value);
+            const low = cleaned.toLowerCase();
+
+            if (!cleaned) continue;
+            if (["default", "null", "undefined", "none", "false"].includes(low)) continue;
+
+            return cleaned;
+        }
+
+        return "";
+    }
+
+    function getHotspotIconName(hotspot) {
+        const display = hotspot?.payload?.display || {};
+        const content = hotspot?.payload?.content || {};
+        const media = hotspot?.payload?.media || {};
+        const kind = getHotspotKind(hotspot);
+
+        // Ordre important :
+        // - d'abord l'image/icône spécifique du hotspot,
+        // - ensuite les images de contenu produit/pub,
+        // - enfin l'icône métier selon le type.
+        const candidates = [
+            display.hotspot_image_url,
+            display.hotspot_image,
+            display.icon_image_url,
+            display.icon_url,
+            display.icon,
+            display.image_url,
+            display.image,
+            display.png_url,
+            display.photo_url,
+            media.icon_url,
+            media.image_url,
+            media.photo_url,
+            hotspot?.hotspot_image_url,
+            hotspot?.hotspot_image,
+            hotspot?.icon_image_url,
+            hotspot?.icon_url,
+            hotspot?.hotspot_icon_url,
+            hotspot?.image_url,
+            hotspot?.image,
+            hotspot?.photo_url,
+            hotspot?.ad_icon_url,
+            hotspot?.selected_icon,
+            hotspot?.icon,
+            content.hotspot_image_url,
+            content.icon_image_url,
+            content.icon_url,
+            content.icon,
+            content.product_icon_url,
+            content.product_image_url,
+            content.image_url,
+            content.image,
+            content.photo_url,
+            content.ad_image_url,
+            kind
+        ];
+
+        return getFirstValidHotspotImageValue(candidates) || kind || "default";
+    }
+
+    function setHotspotImageWithFallback(img, hotspot, fallbackLetterEl) {
+        if (!img) return;
+
+        const kind = getHotspotKind(hotspot);
+        const iconName = getHotspotIconName(hotspot);
+        const candidates = getIconCandidates(iconName, kind);
+        let index = 0;
+
+        img.classList.remove("is-loaded");
+        img.dataset.iconCandidates = candidates.join("|");
+
+        const parentHotspot = () => img.closest?.(".preview-hotspot");
+
+        const applyFallbackLetter = () => {
+            const node = parentHotspot();
+            node?.classList.add("icon-image-failed");
+
+            if (fallbackLetterEl) {
+                const label = String(kind || "360").slice(0, 3).toUpperCase();
+                fallbackLetterEl.textContent = label || "360";
+            }
+
+            // Debug utile dans la console navigateur si une image manque.
+            console.warn("HOTSPOT_ICON_NOT_FOUND", {
+                hotspot: hotspot?.label || hotspot?.title || hotspot?.id || "",
+                kind,
+                iconName,
+                candidates
+            });
+        };
+
+        const applyCandidate = () => {
+            if (!candidates.length) {
+                applyFallbackLetter();
+                return;
+            }
+
+            img.src = candidates[index];
+        };
+
+        img.onload = () => {
+            const node = parentHotspot();
+            node?.classList.remove("icon-image-failed");
+            img.classList.add("is-loaded");
+
+            const currentSrc = String(img.currentSrc || img.src || "");
+            const isRealUploadedImage =
+                (currentSrc.includes("/media/") || currentSrc.includes("/uploads/")) &&
+                !currentSrc.includes("/static/dashboard/icons/");
+
+            node?.classList.toggle("hotspot-uses-uploaded-image", isRealUploadedImage);
+        };
+
+        img.onerror = () => {
+            index += 1;
+
+            if (index < candidates.length) {
+                applyCandidate();
+                return;
+            }
+
+            applyFallbackLetter();
+        };
+
+        applyCandidate();
+    }
+
+    function normaliseHotspotAxisValue(value, axis) {
+        const numberValue = Number(value);
+        if (!Number.isFinite(numberValue)) return 0;
+        const radValue = Math.abs(numberValue) > Math.PI * 2 + 0.001 ? degToRad(numberValue) : numberValue;
+        if (axis === "pitch") return clamp(radValue, -Math.PI / 2 + 0.001, Math.PI / 2 - 0.001);
+        return normalizeAngle(radValue);
+    }
+
+    function getHotspotPosition(hotspot) {
+        return {
+            yaw: normaliseHotspotAxisValue(hotspot?.yaw, "yaw"),
+            pitch: normaliseHotspotAxisValue(hotspot?.pitch, "pitch")
+        };
+    }
+
+    function revealHotspotNodes(nodes) {
+        if (!Array.isArray(nodes) || !nodes.length) return;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    nodes.forEach((node) => {
+                        node.classList.remove("is-preparing");
+                        node.classList.add("is-ready");
+                    });
+                }, isMobileViewport() ? 120 : 45);
+            });
+        });
+    }
+
+    function getSceneBaseFov(scene) {
+        return clamp(degToRad(scene?.hfov_default || 100), MIN_FOV, MAX_FOV);
+    }
+
+    function getSceneFinalFov(scene) {
+        const mobileBoost = isMobileViewport() ? MOBILE_EXTRA_WIDE_OFFSET : 0;
+        return clamp(
+            getSceneBaseFov(scene) + EXTRA_WIDE_OFFSET + mobileBoost,
+            MIN_FOV,
+            MAX_FOV
+        );
+    }
+
+    function getCurrentView() {
+        return views[activeLayerKey];
+    }
+
+    function updateAllViewerSizes() {
+        try {
+            Object.values(viewers).forEach((viewer) => {
+                if (viewer && typeof viewer.updateSize === "function") {
+                    viewer.updateSize();
+                }
+            });
+        } catch (_) {}
+    }
+
+    function showToast(message) {
+        if (!previewToast) return;
+        previewToast.textContent = message;
+        clearTimeout(toastTimer);
+        previewToast.classList.add("toast-show");
+        toastTimer = setTimeout(() => {
+            previewToast.classList.remove("toast-show");
+        }, 1700);
+    }
+
+    const assetPrefetchCache = new Set();
+    let sceneLoadingHideTimer = null;
+
+    function showSceneLoadingPreview(scene, label = "Loading panorama") {
+        if (!previewSceneLoadingOverlay || !previewSceneLoadingImage) return;
+
+        const thumbUrl = getScenePreviewThumb(scene);
+        if (previewSceneLoadingText) {
+            previewSceneLoadingText.textContent = label;
+        }
+
+        if (thumbUrl) {
+            previewSceneLoadingImage.src = thumbUrl;
+            previewSceneLoadingImage.classList.remove("hidden");
+        } else {
+            previewSceneLoadingImage.removeAttribute("src");
+            previewSceneLoadingImage.classList.add("hidden");
+        }
+
+        clearTimeout(sceneLoadingHideTimer);
+        previewSceneLoadingOverlay.classList.add("is-visible");
+    }
+
+    function hideSceneLoadingPreview(delay = 260) {
+        if (!previewSceneLoadingOverlay) return;
+
+        clearTimeout(sceneLoadingHideTimer);
+        sceneLoadingHideTimer = setTimeout(() => {
+            previewSceneLoadingOverlay.classList.remove("is-visible");
+        }, delay);
+    }
+
+    function prefetchUrl(url) {
+        if (!url || assetPrefetchCache.has(url)) return;
+        assetPrefetchCache.add(url);
+
+        const img = new Image();
+        img.decoding = "async";
+        img.loading = "eager";
+        img.src = url;
+    }
+
+    function prefetchSceneAssets(scene) {
+        if (!scene) return;
+
+        prefetchUrl(getScenePreviewThumb(scene));
+
+        if (scene.image_360_mobile_url) {
+            prefetchUrl(scene.image_360_mobile_url);
+        }
+
+        if (scene.image_360_url && !isMobileViewport()) {
+            prefetchUrl(scene.image_360_url);
+        }
+
+        if (scene.tiles_url) {
+            const base = String(scene.tiles_url).replace(/\/$/, "");
+            prefetchUrl(`${base}/preview.jpg`);
+        }
+    }
+
+    function scheduleSmartPrefetch(sceneId) {
+        if (!scenes.length) return;
+
+        const index = findSceneIndex(sceneId);
+        if (index < 0) return;
+
+        const next = scenes[(index + 1) % scenes.length];
+        const previous = scenes[(index - 1 + scenes.length) % scenes.length];
+
+        const run = () => {
+            prefetchSceneAssets(next);
+            prefetchSceneAssets(previous);
+        };
+
+        if ("requestIdleCallback" in window) {
+            window.requestIdleCallback(run, { timeout: 1200 });
+        } else {
+            setTimeout(run, 350);
+        }
+    }
+
+    function syncZoomButtonsState() {
+        const view = getCurrentView();
+        if (!view) return;
+
+        const currentFov = view.fov();
+
+        if (zoomInBtn) {
+            zoomInBtn.disabled = currentFov <= MIN_FOV + 0.01;
+            zoomInBtn.classList.toggle("opacity-40", zoomInBtn.disabled);
+        }
+
+        if (zoomOutBtn) {
+            zoomOutBtn.disabled = currentFov >= MAX_FOV - 0.01;
+            zoomOutBtn.classList.toggle("opacity-40", zoomOutBtn.disabled);
+        }
+    }
+
+    function setZoomInstant(nextFov) {
+        const view = getCurrentView();
+        if (!view) return;
+
+        const safeFov = clamp(nextFov, MIN_FOV, MAX_FOV);
+        view.setParameters({ fov: safeFov });
+        syncZoomButtonsState();
+    }
+
+    function getActiveTouchCount(event) {
+        if (event?.touches) return event.touches.length;
+        return 0;
+    }
+
+
+    function openSceneStack() {
+        previewSceneRail?.classList.add("open");
+        sceneStackToggle?.classList.add("open");
+        document.body.classList.add("scene-rail-open");
+    }
+
+    function closeSceneStack() {
+        previewSceneRail?.classList.remove("open");
+        sceneStackToggle?.classList.remove("open");
+        document.body.classList.remove("scene-rail-open");
+    }
+
+    function toggleSceneStack(event) {
+        event?.stopPropagation();
+        if (previewSceneRail?.classList.contains("open")) {
+            closeSceneStack();
+        } else {
+            openSceneStack();
+        }
+    }
+
+    function closeInfoPanel() {
+        previewInfoPanel?.classList.remove("open");
+        previewInfoBackdrop?.classList.remove("open");
+        document.body.classList.remove("info-panel-open");
+    }
+
+function openInfoPanel(hotspot) {
+        if (!previewInfoPanel) return;
+
+        const content = hotspot.payload?.content || {};
+
+        const imageUrl =
+            content.image_url ||
+            content.product_image_url ||
+            content.photo_url ||
+            hotspot.image_url ||
+            hotspot.ad_image_url ||
+            "";
+
+        const ctaUrl = content.cta_url || "";
+        const buttonText = content.button_text || "Open";
+        const badge = content.badge || "";
+        const price = content.price || "";
+        const siteName = content.site_name || "";
+        const phone = content.phone || "";
+        const email = content.email || "";
+        const whatsappNumber = content.whatsapp_number || "";
+        const whatsappMessage = content.whatsapp_message || "Hello";
+        const hotspotKind = getHotspotKind(hotspot) || "info";
+
+        previewInfoPanel.classList.remove(
+            "is-product",
+            "is-info",
+            "is-ad",
+            "is-cta",
+            "is-cart",
+            "is-whatsapp",
+            "is-phone",
+            "is-website"
+        );
+
+        previewInfoPanel.classList.add(`is-${hotspotKind}`);
+        previewInfoPanel.dataset.hotspotKind = hotspotKind;
+
+        if (previewInfoMedia) {
+            previewInfoMedia.innerHTML = "";
+
+            if (imageUrl) {
+                const img = document.createElement("img");
+                img.src = imageUrl;
+                img.alt = hotspot.title || hotspot.label || "Hotspot";
+                img.className = "info-media-image";
+                img.loading = "lazy";
+                img.decoding = "async";
+
+                img.onerror = () => {
+                    previewInfoMedia.innerHTML = `<div class="info-media-empty">Image unavailable</div>`;
+                };
+
+                previewInfoMedia.appendChild(img);
+            } else {
+                previewInfoMedia.innerHTML = `<div class="info-media-empty">Preview unavailable</div>`;
+            }
+        }
+
+        if (previewInfoTitle) {
+            previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
+        }
+
+        if (previewInfoDescription) {
+            previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
+        }
+
+        if (previewInfoBadge) {
+            if (badge) {
+                previewInfoBadge.textContent = badge;
+                previewInfoBadge.classList.remove("hidden");
+            } else {
+                previewInfoBadge.classList.add("hidden");
+                previewInfoBadge.textContent = "";
+            }
+        }
+
+        if (previewInfoPrice) {
+            if (price) {
+                previewInfoPrice.textContent = price;
+                previewInfoPrice.classList.remove("hidden");
+            } else {
+                previewInfoPrice.classList.add("hidden");
+                previewInfoPrice.textContent = "";
+            }
+        }
+
+        if (previewInfoSite) {
+            if (siteName) {
+                previewInfoSite.textContent = siteName;
+                previewInfoSite.classList.remove("hidden");
+            } else {
+                previewInfoSite.classList.add("hidden");
+                previewInfoSite.textContent = "";
+            }
+        }
+
+        if (previewInfoAction) {
+            if (ctaUrl) {
+                previewInfoAction.href = ctaUrl;
+                previewInfoAction.textContent = buttonText;
+                previewInfoAction.classList.remove("hidden");
+            } else {
+                previewInfoAction.classList.add("hidden");
+                previewInfoAction.removeAttribute("href");
+            }
+        }
+
+        if (previewInfoWhatsapp) {
+            if (whatsappNumber) {
+                const cleanNumber = String(whatsappNumber).replace(/[^\d]/g, "");
+                previewInfoWhatsapp.href = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+                previewInfoWhatsapp.classList.remove("hidden");
+            } else {
+                previewInfoWhatsapp.classList.add("hidden");
+                previewInfoWhatsapp.removeAttribute("href");
+            }
+        }
+
+        if (previewInfoContact) {
+            if (phone) {
+                previewInfoContact.href = `tel:${phone}`;
+                previewInfoContact.textContent = "Call";
+                previewInfoContact.classList.remove("hidden");
+            } else if (email) {
+                previewInfoContact.href = `mailto:${email}`;
+                previewInfoContact.textContent = "Email";
+                previewInfoContact.classList.remove("hidden");
+            } else {
+                previewInfoContact.classList.add("hidden");
+                previewInfoContact.removeAttribute("href");
+            }
+        }
+
+        closeSceneStack();
+        previewInfoPanel.classList.add("open");
+        previewInfoBackdrop?.classList.add("open");
+        document.body.classList.add("info-panel-open");
+    }
+
+
+    function stopAutorotate() {
+        autorotateEnabled = false;
+        autorotateLastTs = 0;
+
+        if (autorotateFrame) {
+            cancelAnimationFrame(autorotateFrame);
+            autorotateFrame = null;
+        }
+
+        autorotateBtn?.classList.remove("active");
+    }
+
+    function autorotateLoop(ts) {
+        if (!autorotateEnabled) {
+            autorotateFrame = null;
+            autorotateLastTs = 0;
+            return;
+        }
+
+        const view = getCurrentView();
+        if (view) {
+            if (!autorotateLastTs) autorotateLastTs = ts;
+            const delta = (ts - autorotateLastTs) / 1000;
+            autorotateLastTs = ts;
+
+            const nextYaw = normalizeAngle(view.yaw() + degToRad(8) * delta);
+            view.setParameters({ yaw: nextYaw });
+        }
+
+        autorotateFrame = requestAnimationFrame(autorotateLoop);
+    }
+
+    function startAutorotate() {
+        if (autorotateEnabled) return;
+        autorotateEnabled = true;
+        autorotateBtn?.classList.add("active");
+        autorotateFrame = requestAnimationFrame(autorotateLoop);
+    }
+
+    function toggleAutorotate() {
+        if (autorotateEnabled) {
+            stopAutorotate();
+        } else {
+            startAutorotate();
+        }
+    }
+
+    function setFocusMode(enabled) {
+        focusMode = !!enabled;
+        document.body.classList.toggle("ui-hidden", focusMode);
+        document.body.classList.toggle("preview-focus-mode", focusMode);
+        focusModeBtn?.classList.toggle("active", focusMode);
+    }
+
+    function toggleFocusMode() {
+        setFocusMode(!focusMode);
+    }
+
+    function renderSceneStackMini() {
+        if (!sceneStackMiniPreview) return;
+
+        sceneStackMiniPreview.innerHTML = "";
+
+        const sourceScenes = getVisibleDockScenes();
+        if (!sourceScenes.length) return;
+
+        let currentIndex = findDockSceneIndex(currentSceneId);
+
+        if (currentIndex < 0) {
+            currentIndex = 0;
+        }
+
+        const miniScenes = [
+            sourceScenes[currentIndex],
+            sourceScenes[currentIndex + 1] || sourceScenes[0],
+            sourceScenes[currentIndex + 2] || sourceScenes[1] || sourceScenes[0]
+        ].filter(Boolean);
+
+        miniScenes.slice(0, 3).forEach((scene) => {
+            const card = document.createElement("div");
+            card.className = "scene-stack-mini-card";
+
+            const thumbUrl = getScenePreviewThumb(scene);
+
+            card.innerHTML = thumbUrl
+                ? `<img src="${thumbUrl}" alt="${scene.title || 'Scene'}">`
+                : `<div class="scene-thumb-placeholder">360</div>`;
+
+            sceneStackMiniPreview.appendChild(card);
+        });
+    }
+
+    function renderSceneRail() {
+        if (!previewScenesList) return;
+
+        previewScenesList.innerHTML = "";
+
+        const sourceScenes = getVisibleDockScenes();
+
+        if (!sourceScenes.length) {
+            previewScenesList.innerHTML = `
+                <div class="px-4 py-3 text-center text-xs font-bold text-white/60">
+                    Aucune scène visible
+                </div>
+            `;
+            return;
+        }
+
+        sourceScenes.forEach((scene, index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "scene-card";
+            button.dataset.sceneId = scene.id;
+
+            button.innerHTML = `
+                <div class="scene-thumb">
+                    ${
+                        getScenePreviewThumb(scene)
+                            ? `<img src="${getScenePreviewThumb(scene)}" alt="${scene.title || 'Scene'}">`
+                            : `<div class="scene-thumb-placeholder">360</div>`
+                    }
+                </div>
+                <div class="scene-body">
+                    <strong class="scene-title">${scene.title || "Untitled Scene"}</strong>
+                    <span class="scene-subtitle">
+                        <span class="scene-dot"></span>
+                        Scene ${index + 1}
+                    </span>
+                </div>
+            `;
+
+            button.addEventListener("click", (event) => {
+                event.stopPropagation();
+
+                if (isTransitioning) return;
+
+                const targetScene = findScene(scene.id);
+                if (!targetScene) return;
+
+                closeInfoPanel();
+                isTransitioning = true;
+                cinematicSwitchScene(targetScene);
+                closeSceneStack();
+            });
+
+            previewScenesList.appendChild(button);
+        });
+    }
+
+    function markActiveSceneCard(sceneId) {
+        document.querySelectorAll(".scene-card").forEach((card) => {
+            card.classList.toggle("active", String(card.dataset.sceneId) === String(sceneId));
+        });
+        renderSceneStackMini();
+    }
+
+    function updateSceneMeta(scene) {
+        const publicIndex = findDockSceneIndex(scene?.id);
+
+        if (sceneCountBadge) {
+            if (publicIndex >= 0) {
+                sceneCountBadge.textContent = `${publicIndex + 1}`;
+            } else {
+                sceneCountBadge.textContent = `${dockScenes.length || scenes.length || 0}`;
+            }
+        }
+
+        markActiveSceneCard(scene?.id);
+    }
+
+    function stopTouchAndScrollEventPropagation(element) {
+        if (!element) return;
+
+        [
+            "touchstart",
+            "touchmove",
+            "touchend",
+            "touchcancel",
+            "pointerdown",
+            "pointermove",
+            "pointerup",
+            "pointercancel",
+            "wheel"
+        ].forEach((eventName) => {
+            element.addEventListener(eventName, (event) => {
+                event.stopPropagation();
+            }, { passive: true });
+        });
+    }
+
+function buildHotspotNode(hotspot, hotspotIndex = 0) {
+        const display = hotspot?.payload?.display || {};
+        const variant = display.variant || "pin";
+        const isMobile = isMobileViewport();
+        const hotspotKind = getHotspotKind(hotspot);
+
+        const defaultSizeMap = {
+            navigate: isMobile ? 58 : 64,
+            navigation: isMobile ? 58 : 64,
+            info: isMobile ? 72 : 86,
+            product: isMobile ? 78 : 96,
+            ad: isMobile ? 76 : 94,
+            cta: isMobile ? 74 : 90,
+            cart: isMobile ? 74 : 90,
+            whatsapp: isMobile ? 76 : 92,
+            phone: isMobile ? 72 : 86,
+            website: isMobile ? 72 : 86,
+            default: isMobile ? 64 : 76
+        };
+
+        const rawSize = Number(display.size || defaultSizeMap[hotspotKind] || defaultSizeMap.default);
+        const size = clamp(rawSize, isMobile ? 42 : 46, isMobile ? 92 : 112);
+        const rotation = Number(display.rotation || 0);
+        const offsetX = Number(display.offset_x || 0);
+        const offsetY = Number(display.offset_y || 0);
+        const anchor = display.anchor || "bottom";
+        const safeKindClass = String(hotspotKind || "default").replace(/[^a-z0-9_-]/g, "-");
+
+        const node = document.createElement("div");
+        node.className = `preview-hotspot variant-${variant} anchor-${anchor} hotspot-kind-${safeKindClass} is-preparing`;
+        node.dataset.hotspotType = hotspotKind;
+        node.setAttribute("aria-label", hotspot?.label || hotspot?.title || hotspotKind || "Hotspot");
+        node.style.width = `${size}px`;
+        node.style.height = `${size}px`;
+        node.style.minWidth = `${size}px`;
+        node.style.minHeight = `${size}px`;
+        node.style.maxWidth = `${size}px`;
+        node.style.maxHeight = `${size}px`;
+        node.style.setProperty("--hotspot-node-size", `${size}px`);
+        node.style.setProperty("--hotspot-grow-delay", `${Math.min(hotspotIndex * 70, 420)}ms`);
+
+        const wrap = document.createElement("span");
+        wrap.className = "hotspot-grow-wrap";
+        wrap.style.setProperty("--hotspot-base-transform", `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`);
+        wrap.style.transform = "var(--hotspot-base-transform)";
+
+        const visual = document.createElement("span");
+        visual.className = "hotspot-visual-animated";
+
+        const shine = document.createElement("span");
+        shine.className = "hotspot-shine";
+        shine.setAttribute("aria-hidden", "true");
+
+        const img = document.createElement("img");
+        img.className = "hotspot-png-icon";
+        img.alt = hotspot?.label || hotspot?.title || "Hotspot";
+        img.loading = "eager";
+        img.decoding = "async";
+        img.draggable = false;
+        img.setAttribute("aria-hidden", "true");
+
+        const fallbackLetter = document.createElement("span");
+        fallbackLetter.className = "hotspot-icon-fallback-letter";
+        fallbackLetter.textContent = String(hotspotKind || "360").slice(0, 3).toUpperCase();
+
+        visual.appendChild(shine);
+        visual.appendChild(img);
+        visual.appendChild(fallbackLetter);
+        wrap.appendChild(visual);
+
+        if (variant === "label") {
+            const span = document.createElement("span");
+            span.className = "hotspot-label-text";
+            span.textContent = hotspot?.label || hotspot?.title || "Hotspot";
+            wrap.appendChild(span);
+        }
+
+        node.appendChild(wrap);
+        stopTouchAndScrollEventPropagation(node);
+        setHotspotImageWithFallback(img, hotspot, fallbackLetter);
+
+        node.addEventListener("click", async (event) => {
+            event.stopPropagation();
+            if ((hotspot?.type === "navigate" || hotspotKind === "navigate" || hotspotKind === "navigation") && hotspot?.target_scene) {
+                await navigateToScene(hotspot.target_scene, hotspot);
+                return;
+            }
+            openInfoPanel(hotspot);
+        });
+
+        return node;
+    }
+
+    function ensureViewer(key) {
+        const mount = getMountEl(key);
+        if (!mount) {
+            return null;
+        }
+
+        mount.innerHTML = "";
+
+        try {
+            viewers[key] = new Marzipano.Viewer(mount, {
+                controls: {
+                    mouseViewMode: "drag"
+                }
+            });
+        } catch (error) {
+            return null;
+        }
+
+        return viewers[key];
+    }
+
+    function getSceneSourceGeometryAndLimiter(sceneData) {
+        const mobile = isMobileViewport();
+
+        debugLog("Scene source select", {
+            sceneId: sceneData?.id,
+            title: sceneData?.title,
+            mobile,
+            image_360_url: sceneData?.image_360_url || "",
+            image_360_mobile_url: sceneData?.image_360_mobile_url || "",
+            tiles_url: sceneData?.tiles_url || ""
+        });
+
+        // Le zoom mobile était limité par une valeur trop basse ici.
+        // Pour avoir le même feeling que le build, on garde une limite haute.
+        // Même si l'image mobile est plus légère, Marzipano doit recevoir une résolution logique
+        // suffisante, sinon il empêche le zoom avant.
+        const logicalMaxResolution = Math.max(
+            Number(sceneData?.face_size || 0),
+            Number(sceneData?.max_resolution || 0),
+            4096
+        );
+
+        if (sceneData?.tiles_url) {
+            const base = String(sceneData.tiles_url).replace(/\/$/, "");
+            return {
+                source: Marzipano.ImageUrlSource.fromString(
+                    `${base}/{z}/{f}/{y}/{x}.jpg`,
+                    {
+                        cubeMapPreviewUrl: `${base}/preview.jpg`
+                    }
+                ),
+                geometry: new Marzipano.CubeGeometry(
+                    sceneData.levels || [
+                        { tileSize: 256, size: 256, fallbackOnly: true },
+                        { tileSize: 512, size: 512 },
+                        { tileSize: 512, size: 1024 },
+                        { tileSize: 512, size: 2048 },
+                        { tileSize: 512, size: 4096 }
+                    ]
+                ),
+                limiter: Marzipano.RectilinearView.limit.traditional(
+                    logicalMaxResolution,
+                    MAX_FOV
+                )
+            };
+        }
+
+        const preferredImageUrl = getPreferredImageUrl(sceneData);
+
+        return {
+            source: Marzipano.ImageUrlSource.fromString(preferredImageUrl),
+            geometry: new Marzipano.EquirectGeometry([
+                // Valeur proche du builder pour éviter le blocage du zoom sur mobile.
+                { width: 4096 }
+            ]),
+            limiter: Marzipano.RectilinearView.limit.traditional(
+                logicalMaxResolution,
+                MAX_FOV
+            )
+        };
+    }
+
+    function buildSceneOnLayer(layerKey, sceneData) {
+        const viewer = ensureViewer(layerKey);
+        const selectedImageUrl = getPreferredImageUrl(sceneData);
+
+        if (!viewer || (!selectedImageUrl && !sceneData?.tiles_url)) {
+            debugLog("buildSceneOnLayer skipped", {
+                layerKey,
+                hasViewer: !!viewer,
+                hasImage: !!selectedImageUrl,
+                hasMobileImage: !!sceneData?.image_360_mobile_url,
+                hasDesktopImage: !!sceneData?.image_360_url,
+                hasTiles: !!sceneData?.tiles_url
+            });
+            return null;
+        }
+
+        debugLog("buildSceneOnLayer start", {
+            layerKey,
+            sceneId: sceneData?.id,
+            title: sceneData?.title,
+            selectedImageUrl,
+            tilesUrl: sceneData?.tiles_url || "",
+            hfov_default: sceneData?.hfov_default
+        });
+
+        const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
+
+        const yaw = degToRad(sceneData.yaw_default || 0);
+        const pitch = degToRad(sceneData.pitch_default || 0);
+        const fov = getSceneFinalFov(sceneData);
+
+        views[layerKey] = new Marzipano.RectilinearView({ yaw, pitch, fov }, limiter);
+
+        try {
+            marzipanoScenes[layerKey] = viewer.createScene({
+                source,
+                geometry,
+                view: views[layerKey],
+                pinFirstLevel: true
+            });
+
+            marzipanoScenes[layerKey].switchTo();
+            debugLog("Scene switched", {
+                layerKey,
+                sceneId: sceneData?.id,
+                title: sceneData?.title
+            });
+        } catch (error) {
+            const payload = {
+                layerKey,
+                sceneId: sceneData?.id,
+                error: String(error?.message || error)
+            };
+            console.error("CREATE_SCENE_FAILED", payload);
+            showToast("Panorama unavailable");
+            return null;
+        }
+        const hotspotNodesToReveal = [];
+
+        (sceneData.hotspots || []).forEach((hotspot, hotspotIndex) => {
+            const node = buildHotspotNode(hotspot, hotspotIndex);
+            const position = getHotspotPosition(hotspot);
+
+            marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
+                yaw: position.yaw,
+                pitch: position.pitch
+            });
+
+            hotspotNodesToReveal.push(node);
+        });
+
+        revealHotspotNodes(hotspotNodesToReveal);
+
+        requestAnimationFrame(() => {
+            updateAllViewerSizes();
+            syncZoomButtonsState();
+        });
+
+        return marzipanoScenes[layerKey];
+    }
+
+    function runInitialReveal(scene) {
+        const view = getCurrentView();
+        if (!view || !scene) return;
+
+        const finalFov = getSceneFinalFov(scene);
+
+        // Première scène: départ large puis zoom doux vers la vue finale.
+        const startFov = clamp(finalFov + INITIAL_OPEN_ZOOM_OFFSET, MIN_FOV, MAX_FOV);
+
+        const finalYaw = degToRad(scene.yaw_default || 0);
+        const finalPitch = degToRad(scene.pitch_default || 0);
+
+        previewViewer.classList.add("is-cinematic-transition", "transitioning", "is-opening");
+
+        view.setParameters({
+            yaw: finalYaw,
+            pitch: finalPitch,
+            fov: startFov
+        });
+
+        setTimeout(() => {
+            view.setParameters(
+                {
+                    yaw: finalYaw,
+                    pitch: finalPitch,
+                    fov: finalFov
+                },
+                { transitionDuration: 900 }
+            );
+            syncZoomButtonsState();
+        }, 80);
+
+        setTimeout(() => {
+            previewIntroOverlay?.classList.add("is-hidden");
+            document.body.classList.add("preview-has-loaded");
+        }, 320);
+
+        setTimeout(() => {
+            previewViewer.classList.remove("is-cinematic-transition", "transitioning", "is-opening");
+            syncZoomButtonsState();
+        }, 1080);
+    }
+
+    function restartLayerAnimation(el) {
+        if (!el) return;
+        el.style.animation = "none";
+        // Force le navigateur mobile à recalculer avant de relancer l'animation.
+        // Sans ça, Safari/Chrome mobile saute parfois la transition.
+        void el.offsetHeight;
+        el.style.animation = "";
+    }
+
+    function cancelRunningLayerAnimations() {
+        runningLayerAnimations.forEach((anim) => {
+            try {
+                anim.cancel();
+            } catch (error) {
+                // ignore
+            }
+        });
+        runningLayerAnimations = [];
+    }
+
+    function setLayerGpuTransform(el, transformValue) {
+        if (!el) return;
+        el.style.transform = transformValue;
+        el.style.webkitTransform = transformValue;
+    }
+
+    function clearMobileLayerAnimationState(...elements) {
+        elements.forEach((el) => {
+            if (!el) return;
+            el.classList.remove("mobile-wa-layer");
+            el.style.animation = "";
+            el.style.transform = "";
+            el.style.webkitTransform = "";
+            el.style.filter = "";
+        });
+    }
+
+    let walkOverlayEl = null;
+
+    function ensureWalkCinematicOverlay() {
+        if (walkOverlayEl && walkOverlayEl.isConnected) return walkOverlayEl;
+
+        walkOverlayEl = document.createElement("div");
+        walkOverlayEl.id = "previewWalkCinemaOverlay";
+        walkOverlayEl.className = "preview-walk-cinema-overlay";
+        walkOverlayEl.setAttribute("aria-hidden", "true");
+        previewViewer?.appendChild(walkOverlayEl);
+
+        return walkOverlayEl;
+    }
+
+    function runWalkOverlayAnimation() {
+        const overlay = ensureWalkCinematicOverlay();
+        if (!overlay) return null;
+
+        overlay.style.opacity = "0";
+
+        const mobile = isMobileViewport();
+        const keyframes = mobile
+            ? [
+                { opacity: 0, transform: "scale(1)" },
+                { offset: 0.30, opacity: 0.10, transform: "scale(1.004)" },
+                { offset: 0.58, opacity: 0.18, transform: "scale(1.012)" },
+                { offset: 0.82, opacity: 0.08, transform: "scale(1.018)" },
+                { opacity: 0, transform: "scale(1.024)" }
+            ]
+            : [
+                { opacity: 0, transform: "scale(1)" },
+                { offset: 0.24, opacity: 0.16, transform: "scale(1.01)" },
+                { offset: 0.48, opacity: 0.34, transform: "scale(1.025)" },
+                { offset: 0.72, opacity: 0.18, transform: "scale(1.04)" },
+                { opacity: 0, transform: "scale(1.055)" }
+            ];
+
+        try {
+            return overlay.animate(keyframes, {
+                duration: getSceneTransitionDuration(),
+                easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+                fill: "forwards"
+            });
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function runMobileCinematicLayerAnimation(outgoingEl, incomingEl) {
+        if (!outgoingEl || !incomingEl || !isMobileViewport()) return;
+
+        cancelRunningLayerAnimations();
+
+        const duration = getSceneTransitionDuration();
+        const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+        previewViewer.classList.add("mobile-cinematic-running", "walk-cinematic-running");
+        outgoingEl.classList.add("mobile-wa-layer");
+        incomingEl.classList.add("mobile-wa-layer");
+
+        // MOBILE IMAGE-FIRST:
+        // Pas d'overlay/loading/voile ici. On joue uniquement avec les deux vraies images Marzipano.
+        // La scène courante reste visible assez longtemps pour éviter l'écran bleu/fond pendant que
+        // la scène suivante devient visible.
+        outgoingEl.style.opacity = "1";
+        incomingEl.style.opacity = "0";
+        outgoingEl.style.filter = "none";
+        incomingEl.style.filter = "none";
+        setLayerGpuTransform(outgoingEl, "translate3d(0,0,0) scale(1)");
+        setLayerGpuTransform(incomingEl, "translate3d(0,0,0) scale(1.018)");
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                try {
+                    const outgoingAnim = outgoingEl.animate(
+                        [
+                            { transform: "translate3d(0,0,0) scale(1)", opacity: 1 },
+                            { offset: 0.34, transform: "translate3d(0,0,0) scale(1.030)", opacity: 1 },
+                            { offset: 0.62, transform: "translate3d(0,-0.18%,0) scale(1.070)", opacity: 0.92 },
+                            { offset: 0.82, transform: "translate3d(0,-0.34%,0) scale(1.095)", opacity: 0.42 },
+                            { transform: "translate3d(0,-0.45%,0) scale(1.110)", opacity: 0 }
+                        ],
+                        { duration, easing, fill: "forwards" }
+                    );
+
+                    const incomingAnim = incomingEl.animate(
+                        [
+                            { transform: "translate3d(0,0,0) scale(1.018)", opacity: 0 },
+                            { offset: 0.18, transform: "translate3d(0,0,0) scale(1.016)", opacity: 0.10 },
+                            { offset: 0.42, transform: "translate3d(0,0,0) scale(1.012)", opacity: 0.42 },
+                            { offset: 0.72, transform: "translate3d(0,0,0) scale(1.006)", opacity: 0.86 },
+                            { transform: "translate3d(0,0,0) scale(1)", opacity: 1 }
+                        ],
+                        { duration: duration + 40, easing, fill: "forwards" }
+                    );
+
+                    runningLayerAnimations = [outgoingAnim, incomingAnim];
+                } catch (error) {
+                    outgoingEl.style.opacity = "0";
+                    incomingEl.style.opacity = "1";
+                    setLayerGpuTransform(outgoingEl, "translate3d(0,0,0) scale(1.08)");
+                    setLayerGpuTransform(incomingEl, "translate3d(0,0,0) scale(1)");
+                }
+            });
+        });
+    }
+
+
+    function waitForLayerFirstFrame(layerKey, timeout = 520) {
+        const mount = getMountEl(layerKey);
+
+        return new Promise((resolve) => {
+            let resolved = false;
+            let observer = null;
+
+            const finish = () => {
+                if (resolved) return;
+                resolved = true;
+                try { observer?.disconnect?.(); } catch (_) {}
+
+                // On laisse au canvas Marzipano deux frames pour peindre la vraie image.
+                updateAllViewerSizes();
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            updateAllViewerSizes();
+                            resolve();
+                        }, isMobileViewport() ? 90 : 20);
+                    });
+                });
+            };
+
+            const hasCanvas = () => !!mount?.querySelector?.("canvas");
+
+            if (hasCanvas()) {
+                finish();
+                return;
+            }
+
+            observer = mount
+                ? new MutationObserver(() => {
+                    if (hasCanvas()) finish();
+                })
+                : null;
+
+            try {
+                observer?.observe?.(mount, { childList: true, subtree: true });
+            } catch (_) {}
+
+            setTimeout(finish, timeout);
+        });
+    }
+
+
+    async function cinematicSwitchScene(targetScene, options = {}) {
+        if (!targetScene) {
+            isTransitioning = false;
+            return;
+        }
+
+        const outgoingKey = activeLayerKey;
+        const incomingKey = standbyLayerKey();
+
+        const outgoingEl = getLayerEl(outgoingKey);
+        const incomingEl = getLayerEl(incomingKey);
+
+        if (!outgoingEl || !incomingEl) {
+            isTransitioning = false;
+            return;
+        }
+
+        // On prépare la nouvelle scène dans la couche cachée, comme dans le builder.
+        buildSceneOnLayer(incomingKey, targetScene);
+
+        const incomingView = views[incomingKey];
+
+        const startYaw = options.fromYaw !== undefined
+            ? options.fromYaw
+            : degToRad(targetScene.yaw_default || 0);
+
+        const startPitch = options.fromPitch !== undefined
+            ? options.fromPitch
+            : degToRad(targetScene.pitch_default || 0);
+
+        const endYaw = degToRad(targetScene.yaw_default || 0);
+        const endPitch = degToRad(targetScene.pitch_default || 0);
+        const finalFov = getSceneFinalFov(targetScene);
+
+        const incomingStartFov = clamp(
+            finalFov - (isMobileViewport() ? degToRad(14) : SCENE_INCOMING_DEZOOM_OFFSET),
+            MIN_FOV,
+            MAX_FOV
+        );
+
+        if (incomingView) {
+            incomingView.setParameters({
+                yaw: startYaw,
+                pitch: startPitch,
+                fov: incomingStartFov
+            });
+        }
+
+        // Mobile: on ne montre jamais le fond/loader pendant la transition.
+        // La scène actuelle reste active pendant que la scène suivante peint sa première frame.
+        hideSceneLoadingPreview(0);
+        previewViewer.classList.remove("is-cinematic-transition", "transitioning", "walk-cinematic-running", "mobile-cinematic-running");
+
+        outgoingEl.classList.remove("standby-layer", "layer-incoming", "layer-outgoing");
+        outgoingEl.classList.add("active-layer");
+        outgoingEl.style.opacity = "1";
+        outgoingEl.style.pointerEvents = "auto";
+
+        incomingEl.classList.remove("active-layer", "layer-incoming", "layer-outgoing");
+        incomingEl.classList.add("standby-layer");
+        incomingEl.style.opacity = "0";
+        incomingEl.style.pointerEvents = "none";
+
+        restartLayerAnimation(outgoingEl);
+        restartLayerAnimation(incomingEl);
+        void previewViewer.offsetHeight;
+
+        if (isMobileViewport()) {
+            // Attendre la vraie frame du panorama entrant évite l'écran bleu/fond visible sur téléphone.
+            await waitForLayerFirstFrame(incomingKey, 620);
+        }
+
+        currentSceneId = targetScene.id;
+        updateSceneMeta(targetScene);
+        syncSceneInUrl(targetScene);
+
+        // Vrai effet cinéma: la caméra avance dans l'image courante.
+        const outgoingView = views[outgoingKey];
+        if (outgoingView) {
+            outgoingView.setParameters(
+                {
+                    yaw: options.fromYaw !== undefined ? options.fromYaw : outgoingView.yaw(),
+                    pitch: options.fromPitch !== undefined ? options.fromPitch : outgoingView.pitch(),
+                    fov: clamp(
+                        outgoingView.fov() - (isMobileViewport() ? degToRad(18) : SCENE_OUTGOING_ZOOM_OFFSET),
+                        MIN_FOV,
+                        MAX_FOV
+                    )
+                },
+                { transitionDuration: Math.max(720, getSceneTransitionDuration() - 120) }
+            );
+        }
+
+        requestAnimationFrame(() => {
+            previewViewer.classList.add("is-cinematic-transition", "transitioning", "walk-cinematic-running");
+
+            outgoingEl.classList.remove("standby-layer", "active-layer", "layer-incoming");
+            outgoingEl.classList.add("layer-outgoing");
+            outgoingEl.style.opacity = "1";
+            outgoingEl.style.pointerEvents = "none";
+
+            incomingEl.classList.remove("active-layer", "standby-layer", "layer-outgoing");
+            incomingEl.classList.add("layer-incoming");
+            incomingEl.style.opacity = isMobileViewport() ? "0" : "1";
+            incomingEl.style.pointerEvents = "auto";
+
+            // Desktop garde l'overlay cinéma, mobile joue seulement avec l'image réelle.
+            if (!isMobileViewport()) {
+                const overlayAnim = runWalkOverlayAnimation();
+                if (overlayAnim) runningLayerAnimations = [overlayAnim];
+            }
+
+            if (isMobileViewport()) {
+                runMobileCinematicLayerAnimation(outgoingEl, incomingEl);
+            }
+        });
+
+        setTimeout(() => {
+            if (incomingView) {
+                incomingView.setParameters(
+                    {
+                        yaw: endYaw,
+                        pitch: endPitch,
+                        fov: finalFov
+                    },
+                    { transitionDuration: getIncomingCameraDuration() }
+                );
+            }
+        }, isMobileViewport() ? 90 : 150);
+
+        setTimeout(() => {
+            cancelRunningLayerAnimations();
+            previewViewer.classList.remove("mobile-cinematic-running", "walk-cinematic-running");
+            clearMobileLayerAnimationState(outgoingEl, incomingEl);
+
+            outgoingEl.classList.remove("active-layer", "layer-outgoing", "layer-incoming");
+            outgoingEl.classList.add("standby-layer");
+            outgoingEl.style.opacity = "0";
+            outgoingEl.style.pointerEvents = "none";
+
+            incomingEl.classList.remove("layer-incoming", "layer-outgoing", "standby-layer");
+            incomingEl.classList.add("active-layer");
+            incomingEl.style.opacity = "1";
+            incomingEl.style.pointerEvents = "auto";
+
+            previewViewer.classList.remove("is-cinematic-transition", "transitioning");
+
+            activeLayerKey = incomingKey;
+            isTransitioning = false;
+            updateAllViewerSizes();
+            syncZoomButtonsState();
+            scheduleSmartPrefetch(targetScene.id);
+        }, getSceneTransitionDuration() + 120);
+    }
+
+    async function navigateToScene(targetSceneId, hotspot) {
+        if (isTransitioning) return;
+
+        const targetScene = findScene(targetSceneId);
+        const currentView = getCurrentView();
+        if (!targetScene || !currentView) return;
+
+        isTransitioning = true;
+        closeInfoPanel();
+        closeSceneStack();
+        stopAutorotate();
+
+        const hotspotYaw = normalizeAngle(Number(hotspot.yaw ?? currentView.yaw()));
+        const hotspotPitch = Number(hotspot.pitch ?? currentView.pitch());
+        const currentFov = currentView.fov();
+        const mobile = isMobileViewport();
+
+        // Desktop garde l'effet avancé en 3 étapes.
+        // Mobile utilise 2 petites étapes: l'effet reste visible mais ne casse plus le canvas.
+        const offset1 = mobile ? degToRad(7) : NAVIGATION_ZOOM_IN_OFFSET_1;
+        const offset2 = mobile ? degToRad(15) : NAVIGATION_ZOOM_IN_OFFSET_2;
+        const offset3 = mobile ? degToRad(20) : NAVIGATION_ZOOM_IN_OFFSET_3;
+
+        const preSwitchFov = clamp(currentFov - offset1, MIN_FOV, MAX_FOV);
+        const preSwitchFov2 = clamp(currentFov - offset2, MIN_FOV, MAX_FOV);
+        const preSwitchFov3 = clamp(currentFov - offset3, MIN_FOV, MAX_FOV);
+
+        currentView.setParameters(
+            {
+                yaw: hotspotYaw,
+                pitch: hotspotPitch,
+                fov: preSwitchFov
+            },
+            { transitionDuration: mobile ? 150 : 220 }
+        );
+
+        setTimeout(() => {
+            currentView.setParameters(
+                {
+                    yaw: hotspotYaw,
+                    pitch: hotspotPitch,
+                    fov: preSwitchFov2
+                },
+                { transitionDuration: mobile ? 170 : 260 }
+            );
+            syncZoomButtonsState();
+        }, mobile ? 85 : 110);
+
+        if (!mobile) {
+            setTimeout(() => {
+                currentView.setParameters(
+                    {
+                        yaw: hotspotYaw,
+                        pitch: hotspotPitch,
+                        fov: preSwitchFov3
+                    },
+                    { transitionDuration: 260 }
+                );
+                syncZoomButtonsState();
+            }, 250);
+        }
+
+        setTimeout(() => {
+            if (mobile) {
+                currentView.setParameters(
+                    {
+                        yaw: hotspotYaw,
+                        pitch: hotspotPitch,
+                        fov: preSwitchFov3
+                    },
+                    { transitionDuration: 120 }
+                );
+            }
+
+            cinematicSwitchScene(targetScene, {
+                fromYaw: hotspotYaw,
+                fromPitch: hotspotPitch
+            });
+        }, mobile ? 240 : 460);
+    }
+
+    function zoomToFov(nextFov, duration = 220) {
+        const view = getCurrentView();
+        if (!view) return;
+
+        view.setParameters(
+            { fov: clamp(nextFov, MIN_FOV, MAX_FOV) },
+            { transitionDuration: duration }
+        );
+
+        syncZoomButtonsState();
+    }
+
+    function zoomBy(deltaDeg, duration = 120) {
+        const view = getCurrentView();
+        if (!view) return;
+
+        const nextFov = clamp(view.fov() + degToRad(deltaDeg), MIN_FOV, MAX_FOV);
+        zoomToFov(nextFov, duration);
+    }
+
+    function resetCurrentView() {
+        const scene = findScene(currentSceneId);
+        const view = getCurrentView();
+        if (!scene || !view) return;
+
+        stopAutorotate();
+
+        view.setParameters(
+            {
+                yaw: degToRad(scene.yaw_default || 0),
+                pitch: degToRad(scene.pitch_default || 0),
+                fov: getSceneFinalFov(scene)
+            },
+            { transitionDuration: 480 }
+        );
+
+        syncZoomButtonsState();
+    }
+
+    function goToRelativeScene(step) {
+        if (isTransitioning) return;
+
+        const sourceScenes = getVisibleDockScenes();
+        if (!sourceScenes.length) return;
+
+        let currentIndex = findDockSceneIndex(currentSceneId);
+
+        if (currentIndex < 0) {
+            currentIndex = step >= 0 ? 0 : sourceScenes.length - 1;
+        } else {
+            currentIndex = (currentIndex + step + sourceScenes.length) % sourceScenes.length;
+        }
+
+        const dockTargetScene = sourceScenes[currentIndex];
+        if (!dockTargetScene) return;
+
+        const targetScene = findScene(dockTargetScene.id);
+        if (!targetScene) return;
+
+        closeInfoPanel();
+        closeSceneStack();
+        isTransitioning = true;
+        stopAutorotate();
+
+        const currentView = getCurrentView();
+
+        if (currentView) {
+            const zoomInFov = clamp(
+                currentView.fov() - (isMobileViewport() ? degToRad(7) : NAVIGATION_ZOOM_IN_OFFSET_1),
+                MIN_FOV,
+                MAX_FOV
+            );
+
+            currentView.setParameters(
+                { fov: zoomInFov },
+                { transitionDuration: isMobileViewport() ? 110 : 140 }
+            );
+
+            syncZoomButtonsState();
+
+            setTimeout(() => {
+                cinematicSwitchScene(targetScene);
+            }, isMobileViewport() ? 140 : 170);
+        } else {
+            cinematicSwitchScene(targetScene);
+        }
+    }
+
+    async function shareCurrentScene() {
+        const scene = findScene(currentSceneId) || scenes[0];
+        if (!scene) return;
+
+        const shareUrl = getSceneShareUrl(scene);
+
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: document.title,
+                    text: "Virtual Tour",
+                    url: shareUrl
+                });
+                return;
+            }
+
+            await navigator.clipboard.writeText(shareUrl);
+            showToast("Link copied");
+        } catch (_) {
+            showToast("Share unavailable");
+        }
+    }
+
+    async function enterFullscreen() {
+        try {
+            if (previewViewer.requestFullscreen) {
+                await previewViewer.requestFullscreen();
+            }
+        } catch (_) {}
+    }
+
+    function getTouchDistance(touches) {
+        if (!touches || touches.length < 2) return 0;
+
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function setupMobileZoomGestures() {
+        if (!previewViewer) return;
+
+        previewViewer.style.touchAction = "none";
+        previewViewer.style.webkitUserSelect = "none";
+        previewViewer.style.userSelect = "none";
+
+        // On applique aussi sur les couches/canvas, car sur mobile l'événement part parfois du canvas WebGL.
+        [previewLayerA, previewLayerB, previewMountA, previewMountB].forEach((el) => {
+            if (!el) return;
+            el.style.touchAction = "none";
+            el.style.webkitUserSelect = "none";
+            el.style.userSelect = "none";
+        });
+
+        let lastTapTs = 0;
+
+        function shouldIgnoreSingleTouchTarget(target) {
+            return !!(
+                target?.closest?.("#previewControlDock") ||
+                target?.closest?.("#previewInfoPanel") ||
+                target?.closest?.("#previewSceneRail") ||
+                target?.closest?.("[data-ui='chrome']")
+            );
+        }
+
+        function startPinch(event) {
+            if (!event.touches || event.touches.length !== 2) return;
+
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            stopAutorotate();
+
+            pinchState.active = true;
+            pinchState.startDistance = getTouchDistance(event.touches);
+            pinchState.startFov = view.fov();
+        }
+
+        function movePinch(event) {
+            if (!pinchState.active || !event.touches || event.touches.length !== 2) return;
+
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const currentDistance = getTouchDistance(event.touches);
+            if (!pinchState.startDistance || !currentDistance) return;
+
+            const ratio = currentDistance / pinchState.startDistance;
+            const zoomDelta = Math.log2(ratio) * degToRad(58) * MOBILE_PINCH_SENSITIVITY;
+            const nextFov = clamp(pinchState.startFov - zoomDelta, MIN_FOV, MAX_FOV);
+
+            setZoomInstant(nextFov);
+        }
+
+        function endPinch(event) {
+            if (!event.touches || event.touches.length < 2) {
+                pinchState.active = false;
+                pinchState.startDistance = 0;
+                pinchState.startFov = 0;
+            }
+            syncZoomButtonsState();
+        }
+
+        function cancelPinch() {
+            pinchState.active = false;
+            pinchState.startDistance = 0;
+            pinchState.startFov = 0;
+            syncZoomButtonsState();
+        }
+
+        function onTouchStart(event) {
+            if (event.touches && event.touches.length === 2) {
+                startPinch(event);
+                return;
+            }
+
+            // Double tap: utile sur certains navigateurs où le pinch est trop sensible ou capturé.
+            if (event.touches && event.touches.length === 1 && !shouldIgnoreSingleTouchTarget(event.target)) {
+                const now = Date.now();
+                if (now - lastTapTs < 290) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const view = getCurrentView();
+                    if (view) {
+                        stopAutorotate();
+                        const currentFov = view.fov();
+                        const defaultFov = getSceneFinalFov(findScene(currentSceneId) || scenes[0]);
+                        const targetFov = currentFov > degToRad(58)
+                            ? clamp(currentFov - degToRad(30), MIN_FOV, MAX_FOV)
+                            : defaultFov;
+
+                        view.setParameters({ fov: targetFov }, { transitionDuration: 160 });
+                        setTimeout(syncZoomButtonsState, 180);
+                    }
+                }
+                lastTapTs = now;
+            }
+        }
+
+        function onTouchMove(event) {
+            if (pinchState.active && event.touches && event.touches.length === 2) {
+                movePinch(event);
+            }
+        }
+
+        previewViewer.addEventListener("touchstart", onTouchStart, { passive: false, capture: true });
+        previewViewer.addEventListener("touchmove", onTouchMove, { passive: false, capture: true });
+        previewViewer.addEventListener("touchend", endPinch, { passive: false, capture: true });
+        previewViewer.addEventListener("touchcancel", cancelPinch, { passive: false, capture: true });
+
+        document.addEventListener("touchstart", (event) => {
+            if (event.touches && event.touches.length === 2 && previewViewer.contains(event.target)) {
+                startPinch(event);
+            }
+        }, { passive: false, capture: true });
+
+        document.addEventListener("touchmove", (event) => {
+            if (pinchState.active) movePinch(event);
+        }, { passive: false, capture: true });
+
+        document.addEventListener("touchend", endPinch, { passive: false, capture: true });
+        document.addEventListener("touchcancel", cancelPinch, { passive: false, capture: true });
+
+        // Fallback Pointer Events: certains Android/Chrome déclenchent plus proprement pointer que touch.
+        const activePointers = new Map();
+        const pointerPinch = {
+            active: false,
+            startDistance: 0,
+            startFov: 0
+        };
+
+        function getPointerDistance() {
+            const points = Array.from(activePointers.values());
+            if (points.length < 2) return 0;
+            const dx = points[0].clientX - points[1].clientX;
+            const dy = points[0].clientY - points[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function startPointerPinch(event) {
+            const view = getCurrentView();
+            if (!view) return;
+            stopAutorotate();
+            pointerPinch.active = true;
+            pointerPinch.startDistance = getPointerDistance();
+            pointerPinch.startFov = view.fov();
+            try { event.target.setPointerCapture?.(event.pointerId); } catch (_) {}
+        }
+
+        previewViewer.addEventListener("pointerdown", (event) => {
+            if (event.pointerType !== "touch") return;
+            if (shouldIgnoreSingleTouchTarget(event.target)) return;
+
+            activePointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (activePointers.size === 2) {
+                event.preventDefault();
+                event.stopPropagation();
+                startPointerPinch(event);
+            }
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("pointermove", (event) => {
+            if (event.pointerType !== "touch" || !activePointers.has(event.pointerId)) return;
+
+            activePointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (!pointerPinch.active || activePointers.size < 2) return;
+
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const currentDistance = getPointerDistance();
+            if (!pointerPinch.startDistance || !currentDistance) return;
+
+            const ratio = currentDistance / pointerPinch.startDistance;
+            const zoomDelta = Math.log2(ratio) * degToRad(58) * MOBILE_PINCH_SENSITIVITY;
+            setZoomInstant(pointerPinch.startFov - zoomDelta);
+        }, { passive: false, capture: true });
+
+        function endPointer(event) {
+            if (event.pointerType !== "touch") return;
+            activePointers.delete(event.pointerId);
+            if (activePointers.size < 2) {
+                pointerPinch.active = false;
+                pointerPinch.startDistance = 0;
+                pointerPinch.startFov = 0;
+            }
+            syncZoomButtonsState();
+        }
+
+        previewViewer.addEventListener("pointerup", endPointer, { passive: false, capture: true });
+        previewViewer.addEventListener("pointercancel", endPointer, { passive: false, capture: true });
+        previewViewer.addEventListener("pointerleave", endPointer, { passive: false, capture: true });
+
+        // iOS Safari gesture events.
+        let gestureStartFov = 0;
+
+        previewViewer.addEventListener("gesturestart", (event) => {
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            stopAutorotate();
+            gestureStartFov = view.fov();
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("gesturechange", (event) => {
+            const view = getCurrentView();
+            if (!view || !gestureStartFov) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const scale = event.scale || 1;
+            const zoomDelta = Math.log2(scale) * degToRad(60) * MOBILE_PINCH_SENSITIVITY;
+            setZoomInstant(gestureStartFov - zoomDelta);
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("gestureend", (event) => {
+            event.preventDefault();
+            gestureStartFov = 0;
+            syncZoomButtonsState();
+        }, { passive: false, capture: true });
+
+        // Desktop / trackpad zoom.
+        previewViewer.addEventListener("wheel", (event) => {
+            const target = event.target;
+            if (
+                target?.closest?.("#previewControlDock") ||
+                target?.closest?.("#previewInfoPanel") ||
+                target?.closest?.("#previewSceneRail")
+            ) {
+                return;
+            }
+
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            stopAutorotate();
+
+            const direction = event.deltaY > 0 ? 1 : -1;
+            const nextFov = clamp(view.fov() + degToRad(direction * 7), MIN_FOV, MAX_FOV);
+            setZoomInstant(nextFov);
+        }, { passive: false, capture: true });
+    }
+
+    sceneStackToggle?.addEventListener("click", toggleSceneStack);
+
+    prevSceneBtn?.addEventListener("click", () => goToRelativeScene(-1));
+    nextSceneBtn?.addEventListener("click", () => goToRelativeScene(1));
+
+    zoomOutBtn?.addEventListener("click", () => {
+        stopAutorotate();
+        zoomBy(isMobileViewport() ? 8 : 10);
+    });
+
+    zoomInBtn?.addEventListener("click", () => {
+        stopAutorotate();
+        zoomBy(isMobileViewport() ? -8 : -10);
+    });
+
+    resetViewBtn?.addEventListener("click", resetCurrentView);
+    autorotateBtn?.addEventListener("click", toggleAutorotate);
+    focusModeBtn?.addEventListener("click", toggleFocusMode);
+    shareBtn?.addEventListener("click", shareCurrentScene);
+    fullscreenBtn?.addEventListener("click", enterFullscreen);
+
+    previewInfoClose?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        closeInfoPanel();
+    });
+
+    previewInfoBackdrop?.addEventListener("click", closeInfoPanel);
+
+    previewViewer?.addEventListener("click", () => {
+        closeInfoPanel();
+    });
+
+    previewViewer?.addEventListener("pointerdown", () => {
+        stopAutorotate();
+    });
+
+    window.addEventListener("resize", () => {
+        updateAllViewerSizes();
+        syncZoomButtonsState();
+    });
+
+    window.addEventListener("orientationchange", () => {
+        setTimeout(() => {
+            updateAllViewerSizes();
+            syncZoomButtonsState();
+        }, 260);
+    });
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", () => {
+            updateAllViewerSizes();
+            syncZoomButtonsState();
+        });
+    }
+
+    document.addEventListener("fullscreenchange", () => {
+        setTimeout(() => {
+            updateAllViewerSizes();
+            syncZoomButtonsState();
+        }, 180);
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            closeInfoPanel();
+            closeSceneStack();
+        }
+
+        if (event.key === "ArrowLeft") {
+            goToRelativeScene(-1);
+        }
+
+        if (event.key === "ArrowRight") {
+            goToRelativeScene(1);
+        }
+
+        if (event.key === "+") {
+            zoomBy(-10);
+        }
+
+        if (event.key === "-") {
+            zoomBy(10);
+        }
+    });
+
+    setupResponsiveMode();
+
+    if (!scenes.length) {
+        if (sceneCountBadge) sceneCountBadge.textContent = "0";
+        return;
+    }
+
+    renderSceneRail();
+    setupMobileZoomGestures();
+
+    const initialScene =
+        getInitialSceneFromUrl() ||
+        (dockScenes.length ? findScene(dockScenes[0].id) : null) ||
+        scenes[0];
+    currentSceneId = initialScene.id;
+
+    debugLog("Initial scene chosen", {
+        id: initialScene?.id,
+        title: initialScene?.title,
+        preferredImageUrl: getPreferredImageUrl(initialScene),
+        tilesUrl: initialScene?.tiles_url || ""
+    });
+
+   showSceneLoadingPreview(initialScene, "");
+    prefetchSceneAssets(initialScene);
+
+    buildSceneOnLayer(activeLayerKey, initialScene);
+    updateSceneMeta(initialScene);
+    syncSceneInUrl(initialScene);
+    scheduleSmartPrefetch(initialScene.id);
+
+    requestAnimationFrame(() => {
+        updateAllViewerSizes();
+        syncZoomButtonsState();
+        runInitialReveal(initialScene);
+        hideSceneLoadingPreview(720);
+    });
+});
+    </script>
+    
+</body>
+</html>
