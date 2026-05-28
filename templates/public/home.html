@@ -42,9 +42,11 @@
     <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 
     <style>
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
+            overscroll-behavior: none;
         }
 
         body {
@@ -82,13 +84,6 @@
                 inset 0 1px 0 rgba(255,255,255,0.30);
         }
 
-        .glass-dark {
-            background: rgba(255,255,255,0.14);
-            border: 1px solid rgba(255,255,255,0.24);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-        }
-
         .card-hover {
             transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
         }
@@ -121,10 +116,7 @@
             letter-spacing: -0.03em;
         }
 
-        .soft-text {
-            color: #475569;
-        }
-
+        /* ========================= HEADER ========================= */
         .app-header {
             position: fixed;
             top: 0;
@@ -132,6 +124,7 @@
             right: 0;
             z-index: 90;
             padding: 14px 14px 0;
+            background: transparent;
             pointer-events: none;
         }
 
@@ -139,30 +132,78 @@
             max-width: 1280px;
             margin: 0 auto;
             padding: 12px 14px;
-            border-radius: 28px;
-            border: 1px solid rgba(255,255,255,0.48);
-            background: linear-gradient(180deg, rgba(255,255,255,0.36), rgba(255,255,255,0.18));
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
+            border-radius: 30px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.24);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             box-shadow:
-                0 22px 60px rgba(15,23,42,0.12),
-                inset 0 1px 0 rgba(255,255,255,0.42);
+                0 18px 45px rgba(0,0,0,0.14),
+                inset 0 1px 0 rgba(255,255,255,0.20);
             pointer-events: auto;
+        }
+
+        .app-header.is-scrolled .header-shell {
+            background: rgba(15,23,42,0.22);
+            border-color: rgba(255,255,255,0.22);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .header-brand-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            color: white;
+            text-decoration: none;
         }
 
         .brand-mark {
             position: relative;
+            display: flex;
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
-            box-shadow: 0 18px 42px rgba(34,211,238,0.22);
+            border-radius: 20px;
+            color: white;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.24);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            box-shadow:
+                0 14px 34px rgba(0,0,0,0.14),
+                inset 0 1px 0 rgba(255,255,255,0.20);
         }
 
-        .brand-mark::after {
-            content: "";
-            position: absolute;
-            inset: 1px;
-            border-radius: inherit;
-            border: 1px solid rgba(255,255,255,0.34);
-            pointer-events: none;
+        .header-brand-title {
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 15px;
+            line-height: 1rem;
+            font-weight: 950;
+            letter-spacing: -0.02em;
+            color: white;
+            text-shadow: 0 8px 22px rgba(0,0,0,0.28);
+        }
+
+        .header-brand-subtitle {
+            margin-top: 3px;
+            max-width: 190px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 10px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: rgba(255,255,255,0.72);
+            text-shadow: 0 8px 22px rgba(0,0,0,0.24);
         }
 
         .nav-pill {
@@ -173,65 +214,64 @@
             min-height: 44px;
             padding: 0 16px;
             border-radius: 999px;
+            color: rgba(255,255,255,0.90);
             text-decoration: none;
             font-size: 13px;
             font-weight: 900;
-            color: #0f172a;
             letter-spacing: 0.01em;
-            background: rgba(255,255,255,0.34);
-            border: 1px solid rgba(255,255,255,0.42);
-            transition: .2s ease;
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.20);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: transform .2s ease, background .2s ease, border-color .2s ease, color .2s ease;
         }
 
-        .nav-pill:hover {
-            transform: translateY(-1px);
-            background: rgba(255,255,255,0.56);
-            box-shadow: 0 14px 28px rgba(15,23,42,0.08);
-        }
-
+        .nav-pill:hover,
         .nav-pill.active {
-            color: #083344;
-            background: linear-gradient(135deg, rgba(34,211,238,0.26), rgba(59,130,246,0.18));
-            border-color: rgba(103,232,249,0.50);
-            box-shadow: 0 12px 28px rgba(34,211,238,0.10);
+            transform: translateY(-1px);
+            color: white;
+            background: rgba(255,255,255,0.18);
+            border-color: rgba(255,255,255,0.38);
         }
 
-        .header-cta {
+        .header-cta,
+        .mobile-menu-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            min-height: 46px;
-            padding: 0 18px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, rgba(34,211,238,0.92), rgba(59,130,246,0.86));
-            color: #082f49;
-            font-size: 13px;
-            font-weight: 900;
+            min-height: 48px;
+            padding: 0 20px;
+            border-radius: 18px;
+            color: white;
             text-decoration: none;
-            border: 1px solid rgba(255,255,255,0.58);
-            box-shadow: 0 18px 35px rgba(59,130,246,0.16);
-            transition: .2s ease;
+            font-size: 13px;
+            font-weight: 950;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.24);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            box-shadow:
+                0 18px 45px rgba(0,0,0,0.14),
+                inset 0 1px 0 rgba(255,255,255,0.20);
+            transition: transform .22s ease, background .22s ease, border-color .22s ease;
         }
 
-        .header-cta:hover {
+        .header-cta:hover,
+        .mobile-menu-btn:hover {
             transform: translateY(-1px);
-            filter: brightness(1.04);
+            background: rgba(255,255,255,0.20);
+            border-color: rgba(255,255,255,0.34);
         }
 
         .mobile-menu-btn {
             display: none;
-            align-items: center;
-            justify-content: center;
-            width: 46px;
-            height: 46px;
-            border-radius: 18px;
-            border: 1px solid rgba(255,255,255,0.52);
-            background: rgba(255,255,255,0.28);
-            color: #0f172a;
-            box-shadow: 0 14px 30px rgba(15,23,42,0.10);
+            width: 48px;
+            height: 48px;
+            padding: 0;
         }
 
+        /* ========================= MOBILE MENU / SEARCH SHEET ========================= */
         .menu-backdrop,
         .search-sheet-backdrop {
             position: fixed;
@@ -244,13 +284,8 @@
             -webkit-backdrop-filter: blur(6px);
         }
 
-        .menu-backdrop {
-            z-index: 97;
-        }
-
-        .search-sheet-backdrop {
-            z-index: 95;
-        }
+        .menu-backdrop { z-index: 97; }
+        .search-sheet-backdrop { z-index: 95; }
 
         .menu-backdrop.show,
         .search-sheet-backdrop.show {
@@ -276,9 +311,7 @@
             box-shadow: 0 28px 80px rgba(15,23,42,0.20);
         }
 
-        .mobile-menu-panel.open {
-            transform: translateX(0);
-        }
+        .mobile-menu-panel.open { transform: translateX(0); }
 
         .mobile-menu-link {
             display: flex;
@@ -301,200 +334,6 @@
             background: rgba(255,255,255,0.74);
         }
 
-        .hero-shell {
-            position: relative;
-            overflow: hidden;
-            min-height: 860px;
-            background: #06111f;
-        }
-
-        .hero-panorama-wrap {
-            position: absolute;
-            inset: 0;
-            overflow: hidden;
-            background:
-                radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
-                linear-gradient(180deg, rgba(5,15,30,0.05) 0%, rgba(5,15,30,0.15) 100%);
-        }
-
-        .hero-panorama-viewer,
-        .hero-fallback-image,
-        .hero-poster-layer {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .hero-panorama-viewer {
-            z-index: 1;
-            touch-action: none;
-            cursor: grab;
-        }
-
-        .hero-panorama-viewer:active {
-            cursor: grabbing;
-        }
-
-        .hero-poster-layer {
-            z-index: 2;
-            opacity: 1;
-            transition: opacity 900ms ease, transform 1200ms ease;
-            transform: scale(1.012) translateZ(0);
-            pointer-events: none;
-        }
-
-        .hero-panorama-wrap.is-panorama-ready .hero-poster-layer {
-            opacity: 0;
-            transform: scale(1.025) translateZ(0);
-        }
-
-        .hero-poster-layer img,
-        .hero-fallback-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center center;
-            filter: saturate(1.08) contrast(1.04) brightness(1.02);
-            image-rendering: auto;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-        }
-
-        .hero-panorama-viewer canvas {
-            width: 100% !important;
-            height: 100% !important;
-            transform: translateZ(0);
-            filter: saturate(1.05) contrast(1.03) brightness(1.02);
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-        }
-
-        .hero-overlay {
-            position: absolute;
-            inset: 0;
-            background:
-                linear-gradient(90deg, rgba(2,6,23,0.52) 0%, rgba(2,6,23,0.25) 38%, rgba(2,6,23,0.08) 70%, rgba(2,6,23,0.16) 100%),
-                linear-gradient(180deg, rgba(246,252,255,0.08) 0%, rgba(18,43,77,0.05) 30%, rgba(12,27,50,0.20) 68%, rgba(10,23,41,0.34) 100%),
-                radial-gradient(circle at 20% 18%, rgba(255,255,255,0.16), transparent 18%),
-                radial-gradient(circle at 80% 20%, rgba(34,211,238,0.10), transparent 20%);
-            z-index: 3;
-            pointer-events: none;
-        }
-
-        .hero-grid {
-            position: relative;
-            z-index: 5;
-        }
-
-        .hero-kicker { animation: heroFadeUp .8s ease both; }
-        .hero-title { animation: heroFadeUp 1s ease .08s both; }
-        .hero-text { animation: heroFadeUp 1s ease .18s both; }
-        .hero-actions { animation: heroFadeUp 1s ease .28s both; }
-        .hero-stats { animation: heroFadeUp 1s ease .38s both; }
-        .hero-search { animation: heroFadeUp 1s ease .20s both; }
-
-        @keyframes heroFadeUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .hero-loader {
-            position: absolute;
-            inset: 0;
-            z-index: 4;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background:
-                radial-gradient(circle at center, rgba(255,255,255,0.10), rgba(8,18,35,0.22)),
-                linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.12));
-            transition: opacity .7s ease, visibility .7s ease;
-        }
-
-        .hero-loader.is-hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .hero-loader-card {
-            display: flex;
-            align-items: center;
-            gap: 0.9rem;
-            padding: 1rem 1.2rem;
-            border-radius: 999px;
-            color: white;
-            background: rgba(10,23,41,0.42);
-            border: 1px solid rgba(255,255,255,0.16);
-            backdrop-filter: blur(14px);
-        }
-
-        .hero-loader-dot {
-            width: 14px;
-            height: 14px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, #67e8f9, #3b82f6);
-            box-shadow: 0 0 0 8px rgba(103,232,249,0.10);
-            animation: pulseDot 1.4s ease infinite;
-        }
-
-        @keyframes pulseDot {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.18); opacity: 0.78; }
-        }
-
-        .hero-mini-panel {
-            background: rgba(255,255,255,0.14);
-            border: 1px solid rgba(255,255,255,0.24);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-        }
-
-        .hero-title,
-        .hero-text {
-            text-shadow:
-                0 10px 30px rgba(15,23,42,0.22),
-                0 4px 14px rgba(15,23,42,0.18);
-        }
-
-        .search-field {
-            width: 100%;
-            border-radius: 1rem;
-            border: 1px solid rgba(255,255,255,0.40);
-            background: rgba(255,255,255,0.42);
-            color: #0f172a;
-            padding: 0.9rem 1rem;
-            outline: none;
-            transition: .2s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .search-field::placeholder {
-            color: #64748b;
-        }
-
-        .search-field:focus {
-            border-color: rgba(34,211,238,0.75);
-            box-shadow: 0 0 0 4px rgba(34,211,238,0.14);
-            background: rgba(255,255,255,0.58);
-        }
-
-        .desktop-hero-search {
-            display: block;
-            pointer-events: auto;
-        }
-
-        .hero-copy-floating {
-            pointer-events: none;
-        }
-
-        .hero-copy-floating a,
-        .hero-copy-floating button,
-        .desktop-hero-search,
-        .desktop-hero-search * {
-            pointer-events: auto;
-        }
-
         .mobile-search-trigger {
             position: fixed;
             left: 50%;
@@ -508,14 +347,17 @@
             min-height: 56px;
             padding: 0 18px;
             border-radius: 999px;
-            border: 1px solid rgba(255,255,255,0.58);
-            background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.52));
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            box-shadow: 0 18px 40px rgba(15,23,42,0.18);
-            color: #0f172a;
+            color: white;
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.34);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow:
+                0 18px 45px rgba(0,0,0,0.18),
+                inset 0 1px 0 rgba(255,255,255,0.24);
             font-size: 14px;
             font-weight: 900;
+            transition: opacity .22s ease, transform .22s ease;
         }
 
         .mobile-search-trigger.is-hidden {
@@ -580,388 +422,250 @@
             padding: 0 16px 18px;
         }
 
-        .tour-card-thumb {
+        /* ========================= HERO ========================= */
+        .hero-shell {
             position: relative;
+            overflow: hidden;
+            min-height: 860px;
+            background: #06111f;
+        }
+
+        .hero-panorama-wrap {
+            position: absolute;
+            inset: 0;
             overflow: hidden;
             background:
                 radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
-                linear-gradient(180deg, rgba(7,16,32,0.02), rgba(7,16,32,0.10));
+                linear-gradient(180deg, rgba(5,15,30,0.05) 0%, rgba(5,15,30,0.15) 100%);
         }
 
-        .tour-card-thumb img {
-            transition: transform .7s ease, filter .35s ease;
-            filter: saturate(1.06) contrast(1.03) brightness(1.015);
+        .hero-panorama-viewer,
+        .hero-fallback-image,
+        .hero-poster-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hero-panorama-viewer {
+            z-index: 1;
+            touch-action: none !important;
+            -ms-touch-action: none !important;
+            overscroll-behavior: contain !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            cursor: grab;
+        }
+
+        .hero-panorama-viewer:active { cursor: grabbing; }
+
+        .hero-poster-layer {
+            z-index: 2;
+            opacity: 1;
+            transition: opacity 900ms ease, transform 1200ms ease;
+            transform: scale(1.012) translateZ(0);
+            pointer-events: none;
+        }
+
+        .hero-panorama-wrap.is-panorama-ready .hero-poster-layer {
+            opacity: 0;
+            transform: scale(1.025) translateZ(0);
+        }
+
+        .hero-poster-layer img,
+        .hero-fallback-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+            filter: saturate(1.08) contrast(1.04) brightness(1.02);
+            image-rendering: auto;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
         }
 
-        .tour-card-thumb:hover img {
-            transform: scale(1.04);
+        .hero-panorama-viewer canvas {
+            width: 100% !important;
+            height: 100% !important;
+            transform: translateZ(0);
+            filter: saturate(1.05) contrast(1.03) brightness(1.02);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            touch-action: none !important;
+            -ms-touch-action: none !important;
+            overscroll-behavior: contain !important;
         }
 
-        .card-image-overlay {
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
             background:
-                linear-gradient(180deg, rgba(15,23,42,0.02) 0%, rgba(15,23,42,0.08) 45%, rgba(15,23,42,0.44) 100%);
-        }
-
-        .tour-scene-badge {
-            background: rgba(255,255,255,0.88);
-            border: 1px solid rgba(255,255,255,0.74);
-            box-shadow: 0 12px 26px rgba(15,23,42,0.10);
-        }
-
-        #featured,
-        #places,
-        #tours,
-        #organizations {
-            scroll-margin-top: 124px;
-        }
-
-        @media (max-width: 1024px) {
-            .hero-shell {
-                min-height: 900px;
-            }
-
-            .app-header {
-                padding: 12px 12px 0;
-            }
-
-            .header-shell {
-                border-radius: 24px;
-                padding: 10px 12px;
-            }
-        }
-
-        @media (max-width: 1023px) {
-            .desktop-hero-search {
-                display: none !important;
-            }
-
-            .mobile-search-trigger {
-                display: inline-flex;
-            }
-
-            .hero-grid {
-                padding-bottom: 100px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .desktop-nav,
-            .desktop-cta {
-                display: none !important;
-            }
-
-            .mobile-menu-btn {
-                display: inline-flex;
-            }
-
-            .app-header {
-                padding: 10px 10px 0;
-            }
-
-            .header-shell {
-                border-radius: 22px;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .hero-shell {
-                min-height: 760px;
-            }
-
-            .hero-grid {
-                padding-top: 118px !important;
-                padding-bottom: 96px !important;
-            }
-
-            .hero-copy-floating {
-                max-width: 92vw;
-            }
-
-            .hero-kicker {
-                margin-bottom: 14px !important;
-                padding: 8px 12px !important;
-                font-size: 9px !important;
-                letter-spacing: .18em !important;
-                background: rgba(255,255,255,0.08) !important;
-            }
-
-            .hero-title {
-                max-width: 92vw !important;
-                font-size: clamp(2.25rem, 11vw, 3.45rem) !important;
-                line-height: .94 !important;
-                letter-spacing: -0.065em !important;
-            }
-
-            .hero-title span {
-                margin-top: 4px !important;
-            }
-
-            .hero-text,
-            .hero-stats,
-            .hero-mini-panel,
-            .mobile-soft-hide {
-                display: none !important;
-            }
-
-            .hero-actions {
-                margin-top: 18px !important;
-                gap: 10px !important;
-            }
-
-            .hero-actions a {
-                min-height: 48px !important;
-                padding-left: 16px !important;
-                padding-right: 16px !important;
-                font-size: 13px !important;
-            }
-
-            .hero-overlay {
-                background:
-                    linear-gradient(180deg, rgba(2,6,23,0.16) 0%, rgba(2,6,23,0.02) 36%, rgba(2,6,23,0.10) 64%, rgba(2,6,23,0.54) 100%),
-                    linear-gradient(90deg, rgba(2,6,23,0.34) 0%, rgba(2,6,23,0.12) 56%, rgba(2,6,23,0.04) 100%),
-                    radial-gradient(circle at 18% 22%, rgba(255,255,255,0.10), transparent 18%);
-            }
-
-            .hero-panorama-viewer canvas,
-            .hero-poster-layer img,
-            .hero-fallback-image img {
-                filter: saturate(1.07) contrast(1.04) brightness(1.04);
-            }
-
-            .hero-loader-card {
-                padding: .75rem .95rem;
-                font-size: 12px;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .mobile-search-trigger,
-            .search-sheet-backdrop,
-            .search-sheet-panel {
-                display: none !important;
-            }
-        }
-    
-
-        /* ============================================================
-           PREMIUM TRANSPARENT HERO HEADER + SEARCH BUTTONS PATCH
-        ============================================================ */
-
-        .app-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 90;
-            padding: 14px 14px 0;
+                linear-gradient(90deg, rgba(2,6,23,0.52) 0%, rgba(2,6,23,0.25) 38%, rgba(2,6,23,0.08) 70%, rgba(2,6,23,0.16) 100%),
+                linear-gradient(180deg, rgba(246,252,255,0.08) 0%, rgba(18,43,77,0.05) 30%, rgba(12,27,50,0.20) 68%, rgba(10,23,41,0.34) 100%),
+                radial-gradient(circle at 20% 18%, rgba(255,255,255,0.16), transparent 18%),
+                radial-gradient(circle at 80% 20%, rgba(34,211,238,0.10), transparent 20%);
+            z-index: 3;
             pointer-events: none;
         }
 
-        .header-shell {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 12px 14px;
-            border-radius: 30px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
-            border: 1px solid rgba(255,255,255,0.55);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            box-shadow:
-                0 22px 60px rgba(0,0,0,0.16),
-                inset 0 1px 0 rgba(255,255,255,0.28),
-                inset 0 -1px 0 rgba(255,255,255,0.10);
-            pointer-events: auto;
-            transition: background .25s ease, border-color .25s ease, box-shadow .25s ease, transform .25s ease;
-        }
-
-        .header-brand-link {
+        .hero-loader {
+            position: absolute;
+            inset: 0;
+            z-index: 4;
             display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 0;
-            color: white;
-            text-decoration: none;
-        }
-
-        .brand-mark {
-            position: relative;
-            display: flex;
-            width: 48px;
-            height: 48px;
-            flex-shrink: 0;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            border-radius: 20px;
-            color: white;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.42);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            box-shadow:
-                0 18px 42px rgba(0,0,0,0.14),
-                inset 0 1px 0 rgba(255,255,255,0.26);
-        }
-
-        .brand-mark::after {
-            content: "";
-            position: absolute;
-            inset: 1px;
-            border-radius: inherit;
-            border: 1px solid rgba(255,255,255,0.12);
+            background:
+                radial-gradient(circle at center, rgba(255,255,255,0.10), rgba(8,18,35,0.22)),
+                linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.12));
+            transition: opacity .7s ease, visibility .7s ease;
             pointer-events: none;
         }
 
-        .header-brand-title {
-            max-width: 180px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 15px;
-            line-height: 1rem;
-            font-weight: 950;
-            letter-spacing: -0.02em;
+        .hero-loader.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .hero-loader-card {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            padding: 1rem 1.2rem;
+            border-radius: 999px;
             color: white;
-            text-shadow: 0 8px 22px rgba(0,0,0,0.28);
+            background: rgba(10,23,41,0.42);
+            border: 1px solid rgba(255,255,255,0.16);
+            backdrop-filter: blur(14px);
         }
 
-        .header-brand-subtitle {
-            margin-top: 3px;
-            max-width: 190px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 10px;
-            font-weight: 850;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: rgba(255,255,255,0.72);
-            text-shadow: 0 8px 22px rgba(0,0,0,0.24);
+        .hero-loader-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #67e8f9, #3b82f6);
+            box-shadow: 0 0 0 8px rgba(103,232,249,0.10);
+            animation: pulseDot 1.4s ease infinite;
         }
 
-        .nav-pill {
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.18); opacity: 0.78; }
+        }
+
+        .hero-grid {
             position: relative;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .hero-grid a,
+        .hero-grid button,
+        .desktop-hero-search,
+        .desktop-hero-search * {
+            pointer-events: auto;
+        }
+
+        .hero-copy-floating { pointer-events: none; }
+        .hero-copy-floating a,
+        .hero-copy-floating button { pointer-events: auto; }
+
+        .hero-kicker { animation: heroFadeUp .8s ease both; }
+        .hero-title { animation: heroFadeUp 1s ease .08s both; }
+        .hero-text { animation: heroFadeUp 1s ease .18s both; }
+        .hero-actions { animation: heroFadeUp 1s ease .28s both; }
+        .hero-stats { animation: heroFadeUp 1s ease .38s both; }
+        .hero-search { animation: heroFadeUp 1s ease .20s both; }
+
+        @keyframes heroFadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-mini-panel {
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.24);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+
+        .hero-title,
+        .hero-text {
+            text-shadow:
+                0 10px 30px rgba(15,23,42,0.22),
+                0 4px 14px rgba(15,23,42,0.18);
+        }
+
+        /* Zoom controls hero */
+        .hero-zoom-dock {
+            position: absolute;
+            right: 18px;
+            bottom: 22px;
+            z-index: 8;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.34);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow:
+                0 18px 45px rgba(0,0,0,0.18),
+                inset 0 1px 0 rgba(255,255,255,0.18);
+            pointer-events: auto;
+        }
+
+        .hero-zoom-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-height: 44px;
-            padding: 0 16px;
+            width: 44px;
+            height: 44px;
             border-radius: 999px;
-            color: rgba(255,255,255,0.88);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 900;
-            letter-spacing: 0.01em;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.18);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            transition: transform .2s ease, background .2s ease, border-color .2s ease, color .2s ease;
+            color: #ffffff;
+            background: rgba(255,255,255,0.13);
+            border: 1px solid rgba(255,255,255,0.24);
+            font-size: 18px;
+            font-weight: 950;
+            line-height: 1;
+            cursor: pointer;
+            transition: transform .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
+            touch-action: manipulation !important;
         }
 
-        .nav-pill:hover {
+        .hero-zoom-btn:hover {
             transform: translateY(-1px);
-            color: white;
-            background: rgba(255,255,255,0.16);
+            background: rgba(255,255,255,0.22);
             border-color: rgba(255,255,255,0.36);
         }
 
-        .nav-pill.active {
-            color: white;
-            background: rgba(255,255,255,0.18);
-            border-color: rgba(255,255,255,0.48);
-            box-shadow:
-                0 14px 32px rgba(0,0,0,0.12),
-                inset 0 1px 0 rgba(255,255,255,0.25);
+        .hero-zoom-btn:disabled {
+            opacity: .40;
+            cursor: default;
+            transform: none;
         }
 
-        .header-cta {
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 48px;
-            padding: 0 20px;
-            border-radius: 18px;
-            color: white;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 950;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.28);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            box-shadow:
-                0 16px 34px rgba(0,0,0,0.14),
-                inset 0 1px 0 rgba(255,255,255,0.22);
-            transition: transform .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease;
-        }
-
-        .header-cta:hover {
-            transform: translateY(-1px);
-            background: rgba(255,255,255,0.20);
-            border-color: rgba(255,255,255,0.42);
-            box-shadow:
-                0 20px 42px rgba(0,0,0,0.18),
-                inset 0 1px 0 rgba(255,255,255,0.30);
-        }
-
-        .mobile-menu-btn {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            width: 48px;
-            height: 48px;
-            border-radius: 18px;
-            color: white;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.32);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            box-shadow:
-                0 16px 34px rgba(0,0,0,0.14),
-                inset 0 1px 0 rgba(255,255,255,0.20);
-            transition: .2s ease;
-        }
-
-        .mobile-menu-btn:hover {
-            background: rgba(255,255,255,0.20);
-        }
-
-        .app-header.is-scrolled .header-shell {
-            background: linear-gradient(180deg, rgba(255,255,255,0.86), rgba(255,255,255,0.66));
-            border-color: rgba(255,255,255,0.82);
-            box-shadow:
-                0 24px 70px rgba(15,23,42,0.16),
-                inset 0 1px 0 rgba(255,255,255,0.42);
-        }
-
-        .app-header.is-scrolled .header-brand-link,
-        .app-header.is-scrolled .brand-mark,
-        .app-header.is-scrolled .header-brand-title,
-        .app-header.is-scrolled .nav-pill,
-        .app-header.is-scrolled .header-cta,
-        .app-header.is-scrolled .mobile-menu-btn {
+        .search-field {
+            width: 100%;
+            border-radius: 1rem;
+            border: 1px solid rgba(255,255,255,0.40);
+            background: rgba(255,255,255,0.42);
             color: #0f172a;
+            padding: 0.9rem 1rem;
+            outline: none;
+            transition: .2s ease;
+            backdrop-filter: blur(10px);
         }
 
-        .app-header.is-scrolled .header-brand-subtitle {
-            color: rgba(51,65,85,0.72);
-        }
+        .search-field::placeholder { color: #64748b; }
 
-        .app-header.is-scrolled .brand-mark,
-        .app-header.is-scrolled .nav-pill,
-        .app-header.is-scrolled .header-cta,
-        .app-header.is-scrolled .mobile-menu-btn {
-            background: rgba(255,255,255,0.54);
-            border-color: rgba(15,23,42,0.08);
-        }
-
-        .app-header.is-scrolled .nav-pill.active {
-            color: #083344;
-            background: rgba(34,211,238,0.16);
-            border-color: rgba(34,211,238,0.28);
+        .search-field:focus {
+            border-color: rgba(34,211,238,0.75);
+            box-shadow: 0 0 0 4px rgba(34,211,238,0.14);
+            background: rgba(255,255,255,0.58);
         }
 
         .premium-search-submit {
@@ -985,31 +689,9 @@
             transition: transform .22s ease, filter .22s ease, box-shadow .22s ease;
         }
 
-        .premium-search-submit::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.35) 45%, transparent 70%);
-            transform: translateX(-120%);
-            transition: transform .65s ease;
-        }
-
         .premium-search-submit:hover {
             transform: translateY(-1px);
             filter: brightness(1.06);
-            box-shadow:
-                0 24px 52px rgba(37,99,235,0.26),
-                inset 0 1px 0 rgba(255,255,255,0.42);
-        }
-
-        .premium-search-submit:hover::before {
-            transform: translateX(120%);
-        }
-
-        .premium-search-submit span,
-        .premium-search-submit svg {
-            position: relative;
-            z-index: 1;
         }
 
         .premium-search-reset {
@@ -1035,569 +717,142 @@
         .premium-search-reset:hover {
             transform: translateY(-1px);
             background: rgba(255,255,255,0.58);
-            box-shadow:
-                0 18px 38px rgba(15,23,42,0.12),
-                inset 0 1px 0 rgba(255,255,255,0.46);
         }
 
-        .mobile-search-trigger {
-            color: white !important;
-            background: rgba(255,255,255,0.14) !important;
-            border: 1px solid rgba(255,255,255,0.34) !important;
-            backdrop-filter: blur(16px) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
-            box-shadow:
-                0 18px 45px rgba(0,0,0,0.18),
-                inset 0 1px 0 rgba(255,255,255,0.24) !important;
+        /* ========================= CARDS ========================= */
+        .tour-card-thumb {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
+                linear-gradient(180deg, rgba(7,16,32,0.02), rgba(7,16,32,0.10));
         }
 
-        .mobile-search-trigger:hover {
-            background: rgba(255,255,255,0.22) !important;
+        .tour-card-thumb img {
+            transition: transform .7s ease, filter .35s ease;
+            filter: saturate(1.06) contrast(1.03) brightness(1.015);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .tour-card-thumb:hover img { transform: scale(1.04); }
+
+        .card-image-overlay {
+            background:
+                linear-gradient(180deg, rgba(15,23,42,0.02) 0%, rgba(15,23,42,0.08) 45%, rgba(15,23,42,0.44) 100%);
+        }
+
+        .tour-scene-badge {
+            background: rgba(255,255,255,0.88);
+            border: 1px solid rgba(255,255,255,0.74);
+            box-shadow: 0 12px 26px rgba(15,23,42,0.10);
+        }
+
+        #featured,
+        #places,
+        #tours,
+        #organizations {
+            scroll-margin-top: 124px;
         }
 
         @media (max-width: 1024px) {
-            .app-header {
-                padding: 12px 12px 0;
-            }
+            .hero-shell { min-height: 900px; }
+            .app-header { padding: 12px 12px 0; }
+            .header-shell { border-radius: 26px; padding: 10px 12px; }
+        }
 
-            .header-shell {
-                border-radius: 26px;
-                padding: 10px 12px;
+        @media (max-width: 1023px) {
+            .desktop-hero-search { display: none !important; }
+            .mobile-search-trigger { display: inline-flex; }
+            .hero-grid { padding-bottom: 100px; }
+            .hero-zoom-dock {
+                right: 14px;
+                bottom: calc(86px + env(safe-area-inset-bottom, 0px));
             }
         }
 
         @media (max-width: 768px) {
             .desktop-nav,
-            .desktop-cta {
+            .desktop-cta { display: none !important; }
+            .mobile-menu-btn { display: inline-flex; }
+            .app-header { padding: 10px 10px 0; }
+            .header-shell { border-radius: 24px; padding: 10px 12px; }
+            .brand-mark { width: 44px; height: 44px; border-radius: 18px; }
+            .header-brand-title { font-size: 14px; }
+            .header-brand-subtitle { max-width: 150px; font-size: 9px; }
+        }
+
+        @media (max-width: 640px) {
+            .hero-shell { min-height: 760px; }
+            .hero-grid {
+                padding-top: 118px !important;
+                padding-bottom: 96px !important;
+            }
+            .hero-copy-floating { max-width: 92vw; }
+            .hero-kicker {
+                margin-bottom: 14px !important;
+                padding: 8px 12px !important;
+                font-size: 9px !important;
+                letter-spacing: .18em !important;
+                background: rgba(255,255,255,0.08) !important;
+            }
+            .hero-title {
+                max-width: 92vw !important;
+                font-size: clamp(2.25rem, 11vw, 3.45rem) !important;
+                line-height: .94 !important;
+                letter-spacing: -0.065em !important;
+            }
+            .hero-title span { margin-top: 4px !important; }
+            .hero-text,
+            .hero-stats,
+            .hero-mini-panel,
+            .mobile-soft-hide { display: none !important; }
+            .hero-actions {
+                margin-top: 18px !important;
+                gap: 10px !important;
+            }
+            .hero-actions a {
+                min-height: 48px !important;
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+                font-size: 13px !important;
+            }
+            .hero-overlay {
+                background:
+                    linear-gradient(180deg, rgba(2,6,23,0.16) 0%, rgba(2,6,23,0.02) 36%, rgba(2,6,23,0.10) 64%, rgba(2,6,23,0.54) 100%),
+                    linear-gradient(90deg, rgba(2,6,23,0.34) 0%, rgba(2,6,23,0.12) 56%, rgba(2,6,23,0.04) 100%),
+                    radial-gradient(circle at 18% 22%, rgba(255,255,255,0.10), transparent 18%);
+            }
+            .hero-panorama-viewer canvas,
+            .hero-poster-layer img,
+            .hero-fallback-image img {
+                filter: saturate(1.07) contrast(1.04) brightness(1.04);
+            }
+            .hero-loader-card {
+                padding: .75rem .95rem;
+                font-size: 12px;
+            }
+            .hero-zoom-dock {
+                right: 12px;
+                bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+                gap: 6px;
+                padding: 7px;
+            }
+            .hero-zoom-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 17px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .mobile-search-trigger,
+            .search-sheet-backdrop,
+            .search-sheet-panel {
                 display: none !important;
             }
-
-            .mobile-menu-btn {
-                display: inline-flex;
-            }
-
-            .app-header {
-                padding: 10px 10px 0;
-            }
-
-            .header-shell {
-                border-radius: 24px;
-            }
-
-            .brand-mark {
-                width: 44px;
-                height: 44px;
-                border-radius: 18px;
-            }
-
-            .header-brand-title {
-                font-size: 14px;
-            }
-
-            .header-brand-subtitle {
-                font-size: 9px;
-                max-width: 150px;
-            }
         }
-
-    
-
-        /* ============================================================
-           FINAL OVERRIDE: HEADER COMME PARTIE DE L'IMAGE + SEARCH PRO
-           Ce bloc garde le header transparent, bordure blanche, comme ton bouton Create a tour.
-        ============================================================ */
-
-        .app-header {
-            padding: 14px 14px 0 !important;
-            pointer-events: none !important;
-        }
-
-        .header-shell {
-            max-width: 1280px !important;
-            padding: 10px 12px !important;
-            border-radius: 28px !important;
-            background:
-                linear-gradient(180deg, rgba(255,255,255,0.115), rgba(255,255,255,0.055)) !important;
-            border: 1px solid rgba(255,255,255,0.26) !important;
-            backdrop-filter: blur(12px) saturate(1.08) !important;
-            -webkit-backdrop-filter: blur(12px) saturate(1.08) !important;
-            box-shadow:
-                0 18px 42px rgba(0,0,0,0.10),
-                inset 0 1px 0 rgba(255,255,255,0.20),
-                inset 0 -1px 0 rgba(255,255,255,0.06) !important;
-            pointer-events: auto !important;
-        }
-
-        .header-brand-link {
-            color: #ffffff !important;
-        }
-
-        .brand-mark {
-            width: 48px !important;
-            height: 48px !important;
-            border-radius: 18px !important;
-            color: #ffffff !important;
-            background: rgba(255,255,255,0.12) !important;
-            border: 1px solid rgba(255,255,255,0.24) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            box-shadow:
-                0 14px 30px rgba(0,0,0,0.10),
-                inset 0 1px 0 rgba(255,255,255,0.22) !important;
-        }
-
-        .header-brand-title {
-            color: #ffffff !important;
-            font-size: 14px !important;
-            font-weight: 950 !important;
-            text-shadow: 0 8px 22px rgba(0,0,0,0.28) !important;
-        }
-
-        .header-brand-subtitle {
-            color: rgba(255,255,255,0.68) !important;
-            text-shadow: 0 8px 22px rgba(0,0,0,0.24) !important;
-        }
-
-        .nav-pill,
-        .header-cta,
-        .mobile-menu-btn {
-            color: #ffffff !important;
-            background: rgba(255,255,255,0.12) !important;
-            border: 1px solid rgba(255,255,255,0.24) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            box-shadow:
-                0 14px 30px rgba(0,0,0,0.10),
-                inset 0 1px 0 rgba(255,255,255,0.20) !important;
-        }
-
-        .nav-pill {
-            min-height: 44px !important;
-            padding: 0 15px !important;
-            font-size: 12.5px !important;
-            font-weight: 900 !important;
-        }
-
-        .nav-pill:hover,
-        .nav-pill.active,
-        .header-cta:hover,
-        .mobile-menu-btn:hover {
-            color: #ffffff !important;
-            background: rgba(255,255,255,0.20) !important;
-            border-color: rgba(255,255,255,0.36) !important;
-            transform: translateY(-1px) !important;
-        }
-
-        .header-cta {
-            min-height: 48px !important;
-            padding: 0 20px !important;
-            border-radius: 18px !important;
-            font-size: 13px !important;
-            font-weight: 950 !important;
-        }
-
-        /* Au scroll, on garde le style image/glass, mais avec une ombre sombre pour rester lisible. */
-        .app-header.is-scrolled .header-shell {
-            background:
-                linear-gradient(180deg, rgba(15,23,42,0.30), rgba(15,23,42,0.18)) !important;
-            border-color: rgba(255,255,255,0.22) !important;
-            backdrop-filter: blur(16px) saturate(1.08) !important;
-            -webkit-backdrop-filter: blur(16px) saturate(1.08) !important;
-            box-shadow:
-                0 22px 58px rgba(15,23,42,0.22),
-                inset 0 1px 0 rgba(255,255,255,0.18) !important;
-        }
-
-        .app-header.is-scrolled .header-brand-link,
-        .app-header.is-scrolled .brand-mark,
-        .app-header.is-scrolled .header-brand-title,
-        .app-header.is-scrolled .nav-pill,
-        .app-header.is-scrolled .header-cta,
-        .app-header.is-scrolled .mobile-menu-btn {
-            color: #ffffff !important;
-        }
-
-        .app-header.is-scrolled .header-brand-subtitle {
-            color: rgba(255,255,255,0.68) !important;
-        }
-
-        .app-header.is-scrolled .brand-mark,
-        .app-header.is-scrolled .nav-pill,
-        .app-header.is-scrolled .header-cta,
-        .app-header.is-scrolled .mobile-menu-btn,
-        .app-header.is-scrolled .nav-pill.active {
-            color: #ffffff !important;
-            background: rgba(255,255,255,0.12) !important;
-            border-color: rgba(255,255,255,0.24) !important;
-        }
-
-        /* Bouton Search propre et premium, plus proche du style glass du hero. */
-        .premium-search-submit {
-            min-height: 54px !important;
-            border-radius: 20px !important;
-            color: #ffffff !important;
-            background:
-                linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.10)),
-                linear-gradient(135deg, rgba(34,211,238,0.74), rgba(59,130,246,0.68)) !important;
-            border: 1px solid rgba(255,255,255,0.38) !important;
-            backdrop-filter: blur(14px) !important;
-            -webkit-backdrop-filter: blur(14px) !important;
-            box-shadow:
-                0 18px 42px rgba(37,99,235,0.18),
-                inset 0 1px 0 rgba(255,255,255,0.28) !important;
-        }
-
-        .premium-search-submit:hover {
-            background:
-                linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.14)),
-                linear-gradient(135deg, rgba(34,211,238,0.82), rgba(59,130,246,0.76)) !important;
-            border-color: rgba(255,255,255,0.52) !important;
-            transform: translateY(-1px) !important;
-        }
-
-        .premium-search-reset {
-            min-height: 54px !important;
-            border-radius: 20px !important;
-            color: #0f172a !important;
-            background: rgba(255,255,255,0.44) !important;
-            border: 1px solid rgba(255,255,255,0.68) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-        }
-
-        .premium-search-reset:hover {
-            background: rgba(255,255,255,0.66) !important;
-            transform: translateY(-1px) !important;
-        }
-
-        .mobile-search-trigger {
-            color: #ffffff !important;
-            background: rgba(255,255,255,0.12) !important;
-            border: 1px solid rgba(255,255,255,0.24) !important;
-            backdrop-filter: blur(14px) !important;
-            -webkit-backdrop-filter: blur(14px) !important;
-            box-shadow:
-                0 18px 45px rgba(0,0,0,0.16),
-                inset 0 1px 0 rgba(255,255,255,0.22) !important;
-        }
-
-        .mobile-search-trigger:hover {
-            background: rgba(255,255,255,0.20) !important;
-        }
-
-        @media (max-width: 768px) {
-            .app-header {
-                padding: 10px 10px 0 !important;
-            }
-
-            .header-shell {
-                padding: 9px 10px !important;
-                border-radius: 24px !important;
-            }
-
-            .brand-mark,
-            .mobile-menu-btn {
-                width: 44px !important;
-                height: 44px !important;
-                border-radius: 17px !important;
-            }
-
-            .header-brand-title {
-                max-width: 150px !important;
-                font-size: 13.5px !important;
-            }
-
-            .header-brand-subtitle {
-                max-width: 145px !important;
-                font-size: 9px !important;
-            }
-        }
-
-</style>
-
-
-<style id="final-transparent-header-fix">
-/* ============================================================
-   FINAL HEADER: TRANSPARENT, WHITE BORDER, PART OF HERO IMAGE
-   This block is intentionally last so it overrides old header styles.
-============================================================ */
-.app-header {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 90 !important;
-    padding: 14px 14px 0 !important;
-    background: transparent !important;
-    pointer-events: none !important;
-}
-
-.header-shell {
-    max-width: 1280px !important;
-    margin: 0 auto !important;
-    padding: 12px 14px !important;
-    border-radius: 30px !important;
-    background: rgba(255,255,255,0.12) !important;
-    border: 1px solid rgba(255,255,255,0.24) !important;
-    backdrop-filter: blur(14px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
-    box-shadow:
-        0 18px 45px rgba(0,0,0,0.14),
-        inset 0 1px 0 rgba(255,255,255,0.20) !important;
-    pointer-events: auto !important;
-}
-
-/* Keep the header transparent even after scroll */
-.app-header.is-scrolled .header-shell {
-    background: rgba(255,255,255,0.12) !important;
-    border-color: rgba(255,255,255,0.24) !important;
-    backdrop-filter: blur(14px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
-    box-shadow:
-        0 18px 45px rgba(0,0,0,0.14),
-        inset 0 1px 0 rgba(255,255,255,0.20) !important;
-}
-
-.header-brand-link,
-.app-header.is-scrolled .header-brand-link {
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    min-width: 0 !important;
-    color: white !important;
-    text-decoration: none !important;
-}
-
-.brand-mark,
-.app-header.is-scrolled .brand-mark {
-    position: relative !important;
-    display: flex !important;
-    width: 48px !important;
-    height: 48px !important;
-    flex-shrink: 0 !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-radius: 20px !important;
-    color: white !important;
-    background: rgba(255,255,255,0.12) !important;
-    border: 1px solid rgba(255,255,255,0.24) !important;
-    backdrop-filter: blur(14px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
-    box-shadow:
-        0 14px 34px rgba(0,0,0,0.14),
-        inset 0 1px 0 rgba(255,255,255,0.20) !important;
-}
-
-.brand-mark svg {
-    color: white !important;
-}
-
-.header-brand-title,
-.app-header.is-scrolled .header-brand-title {
-    max-width: 180px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    font-size: 15px !important;
-    line-height: 1rem !important;
-    font-weight: 950 !important;
-    letter-spacing: -0.02em !important;
-    color: white !important;
-    text-shadow: 0 8px 22px rgba(0,0,0,0.28) !important;
-}
-
-.header-brand-subtitle,
-.app-header.is-scrolled .header-brand-subtitle {
-    margin-top: 3px !important;
-    max-width: 190px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    font-size: 10px !important;
-    font-weight: 850 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.18em !important;
-    color: rgba(255,255,255,0.72) !important;
-    text-shadow: 0 8px 22px rgba(0,0,0,0.24) !important;
-}
-
-.nav-pill,
-.app-header.is-scrolled .nav-pill {
-    position: relative !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 44px !important;
-    padding: 0 16px !important;
-    border-radius: 999px !important;
-    color: rgba(255,255,255,0.90) !important;
-    text-decoration: none !important;
-    font-size: 13px !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.01em !important;
-    background: rgba(255,255,255,0.10) !important;
-    border: 1px solid rgba(255,255,255,0.20) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-    box-shadow: none !important;
-    transition: transform .2s ease, background .2s ease, border-color .2s ease, color .2s ease !important;
-}
-
-.nav-pill:hover,
-.app-header.is-scrolled .nav-pill:hover {
-    transform: translateY(-1px) !important;
-    color: white !important;
-    background: rgba(255,255,255,0.18) !important;
-    border-color: rgba(255,255,255,0.34) !important;
-}
-
-.nav-pill.active,
-.app-header.is-scrolled .nav-pill.active {
-    color: white !important;
-    background: rgba(255,255,255,0.18) !important;
-    border-color: rgba(255,255,255,0.38) !important;
-    box-shadow:
-        0 14px 32px rgba(0,0,0,0.12),
-        inset 0 1px 0 rgba(255,255,255,0.25) !important;
-}
-
-.header-cta,
-.app-header.is-scrolled .header-cta {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    min-height: 48px !important;
-    padding: 0 20px !important;
-    border-radius: 18px !important;
-    color: white !important;
-    text-decoration: none !important;
-    font-size: 13px !important;
-    font-weight: 950 !important;
-    background: rgba(255,255,255,0.12) !important;
-    border: 1px solid rgba(255,255,255,0.24) !important;
-    backdrop-filter: blur(14px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
-    box-shadow:
-        0 18px 45px rgba(0,0,0,0.14),
-        inset 0 1px 0 rgba(255,255,255,0.20) !important;
-    transition: transform .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease !important;
-}
-
-.header-cta:hover,
-.app-header.is-scrolled .header-cta:hover {
-    transform: translateY(-1px) !important;
-    background: rgba(255,255,255,0.20) !important;
-    border-color: rgba(255,255,255,0.34) !important;
-}
-
-.mobile-menu-btn,
-.app-header.is-scrolled .mobile-menu-btn {
-    display: none;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 48px !important;
-    height: 48px !important;
-    border-radius: 18px !important;
-    color: white !important;
-    background: rgba(255,255,255,0.12) !important;
-    border: 1px solid rgba(255,255,255,0.24) !important;
-    backdrop-filter: blur(14px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
-    box-shadow:
-        0 18px 45px rgba(0,0,0,0.14),
-        inset 0 1px 0 rgba(255,255,255,0.20) !important;
-}
-
-.mobile-menu-btn:hover,
-.app-header.is-scrolled .mobile-menu-btn:hover {
-    background: rgba(255,255,255,0.20) !important;
-}
-
-.mobile-menu-btn svg {
-    color: white !important;
-}
-
-/* Search buttons stay premium and clean */
-.premium-search-submit {
-    color: white !important;
-    background: linear-gradient(135deg, rgba(34,211,238,0.92), rgba(59,130,246,0.88)) !important;
-    border: 1px solid rgba(255,255,255,0.58) !important;
-}
-
-.premium-search-reset {
-    background: rgba(255,255,255,0.38) !important;
-    border: 1px solid rgba(255,255,255,0.62) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
-}
-
-.mobile-search-trigger {
-    color: white !important;
-    background: rgba(255,255,255,0.14) !important;
-    border: 1px solid rgba(255,255,255,0.34) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    box-shadow:
-        0 18px 45px rgba(0,0,0,0.18),
-        inset 0 1px 0 rgba(255,255,255,0.24) !important;
-}
-
-.mobile-search-trigger:hover {
-    background: rgba(255,255,255,0.22) !important;
-}
-
-@media (max-width: 1024px) {
-    .app-header {
-        padding: 12px 12px 0 !important;
-    }
-
-    .header-shell {
-        border-radius: 26px !important;
-        padding: 10px 12px !important;
-    }
-}
-
-@media (max-width: 768px) {
-    .app-header {
-        padding: 10px 10px 0 !important;
-    }
-
-    .header-shell {
-        border-radius: 24px !important;
-        padding: 10px 12px !important;
-    }
-
-    .desktop-nav,
-    .desktop-cta {
-        display: none !important;
-    }
-
-    .mobile-menu-btn,
-    .app-header.is-scrolled .mobile-menu-btn {
-        display: inline-flex !important;
-    }
-
-    .brand-mark,
-    .app-header.is-scrolled .brand-mark {
-        width: 44px !important;
-        height: 44px !important;
-        border-radius: 18px !important;
-    }
-
-    .header-brand-title,
-    .app-header.is-scrolled .header-brand-title {
-        font-size: 14px !important;
-    }
-
-    .header-brand-subtitle,
-    .app-header.is-scrolled .header-brand-subtitle {
-        max-width: 150px !important;
-        font-size: 9px !important;
-    }
-}
-</style>
-
+    </style>
 </head>
 
 <body class="antialiased">
@@ -1610,15 +865,8 @@
             <div class="flex items-center justify-between gap-4">
                 <a href="/explorer/" class="header-brand-link">
                     <div class="brand-mark">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             class="h-5 w-5"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke="currentColor"
-                             stroke-width="2">
-                            <path stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
                         </svg>
                     </div>
 
@@ -1642,19 +890,9 @@
                         <span>→</span>
                     </a>
 
-                    <button id="openMenuBtn"
-                            type="button"
-                            class="mobile-menu-btn"
-                            aria-label="Open menu">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             class="h-5 w-5"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke="currentColor"
-                             stroke-width="2">
-                            <path stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  d="M4 7h16M4 12h16M4 17h16" />
+                    <button id="openMenuBtn" type="button" class="mobile-menu-btn" aria-label="Open menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
                         </svg>
                     </button>
                 </div>
@@ -1690,7 +928,7 @@
         </div>
     </aside>
 
-    <section class="hero-shell">
+    <section id="heroShell" class="hero-shell">
         <div id="heroPanoramaWrap" class="hero-panorama-wrap">
             {% if hero_scene_url or hero_scene_mobile_url or hero_scene_thumbnail_url %}
                 <div
@@ -1736,6 +974,14 @@
             </div>
         </div>
 
+        {% comment %} {% if hero_scene_url or hero_scene_mobile_url or hero_scene_thumbnail_url %}
+            <div id="heroZoomDock" class="hero-zoom-dock" aria-label="Hero panorama zoom controls">
+                <button id="heroZoomOutBtn" type="button" class="hero-zoom-btn" title="Zoom arrière" aria-label="Zoom arrière">－</button>
+                <button id="heroZoomInBtn" type="button" class="hero-zoom-btn" title="Zoom avant" aria-label="Zoom avant">＋</button>
+                <button id="heroResetViewBtn" type="button" class="hero-zoom-btn" title="Revenir au zoom 0" aria-label="Revenir au zoom 0">⌾</button>
+            </div>
+        {% endif %} {% endcomment %}
+
         <div class="hero-grid relative mx-auto max-w-7xl px-4 py-24 lg:px-6 lg:py-32">
             <div class="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
                 <div class="hero-copy-floating max-w-3xl relative z-10">
@@ -1767,7 +1013,7 @@
                             Explore tours
                             <span>→</span>
                         </a>
-                        <a href="#" class="inline-flex items-center justify-center rounded-2xl border border-white/24 bg-white/12 px-6 py-4 text-sm font-black text-white backdrop-blur-md transition hover:bg-white/20">
+                        <a href="/dashboard/" class="inline-flex items-center justify-center rounded-2xl border border-white/24 bg-white/12 px-6 py-4 text-sm font-black text-white backdrop-blur-md transition hover:bg-white/20">
                             Create a tour
                         </a>
                     </div>
@@ -1817,15 +1063,8 @@
                             <div class="flex flex-wrap gap-3 pt-2">
                                 <button type="submit" class="premium-search-submit flex-1">
                                     <span>Search</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="h-4 w-4"
-                                         fill="none"
-                                         viewBox="0 0 24 24"
-                                         stroke="currentColor"
-                                         stroke-width="2">
-                                        <path stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
                                     </svg>
                                 </button>
 
@@ -1873,15 +1112,8 @@
                 <div class="flex gap-3 pt-2">
                     <button type="submit" class="premium-search-submit flex-1">
                         <span>Search</span>
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             class="h-4 w-4"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke="currentColor"
-                             stroke-width="2">
-                            <path stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
                         </svg>
                     </button>
                     <button type="button" data-catalog-reset class="premium-search-reset">
@@ -2067,18 +1299,15 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const appHeader = document.getElementById("appHeader");
-
-            function syncHeaderGlassState() {
-                if (!appHeader) return;
-                appHeader.classList.toggle("is-scrolled", window.scrollY > 70);
-            }
-
-            syncHeaderGlassState();
-            window.addEventListener("scroll", syncHeaderGlassState, { passive: true });
+            const heroShell = document.getElementById("heroShell");
             const heroWrap = document.getElementById("heroPanoramaWrap");
             const heroPanoEl = document.getElementById("heroMarzipano");
             const heroPosterImage = document.getElementById("heroPosterImage");
             const heroLoader = document.getElementById("heroLoader");
+            const heroZoomDock = document.getElementById("heroZoomDock");
+            const heroZoomOutBtn = document.getElementById("heroZoomOutBtn");
+            const heroZoomInBtn = document.getElementById("heroZoomInBtn");
+            const heroResetViewBtn = document.getElementById("heroResetViewBtn");
 
             const openMenuBtn = document.getElementById("openMenuBtn");
             const closeMenuBtn = document.getElementById("closeMenuBtn");
@@ -2090,8 +1319,34 @@
             const searchSheetBackdrop = document.getElementById("searchSheetBackdrop");
             const searchSheetPanel = document.getElementById("searchSheetPanel");
 
+            function syncHeaderGlassState() {
+                if (!appHeader) return;
+                appHeader.classList.toggle("is-scrolled", window.scrollY > 70);
+            }
+
+            syncHeaderGlassState();
+            window.addEventListener("scroll", syncHeaderGlassState, { passive: true });
+
             function isMobileViewport() {
                 return window.matchMedia("(max-width: 767px)").matches;
+            }
+
+            function degToRad(deg) {
+                return deg * Math.PI / 180;
+            }
+
+            function clamp(value, min, max) {
+                return Math.min(Math.max(value, min), max);
+            }
+
+            const HERO_MIN_FOV = degToRad(6);
+            const HERO_MAX_FOV = degToRad(132);
+            const HERO_MOBILE_PINCH_SENSITIVITY = 2.15;
+
+            // Zoom initial = 0 : on démarre au champ de vision le plus large.
+            // Le visiteur choisit ensuite lui-même son niveau de zoom.
+            function getHeroStartFov() {
+                return HERO_MAX_FOV;
             }
 
             function syncBodyLock() {
@@ -2156,8 +1411,12 @@
 
             let heroViewer = null;
             let heroScene = null;
+            let heroView = null;
             let heroAutorotate = null;
             let heroContextLost = false;
+            let heroZoomGesturesReady = false;
+            let heroZoomAnimationFrame = null;
+            let heroRestartAutorotateTimer = null;
 
             function pickHeroPanoramaUrl() {
                 if (!heroPanoEl) return "";
@@ -2176,6 +1435,335 @@
                     thumb ||
                     ""
                 );
+            }
+
+            function syncHeroZoomButtonsState() {
+                if (!heroView) return;
+
+                const currentFov = heroView.fov();
+
+                if (heroZoomInBtn) {
+                    heroZoomInBtn.disabled = currentFov <= HERO_MIN_FOV + 0.01;
+                }
+
+                if (heroZoomOutBtn) {
+                    heroZoomOutBtn.disabled = currentFov >= HERO_MAX_FOV - 0.01;
+                }
+            }
+
+            function stopHeroAutorotate() {
+                if (!heroViewer) return;
+                try {
+                    heroViewer.stopMovement();
+                } catch (_) {}
+            }
+
+            function restartHeroAutorotateDelayed(delay = 1100) {
+                window.clearTimeout(heroRestartAutorotateTimer);
+
+                if (!heroViewer || !heroAutorotate || heroContextLost) return;
+
+                heroRestartAutorotateTimer = window.setTimeout(() => {
+                    if (heroViewer && heroAutorotate && !heroContextLost) {
+                        try {
+                            heroViewer.startMovement(heroAutorotate);
+                        } catch (_) {}
+                    }
+                }, delay);
+            }
+
+            function setHeroZoomInstant(nextFov) {
+                if (!heroView) return;
+
+                heroView.setParameters({
+                    fov: clamp(nextFov, HERO_MIN_FOV, HERO_MAX_FOV)
+                });
+
+                syncHeroZoomButtonsState();
+            }
+
+            function heroZoomToFov(nextFov, duration = 160) {
+                if (!heroView) return;
+
+                const startFov = heroView.fov();
+                const endFov = clamp(nextFov, HERO_MIN_FOV, HERO_MAX_FOV);
+                const startTime = performance.now();
+
+                if (heroZoomAnimationFrame) {
+                    cancelAnimationFrame(heroZoomAnimationFrame);
+                    heroZoomAnimationFrame = null;
+                }
+
+                function animate(now) {
+                    const progress = Math.min((now - startTime) / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const currentFov = startFov + (endFov - startFov) * eased;
+
+                    heroView.setParameters({ fov: currentFov });
+                    syncHeroZoomButtonsState();
+
+                    if (progress < 1) {
+                        heroZoomAnimationFrame = requestAnimationFrame(animate);
+                    } else {
+                        heroZoomAnimationFrame = null;
+                        heroView.setParameters({ fov: endFov });
+                        syncHeroZoomButtonsState();
+                    }
+                }
+
+                heroZoomAnimationFrame = requestAnimationFrame(animate);
+            }
+
+            function heroZoomBy(deltaDeg, duration = 130) {
+                if (!heroView) return;
+
+                stopHeroAutorotate();
+
+                const nextFov = heroView.fov() + degToRad(deltaDeg);
+                heroZoomToFov(nextFov, duration);
+                restartHeroAutorotateDelayed(1300);
+            }
+
+            function resetHeroView() {
+                if (!heroView) return;
+
+                stopHeroAutorotate();
+
+                heroView.setParameters({
+                    yaw: degToRad(-18),
+                    pitch: 0,
+                    fov: getHeroStartFov()
+                });
+
+                syncHeroZoomButtonsState();
+                restartHeroAutorotateDelayed(1300);
+            }
+
+            function getTouchDistance(touches) {
+                if (!touches || touches.length < 2) return 0;
+
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            function setupHeroZoomGestures() {
+                if (!heroPanoEl || !heroShell || heroZoomGesturesReady) return;
+
+                heroZoomGesturesReady = true;
+
+                heroPanoEl.style.touchAction = "none";
+                heroPanoEl.style.webkitUserSelect = "none";
+                heroPanoEl.style.userSelect = "none";
+
+                let pinchActive = false;
+                let startDistance = 0;
+                let startFov = 0;
+                let lastTapTs = 0;
+                let gestureStartFov = 0;
+
+                function isHeroZoneTarget(target) {
+                    return !!(target && heroShell.contains(target));
+                }
+
+                function isUiTarget(target) {
+                    return !!(
+                        target?.closest?.("#heroZoomDock") ||
+                        target?.closest?.("#appHeader") ||
+                        target?.closest?.("#mobileMenuPanel") ||
+                        target?.closest?.("#searchSheetPanel") ||
+                        target?.closest?.("#openSearchSheetBtn") ||
+                        target?.closest?.("a") ||
+                        target?.closest?.("button") ||
+                        target?.closest?.("input") ||
+                        target?.closest?.("select") ||
+                        target?.closest?.("textarea")
+                    );
+                }
+
+                function beginPinch(event) {
+                    if (!event.touches || event.touches.length !== 2) return;
+                    if (!isHeroZoneTarget(event.target) || isUiTarget(event.target)) return;
+                    if (!heroView) return;
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    stopHeroAutorotate();
+
+                    pinchActive = true;
+                    startDistance = getTouchDistance(event.touches);
+                    startFov = heroView.fov();
+                }
+
+                function movePinch(event) {
+                    if (!pinchActive || !event.touches || event.touches.length !== 2) return;
+                    if (!heroView) return;
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const currentDistance = getTouchDistance(event.touches);
+                    if (!startDistance || !currentDistance) return;
+
+                    const ratio = currentDistance / startDistance;
+                    const zoomDelta = Math.log2(ratio) * degToRad(58) * HERO_MOBILE_PINCH_SENSITIVITY;
+                    const nextFov = clamp(startFov - zoomDelta, HERO_MIN_FOV, HERO_MAX_FOV);
+
+                    setHeroZoomInstant(nextFov);
+                }
+
+                function endPinch(event) {
+                    if (!event.touches || event.touches.length < 2) {
+                        pinchActive = false;
+                        startDistance = 0;
+                        startFov = 0;
+                        restartHeroAutorotateDelayed(1100);
+                    }
+
+                    syncHeroZoomButtonsState();
+                }
+
+                function handleTouchStart(event) {
+                    if (event.touches && event.touches.length === 2) {
+                        beginPinch(event);
+                        return;
+                    }
+
+                    if (
+                        event.touches &&
+                        event.touches.length === 1 &&
+                        isHeroZoneTarget(event.target) &&
+                        !isUiTarget(event.target)
+                    ) {
+                        const now = Date.now();
+
+                        if (now - lastTapTs < 290) {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            if (!heroView) return;
+
+                            stopHeroAutorotate();
+
+                            const currentFov = heroView.fov();
+                            const targetFov = currentFov > degToRad(64)
+                                ? clamp(currentFov - degToRad(30), HERO_MIN_FOV, HERO_MAX_FOV)
+                                : getHeroStartFov();
+
+                            heroZoomToFov(targetFov, 170);
+                            restartHeroAutorotateDelayed(1300);
+                        }
+
+                        lastTapTs = now;
+                    }
+                }
+
+                document.addEventListener("touchstart", handleTouchStart, {
+                    passive: false,
+                    capture: true
+                });
+
+                document.addEventListener("touchmove", (event) => {
+                    if (pinchActive) movePinch(event);
+                }, {
+                    passive: false,
+                    capture: true
+                });
+
+                document.addEventListener("touchend", endPinch, {
+                    passive: false,
+                    capture: true
+                });
+
+                document.addEventListener("touchcancel", endPinch, {
+                    passive: false,
+                    capture: true
+                });
+
+                document.addEventListener("wheel", (event) => {
+                    if (!isHeroZoneTarget(event.target) || isUiTarget(event.target)) return;
+                    if (!heroView) return;
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    stopHeroAutorotate();
+
+                    const direction = event.deltaY > 0 ? 1 : -1;
+                    const step = event.ctrlKey ? 3.5 : 7;
+                    const nextFov = clamp(
+                        heroView.fov() + degToRad(direction * step),
+                        HERO_MIN_FOV,
+                        HERO_MAX_FOV
+                    );
+
+                    setHeroZoomInstant(nextFov);
+                    restartHeroAutorotateDelayed(1300);
+                }, {
+                    passive: false,
+                    capture: true
+                });
+
+                heroPanoEl.addEventListener("gesturestart", (event) => {
+                    if (!heroView) return;
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    stopHeroAutorotate();
+                    gestureStartFov = heroView.fov();
+                }, {
+                    passive: false,
+                    capture: true
+                });
+
+                heroPanoEl.addEventListener("gesturechange", (event) => {
+                    if (!heroView || !gestureStartFov) return;
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const scale = event.scale || 1;
+                    const zoomDelta = Math.log2(scale) * degToRad(60) * HERO_MOBILE_PINCH_SENSITIVITY;
+
+                    setHeroZoomInstant(gestureStartFov - zoomDelta);
+                }, {
+                    passive: false,
+                    capture: true
+                });
+
+                heroPanoEl.addEventListener("gestureend", (event) => {
+                    event.preventDefault();
+
+                    gestureStartFov = 0;
+                    syncHeroZoomButtonsState();
+                    restartHeroAutorotateDelayed(1100);
+                }, {
+                    passive: false,
+                    capture: true
+                });
+
+                heroZoomOutBtn?.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    heroZoomBy(isMobileViewport() ? 8 : 10);
+                }, { passive: false });
+
+                heroZoomInBtn?.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    heroZoomBy(isMobileViewport() ? -8 : -10);
+                }, { passive: false });
+
+                heroResetViewBtn?.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    resetHeroView();
+                }, { passive: false });
+
+                syncHeroZoomButtonsState();
             }
 
             function initHeroPanorama() {
@@ -2199,17 +1787,18 @@
                     }, false);
 
                     const source = Marzipano.ImageUrlSource.fromString(url);
-                    const geometry = new Marzipano.EquirectGeometry([{ width: isMobileViewport() ? 2048 : 4096 }]);
+                    const geometry = new Marzipano.EquirectGeometry([{ width: 4096 }]);
                     const limiter = Marzipano.RectilinearView.limit.traditional(
                         4096,
-                        100 * Math.PI / 180,
-                        35 * Math.PI / 180
+                        HERO_MAX_FOV
                     );
                     const view = new Marzipano.RectilinearView({
-                        yaw: -18 * Math.PI / 180,
+                        yaw: degToRad(-18),
                         pitch: 0,
-                        fov: (isMobileViewport() ? 86 : 82) * Math.PI / 180,
+                        fov: getHeroStartFov(),
                     }, limiter);
+
+                    heroView = view;
 
                     heroScene = heroViewer.createScene({
                         source,
@@ -2222,31 +1811,38 @@
                         requestAnimationFrame(() => {
                             heroWrap?.classList.add("is-panorama-ready");
                             hideHeroLoader();
+                            syncHeroZoomButtonsState();
+
+                            if (heroViewer && typeof heroViewer.updateSize === "function") {
+                                heroViewer.updateSize();
+                            }
                         });
                     });
 
-                    heroAutorotate = Marzipano.autorotate({ yawSpeed: 0.018, targetPitch: 0, targetFov: null });
+                    setupHeroZoomGestures();
+
+                    heroAutorotate = Marzipano.autorotate({
+                        yawSpeed: 0.018,
+                        targetPitch: 0,
+                        targetFov: null
+                    });
+
                     setTimeout(() => {
                         if (heroViewer && heroAutorotate && !heroContextLost) {
                             heroViewer.startMovement(heroAutorotate);
                         }
                     }, isMobileViewport() ? 1100 : 650);
 
-                    heroPanoEl.addEventListener("mouseenter", () => heroViewer?.stopMovement());
-                    heroPanoEl.addEventListener("mouseleave", () => {
-                        if (heroViewer && heroAutorotate && !heroContextLost) heroViewer.startMovement(heroAutorotate);
-                    });
-                    heroPanoEl.addEventListener("touchstart", () => heroViewer?.stopMovement(), { passive: true });
-                    heroPanoEl.addEventListener("touchend", () => {
-                        setTimeout(() => {
-                            if (heroViewer && heroAutorotate && !heroContextLost) heroViewer.startMovement(heroAutorotate);
-                        }, 800);
-                    }, { passive: true });
+                    heroPanoEl.addEventListener("mouseenter", () => stopHeroAutorotate());
+                    heroPanoEl.addEventListener("mouseleave", () => restartHeroAutorotateDelayed(650));
+                    heroPanoEl.addEventListener("touchstart", () => stopHeroAutorotate(), { passive: true });
+                    heroPanoEl.addEventListener("touchend", () => restartHeroAutorotateDelayed(900), { passive: true });
 
                     window.addEventListener("resize", () => {
                         if (!heroViewer || heroContextLost) return;
                         try {
                             if (typeof heroViewer.updateSize === "function") heroViewer.updateSize();
+                            syncHeroZoomButtonsState();
                         } catch (error) {
                             console.warn("Hero resize warning:", error);
                         }
@@ -2254,8 +1850,8 @@
 
                     document.addEventListener("visibilitychange", () => {
                         if (!heroViewer || heroContextLost || !heroAutorotate) return;
-                        if (document.hidden) heroViewer.stopMovement();
-                        else heroViewer.startMovement(heroAutorotate);
+                        if (document.hidden) stopHeroAutorotate();
+                        else restartHeroAutorotateDelayed(300);
                     });
                 } catch (error) {
                     console.error("Hero Marzipano init error:", error);

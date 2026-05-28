@@ -1,5 +1,5 @@
 {% comment %}
-Preview template adapté: transition cinéma + zoom comme builder, avec previewLayerA/B.
+Preview template adapté: transition cinéma + zoom manuel initial à 0, avec previewLayerA/B.
 {% endcomment %}
 {% load static %}
 <!DOCTYPE html>
@@ -3800,15 +3800,19 @@ body {
     const MIN_FOV = degToRad(6);
     const MAX_FOV = degToRad(132);
 
+    // Zoom 0 = FOV maximum. Plus le FOV est grand, moins l'image est zoomée.
+    const ZERO_ZOOM_FOV = MAX_FOV;
+
     const EXTRA_WIDE_OFFSET = degToRad(0);
 
     // Cinématique:
-    // - ouverture: la première scène commence large puis zoome doucement vers la vue finale
-    // - navigation: la scène actuelle zoome vers le hotspot, puis la nouvelle scène dézoome vers la vue finale
-    const INITIAL_OPEN_ZOOM_OFFSET = degToRad(12);
+    // - ouverture: zoom à 0 = caméra très large dès le premier affichage
+    // - navigation: petite poussée vers le hotspot uniquement pendant le changement de scène
+    // - nouvelle scène: revient toujours au zoom 0 pour laisser l'utilisateur zoomer lui-même
+    const INITIAL_OPEN_ZOOM_OFFSET = degToRad(0);
     const NAVIGATION_ZOOM_IN_OFFSET_1 = degToRad(7);
     const NAVIGATION_ZOOM_IN_OFFSET_2 = degToRad(13);
-    const SCENE_INCOMING_DEZOOM_OFFSET = degToRad(9);
+    const SCENE_INCOMING_DEZOOM_OFFSET = degToRad(0);
 
     const MOBILE_EXTRA_WIDE_OFFSET = degToRad(0);
     const MOBILE_PINCH_SENSITIVITY = 2.15;
@@ -3932,16 +3936,13 @@ body {
     }
 
     function getSceneBaseFov(scene) {
-        return clamp(degToRad(scene?.hfov_default || 100), MIN_FOV, MAX_FOV);
+        // On ignore hfov_default ici pour forcer toutes les scènes à démarrer sans zoom.
+        return ZERO_ZOOM_FOV;
     }
 
     function getSceneFinalFov(scene) {
-        const mobileBoost = isMobileViewport() ? MOBILE_EXTRA_WIDE_OFFSET : 0;
-        return clamp(
-            getSceneBaseFov(scene) + EXTRA_WIDE_OFFSET + mobileBoost,
-            MIN_FOV,
-            MAX_FOV
-        );
+        // Zoom initial = 0 : vue maximale, puis l'utilisateur zoome lui-même.
+        return clamp(ZERO_ZOOM_FOV, MIN_FOV, MAX_FOV);
     }
 
     function getCurrentView() {
@@ -4728,42 +4729,29 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
         if (!view || !scene) return;
 
         const finalFov = getSceneFinalFov(scene);
-
-        // Première scène: départ large puis zoom doux vers la vue finale.
-        const startFov = clamp(finalFov + INITIAL_OPEN_ZOOM_OFFSET, MIN_FOV, MAX_FOV);
-
         const finalYaw = degToRad(scene.yaw_default || 0);
         const finalPitch = degToRad(scene.pitch_default || 0);
 
-        previewViewer.classList.add("is-cinematic-transition", "transitioning", "is-opening");
+        // Démarrage direct à zoom 0.
+        // Pas de zoom automatique au chargement: l'utilisateur contrôle le zoom lui-même.
+        previewViewer.classList.add("is-opening");
 
         view.setParameters({
             yaw: finalYaw,
             pitch: finalPitch,
-            fov: startFov
+            fov: finalFov
         });
-
-        setTimeout(() => {
-            view.setParameters(
-                {
-                    yaw: finalYaw,
-                    pitch: finalPitch,
-                    fov: finalFov
-                },
-                { transitionDuration: 900 }
-            );
-            syncZoomButtonsState();
-        }, 80);
 
         setTimeout(() => {
             previewIntroOverlay?.classList.add("is-hidden");
             document.body.classList.add("preview-has-loaded");
-        }, 320);
+            syncZoomButtonsState();
+        }, 220);
 
         setTimeout(() => {
             previewViewer.classList.remove("is-cinematic-transition", "transitioning", "is-opening");
             syncZoomButtonsState();
-        }, 1080);
+        }, 520);
     }
 
     function cinematicSwitchScene(targetScene, options = {}) {
@@ -4798,7 +4786,7 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
         const endPitch = degToRad(targetScene.pitch_default || 0);
         const finalFov = getSceneFinalFov(targetScene);
 
-        // Nouvelle scène: commence un peu zoomée puis dézoome rapidement.
+        // Nouvelle scène: revient directement au zoom 0.
         const incomingStartFov = clamp(
             finalFov - SCENE_INCOMING_DEZOOM_OFFSET,
             MIN_FOV,
