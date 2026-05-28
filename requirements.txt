@@ -23,6 +23,7 @@ django-compressor
 # Background tasks
 celery>=5.4
 redis>=5.0
+numpy>=2.4.6
 
 # Database
 psycopg[binary]>=3.2

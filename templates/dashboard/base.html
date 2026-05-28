@@ -1,104 +1,296 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Dashboard{% endblock %}</title>
 
-    <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: "#eff6ff",
+                            100: "#dbeafe",
+                            500: "#2563eb",
+                            600: "#1d4ed8",
+                            700: "#1e40af",
+                            900: "#0f172a"
+                        }
+                    },
+                    boxShadow: {
+                        soft: "0 20px 60px rgba(15, 23, 42, 0.08)",
+                        card: "0 14px 40px rgba(15, 23, 42, 0.07)"
+                    }
+                }
+            }
+        }
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .app-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .app-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.45);
+            border-radius: 999px;
+        }
+
+        .app-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+    </style>
 
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <div class="dashboard-shell">
-        <aside class="dashboard-sidebar">
-            <div class="sidebar-brand">
-                <div class="brand-logo">V</div>
+
+<body class="h-full bg-slate-50 text-slate-900 antialiased">
+    <div class="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.10),transparent_32%),linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)]">
+
+        <!-- DESKTOP SIDEBAR -->
+        <aside class="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-slate-200/80 bg-white/85 backdrop-blur-xl lg:flex lg:flex-col">
+            <div class="flex h-20 items-center gap-3 border-b border-slate-200/80 px-6">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-400 text-lg font-black text-white shadow-lg shadow-blue-500/25">
+                    V
+                </div>
                 <div>
-                    <h2>Visite360</h2>
-                    <p>Studio Dashboard</p>
+                    <h2 class="text-lg font-black tracking-tight text-slate-950">Visite360</h2>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Studio Dashboard</p>
                 </div>
             </div>
 
-            <nav class="sidebar-nav">
-                {% url 'dashboard-organizations-list' as organizations_url %}
-                {% if organizations_url %}
-                    <a href="{{ organizations_url }}">Organizations</a>
-                {% endif %}
+            <div class="flex-1 overflow-y-auto px-4 py-5 app-scrollbar">
+                {% with current_url=request.resolver_match.url_name %}
+                <nav class="space-y-2">
 
-                {% if current_organization %}
-                    {% url 'dashboard-places-list' current_organization.slug as places_url %}
-                    {% if places_url %}
-                        <a href="{{ places_url }}">Places</a>
+                    {% url 'dashboard-organizations-list' as organizations_url %}
+                    {% if organizations_url %}
+                    <a href="{{ organizations_url }}"
+                       class="group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font800 transition
+                       {% if current_url == 'dashboard-organizations-list' %}
+                           bg-blue-600 text-white shadow-lg shadow-blue-500/20
+                       {% else %}
+                           text-slate-600 hover:bg-slate-100 hover:text-slate-950
+                       {% endif %}">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-xl
+                        {% if current_url == 'dashboard-organizations-list' %}bg-white/15{% else %}bg-slate-100 group-hover:bg-white{% endif %}">
+                            🏢
+                        </span>
+                        <span class="font-bold">Organizations</span>
+                    </a>
                     {% endif %}
 
-                    {% url 'dashboard-tours-list' current_organization.slug as tours_url %}
-                    {% if tours_url %}
-                        <a href="{{ tours_url }}" class="active">Tours</a>
+                    {% if current_organization %}
+                        {% url 'dashboard-places-list' current_organization.slug as places_url %}
+                        {% if places_url %}
+                        <a href="{{ places_url }}"
+                           class="group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition
+                           {% if current_url == 'dashboard-places-list' %}
+                               bg-blue-600 text-white shadow-lg shadow-blue-500/20
+                           {% else %}
+                               text-slate-600 hover:bg-slate-100 hover:text-slate-950
+                           {% endif %}">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-xl
+                            {% if current_url == 'dashboard-places-list' %}bg-white/15{% else %}bg-slate-100 group-hover:bg-white{% endif %}">
+                                📍
+                            </span>
+                            <span class="font-bold">Places</span>
+                        </a>
+                        {% endif %}
+
+                        {% url 'dashboard-tours-list' current_organization.slug as tours_url %}
+                        {% if tours_url %}
+                        <a href="{{ tours_url }}"
+                           class="group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition
+                           {% if current_url == 'dashboard-tours-list' or current_url == 'tour-builder' %}
+                               bg-blue-600 text-white shadow-lg shadow-blue-500/20
+                           {% else %}
+                               text-slate-600 hover:bg-slate-100 hover:text-slate-950
+                           {% endif %}">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-xl
+                            {% if current_url == 'dashboard-tours-list' or current_url == 'tour-builder' %}bg-white/15{% else %}bg-slate-100 group-hover:bg-white{% endif %}">
+                                🌐
+                            </span>
+                            <span class="font-bold">Tours</span>
+                        </a>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-            </nav>
+                </nav>
+                {% endwith %}
+            </div>
+
+            <div class="border-t border-slate-200/80 p-4">
+                <div class="rounded-3xl bg-slate-950 p-4 text-white shadow-soft">
+                    <p class="text-sm font-black">Visite virtuelle rapide</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-300">
+                        Gérez vos espaces, scènes 360, hotspots et visites depuis un seul studio.
+                    </p>
+                </div>
+            </div>
         </aside>
 
-        <div class="dashboard-main">
-            <header class="dashboard-topbar">
-                <div class="topbar-left">
-                    <button class="mobile-menu-btn" id="mobileMenuBtn" type="button">☰</button>
+        <!-- MOBILE TOPBAR -->
+        <div class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 px-4 py-3 backdrop-blur-xl lg:hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button
+                        type="button"
+                        id="mobileMenuBtn"
+                        class="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl font-black text-slate-700 shadow-sm">
+                        ☰
+                    </button>
 
                     <div>
-                        <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                        <h1 class="text-base font-black tracking-tight text-slate-950">
+                            {% block mobile_page_title %}{% block page_title %}Dashboard{% endblock %}{% endblock %}
+                        </h1>
                         {% if current_organization %}
-                            <p class="topbar-subtitle">
-                                Organization: <strong>{{ current_organization.name }}</strong>
+                            <p class="max-w-[220px] truncate text-xs font-semibold text-slate-500">
+                                {{ current_organization.name }}
                             </p>
                         {% endif %}
                     </div>
                 </div>
 
-                <div class="topbar-right">
+                <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-400 text-sm font-black text-white">
+                    V
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN -->
+        <div class="lg:pl-72">
+            <header class="hidden h-20 items-center justify-between border-b border-slate-200/80 bg-white/75 px-8 backdrop-blur-xl lg:flex">
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-slate-950">
+                        {% block desktop_page_title %}{% block page_title_desktop %}{% endblock %}{% endblock %}
+                    </h1>
+
+                    {% if current_organization %}
+                        <p class="mt-1 text-sm font-medium text-slate-500">
+                            Organization:
+                            <span class="font800 text-slate-800">{{ current_organization.name }}</span>
+                        </p>
+                    {% else %}
+                        <p class="mt-1 text-sm font-medium text-slate-500">
+                            Manage your virtual tour workspace.
+                        </p>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-center gap-3">
                     {% if request.user.is_authenticated %}
-                        <span class="user-badge">{{ request.user.email }}</span>
+                        <div class="hidden text-right sm:block">
+                            <p class="text-sm font-bold text-slate-800">{{ request.user.email }}</p>
+                            <p class="text-xs font-semibold text-slate-400">Connected account</p>
+                        </div>
+                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sm font-black text-white shadow-lg shadow-slate-900/15">
+                            {{ request.user.email|slice:":1"|upper }}
+                        </div>
                     {% endif %}
                 </div>
             </header>
 
-            <main class="dashboard-content">
+            <main class="px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
                 {% block content %}{% endblock %}
             </main>
         </div>
     </div>
 
-    <div class="mobile-drawer-overlay" id="mobileDrawerOverlay"></div>
+    <!-- MOBILE DRAWER -->
+    <div
+        id="mobileDrawerOverlay"
+        class="fixed inset-0 z-40 hidden bg-slate-950/45 backdrop-blur-sm lg:hidden">
+    </div>
 
-    <aside class="mobile-drawer" id="mobileDrawer">
-        <div class="mobile-drawer-header">
-            <h3>Visite360</h3>
-            <button type="button" id="closeMobileDrawer">&times;</button>
+    <aside
+        id="mobileDrawer"
+        class="fixed inset-y-0 left-0 z-50 w-[86%] max-w-sm -translate-x-full border-r border-slate-200 bg-white shadow-2xl transition-transform duration-300 lg:hidden">
+
+        <div class="flex h-20 items-center justify-between border-b border-slate-200 px-5">
+            <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-400 font-black text-white">
+                    V
+                </div>
+                <div>
+                    <h3 class="font-black text-slate-950">Visite360</h3>
+                    <p class="text-xs font-semibold text-slate-400">Studio Dashboard</p>
+                </div>
+            </div>
+
+            <button
+                type="button"
+                id="closeMobileDrawer"
+                class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-2xl font-bold text-slate-600">
+                &times;
+            </button>
         </div>
 
-        <nav class="mobile-drawer-nav">
+        {% with current_url=request.resolver_match.url_name %}
+        <nav class="space-y-2 p-4">
             {% url 'dashboard-organizations-list' as organizations_url %}
             {% if organizations_url %}
-                <a href="{{ organizations_url }}">Organizations</a>
+            <a href="{{ organizations_url }}"
+               class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold
+               {% if current_url == 'dashboard-organizations-list' %}
+                   bg-blue-600 text-white
+               {% else %}
+                   bg-slate-50 text-slate-700
+               {% endif %}">
+                <span>🏢</span>
+                Organizations
+            </a>
             {% endif %}
 
             {% if current_organization %}
                 {% url 'dashboard-places-list' current_organization.slug as places_url %}
                 {% if places_url %}
-                    <a href="{{ places_url }}">Places</a>
+                <a href="{{ places_url }}"
+                   class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold
+                   {% if current_url == 'dashboard-places-list' %}
+                       bg-blue-600 text-white
+                   {% else %}
+                       bg-slate-50 text-slate-700
+                   {% endif %}">
+                    <span>📍</span>
+                    Places
+                </a>
                 {% endif %}
 
                 {% url 'dashboard-tours-list' current_organization.slug as tours_url %}
                 {% if tours_url %}
-                    <a href="{{ tours_url }}">Tours</a>
+                <a href="{{ tours_url }}"
+                   class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold
+                   {% if current_url == 'dashboard-tours-list' or current_url == 'tour-builder' %}
+                       bg-blue-600 text-white
+                   {% else %}
+                       bg-slate-50 text-slate-700
+                   {% endif %}">
+                    <span>🌐</span>
+                    Tours
+                </a>
                 {% endif %}
             {% endif %}
         </nav>
+        {% endwith %}
     </aside>
-
-    
 
     {% if messages %}
     <script>
@@ -110,15 +302,44 @@
                     icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}success{% endif %}",
                     title: "{{ message|escapejs }}",
                     showConfirmButton: false,
-                    timer: 2500,
+                    timer: 2600,
                     timerProgressBar: true,
-                    background: "#131b2b",
-                    color: "#eef2f8"
+                    background: "#0f172a",
+                    color: "#f8fafc"
                 });
             {% endfor %}
         });
     </script>
     {% endif %}
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const openBtn = document.getElementById("mobileMenuBtn");
+            const closeBtn = document.getElementById("closeMobileDrawer");
+            const overlay = document.getElementById("mobileDrawerOverlay");
+            const drawer = document.getElementById("mobileDrawer");
+
+            function openDrawer() {
+                if (!overlay || !drawer) return;
+                overlay.classList.remove("hidden");
+                setTimeout(() => {
+                    drawer.classList.remove("-translate-x-full");
+                }, 10);
+            }
+
+            function closeDrawer() {
+                if (!overlay || !drawer) return;
+                drawer.classList.add("-translate-x-full");
+                setTimeout(() => {
+                    overlay.classList.add("hidden");
+                }, 250);
+            }
+
+            if (openBtn) openBtn.addEventListener("click", openDrawer);
+            if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
+            if (overlay) overlay.addEventListener("click", closeDrawer);
+        });
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

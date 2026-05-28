@@ -1,27 +1,16 @@
-from django.views.generic import TemplateView
-from django.db.models import Count, Q, Prefetch
 from urllib.parse import unquote
 
-from django.urls import reverse
+from django.conf import settings
 from django.contrib import messages
-from django.shortcuts import redirect
+from django.db.models import Count, Q, Prefetch
+from django.shortcuts import render
+from django.urls import reverse, reverse_lazy
+from django.views.generic import TemplateView, FormView
 
 from apps.tours.models import Hotspot, Tour, Scene360
 from apps.places.models import Place
 from apps.organizations.models import Organization
-from django.conf import settings
-from django.db.models import Prefetch
-from django.shortcuts import render
-from django.urls import reverse_lazy
-from django.views.generic import TemplateView, FormView
 from .forms import ContactLeadForm
-
-
-
-
-
-
-
 
 
 class PublicHomeView(TemplateView):
@@ -38,8 +27,6 @@ class PublicHomeView(TemplateView):
                 value = str(value)
 
         url = unquote(str(value)).strip()
-
-        # Corrige certains anciens chemins mal encodés
         url = (
             url.replace("\\u002D", "-")
                .replace("u002D", "-")
@@ -60,26 +47,55 @@ class PublicHomeView(TemplateView):
         except Exception:
             return str(file_field)
 
+    def _get_scene_queryset(self):
+        """
+        Home publique : on ne charge que les scènes utiles et publiques.
+        On garde les images lourdes disponibles dans le contexte, mais l'affichage
+        de la home utilise d'abord les images légères.
+        """
+        queryset = Scene360.objects.order_by("order", "id").only(
+            "id",
+            "tour_id",
+            "title",
+            "order",
+            "status",
+            "is_public",
+            "image_360",
+            "image_360_mobile",
+            "thumbnail_image",
+        )
+
+        # Si tu veux montrer seulement les scènes visibles dans la partie publique.
+        queryset = queryset.filter(is_public=True)
+
+        # Évite les scènes explicitement inactives sur la home publique.
+        if hasattr(Scene360, "Status") and hasattr(Scene360.Status, "INACTIVE"):
+            queryset = queryset.exclude(status=Scene360.Status.INACTIVE)
+
+        return queryset
+
     def _decorate_tour_media(self, tour):
-        # Tour thumbnail
         tour.safe_thumbnail_image_url = self._normalize_media_url(
             getattr(tour, "thumbnail_image_url", "") or ""
         )
+        tour.safe_thumbnail_image_mobile_url = self._normalize_media_url(
+            getattr(tour, "thumbnail_image_mobile_url", "") or ""
+        )
 
-        # Place cover
         place_cover = ""
         if getattr(tour, "place", None) and getattr(tour.place, "cover_image", None):
             place_cover = self._get_file_url(tour.place.cover_image)
-
         tour.safe_place_cover_image_url = self._normalize_media_url(place_cover)
 
-        # Scenes
         for scene in getattr(tour, "ordered_scenes", []):
             scene.safe_image_360_url = self._normalize_media_url(
                 getattr(scene, "image_360_url", "") or ""
             )
             scene.safe_image_360_mobile_url = self._normalize_media_url(
                 getattr(scene, "image_360_mobile_url", "") or ""
+            )
+            scene.safe_image_360_preview_url = self._normalize_media_url(
+                getattr(scene, "image_360_preview_url", "") or ""
             )
             scene.safe_thumbnail_url = self._normalize_media_url(
                 getattr(scene, "thumbnail_url", "") or ""
@@ -88,40 +104,122 @@ class PublicHomeView(TemplateView):
         return tour
 
     def _get_tour_preview_images(self, tour):
+        """
+        Règle finale :
+        - home hero/card = image légère d'abord : preview/thumbnail/cover.
+        - viewer = image 360 complète selon l'appareil.
+        - mobile = priorité à image légère, puis image_360_mobile seulement si besoin.
+        """
+        empty = {
+            "hero": "",
+            "hero_mobile": "",
+            "card": "",
+            "card_mobile": "",
+            "viewer_desktop": "",
+            "viewer_mobile": "",
+            "thumbnail": "",
+            "placeholder": "",
+        }
         if not tour:
-            return {
-                "desktop": "",
-                "mobile": "",
-                "thumbnail": "",
-            }
+            return empty
 
         first_scene = tour.ordered_scenes[0] if getattr(tour, "ordered_scenes", []) else None
 
-        desktop_url = ""
-        mobile_url = ""
-        thumbnail_url = ""
+        scene_full = ""
+        scene_mobile = ""
+        scene_preview = ""
+        scene_thumb = ""
 
         if first_scene:
-            desktop_url = getattr(first_scene, "safe_image_360_url", "") or ""
-            mobile_url = getattr(first_scene, "safe_image_360_mobile_url", "") or ""
-            thumbnail_url = getattr(first_scene, "safe_thumbnail_url", "") or ""
+            scene_full = getattr(first_scene, "safe_image_360_url", "") or ""
+            scene_mobile = getattr(first_scene, "safe_image_360_mobile_url", "") or ""
+            scene_preview = getattr(first_scene, "safe_image_360_preview_url", "") or ""
+            scene_thumb = getattr(first_scene, "safe_thumbnail_url", "") or ""
 
-        if not desktop_url:
-            desktop_url = getattr(tour, "safe_thumbnail_image_url", "") or ""
+        tour_thumb = getattr(tour, "safe_thumbnail_image_url", "") or ""
+        tour_thumb_mobile = getattr(tour, "safe_thumbnail_image_mobile_url", "") or ""
+        place_cover = getattr(tour, "safe_place_cover_image_url", "") or ""
 
-        if not thumbnail_url:
-            thumbnail_url = getattr(tour, "safe_thumbnail_image_url", "") or ""
+        # Très léger : affichage immédiat après le chargement de la page.
+        placeholder = scene_thumb or tour_thumb_mobile or tour_thumb or place_cover or scene_preview or scene_mobile or scene_full
 
-        if not desktop_url:
-            desktop_url = getattr(tour, "safe_place_cover_image_url", "") or ""
+        # Home desktop : ne jamais commencer par l'image panoramique complète.
+        lightweight_desktop = scene_preview or scene_thumb or tour_thumb or place_cover or scene_mobile or scene_full
 
-        if not thumbnail_url:
-            thumbnail_url = getattr(tour, "safe_place_cover_image_url", "") or desktop_url or ""
+        # Home mobile : thumbnail/preview d'abord, image_360_mobile seulement en fallback.
+        lightweight_mobile = scene_thumb or scene_preview or tour_thumb_mobile or tour_thumb or place_cover or scene_mobile or scene_full
+
+        # Viewer : vraie image 360, choisie selon l'appareil.
+        viewer_desktop = scene_full or scene_mobile or scene_preview or scene_thumb or tour_thumb or place_cover
+        viewer_mobile = scene_mobile or scene_full or scene_preview or scene_thumb or tour_thumb_mobile or tour_thumb or place_cover
+
+        thumbnail = scene_thumb or scene_preview or tour_thumb_mobile or tour_thumb or place_cover or lightweight_mobile or viewer_desktop
 
         return {
-            "desktop": self._normalize_media_url(desktop_url),
-            "mobile": self._normalize_media_url(mobile_url),
-            "thumbnail": self._normalize_media_url(thumbnail_url),
+            "hero": self._normalize_media_url(lightweight_desktop),
+            "hero_mobile": self._normalize_media_url(lightweight_mobile),
+            "card": self._normalize_media_url(lightweight_desktop),
+            "card_mobile": self._normalize_media_url(lightweight_mobile),
+            "viewer_desktop": self._normalize_media_url(viewer_desktop),
+            "viewer_mobile": self._normalize_media_url(viewer_mobile),
+            "thumbnail": self._normalize_media_url(thumbnail),
+            "placeholder": self._normalize_media_url(placeholder),
+        }
+
+    def _build_catalog_item(self, tour):
+        preview_url = reverse(
+            "tour-preview-public",
+            kwargs={
+                "organization_slug": tour.organization.slug,
+                "tour_id": tour.id,
+            },
+        )
+        preview_images = self._get_tour_preview_images(tour)
+
+        return {
+            "id": tour.id,
+            "title": tour.title or "",
+            "description": tour.description or "",
+            "organization": tour.organization.name if tour.organization else "",
+            "organization_slug": tour.organization.slug if tour.organization else "",
+            "place_name": tour.place.name if tour.place else "",
+            "category": tour.place.category if tour.place else "",
+            "category_label": tour.place.get_category_display() if tour.place else "",
+            "city": tour.place.city if tour.place else "",
+            "country": tour.place.country if tour.place else "",
+            "scene_count": tour.scene_count or 0,
+            "photo_count": tour.photo_count or 0,
+            "view_count": tour.view_count or 0,
+            "rating": float(tour.rating) if tour.rating is not None else None,
+            "price": str(tour.display_price) if tour.display_price is not None else "",
+            "is_featured": bool(tour.is_featured),
+
+            # Affichage immédiat : images légères seulement.
+            "image_url": preview_images["card"],
+            "image_mobile_url": preview_images["card_mobile"],
+            "thumbnail_url": preview_images["thumbnail"],
+            "placeholder_url": preview_images["placeholder"],
+
+            # Viewer : utilisé seulement au clic/ouverture du panorama.
+            "viewer_desktop_url": preview_images["viewer_desktop"],
+            "viewer_mobile_url": preview_images["viewer_mobile"],
+
+            "preview_url": preview_url,
+            "created_at": tour.created_at.isoformat() if tour.created_at else "",
+            "search_blob": " ".join(
+                filter(
+                    None,
+                    [
+                        tour.title,
+                        tour.description,
+                        tour.organization.name if tour.organization else "",
+                        tour.place.name if tour.place else "",
+                        tour.place.city if tour.place else "",
+                        tour.place.country if tour.place else "",
+                        tour.guide_name or "",
+                    ],
+                )
+            ).lower(),
         }
 
     def get_context_data(self, **kwargs):
@@ -136,7 +234,7 @@ class PublicHomeView(TemplateView):
             .prefetch_related(
                 Prefetch(
                     "scenes",
-                    queryset=Scene360.objects.order_by("order", "id"),
+                    queryset=self._get_scene_queryset(),
                     to_attr="ordered_scenes",
                 )
             )
@@ -146,7 +244,7 @@ class PublicHomeView(TemplateView):
                 place__status=Place.Status.PUBLISHED,
             )
             .annotate(
-                scene_count=Count("scenes", distinct=True),
+                scene_count=Count("scenes", filter=Q(scenes__is_public=True), distinct=True),
                 photo_count=Count("photos", distinct=True),
             )
             .order_by("-is_featured", "-created_at")
@@ -170,7 +268,6 @@ class PublicHomeView(TemplateView):
             published_tours_qs = published_tours_qs.filter(place__city__iexact=city)
 
         published_tours = list(published_tours_qs)
-
         for tour in published_tours:
             self._decorate_tour_media(tour)
 
@@ -227,64 +324,17 @@ class PublicHomeView(TemplateView):
         hero_tour = featured_tours[0] if featured_tours else (latest_tours[0] if latest_tours else None)
         hero_preview_images = self._get_tour_preview_images(hero_tour)
 
-        catalog_tours = []
-        for tour in published_tours:
-            preview_url = reverse(
-                "tour-preview-public",
-                kwargs={
-                    "organization_slug": tour.organization.slug,
-                    "tour_id": tour.id,
-                },
-            )
-
-            preview_images = self._get_tour_preview_images(tour)
-
-            catalog_tours.append(
-                {
-                    "id": tour.id,
-                    "title": tour.title or "",
-                    "description": tour.description or "",
-                    "organization": tour.organization.name if tour.organization else "",
-                    "organization_slug": tour.organization.slug if tour.organization else "",
-                    "place_name": tour.place.name if tour.place else "",
-                    "category": tour.place.category if tour.place else "",
-                    "category_label": tour.place.get_category_display() if tour.place else "",
-                    "city": tour.place.city if tour.place else "",
-                    "country": tour.place.country if tour.place else "",
-                    "scene_count": tour.scene_count or 0,
-                    "photo_count": tour.photo_count or 0,
-                    "view_count": tour.view_count or 0,
-                    "rating": float(tour.rating) if tour.rating is not None else None,
-                    "price": str(tour.display_price) if tour.display_price is not None else "",
-                    "is_featured": bool(tour.is_featured),
-                    "image_url": preview_images["desktop"],
-                    "image_mobile_url": preview_images["mobile"],
-                    "thumbnail_url": preview_images["thumbnail"],
-                    "preview_url": preview_url,
-                    "created_at": tour.created_at.isoformat() if tour.created_at else "",
-                    "search_blob": " ".join(
-                        filter(
-                            None,
-                            [
-                                tour.title,
-                                tour.description,
-                                tour.organization.name if tour.organization else "",
-                                tour.place.name if tour.place else "",
-                                tour.place.city if tour.place else "",
-                                tour.place.country if tour.place else "",
-                                tour.guide_name or "",
-                            ],
-                        )
-                    ).lower(),
-                }
-            )
+        catalog_tours = [self._build_catalog_item(tour) for tour in published_tours]
 
         context.update(
             {
                 "hero_tour": hero_tour,
-                "hero_scene_url": hero_preview_images["desktop"],
-                "hero_scene_mobile_url": hero_preview_images["mobile"],
+                "hero_scene_url": hero_preview_images["hero"],
+                "hero_scene_mobile_url": hero_preview_images["hero_mobile"],
                 "hero_scene_thumbnail_url": hero_preview_images["thumbnail"],
+                "hero_scene_placeholder_url": hero_preview_images["placeholder"],
+                "hero_scene_viewer_url": hero_preview_images["viewer_desktop"],
+                "hero_scene_viewer_mobile_url": hero_preview_images["viewer_mobile"],
                 "featured_tours": featured_tours,
                 "latest_tours": latest_tours,
                 "top_places": top_places,
@@ -308,8 +358,7 @@ class PublicHomeView(TemplateView):
                 },
             }
         )
-        return context 
-
+        return context
 
 
 def public_tours_map_view(request):
@@ -317,16 +366,31 @@ def public_tours_map_view(request):
     selected_category = (request.GET.get("category") or "").strip()
     selected_city = (request.GET.get("city") or "").strip()
 
-    scene_qs = Scene360.objects.order_by("order").prefetch_related(
-        Prefetch(
-            "hotspots",
-            queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
+    scene_qs = (
+        Scene360.objects.filter(is_public=True)
+        .exclude(status=getattr(Scene360.Status, "INACTIVE", "inactive"))
+        .order_by("order")
+        .only(
+            "id",
+            "tour_id",
+            "title",
+            "order",
+            "status",
+            "is_public",
+            "image_360_mobile",
+            "thumbnail_image",
+        )
+        .prefetch_related(
+            Prefetch(
+                "hotspots",
+                queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
+            )
         )
     )
 
     tours_qs = (
         Tour.objects.select_related("organization", "place")
-        .prefetch_related(Prefetch("scenes", queryset=scene_qs))
+        .prefetch_related(Prefetch("scenes", queryset=scene_qs, to_attr="ordered_scenes"))
         .filter(
             status=Tour.Status.PUBLISHED,
             organization__status=Organization.Status.ACTIVE,
@@ -340,7 +404,6 @@ def public_tours_map_view(request):
 
     for tour in tours_qs:
         place = tour.place
-
         lat = tour.lat if tour.lat is not None else place.latitude
         lng = tour.lng if tour.lng is not None else place.longitude
 
@@ -350,13 +413,21 @@ def public_tours_map_view(request):
         lat = float(lat)
         lng = float(lng)
 
-        scenes = list(tour.scenes.all())
+        scenes = list(getattr(tour, "ordered_scenes", []))
         first_scene = scenes[0] if scenes else None
+
+        first_scene_thumb = ""
+        if first_scene:
+            first_scene_thumb = self_url = ""
+            try:
+                first_scene_thumb = first_scene.thumbnail_url or ""
+            except Exception:
+                first_scene_thumb = ""
 
         cover_image = (
             tour.thumbnail_image_url
-            or (place.cover_image if place.cover_image else "")
-            or (first_scene.thumbnail_url if first_scene and first_scene.thumbnail_url else "")
+            or (place.cover_image.url if getattr(place, "cover_image", None) else "")
+            or first_scene_thumb
             or ""
         )
 
@@ -371,7 +442,6 @@ def public_tours_map_view(request):
                 hotspot_count += 1
                 payload = hotspot.payload or {}
                 content = payload.get("content", {}) if isinstance(payload, dict) else {}
-
                 hotspot_keywords.extend(
                     [
                         hotspot.label or "",
@@ -457,18 +527,12 @@ def public_tours_map_view(request):
     return render(request, "public/public_tours_map.html", context)
 
 
-
-from django.views.generic import TemplateView
-
-
 class PublicAboutView(TemplateView):
     template_name = "public/about.html"
 
 
 class PublicServicesView(TemplateView):
     template_name = "public/services.html"
-    
-
 
 
 class PublicContactView(FormView):
@@ -484,33 +548,19 @@ class PublicContactView(FormView):
     def form_invalid(self, form):
         messages.error(self.request, "Please correct the form errors and try again.")
         return self.render_to_response(self.get_context_data(form=form))
-    
-    
-    
-
-
-
-
-
 
 
 def custom_bad_request(request, exception):
-    return render(request, 'errors/400.html', status=400)
+    return render(request, "errors/400.html", status=400)
 
 
 def custom_permission_denied(request, exception):
-    return render(request, 'errors/403.html', status=403)
+    return render(request, "errors/403.html", status=403)
 
 
 def custom_page_not_found(request, exception):
-    return render(request, 'errors/404.html', status=404)
+    return render(request, "errors/404.html", status=404)
 
 
 def custom_server_error(request):
-    return render(request, 'errors/500.html', status=500)
-
-
-
-    
-
-
+    return render(request, "errors/500.html", status=500)

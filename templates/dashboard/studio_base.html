@@ -1,20 +1,393 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Studio Builder{% endblock %}</title>
 
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: "#eff6ff",
+                            100: "#dbeafe",
+                            500: "#2563eb",
+                            600: "#1d4ed8",
+                            700: "#1e40af",
+                            900: "#0f172a"
+                        }
+                    },
+                    boxShadow: {
+                        soft: "0 20px 60px rgba(15, 23, 42, 0.12)",
+                        panel: "0 14px 40px rgba(15, 23, 42, 0.10)"
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Ancien CSS builder conservé pour ne pas casser les classes/JS existants -->
     <link rel="stylesheet" href="{% static 'dashboard/css/studio_builder.css' %}">
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #020617;
+            color: #0f172a;
+        }
+
+        .studio-shell {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.20), transparent 28%),
+                radial-gradient(circle at top right, rgba(6, 182, 212, 0.14), transparent 26%),
+                #020617;
+        }
+
+        .studio-topbar {
+            height: 72px;
+            flex: 0 0 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 0 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(18px);
+            color: white;
+            z-index: 50;
+        }
+
+        .studio-topbar-left,
+        .studio-topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .studio-topbar-left {
+            flex: 1;
+        }
+
+        .studio-topbar-right {
+            flex-shrink: 0;
+        }
+
+        .icon-btn {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 20px;
+            font-weight: 900;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateY(-1px);
+        }
+
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 42px;
+            padding: 0 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #e2e8f0;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 900;
+            transition: all 0.2s ease;
+        }
+
+        .brand-link:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .divider {
+            color: rgba(226, 232, 240, 0.35);
+            font-weight: 900;
+        }
+
+        .tour-title-editor {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .project-name {
+            display: block;
+            max-width: 520px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: white;
+            font-size: 15px;
+            font-weight: 950;
+            letter-spacing: -0.01em;
+            cursor: pointer;
+        }
+
+        .project-name::after {
+            content: "✎";
+            margin-left: 8px;
+            font-size: 11px;
+            color: rgba(226, 232, 240, 0.45);
+        }
+
+        .project-name-input {
+            width: min(520px, 100%);
+            height: 42px;
+            border-radius: 16px;
+            border: 1px solid rgba(59, 130, 246, 0.45);
+            background: rgba(255, 255, 255, 0.96);
+            color: #0f172a;
+            padding: 0 14px;
+            font-size: 14px;
+            font-weight: 900;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
+        }
+
+        .tour-title-saving {
+            flex-shrink: 0;
+            border-radius: 999px;
+            background: rgba(59, 130, 246, 0.16);
+            color: #bfdbfe;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .top-action {
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            padding: 0 14px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(255, 255, 255, 0.10);
+            color: white;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 950;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .top-action:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.16);
+        }
+
+        .top-action.ghost {
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .top-action.primary {
+            border-color: rgba(37, 99, 235, 0.60);
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.28);
+        }
+
+        .top-action.primary:hover {
+            background: #1d4ed8;
+        }
+
+        .studio-body {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 340px minmax(0, 1fr) 360px;
+            background: #020617;
+            overflow: hidden;
+        }
+
+        .studio-leftpanel {
+            min-height: 0;
+            overflow: hidden;
+            border-right: 1px solid rgba(255, 255, 255, 0.10);
+            background: #f8fafc;
+        }
+
+        .studio-main {
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            background: #020617;
+        }
+
+        .studio-rightpanel {
+            min-height: 0;
+            overflow: hidden;
+            border-left: 1px solid rgba(255, 255, 255, 0.10);
+            background: #f8fafc;
+        }
+
+        .studio-mobile-overlay {
+            display: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 1280px) {
+            .studio-body {
+                grid-template-columns: 320px minmax(0, 1fr);
+            }
+
+            .studio-rightpanel {
+                position: fixed;
+                top: 72px;
+                right: 0;
+                bottom: 0;
+                width: min(380px, 90vw);
+                z-index: 45;
+                transform: translateX(100%);
+                transition: transform 0.28s ease;
+                box-shadow: -20px 0 60px rgba(15, 23, 42, 0.22);
+            }
+
+            body.right-panel-open .studio-rightpanel {
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .studio-topbar {
+                height: auto;
+                min-height: 72px;
+                padding: 10px 12px;
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .studio-topbar-left,
+            .studio-topbar-right {
+                width: 100%;
+            }
+
+            .studio-topbar-right {
+                overflow-x: auto;
+                padding-bottom: 2px;
+            }
+
+            .studio-topbar-right::-webkit-scrollbar {
+                display: none;
+            }
+
+            .project-name {
+                max-width: calc(100vw - 170px);
+            }
+
+            .studio-body {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .studio-leftpanel {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: min(360px, 88vw);
+                z-index: 60;
+                transform: translateX(-100%);
+                transition: transform 0.28s ease;
+                box-shadow: 20px 0 60px rgba(15, 23, 42, 0.24);
+            }
+
+            body.left-panel-open .studio-leftpanel {
+                transform: translateX(0);
+            }
+
+            .studio-rightpanel {
+                top: 0;
+                z-index: 60;
+            }
+
+            .studio-mobile-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 55;
+                display: none;
+                background: rgba(15, 23, 42, 0.55);
+                backdrop-filter: blur(6px);
+            }
+
+            body.left-panel-open .studio-mobile-overlay,
+            body.right-panel-open .studio-mobile-overlay {
+                display: block;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .brand-link,
+            .divider {
+                display: none;
+            }
+
+            .top-action {
+                height: 38px;
+                padding: 0 12px;
+                font-size: 11px;
+            }
+
+            .project-name {
+                font-size: 13px;
+                max-width: calc(100vw - 92px);
+            }
+        }
+    </style>
+
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     <div class="studio-shell">
+
+        <!-- TOP BAR -->
         <header class="studio-topbar">
+
             <div class="studio-topbar-left">
-                <button class="icon-btn" type="button">☰</button>
-                <a href="#" class="brand-link">Projects</a>
+                <button class="icon-btn" type="button" id="studioLeftPanelToggle" title="Menu">
+                    ☰
+                </button>
+
+                <a href="{% url 'dashboard-organizations-list' %}" class="brand-link">
+                    Projects
+                </a>
+
                 <span class="divider">|</span>
 
                 <div class="tour-title-editor">
@@ -45,6 +418,7 @@
                     <a class="top-action ghost" href="{% url 'dashboard-places-list' current_organization.slug %}">
                         Places
                     </a>
+
                     <a class="top-action ghost" href="{% url 'dashboard-tours-list' current_organization.slug %}">
                         Tours
                     </a>
@@ -56,11 +430,22 @@
                     </a>
                 {% endif %}
 
-                <button class="top-action primary" type="button">Share</button>
+                <button class="top-action ghost" type="button" id="studioRightPanelToggle">
+                    Properties
+                </button>
+
+                <button class="top-action primary" type="button">
+                    Share
+                </button>
             </div>
         </header>
 
+        <!-- MOBILE OVERLAY -->
+        <div class="studio-mobile-overlay" id="studioMobileOverlay"></div>
+
+        <!-- BODY -->
         <div class="studio-body">
+
             <aside class="studio-leftpanel">
                 {% block left_panel %}{% endblock %}
             </aside>
@@ -72,8 +457,47 @@
             {% block right_panel %}
             <aside class="studio-rightpanel"></aside>
             {% endblock %}
+
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const body = document.body;
+            const leftToggle = document.getElementById("studioLeftPanelToggle");
+            const rightToggle = document.getElementById("studioRightPanelToggle");
+            const overlay = document.getElementById("studioMobileOverlay");
+
+            function closePanels() {
+                body.classList.remove("left-panel-open");
+                body.classList.remove("right-panel-open");
+            }
+
+            if (leftToggle) {
+                leftToggle.addEventListener("click", function () {
+                    body.classList.toggle("left-panel-open");
+                    body.classList.remove("right-panel-open");
+                });
+            }
+
+            if (rightToggle) {
+                rightToggle.addEventListener("click", function () {
+                    body.classList.toggle("right-panel-open");
+                    body.classList.remove("left-panel-open");
+                });
+            }
+
+            if (overlay) {
+                overlay.addEventListener("click", closePanels);
+            }
+
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "Escape") {
+                    closePanels();
+                }
+            });
+        });
+    </script>
 
     {% block page_scripts %}{% endblock %}
 </body>

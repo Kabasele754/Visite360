@@ -3,11 +3,813 @@
 {% block title %}Tours{% endblock %}
 {% block page_title %}Tours{% endblock %}
 
+{% block extra_css %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    studio: {
+                        950: "#020617",
+                        900: "#0f172a",
+                        800: "#1e293b",
+                        700: "#334155",
+                    },
+                    brand: {
+                        50: "#eef6ff",
+                        100: "#dbeafe",
+                        500: "#3b82f6",
+                        600: "#2563eb",
+                        700: "#1d4ed8",
+                    }
+                },
+                boxShadow: {
+                    soft: "0 18px 55px rgba(15, 23, 42, 0.08)",
+                    glass: "0 24px 70px rgba(15, 23, 42, 0.14)",
+                },
+                borderRadius: {
+                    "3xl": "1.5rem",
+                    "4xl": "2rem",
+                }
+            }
+        }
+    }
+</script>
+
+<style>
+    /*
+      Clean Tailwind-like dashboard skin.
+      This keeps your existing IDs/classes so the current JS continues to work.
+    */
+    body {
+        background:
+            radial-gradient(circle at top left, rgba(59, 130, 246, .10), transparent 32rem),
+            radial-gradient(circle at top right, rgba(14, 165, 233, .10), transparent 30rem),
+            #f8fafc;
+    }
+
+    .page-hero {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+        padding: 1.35rem;
+        border: 1px solid rgba(226, 232, 240, .9);
+        border-radius: 1.5rem;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,.94), rgba(248,250,252,.82)),
+            radial-gradient(circle at 8% 0%, rgba(59,130,246,.12), transparent 24rem);
+        box-shadow: 0 18px 55px rgba(15, 23, 42, .08);
+    }
+
+    .page-heading {
+        margin: 0;
+        color: #0f172a;
+        font-size: clamp(1.55rem, 3vw, 2.15rem);
+        line-height: 1.05;
+        font-weight: 900;
+        letter-spacing: -0.045em;
+    }
+
+    .page-text {
+        margin-top: .45rem;
+        color: #64748b;
+        font-size: .95rem;
+        line-height: 1.55;
+    }
+
+    .page-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: .6rem;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        min-height: 2.7rem;
+        padding: .72rem 1rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: .88rem;
+        font-weight: 800;
+        line-height: 1;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
+        white-space: nowrap;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .btn-primary {
+        color: #fff;
+        background: linear-gradient(135deg, #2563eb, #0ea5e9);
+        box-shadow: 0 14px 28px rgba(37, 99, 235, .24);
+    }
+
+    .btn-primary:hover {
+        box-shadow: 0 18px 34px rgba(37, 99, 235, .30);
+    }
+
+    .btn-secondary {
+        color: #0f172a;
+        background: rgba(255,255,255,.88);
+        border-color: rgba(203, 213, 225, .85);
+        box-shadow: 0 10px 24px rgba(15,23,42,.06);
+    }
+
+    .btn-secondary:hover {
+        background: #fff;
+        border-color: rgba(148, 163, 184, .85);
+    }
+
+    .btn-danger {
+        color: #fff;
+        background: linear-gradient(135deg, #dc2626, #f97316);
+        box-shadow: 0 14px 28px rgba(220, 38, 38, .18);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .9rem;
+        margin-bottom: 1rem;
+    }
+
+    .stats-card {
+        position: relative;
+        overflow: hidden;
+        padding: 1rem;
+        border: 1px solid rgba(226, 232, 240, .9);
+        border-radius: 1.25rem;
+        background: rgba(255,255,255,.86);
+        box-shadow: 0 14px 40px rgba(15,23,42,.06);
+    }
+
+    .stats-card::after {
+        content: "";
+        position: absolute;
+        right: -.9rem;
+        top: -.9rem;
+        width: 4.5rem;
+        height: 4.5rem;
+        border-radius: 999px;
+        background: rgba(59,130,246,.10);
+    }
+
+    .stats-label {
+        display: block;
+        color: #64748b;
+        font-size: .76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }
+
+    .stats-value {
+        display: block;
+        margin-top: .4rem;
+        color: #0f172a;
+        font-size: 1.55rem;
+        font-weight: 950;
+        letter-spacing: -.04em;
+    }
+
+    .card {
+        border: 1px solid rgba(226, 232, 240, .9);
+        border-radius: 1.5rem;
+        background: rgba(255,255,255,.90);
+        box-shadow: 0 18px 55px rgba(15,23,42,.07);
+    }
+
+    .filter-card {
+        padding: .95rem;
+        margin-bottom: 1rem;
+    }
+
+    .toolbar-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(220px, .65fr) auto;
+        gap: .7rem;
+        align-items: center;
+    }
+
+    .toolbar-search input,
+    .toolbar-select select,
+    .advanced-filter-form input,
+    .advanced-filter-form select {
+        width: 100%;
+        min-height: 2.85rem;
+        border: 1px solid rgba(203, 213, 225, .9);
+        border-radius: 1rem;
+        background: rgba(248,250,252,.92);
+        color: #0f172a;
+        padding: .72rem .9rem;
+        font-size: .92rem;
+        outline: none;
+        transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    .toolbar-search input:focus,
+    .toolbar-select select:focus,
+    .advanced-filter-form input:focus,
+    .advanced-filter-form select:focus {
+        border-color: rgba(37, 99, 235, .65);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, .10);
+    }
+
+    .toolbar-actions {
+        display: flex;
+        gap: .55rem;
+        justify-content: flex-end;
+    }
+
+    .status-tabs {
+        display: flex;
+        gap: .5rem;
+        overflow-x: auto;
+        padding-top: .8rem;
+        margin-top: .8rem;
+        border-top: 1px solid rgba(226, 232, 240, .75);
+        scrollbar-width: none;
+    }
+
+    .status-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .status-tab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.35rem;
+        padding: .55rem .9rem;
+        border-radius: 999px;
+        color: #475569;
+        background: rgba(248,250,252,.92);
+        border: 1px solid rgba(226,232,240,.9);
+        font-size: .84rem;
+        font-weight: 850;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background .16s ease, color .16s ease, border-color .16s ease;
+    }
+
+    .status-tab:hover {
+        color: #0f172a;
+        background: #fff;
+    }
+
+    .status-tab.active {
+        color: #fff;
+        background: #0f172a;
+        border-color: #0f172a;
+        box-shadow: 0 12px 24px rgba(15,23,42,.18);
+    }
+
+    .bulk-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: .75rem;
+    }
+
+    .bulk-toolbar .btn-danger {
+        min-height: 2.45rem;
+        padding: .64rem .9rem;
+        font-size: .82rem;
+    }
+
+    #tourListWrapper {
+        margin-top: 1rem;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+        border-radius: 1.35rem;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: .9rem;
+    }
+
+    .table thead th {
+        padding: .95rem;
+        color: #64748b;
+        background: #f8fafc;
+        font-size: .74rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    .table tbody td {
+        padding: .95rem;
+        color: #334155;
+        border-bottom: 1px solid rgba(226,232,240,.75);
+        vertical-align: middle;
+    }
+
+    .table tbody tr:hover td {
+        background: rgba(248,250,252,.72);
+    }
+
+    .tour-thumb,
+    .tour-card-image {
+        overflow: hidden;
+        border-radius: 1rem;
+        background: #eef2ff;
+        border: 1px solid #e2e8f0;
+    }
+
+    .tour-thumb img,
+    .tour-card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .tour-thumb {
+        width: 70px;
+        height: 52px;
+    }
+
+    .tour-thumb-placeholder {
+        display: grid;
+        place-items: center;
+        width: 100%;
+        height: 100%;
+        color: #64748b;
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        font-size: .74rem;
+        font-weight: 800;
+    }
+
+    .tour-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .tour-card {
+        overflow: hidden;
+        border: 1px solid rgba(226,232,240,.9);
+        border-radius: 1.35rem;
+        background: #fff;
+        box-shadow: 0 14px 40px rgba(15,23,42,.07);
+        transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+    .tour-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 22px 55px rgba(15,23,42,.11);
+    }
+
+    .tour-card-image {
+        height: 170px;
+        border-radius: 0;
+        border: 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .tour-card-body {
+        padding: 1rem;
+    }
+
+    .tour-card-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .75rem;
+    }
+
+    .tour-card-top h3 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 900;
+        letter-spacing: -.02em;
+    }
+
+    .tour-card-meta,
+    .tour-subtext {
+        color: #64748b;
+        font-size: .82rem;
+    }
+
+    .tour-meta-inline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem;
+        margin-top: .45rem;
+    }
+
+    .mini-badge,
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: .28rem .55rem;
+        font-size: .72rem;
+        font-weight: 900;
+        line-height: 1;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .mini-badge.featured {
+        color: #92400e;
+        background: #fef3c7;
+        border-color: #fde68a;
+    }
+
+    .mini-badge.live {
+        color: #0369a1;
+        background: #e0f2fe;
+        border-color: #bae6fd;
+    }
+
+    .mini-badge.info {
+        color: #4338ca;
+        background: #eef2ff;
+        border-color: #c7d2fe;
+    }
+
+    .status-draft {
+        color: #92400e;
+        background: #fffbeb;
+        border-color: #fde68a;
+    }
+
+    .status-published {
+        color: #166534;
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+
+    .status-inactive {
+        color: #475569;
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+
+    .row-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .45rem;
+        align-items: center;
+    }
+
+    .action-link,
+    .btn-as-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2rem;
+        padding: .45rem .62rem;
+        border: 1px solid rgba(203,213,225,.8);
+        border-radius: 999px;
+        background: #fff;
+        color: #2563eb;
+        font-size: .78rem;
+        font-weight: 850;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .action-link:hover,
+    .btn-as-link:hover {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+    }
+
+    .action-link.danger,
+    .btn-as-link.danger {
+        color: #dc2626;
+    }
+
+    .pagination-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding: .8rem 0;
+    }
+
+    .pagination-info {
+        color: #64748b;
+        font-size: .85rem;
+        font-weight: 750;
+    }
+
+    .pagination-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem;
+        justify-content: flex-end;
+    }
+
+    .pagination-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.25rem;
+        height: 2.25rem;
+        padding: 0 .7rem;
+        border-radius: .85rem;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #475569;
+        font-size: .82rem;
+        font-weight: 850;
+        text-decoration: none;
+    }
+
+    .pagination-link.active {
+        color: #fff;
+        background: #0f172a;
+        border-color: #0f172a;
+    }
+
+    .empty-state,
+    .empty-state-box {
+        padding: 3rem 1rem;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .empty-state-icon {
+        font-size: 2.2rem;
+        margin-bottom: .75rem;
+    }
+
+    .empty-state-box h3 {
+        color: #0f172a;
+        font-size: 1.2rem;
+        font-weight: 900;
+    }
+
+    .skeleton-table {
+        padding: 1rem;
+    }
+
+    .skeleton-row {
+        display: grid;
+        grid-template-columns: 36px 78px 1.2fr .9fr .7fr .6fr .7fr .9fr;
+        gap: .75rem;
+        align-items: center;
+        padding: .85rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .skeleton-box {
+        height: 18px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #e2e8f0, #f8fafc, #e2e8f0);
+        background-size: 220% 100%;
+        animation: skeletonPulse 1.15s ease-in-out infinite;
+    }
+
+    .skeleton-thumb {
+        height: 48px;
+        border-radius: 1rem;
+    }
+
+    @keyframes skeletonPulse {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 220% 50%; }
+    }
+
+    .filter-drawer-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(15, 23, 42, .38);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .18s ease;
+        backdrop-filter: blur(2px);
+    }
+
+    .filter-drawer-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .filter-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 90;
+        width: min(420px, 92vw);
+        height: 100dvh;
+        padding: 1rem;
+        background: rgba(255,255,255,.96);
+        border-left: 1px solid #e2e8f0;
+        box-shadow: -30px 0 80px rgba(15,23,42,.18);
+        transform: translateX(104%);
+        transition: transform .22s ease;
+        overflow-y: auto;
+    }
+
+    .filter-drawer.open {
+        transform: translateX(0);
+    }
+
+    .filter-drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .filter-drawer-header h3 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 950;
+        letter-spacing: -.03em;
+    }
+
+    #closeFilterDrawer {
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: 999px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 1.35rem;
+        cursor: pointer;
+    }
+
+    .advanced-filter-form {
+        display: grid;
+        gap: .9rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: .35rem;
+        color: #334155;
+        font-size: .78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .075em;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: .6rem;
+        justify-content: flex-end;
+        margin-top: .4rem;
+    }
+
+    .file-info {
+        margin-top: .5rem;
+        color: #64748b;
+        font-size: .82rem;
+        font-weight: 700;
+    }
+
+    .drag-active {
+        border-color: #2563eb !important;
+        background: #eff6ff !important;
+    }
+
+    .modal-open {
+        overflow: hidden;
+    }
+
+    @media (max-width: 1100px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .tour-cards-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .toolbar-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .toolbar-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 720px) {
+        .page-hero {
+            align-items: stretch;
+            flex-direction: column;
+            padding: 1rem;
+            border-radius: 1.25rem;
+        }
+
+        .page-actions {
+            justify-content: flex-start;
+        }
+
+        .page-actions .btn {
+            flex: 1 1 auto;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .7rem;
+        }
+
+        .stats-card {
+            padding: .85rem;
+            border-radius: 1.05rem;
+        }
+
+        .stats-value {
+            font-size: 1.28rem;
+        }
+
+        .filter-card {
+            border-radius: 1.25rem;
+            padding: .75rem;
+        }
+
+        .toolbar-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .tour-cards-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .bulk-toolbar {
+            justify-content: stretch;
+        }
+
+        .bulk-toolbar .btn {
+            width: 100%;
+        }
+
+        .pagination-wrap {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .skeleton-row {
+            grid-template-columns: 50px 1fr;
+        }
+
+        .skeleton-row .skeleton-box:nth-child(n+3) {
+            display: none;
+        }
+    }
+
+    @media (max-width: 430px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .toolbar-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-hero">
+<section class="page-hero">
     <div>
-        <h2 class="page-heading">Virtual Tours</h2>
-        <p class="page-text">Create, manage and publish immersive experiences professionally.</p>
+        <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-blue-700">
+            Studio dashboard
+        </div>
+        <h2 class="page-heading mt-3">Virtual Tours</h2>
+        <p class="page-text">
+            Create, manage and publish immersive experiences without overloading the workspace.
+        </p>
     </div>
 
     <div class="page-actions">
@@ -26,28 +828,31 @@
             + New Tour
         </button>
     </div>
-</div>
+</section>
 
-<div class="stats-grid">
-    <div class="stats-card">
+<section class="stats-grid" aria-label="Tour statistics">
+    <article class="stats-card">
         <span class="stats-label">Total Tours</span>
         <strong class="stats-value">{{ total_count }}</strong>
-    </div>
-    <div class="stats-card">
+    </article>
+
+    <article class="stats-card">
         <span class="stats-label">Published</span>
         <strong class="stats-value">{{ published_count }}</strong>
-    </div>
-    <div class="stats-card">
+    </article>
+
+    <article class="stats-card">
         <span class="stats-label">Draft</span>
         <strong class="stats-value">{{ draft_count }}</strong>
-    </div>
-    <div class="stats-card">
+    </article>
+
+    <article class="stats-card">
         <span class="stats-label">Inactive</span>
         <strong class="stats-value">{{ inactive_count }}</strong>
-    </div>
-</div>
+    </article>
+</section>
 
-<div class="card filter-card">
+<section class="card filter-card">
     <form method="get" class="toolbar-grid" id="tourFilterForm">
         <div class="toolbar-search">
             <input
@@ -74,7 +879,7 @@
         </div>
     </form>
 
-    <div class="status-tabs">
+    <nav class="status-tabs" aria-label="Tour status filters">
         <a href="?q={{ q }}&place={{ selected_place_id }}" class="status-tab {% if not selected_status %}active{% endif %}">
             All
         </a>
@@ -87,24 +892,28 @@
         <a href="?status=inactive&q={{ q }}&place={{ selected_place_id }}" class="status-tab {% if selected_status == 'inactive' %}active{% endif %}">
             Inactive
         </a>
-    </div>
+    </nav>
 
     <div class="bulk-toolbar">
         <button type="button" class="btn btn-danger" id="bulkDeleteBtn">
             Delete Selected
         </button>
     </div>
-</div>
+</section>
 
-<div id="tourListWrapper" class="table-mode">
+<section id="tourListWrapper" class="table-mode">
     {% include "dashboard/tours/partials/tour_list_content.html" %}
-</div>
+</section>
 
 <div class="filter-drawer-overlay" id="filterDrawerOverlay"></div>
-<aside class="filter-drawer" id="filterDrawer">
+
+<aside class="filter-drawer" id="filterDrawer" aria-label="Advanced filters">
     <div class="filter-drawer-header">
-        <h3>Advanced Filters</h3>
-        <button type="button" id="closeFilterDrawer">&times;</button>
+        <div>
+            <h3>Advanced Filters</h3>
+            <p class="mt-1 text-sm font-semibold text-slate-500">Refine the tour list.</p>
+        </div>
+        <button type="button" id="closeFilterDrawer" aria-label="Close advanced filters">&times;</button>
     </div>
 
     <form id="advancedFilterForm" class="advanced-filter-form">
@@ -171,11 +980,10 @@
 
 {% if google_maps_api_key %}
 <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVrWrJYK2DrDokWGZZvmk8tuxFRb-iZ1w&loading=async&libraries=places&callback=initGoogleMapsGlobal"
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&loading=async&libraries=places&callback=initGoogleMapsGlobal"
     async
     defer>
 </script>
-
 {% endif %}
 {% endblock %}
 

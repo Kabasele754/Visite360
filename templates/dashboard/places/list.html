@@ -2,60 +2,326 @@
 
 {% block title %}Places{% endblock %}
 {% block page_title %}Places{% endblock %}
+{% block page_title_desktop %}Places{% endblock %}
 
 {% block content %}
-<div class="page-actions">
-    <div>
-        <h2>Places list</h2>
-        <p class="topbar-subtitle">Manage places before creating immersive tours.</p>
-    </div>
-    <a href="{% url 'dashboard-places-create' current_organization.slug %}" class="btn btn-primary">+ New Place</a>
-</div>
+<div class="mx-auto max-w-7xl space-y-6">
 
-<div class="card">
-    {% if places %}
-        <div class="table-wrap">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>City</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th style="width: 420px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for place in places %}
-                        <tr>
-                            <td>{{ place.name }}</td>
-                            <td>{{ place.get_category_display }}</td>
-                            <td>{{ place.city|default:"-" }}</td>
-                            <td>
-                                <span class="status-pill status-{{ place.status }}">
-                                    {{ place.status|title }}
-                                </span>
-                            </td>
-                            <td>{{ place.created_at|date:"Y-m-d H:i" }}</td>
-                            <td>
-                                <div class="row-actions">
-                                    <a class="action-link" href="{% url 'dashboard-places-edit' current_organization.slug place.id %}">Edit</a>
-                                    <a class="action-link" href="{% url 'dashboard-tours-list' current_organization.slug %}?place={{ place.id }}">Tours</a>
-                                    <a class="action-link" href="{% url 'dashboard-places-publish' current_organization.slug place.id %}">Publish</a>
-                                    <a class="action-link" href="{% url 'dashboard-places-unpublish' current_organization.slug place.id %}">Draft</a>
-                                    <a class="action-link" href="{% url 'dashboard-places-archive' current_organization.slug place.id %}">Archive</a>
-                                    <a class="action-link danger" href="{% url 'dashboard-places-delete' current_organization.slug place.id %}">Delete</a>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- HERO -->
+    <div class="overflow-hidden rounded-[2rem] bg-slate-950 shadow-soft">
+        <div class="relative p-6 sm:p-8">
+            <div class="absolute inset-0 opacity-80">
+                <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-500/30 blur-3xl"></div>
+                <div class="absolute -bottom-24 left-20 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl"></div>
+            </div>
+
+            <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-wide text-blue-100">
+                        <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                        Places Manager
+                    </div>
+
+                    <h2 class="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                        Places list
+                    </h2>
+
+                    <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                        Manage places before creating immersive tours, 360 scenes and interactive hotspots.
+                    </p>
+                </div>
+
+                <a href="{% url 'dashboard-places-create' current_organization.slug %}"
+                   class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-white/10 transition hover:-translate-y-0.5 hover:bg-blue-50">
+                    <span class="text-lg">+</span>
+                    New Place
+                </a>
+            </div>
         </div>
-    {% else %}
-        <div class="empty-state">No places yet for this organization.</div>
-    {% endif %}
+    </div>
+
+    <!-- STATS -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+            <p class="text-xs font-black uppercase tracking-wide text-slate-400">Total places</p>
+            <p class="mt-2 text-3xl font-black text-slate-950">{{ places|length }}</p>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+            <p class="text-xs font-black uppercase tracking-wide text-slate-400">Organization</p>
+            <p class="mt-2 truncate text-2xl font-black text-slate-950">{{ current_organization.name }}</p>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+            <p class="text-xs font-black uppercase tracking-wide text-slate-400">Workspace</p>
+            <p class="mt-2 text-3xl font-black text-slate-950">360</p>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card">
+            <p class="text-xs font-black uppercase tracking-wide text-slate-400">Status</p>
+            <p class="mt-2 text-3xl font-black text-slate-950">Live</p>
+        </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-soft">
+
+        <div class="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+                <h3 class="text-lg font-black text-slate-950">Places</h3>
+                <p class="mt-1 text-sm text-slate-500">
+                    Manage place details, publication status and connected tours.
+                </p>
+            </div>
+
+            <div class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-600">
+                <span class="h-2 w-2 rounded-full bg-blue-600"></span>
+                {{ places|length }} item{% if places|length != 1 %}s{% endif %}
+            </div>
+        </div>
+
+        {% if places %}
+
+            <!-- DESKTOP TABLE -->
+            <div class="hidden overflow-x-auto xl:block">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">Place</th>
+                            <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">Category</th>
+                            <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">City</th>
+                            <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">Created</th>
+                            <th class="px-6 py-4 text-right text-xs font-black uppercase tracking-wider text-slate-500">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                        {% for place in places %}
+                            <tr class="transition hover:bg-slate-50/80">
+                                <td class="px-6 py-5">
+                                    <div class="flex items-center gap-4">
+                                        {% if place.cover_image %}
+                                            <img
+                                                src="{{ place.cover_image }}"
+                                                alt="{{ place.name }}"
+                                                class="h-14 w-16 flex-shrink-0 rounded-2xl border border-slate-200 object-cover shadow-sm">
+                                        {% else %}
+                                            <div class="flex h-14 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-xl shadow-sm">
+                                                📍
+                                            </div>
+                                        {% endif %}
+
+                                        <div class="min-w-0">
+                                            <div class="truncate text-sm font-black text-slate-950">
+                                                {{ place.name }}
+                                            </div>
+
+                                            <div class="mt-1 truncate text-xs font-semibold text-slate-400">
+                                                {{ place.address_line|default:"No address" }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="px-6 py-5">
+                                    <span class="inline-flex rounded-xl bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                                        {{ place.get_category_display }}
+                                    </span>
+                                </td>
+
+                                <td class="px-6 py-5 text-sm font-semibold text-slate-600">
+                                    {{ place.city|default:"-" }}
+                                </td>
+
+                                <td class="px-6 py-5">
+                                    {% if place.status == "published" or place.status == "active" %}
+                                        <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-200">
+                                            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                            {{ place.status|title }}
+                                        </span>
+                                    {% elif place.status == "draft" %}
+                                        <span class="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-200">
+                                            <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+                                            {{ place.status|title }}
+                                        </span>
+                                    {% elif place.status == "archived" %}
+                                        <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+                                            <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+                                            {{ place.status|title }}
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+                                            <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+                                            {{ place.status|title }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="px-6 py-5 text-sm font-semibold text-slate-500">
+                                    {{ place.created_at|date:"Y-m-d H:i" }}
+                                </td>
+
+                                <td class="px-6 py-5">
+                                    <div class="flex flex-wrap justify-end gap-2">
+                                        <a href="{% url 'dashboard-places-edit' current_organization.slug place.id %}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
+                                            Edit
+                                        </a>
+
+                                        <a href="{% url 'dashboard-tours-list' current_organization.slug %}?place={{ place.id }}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700">
+                                            Tours
+                                        </a>
+
+                                        <a href="{% url 'dashboard-places-publish' current_organization.slug place.id %}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-100">
+                                            Publish
+                                        </a>
+
+                                        <a href="{% url 'dashboard-places-unpublish' current_organization.slug place.id %}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 transition hover:bg-amber-100">
+                                            Draft
+                                        </a>
+
+                                        <a href="{% url 'dashboard-places-archive' current_organization.slug place.id %}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
+                                            Archive
+                                        </a>
+
+                                        <a href="{% url 'dashboard-places-delete' current_organization.slug place.id %}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100">
+                                            Delete
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- MOBILE / TABLET CARDS -->
+            <div class="grid gap-4 p-4 xl:hidden">
+                {% for place in places %}
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card">
+                        <div class="relative h-44 bg-slate-100">
+                            {% if place.cover_image %}
+                                <img
+                                    src="{{ place.cover_image }}"
+                                    alt="{{ place.name }}"
+                                    class="h-full w-full object-cover">
+                            {% else %}
+                                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-blue-50">
+                                    <div class="text-center">
+                                        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-white text-3xl shadow-sm">
+                                            📍
+                                        </div>
+                                        <p class="mt-3 text-xs font-black uppercase tracking-wide text-slate-400">
+                                            No cover image
+                                        </p>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <div class="absolute left-4 top-4">
+                                {% if place.status == "published" or place.status == "active" %}
+                                    <span class="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-200">
+                                        {{ place.status|title }}
+                                    </span>
+                                {% elif place.status == "draft" %}
+                                    <span class="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-black text-amber-700 ring-1 ring-amber-200">
+                                        {{ place.status|title }}
+                                    </span>
+                                {% else %}
+                                    <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black text-slate-600 ring-1 ring-slate-200">
+                                        {{ place.status|title }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h4 class="truncate text-lg font-black text-slate-950">
+                                        {{ place.name }}
+                                    </h4>
+
+                                    <p class="mt-1 truncate text-sm font-semibold text-slate-500">
+                                        {{ place.city|default:"No city" }}{% if place.country %}, {{ place.country }}{% endif %}
+                                    </p>
+                                </div>
+
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black text-slate-600">
+                                    {{ place.get_category_display }}
+                                </span>
+                            </div>
+
+                            <p class="mt-3 line-clamp-2 text-sm leading-6 text-slate-500">
+                                {{ place.description|default:"No description available." }}
+                            </p>
+
+                            <div class="mt-4 grid grid-cols-2 gap-2">
+                                <a href="{% url 'dashboard-places-edit' current_organization.slug place.id %}"
+                                   class="rounded-2xl bg-slate-100 px-3 py-3 text-center text-xs font-black text-slate-700">
+                                    Edit
+                                </a>
+
+                                <a href="{% url 'dashboard-tours-list' current_organization.slug %}?place={{ place.id }}"
+                                   class="rounded-2xl bg-blue-600 px-3 py-3 text-center text-xs font-black text-white">
+                                    Tours
+                                </a>
+
+                                <a href="{% url 'dashboard-places-publish' current_organization.slug place.id %}"
+                                   class="rounded-2xl bg-emerald-50 px-3 py-3 text-center text-xs font-black text-emerald-700">
+                                    Publish
+                                </a>
+
+                                <a href="{% url 'dashboard-places-unpublish' current_organization.slug place.id %}"
+                                   class="rounded-2xl bg-amber-50 px-3 py-3 text-center text-xs font-black text-amber-700">
+                                    Draft
+                                </a>
+
+                                <a href="{% url 'dashboard-places-archive' current_organization.slug place.id %}"
+                                   class="rounded-2xl bg-slate-100 px-3 py-3 text-center text-xs font-black text-slate-700">
+                                    Archive
+                                </a>
+
+                                <a href="{% url 'dashboard-places-delete' current_organization.slug place.id %}"
+                                   class="rounded-2xl bg-rose-50 px-3 py-3 text-center text-xs font-black text-rose-700">
+                                    Delete
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+        {% else %}
+
+            <div class="flex min-h-[360px] items-center justify-center p-8">
+                <div class="mx-auto max-w-md text-center">
+                    <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] bg-blue-50 text-4xl">
+                        📍
+                    </div>
+
+                    <h3 class="mt-6 text-2xl font-black tracking-tight text-slate-950">
+                        No places yet
+                    </h3>
+
+                    <p class="mt-3 text-sm leading-7 text-slate-500">
+                        Create your first place before adding virtual tours, scenes and hotspots.
+                    </p>
+
+                    <a href="{% url 'dashboard-places-create' current_organization.slug %}"
+                       class="mt-6 inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700">
+                        + New Place
+                    </a>
+                </div>
+            </div>
+
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
-

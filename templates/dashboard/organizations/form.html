@@ -1,53 +1,299 @@
 {% extends "dashboard/base.html" %}
 
-{% block title %}Organization Form{% endblock %}
+{% block title %}
+    {% if page_mode == "create" %}Create Organization{% else %}Edit Organization{% endif %}
+{% endblock %}
+
 {% block page_title %}
     {% if page_mode == "create" %}Create Organization{% else %}Edit Organization{% endif %}
 {% endblock %}
 
+{% block page_title_desktop %}
+    {% if page_mode == "create" %}Create Organization{% else %}Edit Organization{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .organization-form input[type="text"],
+    .organization-form input[type="file"],
+    .organization-form select,
+    .organization-form textarea {
+        width: 100%;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        padding: 0.85rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #0f172a;
+        outline: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .organization-form input[type="file"] {
+        cursor: pointer;
+        background: #f8fafc;
+    }
+
+    .organization-form input:focus,
+    .organization-form select:focus,
+    .organization-form textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .organization-form .errorlist {
+        margin-top: 0.5rem;
+        list-style: none;
+        padding: 0;
+        color: #e11d48;
+        font-size: 0.75rem;
+        font-weight: 900;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+<div class="mx-auto max-w-5xl space-y-6">
 
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="{{ form.name.id_for_label }}">Name</label>
-                {{ form.name }}
+    <!-- HERO -->
+    <div class="overflow-hidden rounded-[2rem] bg-slate-950 shadow-soft">
+        <div class="relative p-6 sm:p-8">
+            <div class="absolute inset-0 opacity-80">
+                <div class="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-blue-500/30 blur-3xl"></div>
+                <div class="absolute -bottom-24 left-20 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl"></div>
             </div>
 
-            <div class="form-group">
-                <label for="{{ form.slug.id_for_label }}">Slug</label>
-                {{ form.slug }}
+            <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-wide text-blue-100">
+                        <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                        Organization Workspace
+                    </div>
+
+                    <h2 class="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                        {% if page_mode == "create" %}
+                            Create a new organization
+                        {% else %}
+                            Edit organization
+                        {% endif %}
+                    </h2>
+
+                    <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                        {% if page_mode == "create" %}
+                            Create a workspace to manage places, tours, scenes and hotspots.
+                        {% else %}
+                            Update organization information, logo and status.
+                        {% endif %}
+                    </p>
+                </div>
+
+                <a href="{% url 'dashboard-organizations-list' %}"
+                   class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/15">
+                    ← Back to Organizations
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORM -->
+    <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
+
+        <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-soft">
+            <div class="border-b border-slate-200 px-5 py-5 sm:px-6">
+                <h3 class="text-lg font-black text-slate-950">
+                    Organization details
+                </h3>
+                <p class="mt-1 text-sm leading-6 text-slate-500">
+                    Fill in the information below. The slug will be used in dashboard URLs.
+                </p>
             </div>
 
-            <div class="form-group full">
-                <label for="{{ form.logo.id_for_label }}">Logo</label>
-                {{ form.logo }}
+            <form method="post" enctype="multipart/form-data" class="organization-form">
+                {% csrf_token %}
 
-                {% if page_mode == "edit" and organization.logo %}
-                    <div style="margin-top: 12px;">
-                        <img
-                            src="{{ organization.logo.url }}"
-                            alt="{{ organization.name }}"
-                            style="max-width: 140px; max-height: 140px; border-radius: 14px; object-fit: cover; border: 1px solid #e5e7eb;"
-                        >
+                {% if form.non_field_errors %}
+                    <div class="mx-5 mt-5 rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700 sm:mx-6">
+                        {{ form.non_field_errors }}
                     </div>
                 {% endif %}
-            </div>
 
-            <div class="form-group full">
-                <label for="{{ form.status.id_for_label }}">Status</label>
-                {{ form.status }}
-            </div>
+                <div class="grid gap-5 p-5 sm:p-6 md:grid-cols-2">
+
+                    <!-- NAME -->
+                    <div>
+                        <label for="{{ form.name.id_for_label }}"
+                               class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                            Name <span class="text-rose-500">*</span>
+                        </label>
+
+                        {{ form.name }}
+
+                        {% for error in form.name.errors %}
+                            <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- SLUG -->
+                    <div>
+                        <label for="{{ form.slug.id_for_label }}"
+                               class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                            Slug <span class="text-rose-500">*</span>
+                        </label>
+
+                        {{ form.slug }}
+
+                        {% for error in form.slug.errors %}
+                            <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- LOGO -->
+                    <div class="md:col-span-2">
+                        <label for="{{ form.logo.id_for_label }}"
+                               class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                            Logo
+                        </label>
+
+                        <div class="rounded-[1.5rem] border border-dashed border-blue-200 bg-blue-50/40 p-4">
+                            {{ form.logo }}
+
+                            <div class="mt-4 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white p-4">
+                                {% if page_mode == "edit" and organization.logo %}
+                                    <img
+                                        src="{{ organization.logo.url }}"
+                                        alt="{{ organization.name }}"
+                                        id="organizationLogoPreview"
+                                        class="h-36 w-36 rounded-3xl border border-slate-200 object-cover shadow-sm">
+                                {% else %}
+                                    <div id="organizationLogoPlaceholder" class="flex min-h-[140px] items-center justify-center text-center">
+                                        <div>
+                                            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-blue-50 text-3xl">
+                                                🏢
+                                            </div>
+                                            <p class="mt-3 text-sm font-black text-slate-700">
+                                                Logo preview
+                                            </p>
+                                            <p class="mt-1 text-xs font-semibold text-slate-400">
+                                                Upload a square logo for best result
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <img
+                                        src=""
+                                        alt="Logo preview"
+                                        id="organizationLogoPreview"
+                                        class="hidden h-36 w-36 rounded-3xl border border-slate-200 object-cover shadow-sm">
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% for error in form.logo.errors %}
+                            <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- STATUS -->
+                    <div class="md:col-span-2">
+                        <label for="{{ form.status.id_for_label }}"
+                               class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                            Status
+                        </label>
+
+                        {{ form.status }}
+
+                        {% for error in form.status.errors %}
+                            <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <a href="{% url 'dashboard-organizations-list' %}"
+                       class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100">
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition hover:-translate-y-0.5 hover:bg-blue-700">
+                        {% if page_mode == "create" %}Create Organization{% else %}Save Changes{% endif %}
+                    </button>
+                </div>
+            </form>
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
-                {% if page_mode == "create" %}Create{% else %}Save Changes{% endif %}
-            </button>
-            <a href="{% url 'dashboard-organizations-list' %}" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
+        <!-- SIDE PANEL -->
+        <aside class="space-y-5">
+            <div class="rounded-[2rem] bg-slate-950 p-5 text-white shadow-soft">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-xl">
+                        🏢
+                    </div>
+                    <div>
+                        <h4 class="font-black">Workspace</h4>
+                        <p class="text-xs font-semibold text-slate-400">Multi-tenant space</p>
+                    </div>
+                </div>
+
+                <p class="mt-4 text-sm leading-7 text-slate-300">
+                    Each organization can have its own places, virtual tours, scenes and hotspots.
+                </p>
+            </div>
+
+            <div class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-card">
+                <h4 class="font-black text-slate-950">Tips</h4>
+
+                <div class="mt-4 space-y-3 text-sm">
+                    <div class="rounded-2xl bg-slate-50 p-3">
+                        <p class="font-black text-slate-800">Use a clear name</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Example: company name, agency name or client name.
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl bg-slate-50 p-3">
+                        <p class="font-black text-slate-800">Keep the slug simple</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Use lowercase letters, numbers and hyphens.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const logoInput = document.getElementById("{{ form.logo.id_for_label }}");
+        const preview = document.getElementById("organizationLogoPreview");
+        const placeholder = document.getElementById("organizationLogoPlaceholder");
+
+        if (!logoInput || !preview) return;
+
+        logoInput.addEventListener("change", function () {
+            const file = this.files && this.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                preview.src = event.target.result;
+                preview.classList.remove("hidden");
+
+                if (placeholder) {
+                    placeholder.classList.add("hidden");
+                }
+            };
+
+            reader.readAsDataURL(file);
+        });
+    });
+</script>
 {% endblock %}

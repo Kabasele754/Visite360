@@ -1,3 +1,7 @@
+{% comment %}
+Preview final builder-like: double couche Marzipano A/B, transition cinématique, zoom mobile stable.
+Remplacer ton template preview par ce fichier.
+{% endcomment %}
 {% load static %}
 <!DOCTYPE html>
 <html lang="fr" class="h-full">
@@ -6,7 +10,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <style> @-ms-viewport { width: device-width; } </style>
     
-    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
     <link rel="stylesheet" href="https://www.marzipano.net/demos/common/reset.css">
     <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
     <title>{{ tour.title }} - Preview</title>
@@ -43,1075 +46,168 @@
         }
     </script>
 
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
+
+    <!-- WALK CINEMATIC PATCH: effet comme une personne qui avance dans la scène -->
+    <style id="preview-walk-cinematic-patch">
+        .preview-viewer {
+            perspective: 1200px;
+            transform-style: preserve-3d;
+        }
+
+        .preview-layer {
+            transform-origin: 50% 50% !important;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .preview-viewer.walk-cinematic-running .preview-layer,
+        .preview-viewer.mobile-cinematic-running .preview-layer {
+            will-change: transform, opacity, filter;
+        }
+
+        .preview-walk-cinema-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 18;
+            pointer-events: none;
+            opacity: 0;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.00) 34%, rgba(2,6,23,0.08) 54%, rgba(2,6,23,0.30) 100%),
+                linear-gradient(90deg, rgba(2,6,23,0.32), transparent 18%, transparent 82%, rgba(2,6,23,0.32));
+            mix-blend-mode: normal;
+        }
+
+        .preview-walk-cinema-overlay::before,
+        .preview-walk-cinema-overlay::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 22%;
+            opacity: 0;
+            background: linear-gradient(90deg, rgba(2,6,23,0.42), transparent);
+        }
+
+        .preview-walk-cinema-overlay::before { left: 0; }
+        .preview-walk-cinema-overlay::after {
+            right: 0;
+            transform: scaleX(-1);
+        }
+
+        .preview-viewer.walk-cinematic-running .preview-walk-cinema-overlay::before,
+        .preview-viewer.walk-cinematic-running .preview-walk-cinema-overlay::after,
+        .preview-viewer.mobile-cinematic-running .preview-walk-cinema-overlay::before,
+        .preview-viewer.mobile-cinematic-running .preview-walk-cinema-overlay::after {
+            animation: previewSideWalkPulse 1380ms cubic-bezier(.22,1,.36,1) both;
+        }
+
+        @keyframes previewSideWalkPulse {
+            0% { opacity: 0; transform: translateX(0) scaleX(1); }
+            35% { opacity: .55; transform: translateX(0) scaleX(1.08); }
+            70% { opacity: .32; transform: translateX(-3px) scaleX(1.16); }
+            100% { opacity: 0; transform: translateX(-8px) scaleX(1.22); }
+        }
+
+        .preview-viewer.transitioning .layer-outgoing {
+            animation: previewWalkOutgoing 1420ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+            filter: brightness(1) saturate(1) !important;
+        }
+
+        .preview-viewer.transitioning .layer-incoming {
+            animation: previewWalkIncoming 1420ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+            filter: brightness(1) saturate(1) !important;
+        }
+
+        @keyframes previewWalkOutgoing {
+            0% {
+                transform: translate3d(0, 0, 0) scale(1);
+                opacity: 1;
+                filter: brightness(1) saturate(1);
+            }
+            18% {
+                transform: translate3d(0, 0, 0) scale(1.055);
+                opacity: 1;
+                filter: brightness(1.01) saturate(1.02);
+            }
+            44% {
+                transform: translate3d(0, -0.6%, 0) scale(1.18);
+                opacity: .96;
+                filter: brightness(1) saturate(1.02);
+            }
+            68% {
+                transform: translate3d(0, -1.4%, 0) scale(1.34);
+                opacity: .36;
+                filter: brightness(.94) saturate(.98);
+            }
+            100% {
+                transform: translate3d(0, -2.4%, 0) scale(1.54);
+                opacity: 0;
+                filter: brightness(.88) saturate(.96);
+            }
+        }
+
+        @keyframes previewWalkIncoming {
+            0%, 34% {
+                transform: translate3d(0, 1.8%, 0) scale(1.105);
+                opacity: 0;
+                filter: brightness(.94) saturate(.98);
+            }
+            52% {
+                transform: translate3d(0, .9%, 0) scale(1.070);
+                opacity: .28;
+                filter: brightness(.97) saturate(1);
+            }
+            78% {
+                transform: translate3d(0, .25%, 0) scale(1.025);
+                opacity: .86;
+                filter: brightness(1) saturate(1);
+            }
+            100% {
+                transform: translate3d(0, 0, 0) scale(1);
+                opacity: 1;
+                filter: brightness(1) saturate(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .preview-viewer.transitioning .layer-outgoing,
+            .preview-viewer.transitioning .layer-incoming {
+                animation: none !important;
+            }
+
+            .preview-walk-cinema-overlay {
+                background:
+                    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.00) 31%, rgba(2,6,23,0.10) 52%, rgba(2,6,23,0.34) 100%),
+                    linear-gradient(90deg, rgba(2,6,23,0.36), transparent 20%, transparent 80%, rgba(2,6,23,0.36));
+            }
+
+            .preview-viewer.mobile-cinematic-running {
+                overflow: hidden;
+                contain: layout paint size;
+            }
+
+            .preview-viewer.mobile-cinematic-running .preview-layer.mobile-wa-layer {
+                transform-origin: 50% 50% !important;
+                will-change: transform, opacity;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+                transform: translate3d(0,0,0);
+                -webkit-transform: translate3d(0,0,0);
+            }
+
+            .preview-viewer.mobile-cinematic-running .preview-walk-cinema-overlay {
+                z-index: 22;
+            }
+
+        }
+    </style>
+
+
  {% comment %} <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}"> {% endcomment %}
 
- <style>
+    {# Le design complet est maintenant dans dashboard/css/preview-tailwind.css #}
 
-    html,
-body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background: #07111d;
-    color: #ffffff;
-    font-family: Inter, Arial, sans-serif;
-}
-
-* {
-    box-sizing: border-box;
-}
-
-.preview-shell {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background:
-        radial-gradient(circle at top, rgba(28, 58, 92, 0.28), transparent 42%),
-        linear-gradient(180deg, #08121f 0%, #050b14 100%);
-}
-
-/* =========================
-   TOPBAR
-========================= */
-
-.preview-topbar {
-    height: 72px;
-    min-height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    padding: 0 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(8, 16, 27, 0.88);
-    backdrop-filter: blur(14px);
-    z-index: 50;
-}
-
-.preview-brand h1,
-.preview-topbar h1 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-}
-
-.preview-brand p,
-.preview-topbar p {
-    margin: 4px 0 0;
-    color: #b7c7da;
-    font-size: 13px;
-}
-
-.preview-topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.preview-btn {
-    border: none;
-    border-radius: 12px;
-    padding: 10px 14px;
-    font-weight: 700;
-    cursor: pointer;
-    background: linear-gradient(135deg, #2cc9ea, #61e6ff);
-    color: #08202a;
-    transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
-}
-
-.preview-btn:hover {
-    transform: translateY(-1px);
-    opacity: 0.97;
-}
-
-.preview-btn.ghost {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
-}
-
-/* =========================
-   DEVICE SWITCHER
-========================= */
-
-.preview-device-switcher {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px;
-    border-radius: 14px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
-    flex-wrap: wrap;
-}
-
-.device-btn {
-    border: none;
-    background: transparent;
-    color: #d8e6f7;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.2s ease;
-}
-
-.device-btn:hover {
-    background: rgba(255,255,255,0.08);
-}
-
-.device-btn.active {
-    background: linear-gradient(135deg, #2cc9ea, #61e6ff);
-    color: #08202a;
-}
-
-/* =========================
-   MAIN LAYOUT
-========================= */
-
-.preview-stage-shell {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    min-height: 0;
-}
-
-/* =========================
-   SCENES DRAWER
-========================= */
-
-.preview-scenes-drawer {
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(10, 18, 30, 0.9);
-    overflow-y: auto;
-    transition: width 0.28s ease, opacity 0.28s ease, transform 0.28s ease;
-    backdrop-filter: blur(14px);
-    min-width: 0;
-}
-
-.preview-scenes-drawer.collapsed {
-    width: 0;
-    min-width: 0;
-    overflow: hidden;
-    opacity: 0;
-}
-
-.drawer-header {
-    padding: 18px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.drawer-header h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 800;
-}
-
-.preview-scenes-list {
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.preview-scene-card {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 14px;
-    padding: 10px;
-    text-align: left;
-    color: white;
-    cursor: pointer;
-    display: grid;
-    grid-template-columns: 80px 1fr;
-    gap: 10px;
-    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-}
-
-.preview-scene-card:hover {
-    transform: translateY(-1px);
-    border-color: rgba(44, 201, 234, 0.35);
-    background: rgba(44, 201, 234, 0.07);
-}
-
-.preview-scene-card.active {
-    border-color: #2cc9ea;
-    background: rgba(44, 201, 234, 0.10);
-    box-shadow: 0 0 0 2px rgba(44, 201, 234, 0.10);
-}
-
-.preview-scene-thumb {
-    width: 80px;
-    height: 58px;
-    overflow: hidden;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.preview-scene-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.preview-scene-meta strong {
-    display: block;
-    margin-bottom: 4px;
-    font-size: 14px;
-    font-weight: 800;
-}
-
-.preview-scene-meta span {
-    color: #b8c9db;
-    font-size: 12px;
-}
-
-.thumb-placeholder {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    place-items: center;
-    font-size: 13px;
-    font-weight: 700;
-    color: #b8c9db;
-    background: rgba(255, 255, 255, 0.04);
-}
-
-/* =========================
-   DEVICE STAGE / FRAME
-========================= */
-
-.preview-stage {
-    position: relative;
-    min-width: 0;
-}
-
-.preview-device-stage {
-    width: 100%;
-    height: calc(100vh - 72px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 18px;
-    overflow: auto;
-}
-
-.preview-device-frame {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transition:
-        width 0.35s ease,
-        height 0.35s ease,
-        max-width 0.35s ease,
-        max-height 0.35s ease,
-        border-radius 0.35s ease,
-        box-shadow 0.35s ease,
-        transform 0.35s ease;
-    background: transparent;
-}
-
-.preview-device-frame .preview-viewer {
-    width: 100%;
-    height: 100%;
-    border-radius: inherit;
-    overflow: hidden;
-    position: relative;
-    z-index: 2;
-}
-
-/* safe area overlays */
-.device-safe-top,
-.device-safe-bottom {
-    position: absolute;
-    left: 0;
-    right: 0;
-    z-index: 12;
-    pointer-events: none;
-    display: none;
-}
-
-.device-safe-top {
-    top: 0;
-}
-
-.device-safe-bottom {
-    bottom: 0;
-}
-
-/* DESKTOP */
-.preview-device-frame.device-desktop {
-    width: 100%;
-    max-width: 100%;
-    height: 100%;
-    max-height: 100%;
-    border-radius: 0;
-    box-shadow: none;
-    background: transparent;
-}
-
-/* IPAD PORTRAIT */
-.preview-device-frame.device-ipad-portrait {
-    width: min(820px, 100%);
-    height: min(1180px, 100%);
-    aspect-ratio: 820 / 1180;
-    border-radius: 28px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow:
-        0 20px 50px rgba(0,0,0,0.35),
-        0 0 0 10px rgba(255,255,255,0.03);
-    background: #0b1420;
-}
-
-/* IPAD LANDSCAPE */
-.preview-device-frame.device-ipad-landscape {
-    width: min(1180px, 100%);
-    height: min(820px, 100%);
-    aspect-ratio: 1180 / 820;
-    border-radius: 28px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow:
-        0 20px 50px rgba(0,0,0,0.35),
-        0 0 0 10px rgba(255,255,255,0.03);
-    background: #0b1420;
-}
-
-/* IPHONE PORTRAIT */
-.preview-device-frame.device-iphone-portrait {
-    width: min(430px, 100%);
-    height: min(880px, 100%);
-    aspect-ratio: 430 / 880;
-    border-radius: 36px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.14);
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.42),
-        0 0 0 10px rgba(255,255,255,0.03);
-    background: #0b1420;
-}
-
-/* IPHONE LANDSCAPE */
-.preview-device-frame.device-iphone-landscape {
-    width: min(880px, 100%);
-    height: min(430px, 100%);
-    aspect-ratio: 880 / 430;
-    border-radius: 30px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.14);
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.42),
-        0 0 0 10px rgba(255,255,255,0.03);
-    background: #0b1420;
-}
-
-/* ANDROID PORTRAIT */
-.preview-device-frame.device-android-portrait {
-    width: min(412px, 100%);
-    height: min(915px, 100%);
-    aspect-ratio: 412 / 915;
-    border-radius: 30px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.42),
-        0 0 0 10px rgba(255,255,255,0.03);
-    background: #0b1420;
-}
-
-/* ANDROID LANDSCAPE */
-.preview-device-frame.device-android-landscape {
-    width: min(915px, 100%);
-    height: min(412px, 100%);
-    aspect-ratio: 915 / 412;
-    border-radius: 24px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow:
-        0 20px 60px rgba(0,0,0,0.42),
-        0 0 0 10px rgba(255,255,255,0.03);
-    background: #0b1420;
-}
-
-/* Safe areas */
-.preview-device-frame.has-safe-area .device-safe-top,
-.preview-device-frame.has-safe-area .device-safe-bottom {
-    display: block;
-}
-
-.preview-device-frame.device-iphone-portrait.has-safe-area .device-safe-top {
-    height: 34px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.95), rgba(5,11,20,0.55));
-    border-bottom-left-radius: 18px;
-    border-bottom-right-radius: 18px;
-}
-
-.preview-device-frame.device-iphone-portrait.has-safe-area .device-safe-bottom {
-    height: 20px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.92), rgba(5,11,20,0.35));
-}
-
-.preview-device-frame.device-iphone-landscape.has-safe-area .device-safe-top {
-    height: 18px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.95), rgba(5,11,20,0.45));
-}
-
-.preview-device-frame.device-iphone-landscape.has-safe-area .device-safe-bottom {
-    height: 12px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.92), rgba(5,11,20,0.25));
-}
-
-.preview-device-frame.device-android-portrait.has-safe-area .device-safe-top {
-    height: 26px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.90), rgba(5,11,20,0.42));
-}
-
-.preview-device-frame.device-android-portrait.has-safe-area .device-safe-bottom {
-    height: 12px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.80), rgba(5,11,20,0.20));
-}
-
-.preview-device-frame.device-android-landscape.has-safe-area .device-safe-top {
-    height: 16px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.90), rgba(5,11,20,0.35));
-}
-
-.preview-device-frame.device-android-landscape.has-safe-area .device-safe-bottom {
-    height: 10px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.80), rgba(5,11,20,0.20));
-}
-
-.preview-device-frame.device-ipad-portrait.has-safe-area .device-safe-top,
-.preview-device-frame.device-ipad-landscape.has-safe-area .device-safe-top {
-    height: 20px;
-    background: linear-gradient(180deg, rgba(5,11,20,0.78), rgba(5,11,20,0.18));
-}
-
-.preview-device-frame.device-ipad-portrait.has-safe-area .device-safe-bottom,
-.preview-device-frame.device-ipad-landscape.has-safe-area .device-safe-bottom {
-    height: 10px;
-    background: linear-gradient(0deg, rgba(5,11,20,0.52), rgba(5,11,20,0.12));
-}
-
-/* =========================
-   VIEWER
-========================= */
-
-.preview-viewer {
-    position: relative;
-    width: 100%;
-    height: calc(100vh - 72px);
-    overflow: hidden;
-    background: #02070d;
-}
-
-.preview-viewer::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 4;
-    background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.10) 100%);
-    opacity: 0;
-    transition: opacity 0.8s ease;
-}
-
-.preview-viewer.is-cinematic-transition::before {
-    opacity: 1;
-}
-
-.preview-viewer::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(circle at center, transparent 48%, rgba(0, 0, 0, 0.16) 100%);
-    opacity: 0.55;
-    z-index: 3;
-}
-
-/* =========================
-   CINEMATIC LAYERS
-========================= */
-
-.preview-layer,
-.preview-mount {
-    position: absolute;
-    inset: 0;
-}
-
-.preview-layer {
-    opacity: 0;
-    transform: scale(1.02);
-    filter: blur(0px);
-    transition:
-        opacity 1.35s ease,
-        transform 1.45s cubic-bezier(0.22, 1, 0.36, 1),
-        filter 1.35s ease;
-    will-change: transform, opacity, filter;
-    pointer-events: none;
-}
-
-.preview-layer.active-layer {
-    opacity: 1;
-    z-index: 2;
-    transform: scale(1);
-    filter: blur(0);
-    pointer-events: auto;
-}
-
-.preview-layer.standby-layer {
-    opacity: 0;
-    z-index: 1;
-    transform: scale(1.04);
-    filter: blur(0);
-}
-
-.preview-layer.layer-outgoing {
-    opacity: 0.18;
-    z-index: 2;
-    transform: scale(1.18);
-    filter: blur(1.4px);
-}
-
-.preview-layer.layer-incoming {
-    opacity: 1;
-    z-index: 3;
-    transform: scale(1.01);
-    filter: blur(0);
-}
-
-.preview-viewer.is-cinematic-transition .active-layer {
-    transform: scale(1.10);
-}
-
-.preview-viewer.is-cinematic-transition .layer-outgoing {
-    opacity: 0.16;
-}
-
-.preview-viewer.is-cinematic-transition .layer-incoming {
-    opacity: 1;
-}
-
-/* =========================
-   TITLE CHIP
-========================= */
-
-.preview-scene-title-chip {
-    position: absolute;
-    top: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(10, 18, 30, 0.70);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 999px;
-    padding: 10px 16px;
-    z-index: 10;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
-    max-width: calc(100% - 32px);
-}
-
-.preview-scene-title-chip strong {
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-}
-
-.preview-device-frame.device-phone .preview-scene-title-chip,
-.preview-device-frame.device-iphone-portrait .preview-scene-title-chip,
-.preview-device-frame.device-iphone-landscape .preview-scene-title-chip,
-.preview-device-frame.device-android-portrait .preview-scene-title-chip,
-.preview-device-frame.device-android-landscape .preview-scene-title-chip,
-.preview-device-frame.device-ipad-portrait .preview-scene-title-chip,
-.preview-device-frame.device-ipad-landscape .preview-scene-title-chip {
-    top: 16px;
-}
-
-/* =========================
-   HOTSPOTS
-========================= */
-
-.preview-hotspot {
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: transform 0.18s ease, opacity 0.18s ease;
-    will-change: transform;
-}
-
-.preview-hotspot:hover {
-    transform: scale(1.05);
-}
-
-.preview-hotspot img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
-}
-
-.preview-hotspot.variant-label {
-    min-width: 70px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    background: rgba(10,20,35,0.70);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: white;
-    font-size: 12px;
-    font-weight: 700;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 10px 18px rgba(0,0,0,0.18);
-}
-
-.preview-hotspot.variant-label img {
-    width: 22px;
-    height: 22px;
-}
-
-.preview-hotspot.variant-flat img {
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.18));
-}
-
-.preview-hotspot.variant-floor img {
-    transform: perspective(300px) rotateX(65deg);
-    filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.22));
-}
-
-/* =========================
-   POPUP
-========================= */
-
-.preview-hotspot-popup {
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    width: 360px;
-    max-width: calc(100% - 40px);
-    background: rgba(12, 20, 34, 0.94);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 18px;
-    overflow: hidden;
-    z-index: 20;
-    backdrop-filter: blur(14px);
-    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
-}
-
-.preview-hotspot-popup.hidden {
-    display: none;
-}
-
-.popup-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    border: none;
-    background: rgba(0, 0, 0, 0.35);
-    color: white;
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    cursor: pointer;
-    z-index: 3;
-    transition: 0.18s ease;
-}
-
-.popup-close:hover {
-    background: rgba(0, 0, 0, 0.52);
-}
-
-.popup-media {
-    width: 100%;
-    height: 190px;
-    background: rgba(255, 255, 255, 0.04);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.popup-media img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.popup-empty-media {
-    color: #9fb4cf;
-    font-size: 13px;
-}
-
-.popup-content {
-    padding: 16px;
-}
-
-.popup-badge {
-    display: inline-flex;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(44, 201, 234, 0.16);
-    color: #8deaff;
-    font-size: 12px;
-    font-weight: 700;
-    margin-bottom: 10px;
-}
-
-.popup-badge.hidden {
-    display: none;
-}
-
-.popup-content h4 {
-    margin: 0 0 8px;
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-}
-
-.popup-content p {
-    margin: 0 0 12px;
-    color: #d7e3f4;
-    font-size: 14px;
-    line-height: 1.6;
-}
-
-.popup-meta {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 14px;
-}
-
-.popup-meta span {
-    display: inline-flex;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.08);
-    color: #f3f8ff;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.popup-meta .hidden {
-    display: none;
-}
-
-.popup-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.popup-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 11px 14px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #2cc9ea, #61e6ff);
-    color: #08202a;
-    font-weight: 800;
-    text-decoration: none;
-    transition: transform 0.18s ease, opacity 0.18s ease;
-}
-
-.popup-action:hover {
-    transform: translateY(-1px);
-    opacity: 0.96;
-}
-
-.popup-action.hidden {
-    display: none;
-}
-
-.popup-action.whatsapp {
-    background: linear-gradient(135deg, #25d366, #7df3a6);
-    color: #08202a;
-}
-
-.popup-action.contact {
-    background: rgba(255,255,255,0.12);
-    color: white;
-}
-
-/* =========================
-   RESPONSIVE
-========================= */
-
-@media (max-width: 900px) {
-    .preview-topbar {
-        flex-wrap: wrap;
-        height: auto;
-        padding-top: 12px;
-        padding-bottom: 12px;
-    }
-
-    .preview-topbar-actions {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .preview-stage-shell {
-        grid-template-columns: 1fr;
-        min-height: calc(100vh - 120px);
-    }
-
-    .preview-scenes-drawer {
-        position: absolute;
-        top: 72px;
-        left: 0;
-        bottom: 0;
-        width: 280px;
-        z-index: 40;
-        box-shadow: 12px 0 30px rgba(0,0,0,0.24);
-    }
-
-    .preview-scenes-drawer.collapsed {
-        transform: translateX(-100%);
-        width: 280px;
-        opacity: 1;
-    }
-
-    .preview-device-stage {
-        height: calc(100vh - 120px);
-    }
-
-    .preview-viewer {
-        height: calc(100vh - 120px);
-    }
-}
-
-@media (max-width: 640px) {
-    .preview-topbar {
-        padding: 12px;
-        gap: 10px;
-    }
-
-    .preview-topbar h1 {
-        font-size: 17px;
-    }
-
-    .preview-topbar p {
-        font-size: 12px;
-    }
-
-    .preview-topbar-actions {
-        gap: 8px;
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .preview-device-switcher {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .device-btn {
-        font-size: 11px;
-        padding: 8px 10px;
-    }
-
-    .preview-hotspot-popup {
-        right: 12px;
-        left: 12px;
-        bottom: 12px;
-        width: auto;
-        max-width: none;
-    }
-
-    .preview-scenes-drawer {
-        width: 260px;
-    }
-
-    .preview-scenes-drawer.collapsed {
-        width: 260px;
-    }
-
-    .preview-device-frame.device-ipad-portrait,
-    .preview-device-frame.device-ipad-landscape,
-    .preview-device-frame.device-iphone-portrait,
-    .preview-device-frame.device-iphone-landscape,
-    .preview-device-frame.device-android-portrait,
-    .preview-device-frame.device-android-landscape {
-        width: 100%;
-        height: 100%;
-        max-height: none;
-    }
-}
-@media (max-width: 768px) {
-    #previewControlDock {
-        position: absolute;
-        left: 50%;
-        bottom: max(8px, env(safe-area-inset-bottom));
-        transform: translateX(-50%);
-        z-index: 55;
-        width: calc(100% - 12px) !important;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        pointer-events: none;
-    }
-
-    #previewControlDock .dock-scroll,
-    #previewControlDock #previewSceneRail,
-    #previewControlDock .scene-stack-panel {
-        pointer-events: auto;
-    }
-
-    #previewControlDock .dock-scroll {
-        width: 100%;
-        max-width: 100%;
-        padding: 6px;
-        border-radius: 22px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        background: linear-gradient(
-            180deg,
-            rgba(7, 12, 20, 0.22),
-            rgba(7, 12, 20, 0.42)
-        ) !important;
-        backdrop-filter: blur(18px) saturate(160%);
-        -webkit-backdrop-filter: blur(18px) saturate(160%);
-        box-shadow:
-            0 14px 32px rgba(0, 0, 0, 0.22),
-            inset 0 1px 0 rgba(255,255,255,0.06);
-    }
-
-    #previewControlDock .dock-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    #previewControlDock .dock-row::-webkit-scrollbar {
-        display: none;
-    }
-
-    #previewControlDock .dock-divider {
-        width: 1px;
-        height: 24px;
-        flex: 0 0 1px;
-        background: rgba(255,255,255,0.12);
-    }
-
-    #previewControlDock .control-btn,
-    #previewControlDock .scene-stack-toggle-inline {
-        min-width: 40px;
-        height: 40px;
-        border-radius: 14px;
-        border: 1px solid rgba(255,255,255,0.10);
-        background: rgba(255,255,255,0.06);
-        color: #fff;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
-
-    #previewControlDock .scene-stack-toggle-inline {
-        min-width: 78px;
-        padding: 0 8px;
-    }
-
-    /* PANEL DES SCENES : CENTRÉ ET PROPRE */
-    #previewSceneRail,
-    #previewControlDock .scene-stack-panel {
-        position: absolute !important;
-        left: 50% !important;
-        right: auto !important;
-        bottom: calc(100% + 8px) !important;
-        width: min(420px, calc(100vw - 16px)) !important;
-        max-width: calc(100vw - 16px) !important;
-        margin: 0 !important;
-        transform: translateX(-50%) translateY(12px) !important;
-        transform-origin: bottom center !important;
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-        z-index: 56;
-        transition:
-            opacity 0.22s ease,
-            transform 0.22s ease,
-            visibility 0.22s ease;
-    }
-
-    #previewSceneRail.open,
-    #previewControlDock .scene-stack-panel.open {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: translateX(-50%) translateY(0) !important;
-    }
-
-    #previewSceneRail .scene-stack-panel-inner,
-    #previewControlDock .scene-stack-panel-inner {
-        max-height: 38vh;
-        overflow-y: auto;
-        padding: 10px;
-        border-radius: 20px;
-        border: 1px solid rgba(255,255,255,0.12);
-        background: linear-gradient(
-            180deg,
-            rgba(7, 12, 20, 0.45),
-            rgba(7, 12, 20, 0.72)
-        );
-        backdrop-filter: blur(18px) saturate(160%);
-        -webkit-backdrop-filter: blur(18px) saturate(160%);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.28);
-    }
-
-    #previewSceneRail .scene-stack-list,
-    #previewControlDock .scene-stack-list {
-        display: grid;
-        gap: 8px;
-    }
-
-    /* cartes scènes plus propres sur mobile */
-    #previewSceneRail .scene-card,
-    #previewControlDock .scene-card {
-        grid-template-columns: 72px minmax(0, 1fr);
-        padding: 8px;
-        border-radius: 16px;
-    }
-
-    #previewSceneRail .scene-thumb,
-    #previewControlDock .scene-thumb {
-        width: 72px;
-        height: 52px;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
-    #previewSceneRail .scene-thumb img,
-    #previewControlDock .scene-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    #previewSceneRail .scene-title,
-    #previewControlDock .scene-title {
-        font-size: 13px;
-    }
-
-    #previewSceneRail .scene-subtitle,
-    #previewControlDock .scene-subtitle {
-        font-size: 11px;
-    }
-}
-
-
- </style>
 
   <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 </head>
@@ -1159,6 +255,16 @@ body {
         <main class="relative h-full w-full">
             <section class="relative h-full w-full">
                 <div id="previewViewer" class="preview-viewer">
+
+                    <!-- progressive panorama preview: thumbnail first, real panorama after -->
+                    <div id="previewSceneLoadingOverlay" class="preview-scene-loading-overlay" aria-hidden="true">
+                        <img id="previewSceneLoadingImage" alt="" class="preview-scene-loading-image">
+                        <div class="preview-scene-loading-shade"></div>
+                        <div class="preview-scene-loading-chip">
+                            <span class="preview-scene-loading-dot"></span>
+                            <span id="previewSceneLoadingText">Loading panorama</span>
+                        </div>
+                    </div>
 
                     <!-- centered brand -->
                     <div id="brandOverlay"
@@ -1334,6 +440,7 @@ body {
     </script>
 
     {{ scenes_json|json_script:"preview-scenes-data" }}
+    {{ scene_list_json|json_script:"preview-scene-list-data" }}
 
     {% comment %} <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script> {% endcomment %}
 
@@ -1350,11 +457,36 @@ body {
 
     const config = window.PREVIEW_CONFIG || {};
     const scenesDataEl = document.getElementById("preview-scenes-data");
+    const sceneListDataEl = document.getElementById("preview-scene-list-data");
+
+    // scenes = toutes les scènes envoyées au preview.
+    // Elles restent disponibles pour Marzipano, les hotspots et les URLs directes.
     let scenes = scenesDataEl ? JSON.parse(scenesDataEl.textContent) : [];
 
-    if (!Array.isArray(scenes)) scenes = [];
+    // dockScenes = seulement les scènes à afficher dans la liste du dock bottom.
+    // Ces données viennent de scene_list_json côté Django.
+    let dockScenes = sceneListDataEl ? JSON.parse(sceneListDataEl.textContent) : [];
 
-    scenes = scenes.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    if (!Array.isArray(scenes)) scenes = [];
+    if (!Array.isArray(dockScenes)) dockScenes = [];
+
+    scenes = scenes
+        .slice()
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    dockScenes = dockScenes
+        .filter(scene => scene && scene.is_public !== false)
+        .slice()
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    // Sécurité : si le backend n’envoie pas encore scene_list_json,
+    // on construit la liste visible depuis scenes.
+    if (!dockScenes.length) {
+        dockScenes = scenes
+            .filter(scene => scene && scene.is_public !== false)
+            .slice()
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
 
     function debugLog() {}
 
@@ -1368,8 +500,13 @@ body {
     }
 
     function getScenePreviewThumb(sceneData) {
+        const tilesPreview = sceneData?.tiles_url
+            ? `${String(sceneData.tiles_url).replace(/\/$/, "")}/preview.jpg`
+            : "";
+
         return (
             sceneData?.thumbnail_url ||
+            tilesPreview ||
             sceneData?.image_360_mobile_url ||
             sceneData?.image_360_url ||
             ""
@@ -1404,6 +541,10 @@ body {
 
     const previewToast = $("previewToast");
 
+    const previewSceneLoadingOverlay = $("previewSceneLoadingOverlay");
+    const previewSceneLoadingImage = $("previewSceneLoadingImage");
+    const previewSceneLoadingText = $("previewSceneLoadingText");
+
     const previewInfoBackdrop = $("previewInfoBackdrop");
     const previewInfoPanel = $("previewInfoPanel");
     const previewInfoClose = $("previewInfoClose");
@@ -1434,6 +575,10 @@ body {
     let currentSceneId = null;
     let isTransitioning = false;
 
+    // Sur mobile, les animations CSS sur un canvas WebGL peuvent être sautées par Safari/Chrome.
+    // On garde le CSS pour desktop, mais on force le mobile avec Web Animations API.
+    let runningLayerAnimations = [];
+
     let autorotateEnabled = false;
     let autorotateFrame = null;
     let autorotateLastTs = 0;
@@ -1441,15 +586,32 @@ body {
     let focusMode = false;
     let toastTimer = null;
 
-    const MIN_FOV = degToRad(28);
+    // Zoom réellement utilisable sur mobile.
+    // Important: le limiter Marzipano plus bas utilise aussi une résolution haute,
+    // sinon Marzipano bloque le zoom avant même si MIN_FOV est petit.
+    const MIN_FOV = degToRad(12);
     const MAX_FOV = degToRad(118);
 
-    const EXTRA_WIDE_OFFSET = degToRad(12);
-    const INITIAL_START_OFFSET = degToRad(16);
-    const SCENE_SWITCH_START_OFFSET = degToRad(14);
+    const EXTRA_WIDE_OFFSET = degToRad(0);
 
-    const MOBILE_EXTRA_WIDE_OFFSET = degToRad(4);
-    const MOBILE_PINCH_SENSITIVITY = 0.0045;
+    // Cinématique:
+    // - ouverture: la première scène commence large puis zoome doucement vers la vue finale
+    // - navigation: la scène actuelle zoome vers le hotspot, puis la nouvelle scène dézoome vers la vue finale
+    const INITIAL_OPEN_ZOOM_OFFSET = degToRad(12);
+
+    // Effet marche / walk-through:
+    // 1) on oriente la caméra vers le hotspot,
+    // 2) on avance comme si la personne entrait dans la scène,
+    // 3) la scène actuelle disparaît en restant nette,
+    // 4) la scène suivante apparaît déjà proche puis dézoome.
+    const NAVIGATION_ZOOM_IN_OFFSET_1 = degToRad(14);
+    const NAVIGATION_ZOOM_IN_OFFSET_2 = degToRad(30);
+    const NAVIGATION_ZOOM_IN_OFFSET_3 = degToRad(42);
+    const SCENE_INCOMING_DEZOOM_OFFSET = degToRad(30);
+    const SCENE_OUTGOING_ZOOM_OFFSET = degToRad(36);
+
+    const MOBILE_EXTRA_WIDE_OFFSET = degToRad(0);
+    const MOBILE_PINCH_SENSITIVITY = 2.15;
 
     const pinchState = {
         active: false,
@@ -1473,6 +635,17 @@ body {
 
     function isMobileViewport() {
         return window.matchMedia("(max-width: 768px)").matches;
+    }
+
+    function getSceneTransitionDuration() {
+        // Desktop garde l'effet long. Mobile doit rester plus léger pour éviter
+        // les saccades du canvas WebGL pendant la transition.
+        return isMobileViewport() ? 1080 : 1420;
+    }
+
+    function getIncomingCameraDuration() {
+        // Mobile: stabilisation plus courte, effet marche plus propre.
+        return isMobileViewport() ? 760 : 1080;
     }
     function setupResponsiveMode() {
         if (!window.matchMedia) return;
@@ -1542,11 +715,34 @@ body {
     }
 
     function findScene(sceneId) {
-        return scenes.find(scene => String(scene.id) === String(sceneId));
+        return scenes.find(scene =>
+            String(scene.id) === String(sceneId) ||
+            String(scene.scene_id) === String(sceneId) ||
+            String(scene.uuid) === String(sceneId) ||
+            String(scene.slug) === String(sceneId)
+        );
     }
 
     function findSceneIndex(sceneId) {
-        return scenes.findIndex(scene => String(scene.id) === String(sceneId));
+        return scenes.findIndex(scene =>
+            String(scene.id) === String(sceneId) ||
+            String(scene.scene_id) === String(sceneId) ||
+            String(scene.uuid) === String(sceneId) ||
+            String(scene.slug) === String(sceneId)
+        );
+    }
+
+    function findDockSceneIndex(sceneId) {
+        return dockScenes.findIndex(scene =>
+            String(scene.id) === String(sceneId) ||
+            String(scene.scene_id) === String(sceneId) ||
+            String(scene.uuid) === String(sceneId) ||
+            String(scene.slug) === String(sceneId)
+        );
+    }
+
+    function getVisibleDockScenes() {
+        return dockScenes.length ? dockScenes : scenes;
     }
 
     function resolveIcon(iconName) {
@@ -1596,6 +792,88 @@ body {
         }, 1700);
     }
 
+    const assetPrefetchCache = new Set();
+    let sceneLoadingHideTimer = null;
+
+    function showSceneLoadingPreview(scene, label = "Loading panorama") {
+        if (!previewSceneLoadingOverlay || !previewSceneLoadingImage) return;
+
+        const thumbUrl = getScenePreviewThumb(scene);
+        if (previewSceneLoadingText) {
+            previewSceneLoadingText.textContent = label;
+        }
+
+        if (thumbUrl) {
+            previewSceneLoadingImage.src = thumbUrl;
+            previewSceneLoadingImage.classList.remove("hidden");
+        } else {
+            previewSceneLoadingImage.removeAttribute("src");
+            previewSceneLoadingImage.classList.add("hidden");
+        }
+
+        clearTimeout(sceneLoadingHideTimer);
+        previewSceneLoadingOverlay.classList.add("is-visible");
+    }
+
+    function hideSceneLoadingPreview(delay = 260) {
+        if (!previewSceneLoadingOverlay) return;
+
+        clearTimeout(sceneLoadingHideTimer);
+        sceneLoadingHideTimer = setTimeout(() => {
+            previewSceneLoadingOverlay.classList.remove("is-visible");
+        }, delay);
+    }
+
+    function prefetchUrl(url) {
+        if (!url || assetPrefetchCache.has(url)) return;
+        assetPrefetchCache.add(url);
+
+        const img = new Image();
+        img.decoding = "async";
+        img.loading = "eager";
+        img.src = url;
+    }
+
+    function prefetchSceneAssets(scene) {
+        if (!scene) return;
+
+        prefetchUrl(getScenePreviewThumb(scene));
+
+        if (scene.image_360_mobile_url) {
+            prefetchUrl(scene.image_360_mobile_url);
+        }
+
+        if (scene.image_360_url && !isMobileViewport()) {
+            prefetchUrl(scene.image_360_url);
+        }
+
+        if (scene.tiles_url) {
+            const base = String(scene.tiles_url).replace(/\/$/, "");
+            prefetchUrl(`${base}/preview.jpg`);
+        }
+    }
+
+    function scheduleSmartPrefetch(sceneId) {
+        if (!scenes.length) return;
+
+        const index = findSceneIndex(sceneId);
+        if (index < 0) return;
+
+        const next = scenes[(index + 1) % scenes.length];
+        const previous = scenes[(index - 1 + scenes.length) % scenes.length];
+
+        const run = () => {
+            prefetchSceneAssets(next);
+            prefetchSceneAssets(previous);
+        };
+
+        if ("requestIdleCallback" in window) {
+            window.requestIdleCallback(run, { timeout: 1200 });
+        } else {
+            setTimeout(run, 350);
+        }
+    }
+
     function syncZoomButtonsState() {
         const view = getCurrentView();
         if (!view) return;
@@ -1612,6 +890,21 @@ body {
             zoomOutBtn.classList.toggle("opacity-40", zoomOutBtn.disabled);
         }
     }
+
+    function setZoomInstant(nextFov) {
+        const view = getCurrentView();
+        if (!view) return;
+
+        const safeFov = clamp(nextFov, MIN_FOV, MAX_FOV);
+        view.setParameters({ fov: safeFov });
+        syncZoomButtonsState();
+    }
+
+    function getActiveTouchCount(event) {
+        if (event?.touches) return event.touches.length;
+        return 0;
+    }
+
 
     function openSceneStack() {
         previewSceneRail?.classList.add("open");
@@ -1640,87 +933,133 @@ body {
         document.body.classList.remove("info-panel-open");
     }
 
-    function openInfoPanel(hotspot) {
-        if (!previewInfoPanel) return;
+function openInfoPanel(hotspot) {
+    if (!previewInfoPanel) return;
 
-        const content = hotspot.payload?.content || {};
-        const imageUrl = content.image_url || hotspot.ad_image_url || "";
-        const ctaUrl = content.cta_url || "";
-        const buttonText = content.button_text || "Open";
-        const badge = content.badge || "";
-        const price = content.price || "";
-        const siteName = content.site_name || "";
-        const phone = content.phone || "";
-        const email = content.email || "";
-        const whatsappNumber = content.whatsapp_number || "";
-        const whatsappMessage = content.whatsapp_message || "Hello";
+    const content = hotspot.payload?.content || {};
 
-        previewInfoMedia.innerHTML = imageUrl
-            ? `<img src="${imageUrl}" alt="${hotspot.title || hotspot.label || "Hotspot"}" class="info-media-image">`
-            : `<div class="info-media-empty">Preview unavailable</div>`;
+    const imageUrl =
+        content.image_url ||
+        content.product_image_url ||
+        content.photo_url ||
+        hotspot.image_url ||
+        hotspot.ad_image_url ||
+        "";
 
-        previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
-        previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
+    const ctaUrl = content.cta_url || "";
+    const buttonText = content.button_text || "Open";
+    const badge = content.badge || "";
+    const price = content.price || "";
+    const siteName = content.site_name || "";
+    const phone = content.phone || "";
+    const email = content.email || "";
+    const whatsappNumber = content.whatsapp_number || "";
+    const whatsappMessage = content.whatsapp_message || "Hello";
 
-        if (badge) {
-            previewInfoBadge.textContent = badge;
-            previewInfoBadge.classList.remove("hidden");
-        } else {
-            previewInfoBadge.classList.add("hidden");
-            previewInfoBadge.textContent = "";
-        }
+    const hotspotKind = String(
+        hotspot.type ||
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        "info"
+    ).toLowerCase();
 
-        if (price) {
-            previewInfoPrice.textContent = price;
-            previewInfoPrice.classList.remove("hidden");
-        } else {
-            previewInfoPrice.classList.add("hidden");
-            previewInfoPrice.textContent = "";
-        }
+    previewInfoPanel.classList.remove(
+        "is-product",
+        "is-info",
+        "is-ad",
+        "is-cta",
+        "is-cart",
+        "is-whatsapp",
+        "is-phone",
+        "is-website"
+    );
 
-        if (siteName) {
-            previewInfoSite.textContent = siteName;
-            previewInfoSite.classList.remove("hidden");
-        } else {
-            previewInfoSite.classList.add("hidden");
-            previewInfoSite.textContent = "";
-        }
+    previewInfoPanel.classList.add(`is-${hotspotKind}`);
+    previewInfoPanel.dataset.hotspotKind = hotspotKind;
 
-        if (ctaUrl) {
-            previewInfoAction.href = ctaUrl;
-            previewInfoAction.textContent = buttonText;
-            previewInfoAction.classList.remove("hidden");
-        } else {
-            previewInfoAction.classList.add("hidden");
-            previewInfoAction.removeAttribute("href");
-        }
+    previewInfoMedia.innerHTML = "";
 
-        if (whatsappNumber) {
-            const cleanNumber = String(whatsappNumber).replace(/[^\d]/g, "");
-            previewInfoWhatsapp.href = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(whatsappMessage)}`;
-            previewInfoWhatsapp.classList.remove("hidden");
-        } else {
-            previewInfoWhatsapp.classList.add("hidden");
-            previewInfoWhatsapp.removeAttribute("href");
-        }
+    if (imageUrl) {
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.alt = hotspot.title || hotspot.label || "Hotspot";
+        img.className = "info-media-image";
+        img.loading = "lazy";
+        img.decoding = "async";
 
-        if (phone) {
-            previewInfoContact.href = `tel:${phone}`;
-            previewInfoContact.textContent = "Call";
-            previewInfoContact.classList.remove("hidden");
-        } else if (email) {
-            previewInfoContact.href = `mailto:${email}`;
-            previewInfoContact.textContent = "Email";
-            previewInfoContact.classList.remove("hidden");
-        } else {
-            previewInfoContact.classList.add("hidden");
-            previewInfoContact.removeAttribute("href");
-        }
+        img.onerror = () => {
+            previewInfoMedia.innerHTML = `<div class="info-media-empty">Image unavailable</div>`;
+        };
 
-        previewInfoPanel.classList.add("open");
-        previewInfoBackdrop?.classList.add("open");
-        document.body.classList.add("info-panel-open");
+        previewInfoMedia.appendChild(img);
+    } else {
+        previewInfoMedia.innerHTML = `<div class="info-media-empty">Preview unavailable</div>`;
     }
+
+    previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
+    previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
+
+    if (badge) {
+        previewInfoBadge.textContent = badge;
+        previewInfoBadge.classList.remove("hidden");
+    } else {
+        previewInfoBadge.classList.add("hidden");
+        previewInfoBadge.textContent = "";
+    }
+
+    if (price) {
+        previewInfoPrice.textContent = price;
+        previewInfoPrice.classList.remove("hidden");
+    } else {
+        previewInfoPrice.classList.add("hidden");
+        previewInfoPrice.textContent = "";
+    }
+
+    if (siteName) {
+        previewInfoSite.textContent = siteName;
+        previewInfoSite.classList.remove("hidden");
+    } else {
+        previewInfoSite.classList.add("hidden");
+        previewInfoSite.textContent = "";
+    }
+
+    if (ctaUrl) {
+        previewInfoAction.href = ctaUrl;
+        previewInfoAction.textContent = buttonText;
+        previewInfoAction.classList.remove("hidden");
+    } else {
+        previewInfoAction.classList.add("hidden");
+        previewInfoAction.removeAttribute("href");
+    }
+
+    if (whatsappNumber) {
+        const cleanNumber = String(whatsappNumber).replace(/[^\d]/g, "");
+        previewInfoWhatsapp.href = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+        previewInfoWhatsapp.classList.remove("hidden");
+    } else {
+        previewInfoWhatsapp.classList.add("hidden");
+        previewInfoWhatsapp.removeAttribute("href");
+    }
+
+    if (phone) {
+        previewInfoContact.href = `tel:${phone}`;
+        previewInfoContact.textContent = "Call";
+        previewInfoContact.classList.remove("hidden");
+    } else if (email) {
+        previewInfoContact.href = `mailto:${email}`;
+        previewInfoContact.textContent = "Email";
+        previewInfoContact.classList.remove("hidden");
+    } else {
+        previewInfoContact.classList.add("hidden");
+        previewInfoContact.removeAttribute("href");
+    }
+
+    closeSceneStack();
+
+    previewInfoPanel.classList.add("open");
+    previewInfoBackdrop?.classList.add("open");
+    document.body.classList.add("info-panel-open");
+}
 
     function stopAutorotate() {
         autorotateEnabled = false;
@@ -1785,29 +1124,52 @@ body {
 
         sceneStackMiniPreview.innerHTML = "";
 
-        const currentIndex = Math.max(findSceneIndex(currentSceneId), 0);
+        const sourceScenes = getVisibleDockScenes();
+        if (!sourceScenes.length) return;
+
+        let currentIndex = findDockSceneIndex(currentSceneId);
+
+        if (currentIndex < 0) {
+            currentIndex = 0;
+        }
+
         const miniScenes = [
-            scenes[currentIndex],
-            scenes[currentIndex + 1] || scenes[0],
-            scenes[currentIndex + 2] || scenes[1] || scenes[0]
+            sourceScenes[currentIndex],
+            sourceScenes[currentIndex + 1] || sourceScenes[0],
+            sourceScenes[currentIndex + 2] || sourceScenes[1] || sourceScenes[0]
         ].filter(Boolean);
 
         miniScenes.slice(0, 3).forEach((scene) => {
             const card = document.createElement("div");
             card.className = "scene-stack-mini-card";
+
             const thumbUrl = getScenePreviewThumb(scene);
+
             card.innerHTML = thumbUrl
                 ? `<img src="${thumbUrl}" alt="${scene.title || 'Scene'}">`
                 : `<div class="scene-thumb-placeholder">360</div>`;
+
             sceneStackMiniPreview.appendChild(card);
         });
     }
 
     function renderSceneRail() {
         if (!previewScenesList) return;
+
         previewScenesList.innerHTML = "";
 
-        scenes.forEach((scene, index) => {
+        const sourceScenes = getVisibleDockScenes();
+
+        if (!sourceScenes.length) {
+            previewScenesList.innerHTML = `
+                <div class="px-4 py-3 text-center text-xs font-bold text-white/60">
+                    Aucune scène visible
+                </div>
+            `;
+            return;
+        }
+
+        sourceScenes.forEach((scene, index) => {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "scene-card";
@@ -1817,7 +1179,7 @@ body {
                 <div class="scene-thumb">
                     ${
                         getScenePreviewThumb(scene)
-                            ? `<img src="${getScenePreviewThumb(scene)}" alt="${scene.title}">`
+                            ? `<img src="${getScenePreviewThumb(scene)}" alt="${scene.title || 'Scene'}">`
                             : `<div class="scene-thumb-placeholder">360</div>`
                     }
                 </div>
@@ -1832,6 +1194,7 @@ body {
 
             button.addEventListener("click", (event) => {
                 event.stopPropagation();
+
                 if (isTransitioning) return;
 
                 const targetScene = findScene(scene.id);
@@ -1855,10 +1218,14 @@ body {
     }
 
     function updateSceneMeta(scene) {
-        const index = findSceneIndex(scene?.id);
+        const publicIndex = findDockSceneIndex(scene?.id);
 
-        if (sceneCountBadge && index >= 0) {
-            sceneCountBadge.textContent = `${index + 1}`;
+        if (sceneCountBadge) {
+            if (publicIndex >= 0) {
+                sceneCountBadge.textContent = `${publicIndex + 1}`;
+            } else {
+                sceneCountBadge.textContent = `${dockScenes.length || scenes.length || 0}`;
+            }
         }
 
         markActiveSceneCard(scene?.id);
@@ -1884,49 +1251,110 @@ body {
         });
     }
 
-    function buildHotspotNode(hotspot) {
-        const display = hotspot.payload?.display || {};
-        const variant = display.variant || "pin";
-        const size = Number(display.size || 58);
-        const rotation = Number(display.rotation || 0);
-        const offsetX = Number(display.offset_x || 0);
-        const offsetY = Number(display.offset_y || 0);
-        const anchor = display.anchor || "bottom";
+function buildHotspotNode(hotspot, hotspotIndex = 0) {
+    const display = hotspot.payload?.display || {};
+    const variant = display.variant || "pin";
 
-        const node = document.createElement("div");
-        node.className = `preview-hotspot variant-${variant} anchor-${anchor}`;
-        node.style.width = `${size}px`;
-        node.style.height = variant === "label" ? "auto" : `${size}px`;
-        node.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`;
+    const isMobile = isMobileViewport();
 
-        const img = document.createElement("img");
-        img.src = resolveIcon(hotspot.selected_icon || hotspot.icon || "default");
-        img.alt = hotspot.label || hotspot.title || "Hotspot";
+    const defaultSize =
+        hotspot.type === "product" ? 66 :
+        hotspot.type === "info" ? 60 :
+        58;
 
-        if (variant === "label") {
-            const span = document.createElement("span");
-            span.textContent = hotspot.label || hotspot.title || "Hotspot";
-            node.appendChild(img);
-            node.appendChild(span);
-        } else {
-            node.appendChild(img);
+    const rawSize = Number(display.size || defaultSize);
+
+    const size = clamp(
+        rawSize,
+        36,
+        isMobile ? 64 : 92
+    );
+
+    const rotation = Number(display.rotation || 0);
+    const offsetX = Number(display.offset_x || 0);
+    const offsetY = Number(display.offset_y || 0);
+    const anchor = display.anchor || "bottom";
+
+    const hotspotKind = String(
+        hotspot.type ||
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        "default"
+    ).toLowerCase();
+
+    const node = document.createElement("div");
+    node.className = `preview-hotspot variant-${variant} anchor-${anchor} hotspot-kind-${hotspotKind}`;
+    node.dataset.hotspotType = hotspotKind;
+
+    // STABLE MOBILE HOTSPOT ANCHOR:
+    // Marzipano calcule la position du hotspot avec la taille du parent.
+    // Donc le parent doit toujours garder une largeur/hauteur fixe,
+    // même pour les variants label/product/whatsapp.
+    node.style.width = `${size}px`;
+    node.style.height = `${size}px`;
+    node.style.minWidth = `${size}px`;
+    node.style.minHeight = `${size}px`;
+    node.style.setProperty("--hotspot-node-size", `${size}px`);
+
+    // IMPORTANT:
+    // Ne jamais appliquer transform sur node.
+    // Marzipano utilise transform sur ce parent pour positionner le hotspot.
+    // Si on modifie node.style.transform, certains hotspots peuvent remonter en haut.
+    node.style.setProperty("--hotspot-grow-delay", `${Math.min(hotspotIndex * 70, 420)}ms`);
+
+    const wrap = document.createElement("span");
+    wrap.className = "hotspot-grow-wrap";
+    wrap.style.setProperty(
+        "--hotspot-base-transform",
+        `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`
+    );
+    wrap.style.transform = "var(--hotspot-base-transform)";
+
+    const img = document.createElement("img");
+
+    img.src = resolveIcon(
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        hotspot.type ||
+        "default"
+    );
+
+    img.alt = hotspot.label || hotspot.title || "Hotspot";
+    img.loading = "lazy";
+    img.decoding = "async";
+
+    img.onerror = () => {
+        img.src = resolveIcon("default");
+    };
+
+    if (variant === "label") {
+        const span = document.createElement("span");
+        span.className = "hotspot-label-text";
+        span.textContent = hotspot.label || hotspot.title || "Hotspot";
+
+        wrap.appendChild(img);
+        wrap.appendChild(span);
+        node.appendChild(wrap);
+    } else {
+        wrap.appendChild(img);
+        node.appendChild(wrap);
+    }
+
+    stopTouchAndScrollEventPropagation(node);
+
+    node.addEventListener("click", async (event) => {
+        event.stopPropagation();
+
+        if (hotspot.type === "navigate" && hotspot.target_scene) {
+            await navigateToScene(hotspot.target_scene, hotspot);
+            return;
         }
 
-        stopTouchAndScrollEventPropagation(node);
+        openInfoPanel(hotspot);
+    });
 
-        node.addEventListener("click", async (event) => {
-            event.stopPropagation();
-
-            if (hotspot.type === "navigate" && hotspot.target_scene) {
-                await navigateToScene(hotspot.target_scene, hotspot);
-                return;
-            }
-
-            openInfoPanel(hotspot);
-        });
-
-        return node;
-    }
+    return node;
+}
 
     function ensureViewer(key) {
         const mount = getMountEl(key);
@@ -1961,12 +1389,23 @@ body {
             tiles_url: sceneData?.tiles_url || ""
         });
 
+        // Le zoom mobile était limité par une valeur trop basse ici.
+        // Pour avoir le même feeling que le build, on garde une limite haute.
+        // Même si l'image mobile est plus légère, Marzipano doit recevoir une résolution logique
+        // suffisante, sinon il empêche le zoom avant.
+        const logicalMaxResolution = Math.max(
+            Number(sceneData?.face_size || 0),
+            Number(sceneData?.max_resolution || 0),
+            4096
+        );
+
         if (sceneData?.tiles_url) {
+            const base = String(sceneData.tiles_url).replace(/\/$/, "");
             return {
                 source: Marzipano.ImageUrlSource.fromString(
-                    `${sceneData.tiles_url}/{z}/{f}/{y}/{x}.jpg`,
+                    `${base}/{z}/{f}/{y}/{x}.jpg`,
                     {
-                        cubeMapPreviewUrl: `${sceneData.tiles_url}/preview.jpg`
+                        cubeMapPreviewUrl: `${base}/preview.jpg`
                     }
                 ),
                 geometry: new Marzipano.CubeGeometry(
@@ -1974,28 +1413,27 @@ body {
                         { tileSize: 256, size: 256, fallbackOnly: true },
                         { tileSize: 512, size: 512 },
                         { tileSize: 512, size: 1024 },
-                        { tileSize: 512, size: 2048 }
+                        { tileSize: 512, size: 2048 },
+                        { tileSize: 512, size: 4096 }
                     ]
                 ),
                 limiter: Marzipano.RectilinearView.limit.traditional(
-                    sceneData.face_size || (mobile ? 1024 : 2048),
+                    logicalMaxResolution,
                     MAX_FOV
                 )
             };
         }
-
-        const textureWidth = mobile ? 1536 : 3072;
-        const faceSize = mobile ? 1536 : 3072;
 
         const preferredImageUrl = getPreferredImageUrl(sceneData);
 
         return {
             source: Marzipano.ImageUrlSource.fromString(preferredImageUrl),
             geometry: new Marzipano.EquirectGeometry([
-                { width: textureWidth }
+                // Valeur proche du builder pour éviter le blocage du zoom sur mobile.
+                { width: 4096 }
             ]),
             limiter: Marzipano.RectilinearView.limit.traditional(
-                faceSize,
+                logicalMaxResolution,
                 MAX_FOV
             )
         };
@@ -2054,17 +1492,22 @@ body {
                 sceneId: sceneData?.id,
                 error: String(error?.message || error)
             };
-            showDebugDialog("CREATE_SCENE_FAILED", payload);
+            console.error("CREATE_SCENE_FAILED", payload);
+            showToast("Panorama unavailable");
             return null;
         }
 
-        (sceneData.hotspots || []).forEach((hotspot) => {
-            const node = buildHotspotNode(hotspot);
-            marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
-                yaw: hotspot.yaw,
-                pitch: hotspot.pitch
-            });
-        });
+       (sceneData.hotspots || []).forEach((hotspot, hotspotIndex) => {
+    const node = buildHotspotNode(hotspot, hotspotIndex);
+
+    const hotspotYaw = Number(hotspot.yaw);
+    const hotspotPitch = Number(hotspot.pitch);
+
+    marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
+        yaw: Number.isFinite(hotspotYaw) ? hotspotYaw : 0,
+        pitch: Number.isFinite(hotspotPitch) ? hotspotPitch : 0
+    });
+});
 
         requestAnimationFrame(() => {
             updateAllViewerSizes();
@@ -2079,12 +1522,14 @@ body {
         if (!view || !scene) return;
 
         const finalFov = getSceneFinalFov(scene);
-        const startFov = clamp(finalFov - INITIAL_START_OFFSET, MIN_FOV, MAX_FOV);
+
+        // Première scène: départ large puis zoom doux vers la vue finale.
+        const startFov = clamp(finalFov + INITIAL_OPEN_ZOOM_OFFSET, MIN_FOV, MAX_FOV);
 
         const finalYaw = degToRad(scene.yaw_default || 0);
         const finalPitch = degToRad(scene.pitch_default || 0);
 
-        previewViewer.classList.add("is-cinematic-transition");
+        previewViewer.classList.add("is-cinematic-transition", "transitioning", "is-opening");
 
         view.setParameters({
             yaw: finalYaw,
@@ -2099,23 +1544,214 @@ body {
                     pitch: finalPitch,
                     fov: finalFov
                 },
-                { transitionDuration: 1600 }
+                { transitionDuration: 900 }
             );
             syncZoomButtonsState();
-        }, 140);
+        }, 80);
 
         setTimeout(() => {
             previewIntroOverlay?.classList.add("is-hidden");
             document.body.classList.add("preview-has-loaded");
-        }, 650);
+        }, 320);
 
         setTimeout(() => {
-            previewViewer.classList.remove("is-cinematic-transition");
+            previewViewer.classList.remove("is-cinematic-transition", "transitioning", "is-opening");
             syncZoomButtonsState();
-        }, 1850);
+        }, 1080);
     }
 
-    function cinematicSwitchScene(targetScene, options = {}) {
+    function restartLayerAnimation(el) {
+        if (!el) return;
+        el.style.animation = "none";
+        // Force le navigateur mobile à recalculer avant de relancer l'animation.
+        // Sans ça, Safari/Chrome mobile saute parfois la transition.
+        void el.offsetHeight;
+        el.style.animation = "";
+    }
+
+    function cancelRunningLayerAnimations() {
+        runningLayerAnimations.forEach((anim) => {
+            try {
+                anim.cancel();
+            } catch (error) {
+                // ignore
+            }
+        });
+        runningLayerAnimations = [];
+    }
+
+    function setLayerGpuTransform(el, transformValue) {
+        if (!el) return;
+        el.style.transform = transformValue;
+        el.style.webkitTransform = transformValue;
+    }
+
+    function clearMobileLayerAnimationState(...elements) {
+        elements.forEach((el) => {
+            if (!el) return;
+            el.classList.remove("mobile-wa-layer");
+            el.style.animation = "";
+            el.style.transform = "";
+            el.style.webkitTransform = "";
+            el.style.filter = "";
+        });
+    }
+
+    let walkOverlayEl = null;
+
+    function ensureWalkCinematicOverlay() {
+        if (walkOverlayEl && walkOverlayEl.isConnected) return walkOverlayEl;
+
+        walkOverlayEl = document.createElement("div");
+        walkOverlayEl.id = "previewWalkCinemaOverlay";
+        walkOverlayEl.className = "preview-walk-cinema-overlay";
+        walkOverlayEl.setAttribute("aria-hidden", "true");
+        previewViewer?.appendChild(walkOverlayEl);
+
+        return walkOverlayEl;
+    }
+
+    function runWalkOverlayAnimation() {
+        const overlay = ensureWalkCinematicOverlay();
+        if (!overlay) return null;
+
+        overlay.style.opacity = "0";
+
+        const mobile = isMobileViewport();
+        const keyframes = mobile
+            ? [
+                { opacity: 0, transform: "scale(1)" },
+                { offset: 0.30, opacity: 0.10, transform: "scale(1.004)" },
+                { offset: 0.58, opacity: 0.18, transform: "scale(1.012)" },
+                { offset: 0.82, opacity: 0.08, transform: "scale(1.018)" },
+                { opacity: 0, transform: "scale(1.024)" }
+            ]
+            : [
+                { opacity: 0, transform: "scale(1)" },
+                { offset: 0.24, opacity: 0.16, transform: "scale(1.01)" },
+                { offset: 0.48, opacity: 0.34, transform: "scale(1.025)" },
+                { offset: 0.72, opacity: 0.18, transform: "scale(1.04)" },
+                { opacity: 0, transform: "scale(1.055)" }
+            ];
+
+        try {
+            return overlay.animate(keyframes, {
+                duration: getSceneTransitionDuration(),
+                easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+                fill: "forwards"
+            });
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function runMobileCinematicLayerAnimation(outgoingEl, incomingEl) {
+        if (!outgoingEl || !incomingEl || !isMobileViewport()) return;
+
+        cancelRunningLayerAnimations();
+
+        const duration = getSceneTransitionDuration();
+        const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+        previewViewer.classList.add("mobile-cinematic-running", "walk-cinematic-running");
+        outgoingEl.classList.add("mobile-wa-layer");
+        incomingEl.classList.add("mobile-wa-layer");
+
+        // MOBILE IMAGE-FIRST:
+        // Pas d'overlay/loading/voile ici. On joue uniquement avec les deux vraies images Marzipano.
+        // La scène courante reste visible assez longtemps pour éviter l'écran bleu/fond pendant que
+        // la scène suivante devient visible.
+        outgoingEl.style.opacity = "1";
+        incomingEl.style.opacity = "0";
+        outgoingEl.style.filter = "none";
+        incomingEl.style.filter = "none";
+        setLayerGpuTransform(outgoingEl, "translate3d(0,0,0) scale(1)");
+        setLayerGpuTransform(incomingEl, "translate3d(0,0,0) scale(1.018)");
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                try {
+                    const outgoingAnim = outgoingEl.animate(
+                        [
+                            { transform: "translate3d(0,0,0) scale(1)", opacity: 1 },
+                            { offset: 0.34, transform: "translate3d(0,0,0) scale(1.030)", opacity: 1 },
+                            { offset: 0.62, transform: "translate3d(0,-0.18%,0) scale(1.070)", opacity: 0.92 },
+                            { offset: 0.82, transform: "translate3d(0,-0.34%,0) scale(1.095)", opacity: 0.42 },
+                            { transform: "translate3d(0,-0.45%,0) scale(1.110)", opacity: 0 }
+                        ],
+                        { duration, easing, fill: "forwards" }
+                    );
+
+                    const incomingAnim = incomingEl.animate(
+                        [
+                            { transform: "translate3d(0,0,0) scale(1.018)", opacity: 0 },
+                            { offset: 0.18, transform: "translate3d(0,0,0) scale(1.016)", opacity: 0.10 },
+                            { offset: 0.42, transform: "translate3d(0,0,0) scale(1.012)", opacity: 0.42 },
+                            { offset: 0.72, transform: "translate3d(0,0,0) scale(1.006)", opacity: 0.86 },
+                            { transform: "translate3d(0,0,0) scale(1)", opacity: 1 }
+                        ],
+                        { duration: duration + 40, easing, fill: "forwards" }
+                    );
+
+                    runningLayerAnimations = [outgoingAnim, incomingAnim];
+                } catch (error) {
+                    outgoingEl.style.opacity = "0";
+                    incomingEl.style.opacity = "1";
+                    setLayerGpuTransform(outgoingEl, "translate3d(0,0,0) scale(1.08)");
+                    setLayerGpuTransform(incomingEl, "translate3d(0,0,0) scale(1)");
+                }
+            });
+        });
+    }
+
+
+    function waitForLayerFirstFrame(layerKey, timeout = 520) {
+        const mount = getMountEl(layerKey);
+
+        return new Promise((resolve) => {
+            let resolved = false;
+            let observer = null;
+
+            const finish = () => {
+                if (resolved) return;
+                resolved = true;
+                try { observer?.disconnect?.(); } catch (_) {}
+
+                // On laisse au canvas Marzipano deux frames pour peindre la vraie image.
+                updateAllViewerSizes();
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            updateAllViewerSizes();
+                            resolve();
+                        }, isMobileViewport() ? 90 : 20);
+                    });
+                });
+            };
+
+            const hasCanvas = () => !!mount?.querySelector?.("canvas");
+
+            if (hasCanvas()) {
+                finish();
+                return;
+            }
+
+            observer = mount
+                ? new MutationObserver(() => {
+                    if (hasCanvas()) finish();
+                })
+                : null;
+
+            try {
+                observer?.observe?.(mount, { childList: true, subtree: true });
+            } catch (_) {}
+
+            setTimeout(finish, timeout);
+        });
+    }
+
+
+    async function cinematicSwitchScene(targetScene, options = {}) {
         if (!targetScene) {
             isTransitioning = false;
             return;
@@ -2124,11 +1760,18 @@ body {
         const outgoingKey = activeLayerKey;
         const incomingKey = standbyLayerKey();
 
+        const outgoingEl = getLayerEl(outgoingKey);
+        const incomingEl = getLayerEl(incomingKey);
+
+        if (!outgoingEl || !incomingEl) {
+            isTransitioning = false;
+            return;
+        }
+
+        // On prépare la nouvelle scène dans la couche cachée, comme dans le builder.
         buildSceneOnLayer(incomingKey, targetScene);
 
         const incomingView = views[incomingKey];
-        const outgoingEl = getLayerEl(outgoingKey);
-        const incomingEl = getLayerEl(incomingKey);
 
         const startYaw = options.fromYaw !== undefined
             ? options.fromYaw
@@ -2140,34 +1783,89 @@ body {
 
         const endYaw = degToRad(targetScene.yaw_default || 0);
         const endPitch = degToRad(targetScene.pitch_default || 0);
-
         const finalFov = getSceneFinalFov(targetScene);
-        const introFov = clamp(finalFov - SCENE_SWITCH_START_OFFSET, MIN_FOV, MAX_FOV);
+
+        const incomingStartFov = clamp(
+            finalFov - (isMobileViewport() ? degToRad(14) : SCENE_INCOMING_DEZOOM_OFFSET),
+            MIN_FOV,
+            MAX_FOV
+        );
 
         if (incomingView) {
             incomingView.setParameters({
                 yaw: startYaw,
                 pitch: startPitch,
-                fov: introFov
+                fov: incomingStartFov
             });
         }
 
+        // Mobile: on ne montre jamais le fond/loader pendant la transition.
+        // La scène actuelle reste active pendant que la scène suivante peint sa première frame.
+        hideSceneLoadingPreview(0);
+        previewViewer.classList.remove("is-cinematic-transition", "transitioning", "walk-cinematic-running", "mobile-cinematic-running");
+
         outgoingEl.classList.remove("standby-layer", "layer-incoming", "layer-outgoing");
-        incomingEl.classList.remove("standby-layer", "layer-incoming", "layer-outgoing");
-
         outgoingEl.classList.add("active-layer");
-        incomingEl.classList.add("layer-incoming");
-        incomingEl.style.opacity = "0";
+        outgoingEl.style.opacity = "1";
+        outgoingEl.style.pointerEvents = "auto";
 
-        previewViewer.classList.add("is-cinematic-transition");
+        incomingEl.classList.remove("active-layer", "layer-incoming", "layer-outgoing");
+        incomingEl.classList.add("standby-layer");
+        incomingEl.style.opacity = "0";
+        incomingEl.style.pointerEvents = "none";
+
+        restartLayerAnimation(outgoingEl);
+        restartLayerAnimation(incomingEl);
+        void previewViewer.offsetHeight;
+
+        if (isMobileViewport()) {
+            // Attendre la vraie frame du panorama entrant évite l'écran bleu/fond visible sur téléphone.
+            await waitForLayerFirstFrame(incomingKey, 620);
+        }
 
         currentSceneId = targetScene.id;
         updateSceneMeta(targetScene);
         syncSceneInUrl(targetScene);
 
+        // Vrai effet cinéma: la caméra avance dans l'image courante.
+        const outgoingView = views[outgoingKey];
+        if (outgoingView) {
+            outgoingView.setParameters(
+                {
+                    yaw: options.fromYaw !== undefined ? options.fromYaw : outgoingView.yaw(),
+                    pitch: options.fromPitch !== undefined ? options.fromPitch : outgoingView.pitch(),
+                    fov: clamp(
+                        outgoingView.fov() - (isMobileViewport() ? degToRad(18) : SCENE_OUTGOING_ZOOM_OFFSET),
+                        MIN_FOV,
+                        MAX_FOV
+                    )
+                },
+                { transitionDuration: Math.max(720, getSceneTransitionDuration() - 120) }
+            );
+        }
+
         requestAnimationFrame(() => {
-            incomingEl.style.opacity = "1";
+            previewViewer.classList.add("is-cinematic-transition", "transitioning", "walk-cinematic-running");
+
+            outgoingEl.classList.remove("standby-layer", "active-layer", "layer-incoming");
             outgoingEl.classList.add("layer-outgoing");
+            outgoingEl.style.opacity = "1";
+            outgoingEl.style.pointerEvents = "none";
+
+            incomingEl.classList.remove("active-layer", "standby-layer", "layer-outgoing");
+            incomingEl.classList.add("layer-incoming");
+            incomingEl.style.opacity = isMobileViewport() ? "0" : "1";
+            incomingEl.style.pointerEvents = "auto";
+
+            // Desktop garde l'overlay cinéma, mobile joue seulement avec l'image réelle.
+            if (!isMobileViewport()) {
+                const overlayAnim = runWalkOverlayAnimation();
+                if (overlayAnim) runningLayerAnimations = [overlayAnim];
+            }
+
+            if (isMobileViewport()) {
+                runMobileCinematicLayerAnimation(outgoingEl, incomingEl);
+            }
         });
 
         setTimeout(() => {
@@ -2178,26 +1876,34 @@ body {
                         pitch: endPitch,
                         fov: finalFov
                     },
-                    { transitionDuration: 1250 }
+                    { transitionDuration: getIncomingCameraDuration() }
                 );
             }
-        }, 100);
+        }, isMobileViewport() ? 90 : 150);
 
         setTimeout(() => {
-            outgoingEl.classList.remove("active-layer", "layer-outgoing");
+            cancelRunningLayerAnimations();
+            previewViewer.classList.remove("mobile-cinematic-running", "walk-cinematic-running");
+            clearMobileLayerAnimationState(outgoingEl, incomingEl);
+
+            outgoingEl.classList.remove("active-layer", "layer-outgoing", "layer-incoming");
             outgoingEl.classList.add("standby-layer");
             outgoingEl.style.opacity = "0";
+            outgoingEl.style.pointerEvents = "none";
 
-            incomingEl.classList.remove("layer-incoming", "standby-layer");
+            incomingEl.classList.remove("layer-incoming", "layer-outgoing", "standby-layer");
             incomingEl.classList.add("active-layer");
             incomingEl.style.opacity = "1";
+            incomingEl.style.pointerEvents = "auto";
 
-            previewViewer.classList.remove("is-cinematic-transition");
+            previewViewer.classList.remove("is-cinematic-transition", "transitioning");
+
             activeLayerKey = incomingKey;
             isTransitioning = false;
             updateAllViewerSizes();
             syncZoomButtonsState();
-        }, 1550);
+            scheduleSmartPrefetch(targetScene.id);
+        }, getSceneTransitionDuration() + 120);
     }
 
     async function navigateToScene(targetSceneId, hotspot) {
@@ -2209,14 +1915,23 @@ body {
 
         isTransitioning = true;
         closeInfoPanel();
+        closeSceneStack();
         stopAutorotate();
 
         const hotspotYaw = normalizeAngle(Number(hotspot.yaw ?? currentView.yaw()));
         const hotspotPitch = Number(hotspot.pitch ?? currentView.pitch());
-
         const currentFov = currentView.fov();
-        const preSwitchFov = clamp(currentFov + degToRad(8), MIN_FOV, MAX_FOV);
-        const preSwitchFov2 = clamp(currentFov + degToRad(14), MIN_FOV, MAX_FOV);
+        const mobile = isMobileViewport();
+
+        // Desktop garde l'effet avancé en 3 étapes.
+        // Mobile utilise 2 petites étapes: l'effet reste visible mais ne casse plus le canvas.
+        const offset1 = mobile ? degToRad(7) : NAVIGATION_ZOOM_IN_OFFSET_1;
+        const offset2 = mobile ? degToRad(15) : NAVIGATION_ZOOM_IN_OFFSET_2;
+        const offset3 = mobile ? degToRad(20) : NAVIGATION_ZOOM_IN_OFFSET_3;
+
+        const preSwitchFov = clamp(currentFov - offset1, MIN_FOV, MAX_FOV);
+        const preSwitchFov2 = clamp(currentFov - offset2, MIN_FOV, MAX_FOV);
+        const preSwitchFov3 = clamp(currentFov - offset3, MIN_FOV, MAX_FOV);
 
         currentView.setParameters(
             {
@@ -2224,7 +1939,7 @@ body {
                 pitch: hotspotPitch,
                 fov: preSwitchFov
             },
-            { transitionDuration: 280 }
+            { transitionDuration: mobile ? 150 : 220 }
         );
 
         setTimeout(() => {
@@ -2234,17 +1949,42 @@ body {
                     pitch: hotspotPitch,
                     fov: preSwitchFov2
                 },
-                { transitionDuration: 420 }
+                { transitionDuration: mobile ? 170 : 260 }
             );
             syncZoomButtonsState();
-        }, 140);
+        }, mobile ? 85 : 110);
+
+        if (!mobile) {
+            setTimeout(() => {
+                currentView.setParameters(
+                    {
+                        yaw: hotspotYaw,
+                        pitch: hotspotPitch,
+                        fov: preSwitchFov3
+                    },
+                    { transitionDuration: 260 }
+                );
+                syncZoomButtonsState();
+            }, 250);
+        }
 
         setTimeout(() => {
+            if (mobile) {
+                currentView.setParameters(
+                    {
+                        yaw: hotspotYaw,
+                        pitch: hotspotPitch,
+                        fov: preSwitchFov3
+                    },
+                    { transitionDuration: 120 }
+                );
+            }
+
             cinematicSwitchScene(targetScene, {
                 fromYaw: hotspotYaw,
                 fromPitch: hotspotPitch
             });
-        }, 460);
+        }, mobile ? 240 : 460);
     }
 
     function zoomToFov(nextFov, duration = 220) {
@@ -2259,7 +1999,7 @@ body {
         syncZoomButtonsState();
     }
 
-    function zoomBy(deltaDeg, duration = 220) {
+    function zoomBy(deltaDeg, duration = 120) {
         const view = getCurrentView();
         if (!view) return;
 
@@ -2287,32 +2027,49 @@ body {
     }
 
     function goToRelativeScene(step) {
-        if (isTransitioning || !scenes.length) return;
+        if (isTransitioning) return;
 
-        const currentIndex = findSceneIndex(currentSceneId);
-        const nextIndex = currentIndex < 0
-            ? 0
-            : (currentIndex + step + scenes.length) % scenes.length;
+        const sourceScenes = getVisibleDockScenes();
+        if (!sourceScenes.length) return;
 
-        const targetScene = scenes[nextIndex];
+        let currentIndex = findDockSceneIndex(currentSceneId);
+
+        if (currentIndex < 0) {
+            currentIndex = step >= 0 ? 0 : sourceScenes.length - 1;
+        } else {
+            currentIndex = (currentIndex + step + sourceScenes.length) % sourceScenes.length;
+        }
+
+        const dockTargetScene = sourceScenes[currentIndex];
+        if (!dockTargetScene) return;
+
+        const targetScene = findScene(dockTargetScene.id);
         if (!targetScene) return;
 
         closeInfoPanel();
+        closeSceneStack();
         isTransitioning = true;
         stopAutorotate();
 
         const currentView = getCurrentView();
+
         if (currentView) {
-            const widenedFov = clamp(currentView.fov() + degToRad(12), MIN_FOV, MAX_FOV);
-            currentView.setParameters(
-                { fov: widenedFov },
-                { transitionDuration: 260 }
+            const zoomInFov = clamp(
+                currentView.fov() - (isMobileViewport() ? degToRad(7) : NAVIGATION_ZOOM_IN_OFFSET_1),
+                MIN_FOV,
+                MAX_FOV
             );
+
+            currentView.setParameters(
+                { fov: zoomInFov },
+                { transitionDuration: isMobileViewport() ? 110 : 140 }
+            );
+
             syncZoomButtonsState();
 
             setTimeout(() => {
                 cinematicSwitchScene(targetScene);
-            }, 180);
+            }, isMobileViewport() ? 140 : 170);
         } else {
             cinematicSwitchScene(targetScene);
         }
@@ -2360,56 +2117,267 @@ body {
     function setupMobileZoomGestures() {
         if (!previewViewer) return;
 
-        previewViewer.addEventListener("touchstart", (event) => {
-            if (event.touches.length === 2) {
-                const view = getCurrentView();
-                if (!view) return;
+        previewViewer.style.touchAction = "none";
+        previewViewer.style.webkitUserSelect = "none";
+        previewViewer.style.userSelect = "none";
 
-                stopAutorotate();
-                pinchState.active = true;
-                pinchState.startDistance = getTouchDistance(event.touches);
-                pinchState.startFov = view.fov();
-            }
-        }, { passive: false });
+        // On applique aussi sur les couches/canvas, car sur mobile l'événement part parfois du canvas WebGL.
+        [previewLayerA, previewLayerB, previewMountA, previewMountB].forEach((el) => {
+            if (!el) return;
+            el.style.touchAction = "none";
+            el.style.webkitUserSelect = "none";
+            el.style.userSelect = "none";
+        });
 
-        previewViewer.addEventListener("touchmove", (event) => {
-            if (!pinchState.active || event.touches.length !== 2) return;
+        let lastTapTs = 0;
+
+        function shouldIgnoreSingleTouchTarget(target) {
+            return !!(
+                target?.closest?.("#previewControlDock") ||
+                target?.closest?.("#previewInfoPanel") ||
+                target?.closest?.("#previewSceneRail") ||
+                target?.closest?.("[data-ui='chrome']")
+            );
+        }
+
+        function startPinch(event) {
+            if (!event.touches || event.touches.length !== 2) return;
 
             const view = getCurrentView();
             if (!view) return;
 
             event.preventDefault();
+            event.stopPropagation();
+            stopAutorotate();
+
+            pinchState.active = true;
+            pinchState.startDistance = getTouchDistance(event.touches);
+            pinchState.startFov = view.fov();
+        }
+
+        function movePinch(event) {
+            if (!pinchState.active || !event.touches || event.touches.length !== 2) return;
+
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            event.stopPropagation();
 
             const currentDistance = getTouchDistance(event.touches);
-            const distanceDelta = pinchState.startDistance - currentDistance;
+            if (!pinchState.startDistance || !currentDistance) return;
 
-            const nextFov = clamp(
-                pinchState.startFov + distanceDelta * MOBILE_PINCH_SENSITIVITY,
-                MIN_FOV,
-                MAX_FOV
-            );
+            const ratio = currentDistance / pinchState.startDistance;
+            const zoomDelta = Math.log2(ratio) * degToRad(58) * MOBILE_PINCH_SENSITIVITY;
+            const nextFov = clamp(pinchState.startFov - zoomDelta, MIN_FOV, MAX_FOV);
 
-            view.setParameters({ fov: nextFov });
-            syncZoomButtonsState();
-        }, { passive: false });
+            setZoomInstant(nextFov);
+        }
 
-        previewViewer.addEventListener("touchend", (event) => {
-            if (event.touches.length < 2) {
+        function endPinch(event) {
+            if (!event.touches || event.touches.length < 2) {
                 pinchState.active = false;
+                pinchState.startDistance = 0;
+                pinchState.startFov = 0;
             }
             syncZoomButtonsState();
-        }, { passive: true });
+        }
 
-        previewViewer.addEventListener("touchcancel", () => {
+        function cancelPinch() {
             pinchState.active = false;
+            pinchState.startDistance = 0;
+            pinchState.startFov = 0;
             syncZoomButtonsState();
-        }, { passive: true });
+        }
 
-        ["gesturestart", "gesturechange", "gestureend"].forEach((evt) => {
-            previewViewer.addEventListener(evt, (event) => {
+        function onTouchStart(event) {
+            if (event.touches && event.touches.length === 2) {
+                startPinch(event);
+                return;
+            }
+
+            // Double tap: utile sur certains navigateurs où le pinch est trop sensible ou capturé.
+            if (event.touches && event.touches.length === 1 && !shouldIgnoreSingleTouchTarget(event.target)) {
+                const now = Date.now();
+                if (now - lastTapTs < 290) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const view = getCurrentView();
+                    if (view) {
+                        stopAutorotate();
+                        const currentFov = view.fov();
+                        const defaultFov = getSceneFinalFov(findScene(currentSceneId) || scenes[0]);
+                        const targetFov = currentFov > degToRad(58)
+                            ? clamp(currentFov - degToRad(30), MIN_FOV, MAX_FOV)
+                            : defaultFov;
+
+                        view.setParameters({ fov: targetFov }, { transitionDuration: 160 });
+                        setTimeout(syncZoomButtonsState, 180);
+                    }
+                }
+                lastTapTs = now;
+            }
+        }
+
+        function onTouchMove(event) {
+            if (pinchState.active && event.touches && event.touches.length === 2) {
+                movePinch(event);
+            }
+        }
+
+        previewViewer.addEventListener("touchstart", onTouchStart, { passive: false, capture: true });
+        previewViewer.addEventListener("touchmove", onTouchMove, { passive: false, capture: true });
+        previewViewer.addEventListener("touchend", endPinch, { passive: false, capture: true });
+        previewViewer.addEventListener("touchcancel", cancelPinch, { passive: false, capture: true });
+
+        document.addEventListener("touchstart", (event) => {
+            if (event.touches && event.touches.length === 2 && previewViewer.contains(event.target)) {
+                startPinch(event);
+            }
+        }, { passive: false, capture: true });
+
+        document.addEventListener("touchmove", (event) => {
+            if (pinchState.active) movePinch(event);
+        }, { passive: false, capture: true });
+
+        document.addEventListener("touchend", endPinch, { passive: false, capture: true });
+        document.addEventListener("touchcancel", cancelPinch, { passive: false, capture: true });
+
+        // Fallback Pointer Events: certains Android/Chrome déclenchent plus proprement pointer que touch.
+        const activePointers = new Map();
+        const pointerPinch = {
+            active: false,
+            startDistance: 0,
+            startFov: 0
+        };
+
+        function getPointerDistance() {
+            const points = Array.from(activePointers.values());
+            if (points.length < 2) return 0;
+            const dx = points[0].clientX - points[1].clientX;
+            const dy = points[0].clientY - points[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function startPointerPinch(event) {
+            const view = getCurrentView();
+            if (!view) return;
+            stopAutorotate();
+            pointerPinch.active = true;
+            pointerPinch.startDistance = getPointerDistance();
+            pointerPinch.startFov = view.fov();
+            try { event.target.setPointerCapture?.(event.pointerId); } catch (_) {}
+        }
+
+        previewViewer.addEventListener("pointerdown", (event) => {
+            if (event.pointerType !== "touch") return;
+            if (shouldIgnoreSingleTouchTarget(event.target)) return;
+
+            activePointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (activePointers.size === 2) {
                 event.preventDefault();
-            }, { passive: false });
-        });
+                event.stopPropagation();
+                startPointerPinch(event);
+            }
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("pointermove", (event) => {
+            if (event.pointerType !== "touch" || !activePointers.has(event.pointerId)) return;
+
+            activePointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (!pointerPinch.active || activePointers.size < 2) return;
+
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const currentDistance = getPointerDistance();
+            if (!pointerPinch.startDistance || !currentDistance) return;
+
+            const ratio = currentDistance / pointerPinch.startDistance;
+            const zoomDelta = Math.log2(ratio) * degToRad(58) * MOBILE_PINCH_SENSITIVITY;
+            setZoomInstant(pointerPinch.startFov - zoomDelta);
+        }, { passive: false, capture: true });
+
+        function endPointer(event) {
+            if (event.pointerType !== "touch") return;
+            activePointers.delete(event.pointerId);
+            if (activePointers.size < 2) {
+                pointerPinch.active = false;
+                pointerPinch.startDistance = 0;
+                pointerPinch.startFov = 0;
+            }
+            syncZoomButtonsState();
+        }
+
+        previewViewer.addEventListener("pointerup", endPointer, { passive: false, capture: true });
+        previewViewer.addEventListener("pointercancel", endPointer, { passive: false, capture: true });
+        previewViewer.addEventListener("pointerleave", endPointer, { passive: false, capture: true });
+
+        // iOS Safari gesture events.
+        let gestureStartFov = 0;
+
+        previewViewer.addEventListener("gesturestart", (event) => {
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            stopAutorotate();
+            gestureStartFov = view.fov();
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("gesturechange", (event) => {
+            const view = getCurrentView();
+            if (!view || !gestureStartFov) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const scale = event.scale || 1;
+            const zoomDelta = Math.log2(scale) * degToRad(60) * MOBILE_PINCH_SENSITIVITY;
+            setZoomInstant(gestureStartFov - zoomDelta);
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("gestureend", (event) => {
+            event.preventDefault();
+            gestureStartFov = 0;
+            syncZoomButtonsState();
+        }, { passive: false, capture: true });
+
+        // Desktop / trackpad zoom.
+        previewViewer.addEventListener("wheel", (event) => {
+            const target = event.target;
+            if (
+                target?.closest?.("#previewControlDock") ||
+                target?.closest?.("#previewInfoPanel") ||
+                target?.closest?.("#previewSceneRail")
+            ) {
+                return;
+            }
+
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            stopAutorotate();
+
+            const direction = event.deltaY > 0 ? 1 : -1;
+            const nextFov = clamp(view.fov() + degToRad(direction * 7), MIN_FOV, MAX_FOV);
+            setZoomInstant(nextFov);
+        }, { passive: false, capture: true });
     }
 
     sceneStackToggle?.addEventListener("click", toggleSceneStack);
@@ -2419,12 +2387,12 @@ body {
 
     zoomOutBtn?.addEventListener("click", () => {
         stopAutorotate();
-        zoomBy(8);
+        zoomBy(10);
     });
 
     zoomInBtn?.addEventListener("click", () => {
         stopAutorotate();
-        zoomBy(-8);
+        zoomBy(-10);
     });
 
     resetViewBtn?.addEventListener("click", resetCurrentView);
@@ -2489,11 +2457,11 @@ body {
         }
 
         if (event.key === "+") {
-            zoomBy(-8);
+            zoomBy(-10);
         }
 
         if (event.key === "-") {
-            zoomBy(8);
+            zoomBy(10);
         }
     });
 
@@ -2507,7 +2475,10 @@ body {
     renderSceneRail();
     setupMobileZoomGestures();
 
-    const initialScene = getInitialSceneFromUrl() || scenes[0];
+    const initialScene =
+        getInitialSceneFromUrl() ||
+        (dockScenes.length ? findScene(dockScenes[0].id) : null) ||
+        scenes[0];
     currentSceneId = initialScene.id;
 
     debugLog("Initial scene chosen", {
@@ -2517,18 +2488,22 @@ body {
         tilesUrl: initialScene?.tiles_url || ""
     });
 
+   showSceneLoadingPreview(initialScene, "");
+    prefetchSceneAssets(initialScene);
+
     buildSceneOnLayer(activeLayerKey, initialScene);
     updateSceneMeta(initialScene);
     syncSceneInUrl(initialScene);
+    scheduleSmartPrefetch(initialScene.id);
 
     requestAnimationFrame(() => {
         updateAllViewerSizes();
         syncZoomButtonsState();
         runInitialReveal(initialScene);
+        hideSceneLoadingPreview(720);
     });
 });
     </script>
     
-    {% comment %} <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=20260417-02"></script> {% endcomment %}
 </body>
 </html>

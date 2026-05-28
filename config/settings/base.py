@@ -137,6 +137,18 @@ CELERY_BROKER_URL = 'redis://redis:6379'  # URL de connexion à Redis pour la fi
 CELERY_RESULT_BACKEND = 'redis://redis:6379'  # URL de connexion à Redis pour stocker les résultats des tâches
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 60 * 20
+CELERY_TASK_SOFT_TIME_LIMIT = 60 * 18
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_ACKS_LATE = True
+
+TOURS_AUTO_QUEUE_SCENE_PIPELINE = True
+TOURS_AUTO_QUEUE_TOUR_ASSETS = True
+TOURS_AUTO_QUEUE_PUBLISH_EMAIL = True
+
+DEFAULT_FROM_EMAIL = "no-reply@example.com"
+
 
 
 # channel layer redis work on mac and docker
@@ -148,3 +160,6 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+
+TOURS_GENERATE_TILES_ON_SAVE = False

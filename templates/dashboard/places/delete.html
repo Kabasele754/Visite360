@@ -2,19 +2,69 @@
 
 {% block title %}Delete Place{% endblock %}
 {% block page_title %}Delete Place{% endblock %}
+{% block page_title_desktop %}Delete Place{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Delete "{{ place.name }}"?</h2>
-    <p class="topbar-subtitle">This action cannot be undone.</p>
+<div class="mx-auto max-w-3xl">
 
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-actions">
-            <button type="submit" class="btn btn-danger">Yes, delete</button>
-            <a href="{% url 'dashboard-places-list' current_organization.slug %}" class="btn btn-secondary">Cancel</a>
+    <div class="overflow-hidden rounded-[2rem] border border-rose-200 bg-white shadow-soft">
+
+        <!-- HEADER -->
+        <div class="bg-gradient-to-br from-rose-600 via-rose-700 to-slate-950 px-6 py-8 text-white sm:px-8">
+            <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-white/10 text-3xl shadow-lg">
+                ⚠️
+            </div>
+
+            <h2 class="text-3xl font-black tracking-tight">
+                Delete place?
+            </h2>
+
+            <p class="mt-3 max-w-2xl text-sm leading-7 text-rose-100">
+                You are about to permanently delete this place. This may also affect tours connected to this place.
+            </p>
         </div>
-    </form>
+
+        <!-- BODY -->
+        <div class="p-6 sm:p-8">
+            <div class="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-5">
+                <p class="text-sm font-bold text-rose-700">
+                    This action cannot be undone.
+                </p>
+
+                <h3 class="mt-3 text-2xl font-black text-slate-950">
+                    {{ place.name }}
+                </h3>
+
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-2xl bg-white p-3">
+                        <p class="text-xs font-black uppercase tracking-wide text-slate-400">Category</p>
+                        <p class="mt-1 text-sm font-black text-slate-800">{{ place.get_category_display }}</p>
+                    </div>
+
+                    <div class="rounded-2xl bg-white p-3">
+                        <p class="text-xs font-black uppercase tracking-wide text-slate-400">City</p>
+                        <p class="mt-1 text-sm font-black text-slate-800">{{ place.city|default:"-" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="mt-6">
+                {% csrf_token %}
+
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <a href="{% url 'dashboard-places-list' current_organization.slug %}"
+                       class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100">
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="inline-flex items-center justify-center rounded-2xl bg-rose-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-rose-500/20 transition hover:-translate-y-0.5 hover:bg-rose-700">
+                        Yes, delete permanently
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
 </div>
 {% endblock %}
-

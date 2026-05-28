@@ -1,79 +1,399 @@
 {% extends "dashboard/base.html" %}
 
-{% block title %}Place Form{% endblock %}
+{% block title %}
+    {% if page_mode == "create" %}Create Place{% else %}Edit Place{% endif %}
+{% endblock %}
+
 {% block page_title %}
     {% if page_mode == "create" %}Create Place{% else %}Edit Place{% endif %}
 {% endblock %}
 
+{% block page_title_desktop %}
+    {% if page_mode == "create" %}Create Place{% else %}Edit Place{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .place-form input[type="text"],
+    .place-form input[type="email"],
+    .place-form input[type="url"],
+    .place-form input[type="number"],
+    .place-form select,
+    .place-form textarea {
+        width: 100%;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        padding: 0.85rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #0f172a;
+        outline: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .place-form textarea {
+        min-height: 130px;
+        resize: vertical;
+        line-height: 1.6;
+    }
+
+    .place-form input:focus,
+    .place-form select:focus,
+    .place-form textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .place-form .errorlist {
+        margin-top: 0.5rem;
+        list-style: none;
+        padding: 0;
+        color: #e11d48;
+        font-size: 0.75rem;
+        font-weight: 900;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-    <form method="post">
-        {% csrf_token %}
+<div class="mx-auto max-w-6xl space-y-6">
 
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="{{ form.name.id_for_label }}">Name</label>
-                {{ form.name }}
+    <!-- HERO -->
+    <div class="overflow-hidden rounded-[2rem] bg-slate-950 shadow-soft">
+        <div class="relative p-6 sm:p-8">
+            <div class="absolute inset-0 opacity-80">
+                <div class="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-blue-500/30 blur-3xl"></div>
+                <div class="absolute -bottom-24 left-20 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl"></div>
             </div>
 
-            <div class="form-group">
-                <label for="{{ form.slug.id_for_label }}">Slug</label>
-                {{ form.slug }}
-            </div>
+            <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-wide text-blue-100">
+                        <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                        Place Workspace
+                    </div>
 
-            <div class="form-group">
-                <label for="{{ form.category.id_for_label }}">Category</label>
-                {{ form.category }}
-            </div>
+                    <h2 class="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                        {% if page_mode == "create" %}
+                            Create a new place
+                        {% else %}
+                            Edit place
+                        {% endif %}
+                    </h2>
 
-            <div class="form-group">
-                <label for="{{ form.status.id_for_label }}">Status</label>
-                {{ form.status }}
-            </div>
+                    <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                        {% if page_mode == "create" %}
+                            Add a place before creating immersive virtual tours, 360 scenes and hotspots.
+                        {% else %}
+                            Update place information, address, category, location and cover image.
+                        {% endif %}
+                    </p>
+                </div>
 
-            <div class="form-group full">
-                <label for="{{ form.description.id_for_label }}">Description</label>
-                {{ form.description }}
-            </div>
-
-            <div class="form-group full">
-                <label for="{{ form.address_line.id_for_label }}">Address</label>
-                {{ form.address_line }}
-            </div>
-
-            <div class="form-group">
-                <label for="{{ form.city.id_for_label }}">City</label>
-                {{ form.city }}
-            </div>
-
-            <div class="form-group">
-                <label for="{{ form.country.id_for_label }}">Country</label>
-                {{ form.country }}
-            </div>
-
-            <div class="form-group">
-                <label for="{{ form.latitude.id_for_label }}">Latitude</label>
-                {{ form.latitude }}
-            </div>
-
-            <div class="form-group">
-                <label for="{{ form.longitude.id_for_label }}">Longitude</label>
-                {{ form.longitude }}
-            </div>
-
-            <div class="form-group full">
-                <label for="{{ form.cover_image.id_for_label }}">Cover Image URL</label>
-                {{ form.cover_image }}
+                <a href="{% url 'dashboard-places-list' current_organization.slug %}"
+                   class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/15">
+                    ← Back to Places
+                </a>
             </div>
         </div>
+    </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
-                {% if page_mode == "create" %}Create{% else %}Save Changes{% endif %}
-            </button>
-            <a href="{% url 'dashboard-places-list' current_organization.slug %}" class="btn btn-secondary">Cancel</a>
+    <!-- FORM LAYOUT -->
+    <div class="grid gap-6 lg:grid-cols-[1fr_340px]">
+
+        <!-- MAIN FORM -->
+        <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-soft">
+            <div class="border-b border-slate-200 px-5 py-5 sm:px-6">
+                <h3 class="text-lg font-black text-slate-950">
+                    Place details
+                </h3>
+                <p class="mt-1 text-sm leading-6 text-slate-500">
+                    Fill in the information below. This place will be used to organize your tours.
+                </p>
+            </div>
+
+            <form method="post" class="place-form">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="mx-5 mt-5 rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700 sm:mx-6">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div class="space-y-6 p-5 sm:p-6">
+
+                    <!-- BASIC INFO -->
+                    <section class="rounded-[1.7rem] border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="mb-5 flex items-center gap-3">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-xl">
+                                📍
+                            </div>
+                            <div>
+                                <h4 class="text-base font-black text-slate-950">Basic information</h4>
+                                <p class="text-xs font-semibold text-slate-400">Name, slug, category and status</p>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label for="{{ form.name.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    Name <span class="text-rose-500">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% for error in form.name.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.slug.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    Slug <span class="text-rose-500">*</span>
+                                </label>
+                                {{ form.slug }}
+                                {% for error in form.slug.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.category.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    Category
+                                </label>
+                                {{ form.category }}
+                                {% for error in form.category.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.status.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    Status
+                                </label>
+                                {{ form.status }}
+                                {% for error in form.status.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label for="{{ form.description.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    Description
+                                </label>
+                                {{ form.description }}
+                                {% for error in form.description.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ADDRESS -->
+                    <section class="rounded-[1.7rem] border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="mb-5 flex items-center gap-3">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-xl">
+                                🗺️
+                            </div>
+                            <div>
+                                <h4 class="text-base font-black text-slate-950">Address and location</h4>
+                                <p class="text-xs font-semibold text-slate-400">Address, city, country and coordinates</p>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div class="md:col-span-2">
+                                <label for="{{ form.address_line.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    Address
+                                </label>
+                                {{ form.address_line }}
+                                {% for error in form.address_line.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.city.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    City
+                                </label>
+                                {{ form.city }}
+                                {% for error in form.city.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.country.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    Country
+                                </label>
+                                {{ form.country }}
+                                {% for error in form.country.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.latitude.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    Latitude
+                                </label>
+                                {{ form.latitude }}
+                                {% for error in form.latitude.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.longitude.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                    Longitude
+                                </label>
+                                {{ form.longitude }}
+                                {% for error in form.longitude.errors %}
+                                    <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- COVER IMAGE -->
+                    <section class="rounded-[1.7rem] border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="mb-5 flex items-center gap-3">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-xl">
+                                🖼️
+                            </div>
+                            <div>
+                                <h4 class="text-base font-black text-slate-950">Cover image</h4>
+                                <p class="text-xs font-semibold text-slate-400">Image URL displayed on place cards</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="{{ form.cover_image.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                                Cover Image URL
+                            </label>
+                            {{ form.cover_image }}
+
+                            {% for error in form.cover_image.errors %}
+                                <p class="mt-2 text-xs font-black text-rose-600">{{ error }}</p>
+                            {% endfor %}
+
+                            <div class="mt-4 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-100">
+                                {% if page_mode == "edit" and place.cover_image %}
+                                    <img
+                                        src="{{ place.cover_image }}"
+                                        alt="{{ place.name }}"
+                                        id="coverImagePreview"
+                                        class="h-64 w-full object-cover">
+                                {% else %}
+                                    <div id="coverImagePlaceholder" class="flex min-h-[220px] items-center justify-center p-6 text-center">
+                                        <div>
+                                            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-blue-50 text-3xl">
+                                                🖼️
+                                            </div>
+                                            <p class="mt-3 text-sm font-black text-slate-700">
+                                                Cover preview
+                                            </p>
+                                            <p class="mt-1 text-xs font-semibold text-slate-400">
+                                                Paste an image URL to preview it here
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <img
+                                        src=""
+                                        alt="Cover preview"
+                                        id="coverImagePreview"
+                                        class="hidden h-64 w-full object-cover">
+                                {% endif %}
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <a href="{% url 'dashboard-places-list' current_organization.slug %}"
+                       class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100">
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition hover:-translate-y-0.5 hover:bg-blue-700">
+                        {% if page_mode == "create" %}Create Place{% else %}Save Changes{% endif %}
+                    </button>
+                </div>
+            </form>
         </div>
-    </form>
+
+        <!-- SIDE PANEL -->
+        <aside class="space-y-5">
+            <div class="rounded-[2rem] bg-slate-950 p-5 text-white shadow-soft">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-xl">
+                        📍
+                    </div>
+                    <div>
+                        <h4 class="font-black">Place first</h4>
+                        <p class="text-xs font-semibold text-slate-400">Then create tours</p>
+                    </div>
+                </div>
+
+                <p class="mt-4 text-sm leading-7 text-slate-300">
+                    A place represents a business, property, hotel, store or location. Tours are attached to places.
+                </p>
+            </div>
+
+            <div class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-card">
+                <h4 class="font-black text-slate-950">Good practice</h4>
+
+                <div class="mt-4 space-y-3 text-sm">
+                    <div class="rounded-2xl bg-slate-50 p-3">
+                        <p class="font-black text-slate-800">Use a clean slug</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Example: hotel-goma, shop-kinshasa, apartment-yeoville.
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl bg-slate-50 p-3">
+                        <p class="font-black text-slate-800">Add coordinates</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Latitude and longitude help with maps and location-based search.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+    </div>
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const coverInput = document.getElementById("{{ form.cover_image.id_for_label }}");
+        const preview = document.getElementById("coverImagePreview");
+        const placeholder = document.getElementById("coverImagePlaceholder");
+
+        if (!coverInput || !preview) return;
+
+        function updateCoverPreview() {
+            const url = coverInput.value.trim();
+
+            if (!url) {
+                preview.classList.add("hidden");
+                if (placeholder) placeholder.classList.remove("hidden");
+                return;
+            }
+
+            preview.src = url;
+            preview.classList.remove("hidden");
+            if (placeholder) placeholder.classList.add("hidden");
+        }
+
+        coverInput.addEventListener("input", updateCoverPreview);
+        coverInput.addEventListener("change", updateCoverPreview);
+    });
+</script>
+{% endblock %}

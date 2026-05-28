@@ -1,18 +1,18 @@
-from django.contrib import messages
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.forms import ModelForm
-from django.shortcuts import get_object_or_404, redirect, render
-from django.utils.text import slugify
-from django.contrib import messages
-from django.core.paginator import Paginator
-from django.db.models import Q
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
 import json
-from django.shortcuts import get_object_or_404, render
+from copy import deepcopy
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q, Prefetch
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
-from django.views.decorators.http import require_POST
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.text import slugify
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.organizations.models import Organization, OrganizationMember
 from apps.organizations.selectors import get_user_membership
@@ -28,13 +28,11 @@ from .services import (
     reorder_scenes_for_tour,
     update_hotspot,
 )
-from django.db.models import Q
-from django.core.paginator import Paginator
-from django.views.decorators.http import require_GET, require_POST
-from django.utils.text import slugify
-from copy import deepcopy
-from .utils import generate_unique_tour_slug
 
+
+# =============================================================================
+# BASIC HELPERS
+# =============================================================================
 
 def is_ajax(request):
     return request.headers.get("x-requested-with") == "XMLHttpRequest"
@@ -44,9 +42,11 @@ def _unique_org_slug(base: str) -> str:
     base_slug = slugify(base) or "my-workspace"
     slug = base_slug
     counter = 1
+
     while Organization.objects.filter(slug=slug).exists():
         slug = f"{base_slug}-{counter}"
         counter += 1
+
     return slug
 
 
@@ -54,10 +54,35 @@ def _unique_place_slug(base: str) -> str:
     base_slug = slugify(base) or "untitled-place"
     slug = base_slug
     counter = 1
+
     while Place.objects.filter(slug=slug).exists():
         slug = f"{base_slug}-{counter}"
         counter += 1
+
     return slug
+
+def _payload_bool(value, default=True):
+    """
+    Convertit proprement une valeur JSON/POST en booléen.
+    Utile pour is_public, car parfois le front peut envoyer:
+    true, false, "true", "false", "1", "0", "on", "off".
+    """
+    if value is None:
+        return default
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, str):
+        value = value.strip().lower()
+
+        if value in {"true", "1", "yes", "on", "public"}:
+            return True
+
+        if value in {"false", "0", "no", "off", "hidden", "private"}:
+            return False
+
+    return bool(value)
 
 
 def _get_org_or_403(request, organization_slug, allow_public=False):
@@ -77,6 +102,7 @@ def _get_org_or_403(request, organization_slug, allow_public=False):
         return None
 
     return organization
+
 
 def _get_or_create_default_workspace(user):
     membership = (
@@ -137,13 +163,263 @@ def _get_or_create_default_workspace(user):
     return organization, place, tour
 
 
+# =============================================================================
+# SCENE / HOTSPOT PAYLOAD HELPERS
+# =============================================================================
+
+def _safe_file_url(request, file_field):
+    """
+    Retourne une URL absolue propre pour ImageField/FileField.
+    Compatible avec stockage local, S3, Cloudflare R2, etc.
+    """
+    if not file_field:
+        return ""
+
+    try:
+        url = file_field.url
+    except Exception:
+        return ""
+
+    if not url:
+        return ""
+
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+
+    return request.build_absolute_uri(url)
+
+
+def _status_value(obj, field_name, default="none"):
+    value = getattr(obj, field_name, None)
+    return value or default
+
+
+def _is_status_ready(value):
+    return value == "ready"
+
+
+def _normalize_tiles_manifest(request, scene):
+    """
+    Convertit le manifest tiles en format directement utilisable par le JS.
+
+    Exemple final :
+    {
+        "type": "cube",
+        "tileSize": 512,
+        "levels": [...],
+        "urlTemplate": "https://site.com/media/tours/panoramas/tiles/scene/l{z}/{f}/{x}_{y}.webp"
+    }
+    """
+    manifest = deepcopy(getattr(scene, "tiles_manifest", {}) or {})
+
+    url_template = manifest.get("urlTemplate") or ""
+
+    if url_template:
+        if not url_template.startswith("http://") and not url_template.startswith("https://"):
+            if not url_template.startswith("/"):
+                media_url = getattr(settings, "MEDIA_URL", "/media/")
+                url_template = f"{media_url.rstrip('/')}/{url_template.lstrip('/')}"
+
+            url_template = request.build_absolute_uri(url_template)
+
+        manifest["urlTemplate"] = url_template
+
+    return manifest
+
+
+def _scene_assets_payload(request, scene):
+    """
+    Payload principal pour le chargement progressif :
+    preview -> mobile/desktop -> tiles.
+    """
+    preview = _safe_file_url(request, getattr(scene, "image_360_preview", None))
+    mobile = _safe_file_url(request, getattr(scene, "image_360_mobile", None))
+    desktop = _safe_file_url(request, getattr(scene, "image_360", None))
+    thumbnail = _safe_file_url(request, getattr(scene, "thumbnail_image", None))
+    original = _safe_file_url(request, getattr(scene, "image_360_original", None))
+
+    return {
+        "preview": preview or thumbnail or mobile or desktop or original,
+        "thumbnail": thumbnail or preview or mobile or desktop or original,
+        "mobile": mobile or desktop or preview or thumbnail or original,
+        "desktop": desktop or mobile or preview or thumbnail or original,
+        "fallback": preview or mobile or desktop or thumbnail or original,
+        "original": original,
+        
+    }
+
+
+def _scene_tiles_payload(request, scene):
+    tiles_status = _status_value(scene, "tiles_status")
+    manifest = _normalize_tiles_manifest(request, scene)
+
+    return {
+        "enabled": bool(getattr(scene, "tiles_enabled", False)),
+        "status": tiles_status,
+        "ready": _is_status_ready(tiles_status) and bool(manifest),
+        "manifest": manifest,
+        "generated_at": (
+            scene.tiles_generated_at.isoformat()
+            if getattr(scene, "tiles_generated_at", None)
+            else None
+        ),
+        "error": getattr(scene, "tiles_error", "") or "",
+    }
+
+
+def _scene_statuses_payload(scene):
+    return {
+        "assets": _status_value(scene, "assets_status"),
+        "tiles": _status_value(scene, "tiles_status"),
+        "ai_analysis": _status_value(scene, "ai_analysis_status"),
+        "ai_hotspots": _status_value(scene, "ai_hotspots_status"),
+    }
+
+
+def _serialize_hotspot_payload(request, hotspot):
+    return {
+        "id": hotspot.id,
+        "hotspot_id": hotspot.hotspot_id,
+        "type": hotspot.type,
+        "label": hotspot.label,
+        "tooltip_text": hotspot.tooltip_text or "",
+        "yaw": hotspot.yaw,
+        "pitch": hotspot.pitch,
+
+        # Compatibilité ancien JS
+        "target_scene": hotspot.target_scene_id,
+
+        # Nouveau format plus clair
+        "target_scene_id": hotspot.target_scene_id,
+        "target_scene_scene_id": (
+            hotspot.target_scene.scene_id
+            if getattr(hotspot, "target_scene", None)
+            else None
+        ),
+
+        "title": hotspot.title or "",
+        "description": hotspot.description or "",
+        "selected_icon": hotspot.selected_icon or "default",
+        "ad_image_url": _safe_file_url(request, getattr(hotspot, "ad_image", None)),
+        "payload": hotspot.payload or {},
+        "is_ai_generated": bool(getattr(hotspot, "is_ai_generated", False)),
+    }
+
+
+def _build_prefetch_map(request, scenes):
+    """
+    Prépare les scènes voisines pour le préchargement intelligent.
+    Le JS pourra précharger la scène suivante/précédente sans recalculer.
+    """
+    prefetch_map = {}
+
+    for index, scene in enumerate(scenes):
+        previous_scene = scenes[index - 1] if index - 1 >= 0 else None
+        next_scene = scenes[index + 1] if index + 1 < len(scenes) else None
+
+        neighbors = []
+
+        for neighbor in [next_scene, previous_scene]:
+            if not neighbor:
+                continue
+
+            neighbors.append({
+                "id": neighbor.id,
+                "scene_id": neighbor.scene_id,
+                "title": neighbor.title,
+                "order": neighbor.order,
+                "is_public": bool(getattr(neighbor, "is_public", True)),
+                "assets_status": _status_value(neighbor, "assets_status"),
+                "tiles_status": _status_value(neighbor, "tiles_status"),
+                "assets": _scene_assets_payload(request, neighbor),
+                "tiles": _scene_tiles_payload(request, neighbor),
+            })
+
+        prefetch_map[scene.id] = {
+            "current_scene_id": scene.scene_id,
+            "current_scene_is_public": bool(getattr(scene, "is_public", True)),
+            "next_scene_id": next_scene.scene_id if next_scene else None,
+            "previous_scene_id": previous_scene.scene_id if previous_scene else None,
+            "neighbors": neighbors,
+        }
+
+    return prefetch_map
+
+
+def _serialize_scene_payload(request, scene, include_hotspots=True, prefetch=None):
+    assets = _scene_assets_payload(request, scene)
+    tiles = _scene_tiles_payload(request, scene)
+    statuses = _scene_statuses_payload(scene)
+
+    return {
+        "id": scene.id,
+        "scene_id": scene.scene_id,
+        "title": scene.title,
+        "order": scene.order,
+        "status": getattr(scene, "status", ""),
+        "is_public": bool(getattr(scene, "is_public", True)),
+
+        # Ancien format gardé pour ne pas casser le JS existant
+        "image_360_url": assets["desktop"],
+        "image_360_mobile_url": assets["mobile"],
+        "image_360_preview_url": assets["preview"],
+        "thumbnail_url": assets["thumbnail"],
+
+        # Nouveau format recommandé
+        "assets": assets,
+        "tiles": tiles,
+        "statuses": statuses,
+
+        "assets_status": statuses["assets"],
+        "tiles_status": statuses["tiles"],
+        "ai_analysis_status": statuses["ai_analysis"],
+        "ai_hotspots_status": statuses["ai_hotspots"],
+
+        "assets_ready": _is_status_ready(statuses["assets"]),
+        "tiles_ready": tiles["ready"],
+
+        "yaw_default": scene.yaw_default if scene.yaw_default is not None else 0,
+        "pitch_default": scene.pitch_default if scene.pitch_default is not None else 0,
+        "hfov_default": scene.hfov_default if scene.hfov_default is not None else 100,
+
+        "ai_analysis": getattr(scene, "ai_analysis", {}) or {},
+        "ai_hotspot_suggestions": getattr(scene, "ai_hotspot_suggestions", []) or [],
+
+        "prefetch": prefetch or getattr(scene, "prefetch_manifest", {}) or {},
+
+        "hotspots": [
+            _serialize_hotspot_payload(request, hotspot)
+            for hotspot in scene.hotspots.all()
+        ] if include_hotspots else [],
+    }
+
+def _get_tour_with_scenes_queryset():
+    return Tour.objects.select_related("place", "organization").prefetch_related(
+        Prefetch(
+            "scenes",
+            queryset=Scene360.objects.order_by("order", "id").prefetch_related(
+                Prefetch(
+                    "hotspots",
+                    queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
+                )
+            ),
+        )
+    )
+
+
+# =============================================================================
+# STUDIO HOME
+# =============================================================================
+
 @login_required
 def studio_home_view(request):
     organization, place, tour = _get_or_create_default_workspace(request.user)
     return redirect("tour-builder", organization_slug=organization.slug, tour_id=tour.id)
 
 
-
+# =============================================================================
+# TOUR LIST
+# =============================================================================
 
 def build_tours_queryset(request, organization):
     tours = (
@@ -222,17 +498,21 @@ def tour_list_view(request, organization_slug):
         "selected_max_price": request.GET.get("max_price", "").strip(),
         "total_count": Tour.objects.filter(organization=organization).count(),
         "published_count": Tour.objects.filter(
-            organization=organization, status=Tour.Status.PUBLISHED
+            organization=organization,
+            status=Tour.Status.PUBLISHED,
         ).count(),
         "draft_count": Tour.objects.filter(
-            organization=organization, status=Tour.Status.DRAFT
+            organization=organization,
+            status=Tour.Status.DRAFT,
         ).count(),
         "inactive_count": Tour.objects.filter(
-            organization=organization, status=Tour.Status.INACTIVE
+            organization=organization,
+            status=Tour.Status.INACTIVE,
         ).count(),
         "current_organization": organization,
         "google_maps_api_key": getattr(settings, "GOOGLE_MAPS_API_KEY", ""),
     }
+
     return render(request, "dashboard/tours/list.html", context)
 
 
@@ -264,8 +544,13 @@ def tour_list_partial_view(request, organization_slug):
         },
         request=request,
     )
+
     return JsonResponse({"success": True, "html": html})
 
+
+# =============================================================================
+# TOUR CRUD
+# =============================================================================
 
 @login_required
 def tour_create_view(request, organization_slug):
@@ -296,6 +581,7 @@ def tour_create_view(request, organization_slug):
                     {"tour": tour, "current_organization": organization},
                     request=request,
                 )
+
                 return JsonResponse({
                     "success": True,
                     "message": "Tour created successfully.",
@@ -335,7 +621,12 @@ def tour_edit_view(request, organization_slug, tour_id):
     tour = get_object_or_404(Tour, id=tour_id, organization=organization)
 
     if request.method == "POST":
-        form = TourForm(request.POST, request.FILES, instance=tour, organization=organization)
+        form = TourForm(
+            request.POST,
+            request.FILES,
+            instance=tour,
+            organization=organization,
+        )
 
         if form.is_valid():
             updated_tour = form.save(commit=False)
@@ -356,6 +647,7 @@ def tour_edit_view(request, organization_slug, tour_id):
                     {"tour": updated_tour, "current_organization": organization},
                     request=request,
                 )
+
                 return JsonResponse({
                     "success": True,
                     "message": "Tour updated successfully.",
@@ -388,25 +680,37 @@ def tour_edit_view(request, organization_slug, tour_id):
 
 
 @login_required
-@require_POST
 def tour_delete_view(request, organization_slug, tour_id):
     organization = _get_org_or_403(request, organization_slug)
     if not organization:
-        return JsonResponse({"success": False, "message": "Unauthorized."}, status=403)
+        if is_ajax(request):
+            return JsonResponse({"success": False, "message": "Unauthorized."}, status=403)
+        return render(request, "403.html", status=403)
 
     tour = get_object_or_404(Tour, id=tour_id, organization=organization)
-    deleted_id = tour.id
-    tour.delete()
 
-    if is_ajax(request):
-        return JsonResponse({
-            "success": True,
-            "message": "Tour deleted successfully.",
-            "tour_id": deleted_id,
-        })
+    if request.method == "POST":
+        deleted_id = tour.id
+        tour.delete()
 
-    messages.success(request, "Tour deleted successfully.")
-    return redirect("dashboard-tours-list", organization_slug=organization.slug)
+        if is_ajax(request):
+            return JsonResponse({
+                "success": True,
+                "message": "Tour deleted successfully.",
+                "tour_id": deleted_id,
+            })
+
+        messages.success(request, "Tour deleted successfully.")
+        return redirect("dashboard-tours-list", organization_slug=organization.slug)
+
+    return render(
+        request,
+        "dashboard/tours/delete.html",
+        {
+            "tour": tour,
+            "current_organization": organization,
+        },
+    )
 
 
 @login_required
@@ -450,6 +754,9 @@ def tour_duplicate_view(request, organization_slug, tour_id):
     duplicated.view_count = 0
     duplicated.rating = None
     duplicated.manifest = deepcopy(source_tour.manifest)
+    duplicated.published_at = None
+    duplicated.publish_email_status = None
+    duplicated.publish_email_error = ""
     duplicated.save()
 
     row_html = render_to_string(
@@ -487,6 +794,7 @@ def tour_toggle_status_view(request, organization_slug, tour_id):
         Tour.Status.PUBLISHED,
         Tour.Status.INACTIVE,
     }
+
     if next_status not in allowed_statuses:
         return JsonResponse({"success": False, "message": "Invalid status."}, status=400)
 
@@ -510,6 +818,7 @@ def tour_toggle_status_view(request, organization_slug, tour_id):
         "tour_id": tour.id,
         "row_html": row_html,
         "card_html": card_html,
+        "is_published": tour.status == Tour.Status.PUBLISHED,
     })
 
 
@@ -542,106 +851,8 @@ def tour_toggle_featured_view(request, organization_slug, tour_id):
         "row_html": row_html,
         "card_html": card_html,
         "is_featured": tour.is_featured,
-    })    
+    })
 
-
-# @login_required
-# def tour_list_view(request, organization_slug):
-#     organization = _get_org_or_403(request, organization_slug)
-#     if not organization:
-#         return render(request, "403.html", status=403)
-
-#     tours = (
-#         Tour.objects.filter(organization=organization)
-#         .select_related("place")
-#         .order_by("-created_at")
-#     )
-
-#     place_id = request.GET.get("place")
-#     if place_id:
-#         tours = tours.filter(place_id=place_id)
-
-#     return render(
-#         request,
-#         "dashboard/tours/list.html",
-#         {
-#             "tours": tours,
-#             "current_organization": organization,
-#         },
-#     )
-
-
-# @login_required
-# def tour_create_view(request, organization_slug):
-#     organization = _get_org_or_403(request, organization_slug)
-#     if not organization:
-#         return render(request, "403.html", status=403)
-
-#     if request.method == "POST":
-#         form = TourForm(request.POST, request.FILES)
-#         form.fields["place"].queryset = Place.objects.filter(organization=organization)
-
-#         if form.is_valid():
-#             tour = form.save(commit=False)
-#             tour.organization = organization
-
-#             if not tour.slug:
-#                 tour.slug = generate_unique_tour_slug(tour.title)
-
-#             tour.save()
-#             messages.success(request, "Tour created successfully.")
-#             return redirect("dashboard-tours-list", organization_slug=organization.slug)
-#     else:
-#         form = TourForm()
-#         form.fields["place"].queryset = Place.objects.filter(organization=organization)
-
-#     return render(
-#         request,
-#         "dashboard/tours/form.html",
-#         {
-#             "form": form,
-#             "page_mode": "create",
-#             "current_organization": organization,
-#         },
-#     )
-
-
-# @login_required
-# def tour_edit_view(request, organization_slug, tour_id):
-#     organization = _get_org_or_403(request, organization_slug)
-#     if not organization:
-#         return render(request, "403.html", status=403)
-
-#     tour = get_object_or_404(Tour, id=tour_id, organization=organization)
-
-#     if request.method == "POST":
-#         form = TourForm(request.POST, request.FILES, instance=tour)
-#         form.fields["place"].queryset = Place.objects.filter(organization=organization)
-
-#         if form.is_valid():
-#             tour = form.save(commit=False)
-
-#             if not tour.slug:
-#                 tour.slug = generate_unique_tour_slug(tour.title)
-
-#             tour.save()
-#             messages.success(request, "Tour updated successfully.")
-#             return redirect("dashboard-tours-list", organization_slug=organization.slug)
-#     else:
-#         form = TourForm(instance=tour)
-#         form.fields["place"].queryset = Place.objects.filter(organization=organization)
-
-#     return render(
-#         request,
-#         "dashboard/tours/form.html",
-#         {
-#             "form": form,
-#             "tour": tour,
-#             "page_mode": "edit",
-#             "current_organization": organization,
-#         },
-#     )
-    
 
 @login_required
 @require_POST
@@ -665,35 +876,17 @@ def update_tour_ajax_view(request, organization_slug, tour_id):
     tour.save(update_fields=["title", "updated_at"])
 
     return JsonResponse({
+        "success": True,
         "tour": {
             "id": tour.id,
             "title": tour.title,
-        }
+        },
     })
 
 
-@login_required
-def tour_delete_view(request, organization_slug, tour_id):
-    organization = _get_org_or_403(request, organization_slug)
-    if not organization:
-        return render(request, "403.html", status=403)
-
-    tour = get_object_or_404(Tour, id=tour_id, organization=organization)
-
-    if request.method == "POST":
-        tour.delete()
-        messages.success(request, "Tour deleted successfully.")
-        return redirect("dashboard-tours-list", organization_slug=organization.slug)
-
-    return render(
-        request,
-        "dashboard/tours/delete.html",
-        {
-            "tour": tour,
-            "current_organization": organization,
-        },
-    )
-
+# =============================================================================
+# BUILDER + PREVIEW
+# =============================================================================
 
 @login_required
 def tour_builder_view(request, organization_slug, tour_id):
@@ -702,106 +895,104 @@ def tour_builder_view(request, organization_slug, tour_id):
         return render(request, "403.html", status=403)
 
     tour = get_object_or_404(
-        Tour.objects.select_related("place", "organization").prefetch_related("scenes__hotspots"),
+        _get_tour_with_scenes_queryset(),
         id=tour_id,
         organization=organization,
     )
 
-    scenes = tour.scenes.all().order_by("order", "id")
+    scenes = list(tour.scenes.all().order_by("order", "id"))
+    prefetch_map = _build_prefetch_map(request, scenes)
 
     scenes_payload = [
-        {
-            "id": scene.id,
-            "scene_id": scene.scene_id,
-            "title": scene.title,
-            "image_360_url": scene.image_360.url if scene.image_360 else "",
-            "thumbnail_url": scene.thumbnail_image.url if scene.thumbnail_image else "",
-            "order": scene.order,
-            "yaw_default": scene.yaw_default,
-            "pitch_default": scene.pitch_default,
-            "hfov_default": scene.hfov_default,
-            "hotspots": [
-                {
-                    "id": hotspot.id,
-                    "hotspot_id": hotspot.hotspot_id,
-                    "type": hotspot.type,
-                    "label": hotspot.label,
-                    "tooltip_text": hotspot.tooltip_text,
-                    "yaw": hotspot.yaw,
-                    "pitch": hotspot.pitch,
-                    "target_scene": hotspot.target_scene_id,
-                    "title": hotspot.title,
-                    "description": hotspot.description,
-                    "selected_icon": hotspot.selected_icon,
-                    "ad_image_url": hotspot.ad_image.url if hotspot.ad_image else None,
-                    "payload": hotspot.payload,
-                }
-                for hotspot in scene.hotspots.all()
-            ],
-        }
+        _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=True,
+            prefetch=prefetch_map.get(scene.id),
+        )
         for scene in scenes
     ]
 
     context = {
-        "tour": tour,
-        "scenes": scenes,
-        "scenes_json": scenes_payload,
-        "current_organization": organization,
-        "current_place": tour.place,
-    }
+    "tour": tour,
+    "scenes": scenes,
+    "scenes_json": scenes_payload,
+    "current_organization": organization,
+    "current_place": tour.place,
+    "google_maps_api_key": getattr(settings, "GOOGLE_MAPS_API_KEY", ""),
+
+    # Utilisé dans builder.html :
+    # pipelineStatusUrl: "{{ pipeline_status_url|default:'' }}"
+    "pipeline_status_url": reverse(
+        "dashboard-tour-scenes-pipeline-status-ajax",
+        kwargs={
+            "organization_slug": organization.slug,
+            "tour_id": tour.id,
+        },
+    ),
+
+    # Utilisé dans builder.html :
+    # queueTourPrefetchUrl: "{{ queue_tour_prefetch_url|default:'' }}"
+    "queue_tour_prefetch_url": reverse(
+        "dashboard-queue-tour-prefetch-ajax",
+        kwargs={
+            "organization_slug": organization.slug,
+            "tour_id": tour.id,
+        },
+    ),
+}
+
     return render(request, "dashboard/tours/builder.html", context)
 
 
-# @login_required
 def tour_preview_view(request, organization_slug, tour_id):
-    organization = _get_org_or_403(request, organization_slug,  True)
+    organization = _get_org_or_403(request, organization_slug, allow_public=True)
     if not organization:
         return render(request, "403.html", status=403)
 
     tour = get_object_or_404(
-        Tour.objects.select_related("place", "organization").prefetch_related(
-            "scenes__hotspots",
-            "scenes__hotspots__target_scene",
-        ),
+        _get_tour_with_scenes_queryset(),
         id=tour_id,
         organization=organization,
     )
 
-    scenes = tour.scenes.all().order_by("order", "id")
+    # Toutes les scènes restent disponibles pour :
+    # - ouverture directe via URL
+    # - hotspots de navigation
+    # - navigation interne Marzipano
+    all_scenes = list(
+        tour.scenes
+        .all()
+        .order_by("order", "id")
+    )
 
-    scenes_payload = []
-    for scene in scenes:
-        scene_hotspots = []
+    # Seulement les scènes publiques dans la liste du dock previewScenesList
+    public_list_scenes = [
+        scene for scene in all_scenes
+        if getattr(scene, "is_public", True) is True
+    ]
 
-        for hotspot in scene.hotspots.all():
-            scene_hotspots.append({
-                "id": hotspot.id,
-                "type": hotspot.type,
-                "label": hotspot.label,
-                "yaw": hotspot.yaw,
-                "pitch": hotspot.pitch,
-                "target_scene": hotspot.target_scene_id,
-                "selected_icon": hotspot.selected_icon or "default",
-                "title": hotspot.title or "",
-                "description": hotspot.description or "",
-                "tooltip_text": hotspot.tooltip_text or "",
-                "ad_image_url": hotspot.ad_image.url if getattr(hotspot, "ad_image", None) else "",
-                "payload": hotspot.payload or {},
-            })
+    prefetch_map = _build_prefetch_map(request, all_scenes)
 
-        scenes_payload.append({
-            "id": scene.id,
-            "scene_id": scene.scene_id,
-            "title": scene.title,
-            "order": scene.order,
-            "image_360_url": scene.image_360.url if scene.image_360 else "",
-            "image_360_mobile_url": scene.image_360_mobile.url if getattr(scene, "image_360_mobile", None) else "",
-            "thumbnail_url": scene.thumbnail_image.url if getattr(scene, "thumbnail_image", None) else "",
-            "yaw_default": scene.yaw_default if scene.yaw_default is not None else 0,
-            "pitch_default": scene.pitch_default if scene.pitch_default is not None else 0,
-            "hfov_default": scene.hfov_default if scene.hfov_default is not None else 100,
-            "hotspots": scene_hotspots,
-        })
+    scenes_payload = [
+        _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=True,
+            prefetch=prefetch_map.get(scene.id),
+        )
+        for scene in all_scenes
+    ]
+
+    scene_list_payload = [
+        _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=False,
+            prefetch=prefetch_map.get(scene.id),
+        )
+        for scene in public_list_scenes
+    ]
 
     return render(
         request,
@@ -809,12 +1000,19 @@ def tour_preview_view(request, organization_slug, tour_id):
         {
             "tour": tour,
             "current_organization": organization,
+
+            # Toutes les scènes pour Marzipano + hotspots
             "scenes_json": scenes_payload,
+
+            # Seulement les scènes visibles dans la liste du dock
+            "scene_list_json": scene_list_payload,
         },
-    ) 
-    
-    
-    
+    )
+
+# =============================================================================
+# SCENES AJAX
+# =============================================================================
+
 @login_required
 @require_POST
 def upload_scenes_ajax_view(request, organization_slug, tour_id):
@@ -829,23 +1027,39 @@ def upload_scenes_ajax_view(request, organization_slug, tour_id):
         return JsonResponse({"detail": "No files uploaded."}, status=400)
 
     created_scenes = handle_uploaded_scenes(tour, files)
+    build_tour_manifest(tour)
 
-    data = []
-    for scene in created_scenes:
-        data.append({
-            "id": scene.id,
-            "scene_id": scene.scene_id,
-            "title": scene.title,
-            "image_360_url": scene.image_360.url if scene.image_360 else "",
-            "thumbnail_url": scene.thumbnail_image.url if scene.thumbnail_image else "",
-            "order": scene.order,
-            "yaw_default": scene.yaw_default,
-            "pitch_default": scene.pitch_default,
-            "hfov_default": scene.hfov_default,
-            "hotspots": [],
-        })
+    created_ids = [scene.id for scene in created_scenes]
 
-    return JsonResponse({"scenes": data}, status=201)
+    scenes = list(
+        Scene360.objects.filter(id__in=created_ids, organization=organization)
+        .prefetch_related(
+            Prefetch(
+                "hotspots",
+                queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
+            )
+        )
+        .order_by("order", "id")
+    )
+
+    data = [
+        _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=False,
+            prefetch=None,
+        )
+        for scene in scenes
+    ]
+
+    return JsonResponse({
+        "success": True,
+        "message": "Scenes uploaded. Processing started.",
+        "scenes": data,
+    }, status=201)
+
+
+
 
 
 @login_required
@@ -855,38 +1069,251 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
     if not organization:
         return JsonResponse({"detail": "Forbidden"}, status=403)
 
-    scene = get_object_or_404(Scene360, id=scene_id, organization=organization)
+    scene = get_object_or_404(
+        Scene360.objects.select_related("tour").prefetch_related(
+            Prefetch(
+                "hotspots",
+                queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
+            )
+        ),
+        id=scene_id,
+        organization=organization,
+    )
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
         return JsonResponse({"detail": "Invalid JSON payload."}, status=400)
 
-    scene.title = payload.get("title", scene.title)
-    scene.yaw_default = payload.get("yaw_default", scene.yaw_default)
-    scene.pitch_default = payload.get("pitch_default", scene.pitch_default)
-    scene.hfov_default = payload.get("hfov_default", scene.hfov_default)
+    if "title" in payload:
+        title = (payload.get("title") or "").strip()
+        if title:
+            scene.title = title
+
+    if "yaw_default" in payload:
+        scene.yaw_default = payload.get("yaw_default", scene.yaw_default)
+
+    if "pitch_default" in payload:
+        scene.pitch_default = payload.get("pitch_default", scene.pitch_default)
+
+    if "hfov_default" in payload:
+        scene.hfov_default = payload.get("hfov_default", scene.hfov_default)
 
     if payload.get("order") is not None:
         scene.order = payload["order"]
 
+    if payload.get("status") in {
+        Scene360.Status.DRAFT,
+        Scene360.Status.PUBLISHED,
+        Scene360.Status.INACTIVE,
+    }:
+        scene.status = payload["status"]
+
+    # Nouveau : sauvegarder l'affichage dans le preview
+    if "is_public" in payload:
+        scene.is_public = _payload_bool(
+            payload.get("is_public"),
+            default=bool(getattr(scene, "is_public", True)),
+        )
+
     scene.save()
     build_tour_manifest(scene.tour)
 
+    scene.refresh_from_db()
+
     return JsonResponse({
-        "scene": {
-            "id": scene.id,
-            "scene_id": scene.scene_id,
-            "title": scene.title,
-            "image_360_url": scene.image_360.url if scene.image_360 else "",
-            "thumbnail_url": scene.thumbnail_image.url if scene.thumbnail_image else "",
-            "order": scene.order,
-            "yaw_default": scene.yaw_default,
-            "pitch_default": scene.pitch_default,
-            "hfov_default": scene.hfov_default,
-        }
+        "success": True,
+        "scene": _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=True,
+            prefetch=None,
+        ),
     })
 
+@login_required
+@require_POST
+def reorder_scenes_ajax_view(request, organization_slug, tour_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+
+    tour = get_object_or_404(Tour, id=tour_id, organization=organization)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "Invalid JSON payload."}, status=400)
+
+    ordered_scene_ids = payload.get("scene_ids", [])
+
+    if not isinstance(ordered_scene_ids, list):
+        return JsonResponse({"detail": "scene_ids must be a list."}, status=400)
+
+    reorder_scenes_for_tour(tour, ordered_scene_ids)
+    build_tour_manifest(tour)
+
+    scenes = list(
+        Scene360.objects.filter(tour=tour, organization=organization)
+        .prefetch_related(
+            Prefetch(
+                "hotspots",
+                queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
+            )
+        )
+        .order_by("order", "id")
+    )
+
+    prefetch_map = _build_prefetch_map(request, scenes)
+
+    return JsonResponse({
+        "success": True,
+        "scenes": [
+            _serialize_scene_payload(
+                request=request,
+                scene=scene,
+                include_hotspots=True,
+                prefetch=prefetch_map.get(scene.id),
+            )
+            for scene in scenes
+        ],
+    })
+
+
+# =============================================================================
+# PIPELINE STATUS AJAX
+# =============================================================================
+
+@login_required
+@require_GET
+def scene_pipeline_status_ajax_view(request, organization_slug, scene_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+
+    scene = get_object_or_404(
+        Scene360.objects.select_related("tour").prefetch_related(
+            Prefetch(
+                "hotspots",
+                queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
+            )
+        ),
+        id=scene_id,
+        organization=organization,
+    )
+
+    return JsonResponse({
+        "success": True,
+        "scene": _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=True,
+            prefetch=None,
+        ),
+    })
+
+
+@login_required
+@require_GET
+def tour_scenes_pipeline_status_ajax_view(request, organization_slug, tour_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+
+    tour = get_object_or_404(Tour, id=tour_id, organization=organization)
+
+    scenes = list(
+        Scene360.objects.filter(tour=tour, organization=organization)
+        .prefetch_related(
+            Prefetch(
+                "hotspots",
+                queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
+            )
+        )
+        .order_by("order", "id")
+    )
+
+    prefetch_map = _build_prefetch_map(request, scenes)
+
+    scenes_payload = [
+        _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=True,
+            prefetch=prefetch_map.get(scene.id),
+        )
+        for scene in scenes
+    ]
+
+    all_assets_ready = all(scene.get("assets_ready") for scene in scenes_payload)
+
+    all_tiles_ready = all(
+        scene.get("tiles_ready") or not scene.get("tiles", {}).get("enabled")
+        for scene in scenes_payload
+    )
+
+    return JsonResponse({
+        "success": True,
+        "all_assets_ready": all_assets_ready,
+        "all_tiles_ready": all_tiles_ready,
+        "scenes": scenes_payload,
+    })
+
+
+@login_required
+@require_POST
+def queue_scene_pipeline_ajax_view(request, organization_slug, scene_id):
+    """
+    Relance manuellement le pipeline Celery d'une scène :
+    assets + tiles + IA + hotspots + prefetch.
+    """
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+
+    scene = get_object_or_404(
+        Scene360.objects.select_related("tour"),
+        id=scene_id,
+        organization=organization,
+    )
+
+    from apps.tours.tasks import run_scene_pipeline_task
+
+    run_scene_pipeline_task.delay(scene.id)
+
+    return JsonResponse({
+        "success": True,
+        "message": "Scene pipeline queued.",
+        "scene_id": scene.id,
+    })
+
+
+@login_required
+@require_POST
+def queue_tour_prefetch_ajax_view(request, organization_slug, tour_id):
+    """
+    Relance manuellement le prefetch manifest du tour.
+    """
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+
+    tour = get_object_or_404(Tour, id=tour_id, organization=organization)
+
+    from apps.tours.tasks import build_tour_prefetch_manifest_task
+
+    build_tour_prefetch_manifest_task.delay(tour.id)
+
+    return JsonResponse({
+        "success": True,
+        "message": "Tour prefetch manifest queued.",
+        "tour_id": tour.id,
+    })
+
+
+# =============================================================================
+# HOTSPOTS AJAX
+# =============================================================================
 
 @login_required
 @require_POST
@@ -895,7 +1322,11 @@ def create_hotspot_ajax_view(request, organization_slug, scene_id):
     if not organization:
         return JsonResponse({"detail": "Forbidden"}, status=403)
 
-    scene = get_object_or_404(Scene360, id=scene_id, organization=organization)
+    scene = get_object_or_404(
+        Scene360.objects.select_related("tour"),
+        id=scene_id,
+        organization=organization,
+    )
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
@@ -914,6 +1345,7 @@ def create_hotspot_ajax_view(request, organization_slug, scene_id):
     extra_payload = payload.get("payload", {})
 
     target_scene = None
+
     if target_scene_id:
         target_scene = Scene360.objects.filter(
             id=target_scene_id,
@@ -935,79 +1367,14 @@ def create_hotspot_ajax_view(request, organization_slug, scene_id):
         payload=extra_payload,
     )
 
+    build_tour_manifest(scene.tour)
+
     return JsonResponse({
-        "hotspot": {
-            "id": hotspot.id,
-            "hotspot_id": hotspot.hotspot_id,
-            "type": hotspot.type,
-            "label": hotspot.label,
-            "tooltip_text": hotspot.tooltip_text,
-            "yaw": hotspot.yaw,
-            "pitch": hotspot.pitch,
-            "target_scene": hotspot.target_scene_id,
-            "title": hotspot.title,
-            "description": hotspot.description,
-            "selected_icon": hotspot.selected_icon,
-            "ad_image_url": hotspot.ad_image.url if hotspot.ad_image else None,
-            "payload": hotspot.payload,
-        }
+        "success": True,
+        "hotspot": _serialize_hotspot_payload(request, hotspot),
     }, status=201)
-    
-@login_required
-@require_POST
-def reorder_scenes_ajax_view(request, organization_slug, tour_id):
-    organization = _get_org_or_403(request, organization_slug)
-    if not organization:
-        return JsonResponse({"detail": "Forbidden"}, status=403)
 
-    tour = get_object_or_404(Tour, id=tour_id, organization=organization)
 
-    try:
-        payload = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
-        return JsonResponse({"detail": "Invalid JSON payload."}, status=400)
-
-    ordered_scene_ids = payload.get("scene_ids", [])
-    if not isinstance(ordered_scene_ids, list):
-        return JsonResponse({"detail": "scene_ids must be a list."}, status=400)
-
-    scenes = reorder_scenes_for_tour(tour, ordered_scene_ids)
-
-    return JsonResponse({
-        "scenes": [
-            {
-                "id": scene.id,
-                "scene_id": scene.scene_id,
-                "title": scene.title,
-                "image_360_url": scene.image_360.url if scene.image_360 else "",
-                "thumbnail_url": scene.thumbnail_image.url if scene.thumbnail_image else "",
-                "order": scene.order,
-                "yaw_default": scene.yaw_default,
-                "pitch_default": scene.pitch_default,
-                "hfov_default": scene.hfov_default,
-                "hotspots": [
-                    {
-                        "id": hotspot.id,
-                        "hotspot_id": hotspot.hotspot_id,
-                        "type": hotspot.type,
-                        "label": hotspot.label,
-                        "tooltip_text": hotspot.tooltip_text,
-                        "yaw": hotspot.yaw,
-                        "pitch": hotspot.pitch,
-                        "target_scene": hotspot.target_scene_id,
-                        "title": hotspot.title,
-                        "description": hotspot.description,
-                        "selected_icon": hotspot.selected_icon,
-                        "ad_image_url": hotspot.ad_image.url if hotspot.ad_image else None,
-                        "payload": hotspot.payload,
-                    }
-                    for hotspot in scene.hotspots.all()
-                ],
-            }
-            for scene in scenes
-        ]
-    })
-    
 @login_required
 @require_POST
 def update_hotspot_ajax_view(request, organization_slug, hotspot_id):
@@ -1015,7 +1382,11 @@ def update_hotspot_ajax_view(request, organization_slug, hotspot_id):
     if not organization:
         return JsonResponse({"detail": "Forbidden"}, status=403)
 
-    hotspot = get_object_or_404(Hotspot, id=hotspot_id, organization=organization)
+    hotspot = get_object_or_404(
+        Hotspot.objects.select_related("scene", "scene__tour", "target_scene"),
+        id=hotspot_id,
+        organization=organization,
+    )
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
@@ -1034,6 +1405,7 @@ def update_hotspot_ajax_view(request, organization_slug, hotspot_id):
     target_scene_id = payload.get("target_scene")
 
     target_scene = None
+
     if target_scene_id:
         target_scene = Scene360.objects.filter(
             id=target_scene_id,
@@ -1055,24 +1427,13 @@ def update_hotspot_ajax_view(request, organization_slug, hotspot_id):
         payload=extra_payload,
     )
 
+    build_tour_manifest(hotspot.scene.tour)
+
     return JsonResponse({
-        "hotspot": {
-            "id": hotspot.id,
-            "hotspot_id": hotspot.hotspot_id,
-            "type": hotspot.type,
-            "label": hotspot.label,
-            "tooltip_text": hotspot.tooltip_text,
-            "yaw": hotspot.yaw,
-            "pitch": hotspot.pitch,
-            "target_scene": hotspot.target_scene_id,
-            "title": hotspot.title,
-            "description": hotspot.description,
-            "selected_icon": hotspot.selected_icon,
-            "ad_image_url": hotspot.ad_image.url if hotspot.ad_image else None,
-            "payload": hotspot.payload,
-        }
+        "success": True,
+        "hotspot": _serialize_hotspot_payload(request, hotspot),
     })
-    
+
 
 @login_required
 @require_POST
@@ -1081,20 +1442,25 @@ def upload_hotspot_image_ajax_view(request, organization_slug, hotspot_id):
     if not organization:
         return JsonResponse({"detail": "Forbidden"}, status=403)
 
-    hotspot = get_object_or_404(Hotspot, id=hotspot_id, organization=organization)
+    hotspot = get_object_or_404(
+        Hotspot.objects.select_related("scene", "scene__tour"),
+        id=hotspot_id,
+        organization=organization,
+    )
 
     image_file = request.FILES.get("image")
+
     if not image_file:
         return JsonResponse({"detail": "No image uploaded."}, status=400)
 
     hotspot.ad_image = image_file
     hotspot.save(update_fields=["ad_image", "updated_at"])
 
+    build_tour_manifest(hotspot.scene.tour)
+
     return JsonResponse({
-        "hotspot": {
-            "id": hotspot.id,
-            "ad_image_url": hotspot.ad_image.url if hotspot.ad_image else "",
-        }
+        "success": True,
+        "hotspot": _serialize_hotspot_payload(request, hotspot),
     })
 
 
@@ -1105,9 +1471,18 @@ def delete_hotspot_ajax_view(request, organization_slug, hotspot_id):
     if not organization:
         return JsonResponse({"detail": "Forbidden"}, status=403)
 
-    hotspot = get_object_or_404(Hotspot, id=hotspot_id, organization=organization)
+    hotspot = get_object_or_404(
+        Hotspot.objects.select_related("scene", "scene__tour"),
+        id=hotspot_id,
+        organization=organization,
+    )
+
     tour = hotspot.scene.tour
     hotspot.delete()
 
     build_tour_manifest(tour)
-    return JsonResponse({"success": True})
+
+    return JsonResponse({
+        "success": True,
+        "deleted_hotspot_id": hotspot_id,
+    })

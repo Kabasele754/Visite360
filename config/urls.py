@@ -13,8 +13,8 @@ urlpatterns = [
     path("", include("apps.public.urls")),
     
     path("", include("apps.organizations.dashboard_urls")),
-path("", include("apps.places.dashboard_urls")),
-path("", include("apps.tours.dashboard_urls")),
+    path("", include("apps.places.dashboard_urls")),
+    path("", include("apps.tours.dashboard_urls")),
 
     path("api/", include("apps.users.urls")),
     path("api/", include("apps.organizations.urls")),
