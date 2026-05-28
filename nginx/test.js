@@ -1,4 +1,4 @@
-var ws = new WebSocket('wss://s4e-elevatai.com/ws/location/site/1/');
+var ws = new WebSocket('wss://twinscopes.com/ws/location/site/1/');
 ws.onopen = function() {
     console.log('WebSocket connection opened.');
 };

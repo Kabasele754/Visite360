@@ -935,7 +935,28 @@ Remplacer ton template preview par ce fichier.
 
 function openInfoPanel(hotspot) {
     if (!previewInfoPanel) return;
+function openInfoPanel(hotspot) {
+    if (!previewInfoPanel) return;
 
+    const content = hotspot.payload?.content || {};
+
+    const imageUrl =
+        content.image_url ||
+        content.product_image_url ||
+        content.photo_url ||
+        hotspot.image_url ||
+        hotspot.ad_image_url ||
+        "";
+
+    const ctaUrl = content.cta_url || "";
+    const buttonText = content.button_text || "Open";
+    const badge = content.badge || "";
+    const price = content.price || "";
+    const siteName = content.site_name || "";
+    const phone = content.phone || "";
+    const email = content.email || "";
+    const whatsappNumber = content.whatsapp_number || "";
+    const whatsappMessage = content.whatsapp_message || "Hello";
     const content = hotspot.payload?.content || {};
 
     const imageUrl =
@@ -995,10 +1016,58 @@ function openInfoPanel(hotspot) {
     } else {
         previewInfoMedia.innerHTML = `<div class="info-media-empty">Preview unavailable</div>`;
     }
+    const hotspotKind = String(
+        hotspot.type ||
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        "info"
+    ).toLowerCase();
+
+    previewInfoPanel.classList.remove(
+        "is-product",
+        "is-info",
+        "is-ad",
+        "is-cta",
+        "is-cart",
+        "is-whatsapp",
+        "is-phone",
+        "is-website"
+    );
+
+    previewInfoPanel.classList.add(`is-${hotspotKind}`);
+    previewInfoPanel.dataset.hotspotKind = hotspotKind;
+
+    previewInfoMedia.innerHTML = "";
+
+    if (imageUrl) {
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.alt = hotspot.title || hotspot.label || "Hotspot";
+        img.className = "info-media-image";
+        img.loading = "lazy";
+        img.decoding = "async";
+
+        img.onerror = () => {
+            previewInfoMedia.innerHTML = `<div class="info-media-empty">Image unavailable</div>`;
+        };
+
+        previewInfoMedia.appendChild(img);
+    } else {
+        previewInfoMedia.innerHTML = `<div class="info-media-empty">Preview unavailable</div>`;
+    }
 
     previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
     previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
+    previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
+    previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
 
+    if (badge) {
+        previewInfoBadge.textContent = badge;
+        previewInfoBadge.classList.remove("hidden");
+    } else {
+        previewInfoBadge.classList.add("hidden");
+        previewInfoBadge.textContent = "";
+    }
     if (badge) {
         previewInfoBadge.textContent = badge;
         previewInfoBadge.classList.remove("hidden");
@@ -1014,7 +1083,21 @@ function openInfoPanel(hotspot) {
         previewInfoPrice.classList.add("hidden");
         previewInfoPrice.textContent = "";
     }
+    if (price) {
+        previewInfoPrice.textContent = price;
+        previewInfoPrice.classList.remove("hidden");
+    } else {
+        previewInfoPrice.classList.add("hidden");
+        previewInfoPrice.textContent = "";
+    }
 
+    if (siteName) {
+        previewInfoSite.textContent = siteName;
+        previewInfoSite.classList.remove("hidden");
+    } else {
+        previewInfoSite.classList.add("hidden");
+        previewInfoSite.textContent = "";
+    }
     if (siteName) {
         previewInfoSite.textContent = siteName;
         previewInfoSite.classList.remove("hidden");
@@ -1031,7 +1114,23 @@ function openInfoPanel(hotspot) {
         previewInfoAction.classList.add("hidden");
         previewInfoAction.removeAttribute("href");
     }
+    if (ctaUrl) {
+        previewInfoAction.href = ctaUrl;
+        previewInfoAction.textContent = buttonText;
+        previewInfoAction.classList.remove("hidden");
+    } else {
+        previewInfoAction.classList.add("hidden");
+        previewInfoAction.removeAttribute("href");
+    }
 
+    if (whatsappNumber) {
+        const cleanNumber = String(whatsappNumber).replace(/[^\d]/g, "");
+        previewInfoWhatsapp.href = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+        previewInfoWhatsapp.classList.remove("hidden");
+    } else {
+        previewInfoWhatsapp.classList.add("hidden");
+        previewInfoWhatsapp.removeAttribute("href");
+    }
     if (whatsappNumber) {
         const cleanNumber = String(whatsappNumber).replace(/[^\d]/g, "");
         previewInfoWhatsapp.href = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(whatsappMessage)}`;
@@ -1055,7 +1154,25 @@ function openInfoPanel(hotspot) {
     }
 
     closeSceneStack();
+    if (phone) {
+        previewInfoContact.href = `tel:${phone}`;
+        previewInfoContact.textContent = "Call";
+        previewInfoContact.classList.remove("hidden");
+    } else if (email) {
+        previewInfoContact.href = `mailto:${email}`;
+        previewInfoContact.textContent = "Email";
+        previewInfoContact.classList.remove("hidden");
+    } else {
+        previewInfoContact.classList.add("hidden");
+        previewInfoContact.removeAttribute("href");
+    }
 
+    closeSceneStack();
+
+    previewInfoPanel.classList.add("open");
+    previewInfoBackdrop?.classList.add("open");
+    document.body.classList.add("info-panel-open");
+}
     previewInfoPanel.classList.add("open");
     previewInfoBackdrop?.classList.add("open");
     document.body.classList.add("info-panel-open");
@@ -1281,6 +1398,36 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
         hotspot.icon ||
         "default"
     ).toLowerCase();
+function buildHotspotNode(hotspot, hotspotIndex = 0) {
+    const display = hotspot.payload?.display || {};
+    const variant = display.variant || "pin";
+
+    const isMobile = isMobileViewport();
+
+    const defaultSize =
+        hotspot.type === "product" ? 66 :
+        hotspot.type === "info" ? 60 :
+        58;
+
+    const rawSize = Number(display.size || defaultSize);
+
+    const size = clamp(
+        rawSize,
+        36,
+        isMobile ? 64 : 92
+    );
+
+    const rotation = Number(display.rotation || 0);
+    const offsetX = Number(display.offset_x || 0);
+    const offsetY = Number(display.offset_y || 0);
+    const anchor = display.anchor || "bottom";
+
+    const hotspotKind = String(
+        hotspot.type ||
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        "default"
+    ).toLowerCase();
 
     const node = document.createElement("div");
     node.className = `preview-hotspot variant-${variant} anchor-${anchor} hotspot-kind-${hotspotKind}`;
@@ -1326,6 +1473,22 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
     img.onerror = () => {
         img.src = resolveIcon("default");
     };
+    const img = document.createElement("img");
+
+    img.src = resolveIcon(
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        hotspot.type ||
+        "default"
+    );
+
+    img.alt = hotspot.label || hotspot.title || "Hotspot";
+    img.loading = "lazy";
+    img.decoding = "async";
+
+    img.onerror = () => {
+        img.src = resolveIcon("default");
+    };
 
     if (variant === "label") {
         const span = document.createElement("span");
@@ -1341,7 +1504,10 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
     }
 
     stopTouchAndScrollEventPropagation(node);
+    stopTouchAndScrollEventPropagation(node);
 
+    node.addEventListener("click", async (event) => {
+        event.stopPropagation();
     node.addEventListener("click", async (event) => {
         event.stopPropagation();
 
@@ -1349,10 +1515,18 @@ function buildHotspotNode(hotspot, hotspotIndex = 0) {
             await navigateToScene(hotspot.target_scene, hotspot);
             return;
         }
+        if (hotspot.type === "navigate" && hotspot.target_scene) {
+            await navigateToScene(hotspot.target_scene, hotspot);
+            return;
+        }
 
         openInfoPanel(hotspot);
     });
+        openInfoPanel(hotspot);
+    });
 
+    return node;
+}
     return node;
 }
 

@@ -130,10 +130,10 @@ services:
       - ./nginx/openssl.cnf:/etc/ssl/openssl.cnf
     command: >
       certonly --webroot -w /var/www/certbot
-      -d s4e-elevateai.com
-      -d www.s4e-elevateai.com
-      -d pgadmin.s4e-elevateai.com
-      -d api.s4e-elevateai.com
+      -d twinscopes.com
+      -d www.twinscopes.com
+      -d pgadmin.twinscopes.com
+      -d api.twinscopes.com
       --email pepexykabasele@gmail.com
       --agree-tos
       --non-interactive
