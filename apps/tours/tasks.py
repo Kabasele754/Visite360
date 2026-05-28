@@ -3,6 +3,7 @@ from django.core.files.base import ContentFile
 from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
+from django.utils.text import slugify
 
 from celery import shared_task
 
@@ -638,17 +639,263 @@ def send_tour_published_email_task(self, tour_id):
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 2})
 def run_scene_pipeline_task(self, scene_id):
-    scene = Scene360.objects.select_related("tour").filter(pk=scene_id).first()
-    if not scene:
-        return {"ok": False, "message": "Scene introuvable"}
+    """
+    Pipeline complet d'une scène.
 
-    generate_scene_assets_task.delay(scene.pk)
+    Cette version exécute vraiment les étapes dans l'ordre :
+    1. génération preview/mobile/desktop/thumbnail
+    2. génération tiles si activées
+    3. analyse IA
+    4. génération hotspots IA
+    5. prefetch manifest du tour
+
+    Avantage :
+    - plus de sous-tâches perdues ;
+    - plus de problème d'ordre ;
+    - le statut change correctement ;
+    - les fichiers sont réellement créés quand cette tâche démarre.
+    """
+
+    scene = (
+        Scene360.objects
+        .select_related("organization", "tour")
+        .filter(pk=scene_id)
+        .first()
+    )
+
+    if not scene:
+        return {
+            "ok": False,
+            "message": "Scene introuvable",
+            "scene_id": scene_id,
+        }
+
+    if not scene.image_360_original:
+        Scene360.objects.filter(pk=scene.pk).update(
+            assets_status=PipelineStatus.FAILED,
+            assets_error="Aucune image source trouvée pour la scène.",
+            tiles_status=PipelineStatus.FAILED if scene.tiles_enabled else PipelineStatus.NONE,
+            tiles_error="Aucune image source trouvée pour générer les tiles." if scene.tiles_enabled else "",
+            ai_analysis_status=PipelineStatus.FAILED,
+            ai_analysis_error="Pipeline arrêté : aucune image source.",
+            ai_hotspots_status=PipelineStatus.FAILED,
+            ai_hotspot_error="Pipeline arrêté : aucune image source.",
+            updated_at=timezone.now(),
+        )
+
+        return {
+            "ok": False,
+            "message": "Aucune image source trouvée pour la scène.",
+            "scene_id": scene.pk,
+        }
+
+    result = {
+        "ok": True,
+        "scene_id": scene.pk,
+        "tour_id": scene.tour_id,
+        "assets": None,
+        "tiles": None,
+        "ai_analysis": None,
+        "ai_hotspots": None,
+        "prefetch": None,
+    }
+
+    # ============================================================
+    # 1. ASSETS : preview + desktop + mobile + thumbnail
+    # ============================================================
+    Scene360.objects.filter(pk=scene.pk).update(
+        assets_status=PipelineStatus.PROCESSING,
+        assets_error="",
+        updated_at=timezone.now(),
+    )
+
+    try:
+        scene.refresh_from_db()
+        assets_stats = _generate_scene_assets(scene)
+
+        scene.save(
+            update_fields=[
+                "image_360_preview",
+                "image_360",
+                "image_360_mobile",
+                "thumbnail_image",
+                "assets_status",
+                "assets_error",
+                "assets_generated_at",
+                "updated_at",
+            ]
+        )
+
+        result["assets"] = {
+            "ok": True,
+            "stats": assets_stats,
+        }
+
+    except Exception as exc:
+        Scene360.objects.filter(pk=scene.pk).update(
+            assets_status=PipelineStatus.FAILED,
+            assets_error=str(exc),
+            updated_at=timezone.now(),
+        )
+        raise
+
+    # ============================================================
+    # 2. TILES
+    # ============================================================
+    scene.refresh_from_db()
 
     if scene.tiles_enabled:
-        generate_scene_tiles_task.delay(scene.pk)
+        Scene360.objects.filter(pk=scene.pk).update(
+            tiles_status=PipelineStatus.PROCESSING,
+            tiles_error="",
+            updated_at=timezone.now(),
+        )
 
-    analyze_scene_ai_task.delay(scene.pk)
-    generate_ai_hotspots_task.delay(scene.pk)
-    build_tour_prefetch_manifest_task.delay(scene.tour_id)
+        try:
+            scene.refresh_from_db()
+            tiles_stats = _generate_scene_tiles(scene)
 
-    return {"ok": True, "scene_id": scene.pk}
+            scene.save(
+                update_fields=[
+                    "tiles_status",
+                    "tiles_manifest",
+                    "tiles_generated_at",
+                    "tiles_error",
+                    "updated_at",
+                ]
+            )
+
+            result["tiles"] = {
+                "ok": True,
+                "stats": tiles_stats,
+            }
+
+        except Exception as exc:
+            Scene360.objects.filter(pk=scene.pk).update(
+                tiles_status=PipelineStatus.FAILED,
+                tiles_error=str(exc),
+                updated_at=timezone.now(),
+            )
+            raise
+
+    else:
+        Scene360.objects.filter(pk=scene.pk).update(
+            tiles_status=PipelineStatus.NONE,
+            tiles_error="",
+            updated_at=timezone.now(),
+        )
+
+        result["tiles"] = {
+            "ok": True,
+            "message": "Tiles désactivées",
+        }
+
+    # ============================================================
+    # 3. ANALYSE IA
+    # ============================================================
+    Scene360.objects.filter(pk=scene.pk).update(
+        ai_analysis_status=PipelineStatus.PROCESSING,
+        ai_analysis_error="",
+        updated_at=timezone.now(),
+    )
+
+    try:
+        scene.refresh_from_db()
+        analysis = _mock_ai_analysis(scene)
+
+        scene.ai_analysis = analysis
+        scene.ai_analysis_status = PipelineStatus.READY
+        scene.ai_analysis_error = ""
+        scene.ai_analyzed_at = timezone.now()
+        scene.ai_hotspot_suggestions = analysis.get("recommended_hotspots", [])
+
+        scene.save(
+            update_fields=[
+                "ai_analysis",
+                "ai_analysis_status",
+                "ai_analysis_error",
+                "ai_analyzed_at",
+                "ai_hotspot_suggestions",
+                "updated_at",
+            ]
+        )
+
+        result["ai_analysis"] = {
+            "ok": True,
+            "analysis": analysis,
+        }
+
+    except Exception as exc:
+        Scene360.objects.filter(pk=scene.pk).update(
+            ai_analysis_status=PipelineStatus.FAILED,
+            ai_analysis_error=str(exc),
+            updated_at=timezone.now(),
+        )
+        raise
+
+    # ============================================================
+    # 4. HOTSPOTS IA
+    # ============================================================
+    Scene360.objects.filter(pk=scene.pk).update(
+        ai_hotspots_status=PipelineStatus.PROCESSING,
+        ai_hotspot_error="",
+        updated_at=timezone.now(),
+    )
+
+    try:
+        scene.refresh_from_db()
+        analysis = scene.ai_analysis or _mock_ai_analysis(scene)
+        created_ids = _generate_ai_hotspots(scene, analysis)
+
+        scene.ai_hotspots_status = PipelineStatus.READY
+        scene.ai_hotspot_error = ""
+        scene.ai_hotspots_generated_at = timezone.now()
+
+        scene.save(
+            update_fields=[
+                "ai_hotspots_status",
+                "ai_hotspot_error",
+                "ai_hotspots_generated_at",
+                "updated_at",
+            ]
+        )
+
+        result["ai_hotspots"] = {
+            "ok": True,
+            "created_hotspots": created_ids,
+        }
+
+    except Exception as exc:
+        Scene360.objects.filter(pk=scene.pk).update(
+            ai_hotspots_status=PipelineStatus.FAILED,
+            ai_hotspot_error=str(exc),
+            updated_at=timezone.now(),
+        )
+        raise
+
+    # ============================================================
+    # 5. PREFETCH TOUR
+    # ============================================================
+    try:
+        tour = Tour.objects.filter(pk=scene.tour_id).first()
+
+        if tour:
+            _build_prefetch_manifest_for_tour(tour)
+            result["prefetch"] = {
+                "ok": True,
+                "tour_id": tour.id,
+            }
+        else:
+            result["prefetch"] = {
+                "ok": False,
+                "message": "Tour introuvable",
+            }
+
+    except Exception as exc:
+        result["prefetch"] = {
+            "ok": False,
+            "error": str(exc),
+        }
+        raise
+
+    return result
