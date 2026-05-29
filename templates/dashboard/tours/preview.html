@@ -8,7 +8,7 @@ Preview template adapté: transition cinéma + zoom manuel initial à 0, avec pr
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <style> @-ms-viewport { width: device-width; } </style>
-    
+        
     <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
     {% comment %} <link rel="stylesheet" href="https://www.marzipano.net/demos/common/reset.css"> {% endcomment %}
    <link rel="stylesheet" href="{% static 'public/vendor/marzipano/common/reset.css' %}">
@@ -19,7 +19,9 @@ Preview template adapté: transition cinéma + zoom manuel initial à 0, avec pr
      
     <title>{{ tour.title }} - Preview</title>
 
-    <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}"> 
+    {% comment %} <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">  {% endcomment %}
+      <script src="https://cdn.tailwindcss.com"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -49,7 +51,7 @@ Preview template adapté: transition cinéma + zoom manuel initial à 0, avec pr
                 }
             }
         }
-    </script>
+    </script> 
 
  {% comment %} <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}"> {% endcomment %}
 

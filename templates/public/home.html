@@ -1510,6 +1510,8 @@
             }
         }
     </style>
+
+    
 </head>
 
 <body class="antialiased">
@@ -1958,573 +1960,708 @@
     <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
     <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const desktopHeader = document.getElementById("desktopHeader");
-            const mobileTopActions = document.getElementById("mobileTopActions");
-            const mobileBottomNav = document.getElementById("mobileBottomNav");
+ <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const desktopHeader = document.getElementById("desktopHeader");
+        const mobileTopActions = document.getElementById("mobileTopActions");
+        const mobileBottomNav = document.getElementById("mobileBottomNav");
 
-            const heroWrap = document.getElementById("heroPanoramaWrap");
-            const heroPanoEl = document.getElementById("heroMarzipano");
-            const heroPosterImage = document.getElementById("heroPosterImage");
-            const heroLoader = document.getElementById("heroLoader");
+        const heroWrap = document.getElementById("heroPanoramaWrap");
+        const heroPanoEl = document.getElementById("heroMarzipano");
+        const heroPosterImage = document.getElementById("heroPosterImage");
+        const heroLoader = document.getElementById("heroLoader");
 
-            const settingsMenu = document.getElementById("settingsMenu");
-            const settingsTriggers = Array.from(document.querySelectorAll(".settings-trigger"));
-            const searchTriggers = Array.from(document.querySelectorAll(".search-trigger"));
-            const themeToggleBtn = document.getElementById("themeToggleBtn");
-            const themeLabel = document.getElementById("themeLabel");
-            const languageSelect = document.getElementById("languageSelect");
+        const settingsMenu = document.getElementById("settingsMenu");
+        const settingsTriggers = Array.from(document.querySelectorAll(".settings-trigger"));
+        const searchTriggers = Array.from(document.querySelectorAll(".search-trigger"));
+        const themeToggleBtn = document.getElementById("themeToggleBtn");
+        const themeLabel = document.getElementById("themeLabel");
+        const languageSelect = document.getElementById("languageSelect");
 
-            const filterSheet = document.getElementById("filterSheet");
-            const filterSheetBackdrop = document.getElementById("filterSheetBackdrop");
-            const closeFilterSheetBtn = document.getElementById("closeFilterSheetBtn");
-            const catalogFilterForm = document.getElementById("catalogFilterForm");
-            const resetFiltersBtn = document.getElementById("resetFiltersBtn");
-            const categoryPills = Array.from(document.querySelectorAll("[data-category-pill]"));
+        const filterSheet = document.getElementById("filterSheet");
+        const filterSheetBackdrop = document.getElementById("filterSheetBackdrop");
+        const closeFilterSheetBtn = document.getElementById("closeFilterSheetBtn");
+        const catalogFilterForm = document.getElementById("catalogFilterForm");
+        const resetFiltersBtn = document.getElementById("resetFiltersBtn");
+        const categoryPills = Array.from(document.querySelectorAll("[data-category-pill]"));
 
-            const catalogDataNode = document.getElementById("catalogToursData");
-            const catalogGrid = document.getElementById("catalogToursGrid");
-            const catalogPagination = document.getElementById("catalogPagination");
-            const catalogEmptyState = document.getElementById("catalogEmptyState");
-            const catalogResultsMeta = document.getElementById("catalogResultsMeta");
+        const catalogDataNode = document.getElementById("catalogToursData");
+        const catalogGrid = document.getElementById("catalogToursGrid");
+        const catalogPagination = document.getElementById("catalogPagination");
+        const catalogEmptyState = document.getElementById("catalogEmptyState");
+        const catalogResultsMeta = document.getElementById("catalogResultsMeta");
 
-            const catalogTours = catalogDataNode ? JSON.parse(catalogDataNode.textContent) : [];
-            const pageSize = 15;
+        const catalogTours = catalogDataNode ? JSON.parse(catalogDataNode.textContent) : [];
+        const pageSize = 15;
 
-            const catalogState = {
-                q: (catalogFilterForm?.querySelector('[name="q"]')?.value || "").trim(),
-                category: (catalogFilterForm?.querySelector('[name="category"]')?.value || "").trim(),
-                city: (catalogFilterForm?.querySelector('[name="city"]')?.value || "").trim(),
-                page: 1,
-            };
+        const catalogState = {
+            q: (catalogFilterForm?.querySelector('[name="q"]')?.value || "").trim(),
+            category: (catalogFilterForm?.querySelector('[name="category"]')?.value || "").trim(),
+            city: (catalogFilterForm?.querySelector('[name="city"]')?.value || "").trim(),
+            page: 1,
+        };
 
-            function isMobileViewport() {
-                return window.matchMedia("(max-width: 767px)").matches;
-            }
+        function isMobileViewport() {
+            return window.matchMedia("(max-width: 767px)").matches;
+        }
 
-            function degToRad(deg) {
-                return deg * Math.PI / 180;
-            }
+        function degToRad(deg) {
+            return deg * Math.PI / 180;
+        }
 
-            function clamp(value, min, max) {
-                return Math.min(Math.max(value, min), max);
-            }
+        function clamp(value, min, max) {
+            return Math.min(Math.max(value, min), max);
+        }
 
-            function escapeHtml(value) {
-                return String(value ?? "")
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#39;");
-            }
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
 
-            function stripHtml(value) {
-                const temp = document.createElement("div");
-                temp.innerHTML = String(value || "");
-                return temp.textContent || temp.innerText || "";
-            }
+        function stripHtml(value) {
+            const temp = document.createElement("div");
+            temp.innerHTML = String(value || "");
+            return temp.textContent || temp.innerText || "";
+        }
 
-            function truncateText(value, limit = 135) {
-                const text = stripHtml(value).trim();
-                if (text.length <= limit) return text;
-                return text.slice(0, limit).trim() + "...";
-            }
+        function truncateText(value, limit = 135) {
+            const text = stripHtml(value).trim();
+            if (text.length <= limit) return text;
+            return text.slice(0, limit).trim() + "...";
+        }
 
-            function hideHeroLoader() {
-                heroLoader?.classList.add("is-hidden");
-            }
+        function hideHeroLoader() {
+            heroLoader?.classList.add("is-hidden");
+        }
 
-            if (heroPosterImage) {
-                if (heroPosterImage.complete) {
-                    setTimeout(hideHeroLoader, 120);
-                } else {
-                    heroPosterImage.addEventListener("load", () => setTimeout(hideHeroLoader, 120), { once: true });
-                    heroPosterImage.addEventListener("error", () => setTimeout(hideHeroLoader, 250), { once: true });
-                }
-                setTimeout(hideHeroLoader, 900);
+        if (heroPosterImage) {
+            if (heroPosterImage.complete) {
+                setTimeout(hideHeroLoader, 120);
             } else {
-                setTimeout(hideHeroLoader, 500);
+                heroPosterImage.addEventListener("load", () => setTimeout(hideHeroLoader, 120), { once: true });
+                heroPosterImage.addEventListener("error", () => setTimeout(hideHeroLoader, 250), { once: true });
             }
 
-            /* ========================= SETTINGS ========================= */
+            setTimeout(hideHeroLoader, 900);
+        } else {
+            setTimeout(hideHeroLoader, 500);
+        }
 
-            function applyTheme(mode) {
-                const dark = mode === "dark";
+        /* ========================= SETTINGS ========================= */
 
-                document.body.classList.toggle("theme-dark", dark);
+        function applyTheme(mode) {
+            const dark = mode === "dark";
 
-                if (themeLabel) {
-                    themeLabel.textContent = dark ? "On" : "Off";
+            document.body.classList.toggle("theme-dark", dark);
+
+            if (themeLabel) {
+                themeLabel.textContent = dark ? "On" : "Off";
+            }
+
+            localStorage.setItem("twinscopesTheme", dark ? "dark" : "light");
+            localStorage.setItem("virtualToursTheme", dark ? "dark" : "light");
+        }
+
+        const savedTheme =
+            localStorage.getItem("twinscopesTheme") ||
+            localStorage.getItem("virtualToursTheme") ||
+            "light";
+
+        applyTheme(savedTheme);
+
+        settingsTriggers.forEach((btn) => {
+            btn.addEventListener("click", (event) => {
+                event.stopPropagation();
+                settingsMenu?.classList.toggle("open");
+            });
+        });
+
+        themeToggleBtn?.addEventListener("click", () => {
+            const isDark = document.body.classList.contains("theme-dark");
+            applyTheme(isDark ? "light" : "dark");
+        });
+
+        languageSelect?.addEventListener("change", () => {
+            const lang = languageSelect.value;
+            const params = new URLSearchParams(window.location.search);
+            params.set("lang", lang);
+            window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!settingsMenu) return;
+
+            const clickedTrigger = settingsTriggers.some((btn) => btn.contains(event.target));
+
+            if (!settingsMenu.contains(event.target) && !clickedTrigger) {
+                settingsMenu.classList.remove("open");
+            }
+        });
+
+        /* ========================= HERO MARZIPANO AUTO ROTATION ========================= */
+
+        let heroViewer = null;
+        let heroView = null;
+        let heroScene = null;
+        let heroAutorotate = null;
+        let heroContextLost = false;
+        let heroAutorotateTimer = null;
+        let heroIsVisible = true;
+        let heroIsTouching = false;
+
+        const HERO_MIN_FOV = degToRad(6);
+        const HERO_MAX_FOV = degToRad(132);
+
+        function pickHeroPanoramaUrl() {
+            if (!heroPanoEl) return "";
+
+            const mobile = isMobileViewport();
+            const viewerMobile = heroPanoEl.dataset.viewerMobileUrl || "";
+            const viewerDesktop = heroPanoEl.dataset.viewerDesktopUrl || "";
+            const lightMobile = heroPanoEl.dataset.lightMobileUrl || "";
+            const lightDesktop = heroPanoEl.dataset.lightDesktopUrl || "";
+            const thumb = heroPanoEl.dataset.thumbUrl || "";
+
+            return (
+                (mobile && viewerMobile) ||
+                viewerDesktop ||
+                (mobile && lightMobile) ||
+                lightDesktop ||
+                thumb ||
+                ""
+            );
+        }
+
+        function stopHeroAutorotate() {
+            window.clearTimeout(heroAutorotateTimer);
+
+            if (!heroViewer) return;
+
+            try {
+                heroViewer.stopMovement();
+            } catch (_) {}
+        }
+
+        function startHeroAutorotate(delay = 600) {
+            window.clearTimeout(heroAutorotateTimer);
+
+            if (
+                !heroViewer ||
+                !heroAutorotate ||
+                heroContextLost ||
+                !heroIsVisible ||
+                heroIsTouching
+            ) {
+                return;
+            }
+
+            heroAutorotateTimer = window.setTimeout(() => {
+                if (
+                    !heroViewer ||
+                    !heroAutorotate ||
+                    heroContextLost ||
+                    !heroIsVisible ||
+                    heroIsTouching
+                ) {
+                    return;
                 }
-
-                localStorage.setItem("twinscopesTheme", dark ? "dark" : "light");
-                localStorage.setItem("virtualToursTheme", dark ? "dark" : "light");
-            }
-
-            const savedTheme =
-                localStorage.getItem("twinscopesTheme") ||
-                localStorage.getItem("virtualToursTheme") ||
-                "light";
-
-            applyTheme(savedTheme);
-
-            settingsTriggers.forEach((btn) => {
-                btn.addEventListener("click", (event) => {
-                    event.stopPropagation();
-                    settingsMenu?.classList.toggle("open");
-                });
-            });
-
-            themeToggleBtn?.addEventListener("click", () => {
-                const isDark = document.body.classList.contains("theme-dark");
-                applyTheme(isDark ? "light" : "dark");
-            });
-
-            languageSelect?.addEventListener("change", () => {
-                const lang = languageSelect.value;
-                const params = new URLSearchParams(window.location.search);
-                params.set("lang", lang);
-                window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-            });
-
-            document.addEventListener("click", (event) => {
-                if (!settingsMenu) return;
-
-                const clickedTrigger = settingsTriggers.some((btn) => btn.contains(event.target));
-
-                if (!settingsMenu.contains(event.target) && !clickedTrigger) {
-                    settingsMenu.classList.remove("open");
-                }
-            });
-
-            /* ========================= HERO MARZIPANO ========================= */
-
-            let heroViewer = null;
-            let heroView = null;
-            let heroScene = null;
-            let heroAutorotate = null;
-            let heroContextLost = false;
-
-            const HERO_MIN_FOV = degToRad(6);
-            const HERO_MAX_FOV = degToRad(132);
-
-            function pickHeroPanoramaUrl() {
-                if (!heroPanoEl) return "";
-
-                const mobile = isMobileViewport();
-                const viewerMobile = heroPanoEl.dataset.viewerMobileUrl || "";
-                const viewerDesktop = heroPanoEl.dataset.viewerDesktopUrl || "";
-                const lightMobile = heroPanoEl.dataset.lightMobileUrl || "";
-                const lightDesktop = heroPanoEl.dataset.lightDesktopUrl || "";
-                const thumb = heroPanoEl.dataset.thumbUrl || "";
-
-                return (
-                    (mobile && viewerMobile) ||
-                    viewerDesktop ||
-                    (mobile && lightMobile) ||
-                    lightDesktop ||
-                    thumb ||
-                    ""
-                );
-            }
-
-            function stopHeroAutorotate() {
-                if (!heroViewer) return;
-                try { heroViewer.stopMovement(); } catch (_) {}
-            }
-
-            function restartHeroAutorotate(delay = 900) {
-                if (!heroViewer || !heroAutorotate || heroContextLost) return;
-
-                setTimeout(() => {
-                    if (heroViewer && heroAutorotate && !heroContextLost) {
-                        try { heroViewer.startMovement(heroAutorotate); } catch (_) {}
-                    }
-                }, delay);
-            }
-
-            function initHeroPanorama() {
-                if (!heroPanoEl || heroViewer || typeof Marzipano === "undefined") return;
-
-                const url = pickHeroPanoramaUrl();
-                if (!url) return;
 
                 try {
-                    heroViewer = new Marzipano.Viewer(heroPanoEl, {
-                        controls: { mouseViewMode: "drag" },
+                    heroViewer.startMovement(heroAutorotate);
+                } catch (_) {}
+            }, delay);
+        }
+
+        function setupHeroVisibilityObserver() {
+            if (!heroWrap || !("IntersectionObserver" in window)) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                const entry = entries[0];
+
+                heroIsVisible = !!entry?.isIntersecting;
+
+                if (heroIsVisible) {
+                    startHeroAutorotate(500);
+                } else {
+                    stopHeroAutorotate();
+                }
+            }, {
+                threshold: 0.25,
+            });
+
+            observer.observe(heroWrap);
+        }
+
+        function initHeroPanorama() {
+            if (!heroPanoEl || heroViewer || typeof Marzipano === "undefined") return;
+
+            const url = pickHeroPanoramaUrl();
+            if (!url) return;
+
+            try {
+                heroViewer = new Marzipano.Viewer(heroPanoEl, {
+                    controls: {
+                        mouseViewMode: "drag",
+                    },
+                });
+
+                heroPanoEl.addEventListener("webglcontextlost", (event) => {
+                    event.preventDefault();
+                    heroContextLost = true;
+                    stopHeroAutorotate();
+                }, false);
+
+                heroPanoEl.addEventListener("webglcontextrestored", () => {
+                    heroContextLost = false;
+                    startHeroAutorotate(700);
+                }, false);
+
+                const source = Marzipano.ImageUrlSource.fromString(url);
+                const geometry = new Marzipano.EquirectGeometry([{ width: 4096 }]);
+                const limiter = Marzipano.RectilinearView.limit.traditional(4096, HERO_MAX_FOV);
+
+                heroView = new Marzipano.RectilinearView({
+                    yaw: degToRad(-18),
+                    pitch: 0,
+                    fov: HERO_MAX_FOV,
+                }, limiter);
+
+                heroScene = heroViewer.createScene({
+                    source,
+                    geometry,
+                    view: heroView,
+                    pinFirstLevel: true,
+                });
+
+                heroScene.switchTo({ transitionDuration: 700 }, () => {
+                    requestAnimationFrame(() => {
+                        heroWrap?.classList.add("is-panorama-ready");
+                        hideHeroLoader();
+
+                        if (heroViewer && typeof heroViewer.updateSize === "function") {
+                            heroViewer.updateSize();
+                        }
+
+                        startHeroAutorotate(isMobileViewport() ? 700 : 500);
+                    });
+                });
+
+                heroAutorotate = Marzipano.autorotate({
+                    yawSpeed: isMobileViewport() ? 0.026 : 0.018,
+                    targetPitch: 0,
+                    targetFov: null,
+                });
+
+                setupHeroVisibilityObserver();
+
+                heroPanoEl.addEventListener("mouseenter", () => {
+                    stopHeroAutorotate();
+                });
+
+                heroPanoEl.addEventListener("mouseleave", () => {
+                    startHeroAutorotate(650);
+                });
+
+                heroPanoEl.addEventListener("touchstart", () => {
+                    heroIsTouching = true;
+                    stopHeroAutorotate();
+                }, { passive: true });
+
+                heroPanoEl.addEventListener("touchend", () => {
+                    heroIsTouching = false;
+                    startHeroAutorotate(900);
+                }, { passive: true });
+
+                heroPanoEl.addEventListener("touchcancel", () => {
+                    heroIsTouching = false;
+                    startHeroAutorotate(900);
+                }, { passive: true });
+
+                heroPanoEl.addEventListener("pointerdown", () => {
+                    stopHeroAutorotate();
+                }, { passive: true });
+
+                heroPanoEl.addEventListener("pointerup", () => {
+                    startHeroAutorotate(900);
+                }, { passive: true });
+
+                heroPanoEl.addEventListener("wheel", (event) => {
+                    if (!heroView) return;
+
+                    event.preventDefault();
+                    stopHeroAutorotate();
+
+                    const direction = event.deltaY > 0 ? 1 : -1;
+                    const nextFov = clamp(
+                        heroView.fov() + degToRad(direction * 7),
+                        HERO_MIN_FOV,
+                        HERO_MAX_FOV
+                    );
+
+                    heroView.setParameters({
+                        fov: nextFov,
                     });
 
-                    heroPanoEl.addEventListener("webglcontextlost", (event) => {
-                        event.preventDefault();
-                        heroContextLost = true;
-                    }, false);
+                    startHeroAutorotate(1200);
+                }, { passive: false });
 
-                    heroPanoEl.addEventListener("webglcontextrestored", () => {
-                        heroContextLost = false;
-                    }, false);
+                window.addEventListener("resize", () => {
+                    if (!heroViewer || heroContextLost) return;
 
-                    const source = Marzipano.ImageUrlSource.fromString(url);
-                    const geometry = new Marzipano.EquirectGeometry([{ width: 4096 }]);
-                    const limiter = Marzipano.RectilinearView.limit.traditional(4096, HERO_MAX_FOV);
-
-                    heroView = new Marzipano.RectilinearView({
-                        yaw: degToRad(-18),
-                        pitch: 0,
-                        fov: HERO_MAX_FOV,
-                    }, limiter);
-
-                    heroScene = heroViewer.createScene({
-                        source,
-                        geometry,
-                        view: heroView,
-                        pinFirstLevel: true,
-                    });
-
-                    heroScene.switchTo({ transitionDuration: 700 }, () => {
-                        requestAnimationFrame(() => {
-                            heroWrap?.classList.add("is-panorama-ready");
-                            hideHeroLoader();
-
-                            if (heroViewer && typeof heroViewer.updateSize === "function") {
-                                heroViewer.updateSize();
-                            }
-                        });
-                    });
+                    try {
+                        heroViewer.updateSize();
+                    } catch (_) {}
 
                     heroAutorotate = Marzipano.autorotate({
-                        yawSpeed: 0.018,
+                        yawSpeed: isMobileViewport() ? 0.026 : 0.018,
                         targetPitch: 0,
                         targetFov: null,
                     });
 
-                    setTimeout(() => {
-                        if (heroViewer && heroAutorotate && !heroContextLost) {
-                            heroViewer.startMovement(heroAutorotate);
-                        }
-                    }, isMobileViewport() ? 1100 : 650);
+                    startHeroAutorotate(500);
+                });
 
-                    heroPanoEl.addEventListener("mouseenter", stopHeroAutorotate);
-                    heroPanoEl.addEventListener("mouseleave", () => restartHeroAutorotate(650));
-
-                    heroPanoEl.addEventListener("wheel", (event) => {
-                        if (!heroView) return;
-
-                        event.preventDefault();
-                        stopHeroAutorotate();
-
-                        const direction = event.deltaY > 0 ? 1 : -1;
-                        const nextFov = clamp(heroView.fov() + degToRad(direction * 7), HERO_MIN_FOV, HERO_MAX_FOV);
-
-                        heroView.setParameters({ fov: nextFov });
-                        restartHeroAutorotate(1200);
-                    }, { passive: false });
-
-                    window.addEventListener("resize", () => {
+                window.addEventListener("orientationchange", () => {
+                    window.setTimeout(() => {
                         if (!heroViewer || heroContextLost) return;
-                        try { heroViewer.updateSize(); } catch (_) {}
-                    });
-                } catch (error) {
-                    console.error("Hero Marzipano init error:", error);
-                    hideHeroLoader();
-                }
-            }
 
-            if (heroPanoEl) {
-                const startDelay = isMobileViewport() ? 900 : 260;
+                        try {
+                            heroViewer.updateSize();
+                        } catch (_) {}
 
-                if ("requestIdleCallback" in window) {
-                    window.requestIdleCallback(() => setTimeout(initHeroPanorama, startDelay), { timeout: 1800 });
-                } else {
-                    setTimeout(initHeroPanorama, startDelay);
-                }
-            }
-
-            /* ========================= FILTER SHEET ========================= */
-
-            function openSheet() {
-                filterSheet?.classList.add("open");
-                filterSheetBackdrop?.classList.add("show");
-                filterSheet?.setAttribute("aria-hidden", "false");
-                document.body.classList.add("overflow-hidden");
-            }
-
-            function closeSheet() {
-                filterSheet?.classList.remove("open");
-                filterSheetBackdrop?.classList.remove("show");
-                filterSheet?.setAttribute("aria-hidden", "true");
-                document.body.classList.remove("overflow-hidden");
-            }
-
-            searchTriggers.forEach((btn) => {
-                btn.addEventListener("click", openSheet);
-            });
-
-            closeFilterSheetBtn?.addEventListener("click", closeSheet);
-            filterSheetBackdrop?.addEventListener("click", closeSheet);
-
-            document.addEventListener("keydown", (event) => {
-                if (event.key === "Escape") closeSheet();
-            });
-
-            /* ========================= CATALOG ========================= */
-
-            function syncForm() {
-                if (!catalogFilterForm) return;
-
-                const qInput = catalogFilterForm.querySelector('[name="q"]');
-                const categoryInput = catalogFilterForm.querySelector('[name="category"]');
-                const cityInput = catalogFilterForm.querySelector('[name="city"]');
-
-                if (qInput) qInput.value = catalogState.q;
-                if (categoryInput) categoryInput.value = catalogState.category;
-                if (cityInput) cityInput.value = catalogState.city;
-            }
-
-            function syncCategoryPills() {
-                categoryPills.forEach((pill) => {
-                    const active = (pill.dataset.categoryPill || "") === catalogState.category;
-                    pill.classList.toggle("active", active);
+                        startHeroAutorotate(500);
+                    }, 350);
                 });
-            }
 
-            function updateUrl() {
-                const params = new URLSearchParams(window.location.search);
+                document.addEventListener("visibilitychange", () => {
+                    if (!heroViewer || heroContextLost || !heroAutorotate) return;
 
-                catalogState.q ? params.set("q", catalogState.q) : params.delete("q");
-                catalogState.category ? params.set("category", catalogState.category) : params.delete("category");
-                catalogState.city ? params.set("city", catalogState.city) : params.delete("city");
-
-                const query = params.toString();
-                const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
-
-                window.history.replaceState({}, "", nextUrl);
-            }
-
-            function getTourImage(item) {
-                const mobile = isMobileViewport();
-
-                return (
-                    (mobile && item.image_mobile_url) ||
-                    item.image_url ||
-                    item.thumbnail_url ||
-                    (mobile && item.viewer_mobile_url) ||
-                    item.viewer_desktop_url ||
-                    ""
-                );
-            }
-
-            function buildTourCard(item) {
-                const image = getTourImage(item);
-                const previewUrl = item.preview_url || "#";
-                const cityText = [item.city, item.country].filter(Boolean).join(", ");
-                const title = item.title || "Virtual tour";
-                const scenes = Number(item.scene_count || 0);
-                const description =
-                    item.description ||
-                    item.short_description ||
-                    item.place_description ||
-                    "Explore this immersive 360° visit and discover the space before going there.";
-
-                return `
-                    <article class="pin-card">
-                        <a href="${escapeHtml(previewUrl)}" class="pin-link" aria-label="${escapeHtml(title)}">
-                            <div class="pin-media">
-                                ${
-                                    image
-                                        ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async">`
-                                        : `<div class="pin-media-placeholder">No Preview</div>`
-                                }
-
-                                <div class="pin-badge-row">
-                                    <span class="pin-badge">
-                                        <span class="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.9)]"></span>
-                                        360°
-                                    </span>
-
-                                    <span class="pin-play">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M6.5 5.5v9l7-4.5-7-4.5z" />
-                                        </svg>
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="pin-body">
-                                <h3 class="pin-title line-clamp-2">
-                                    ${escapeHtml(title)}
-                                </h3>
-
-                                <p class="pin-description line-clamp-3">
-                                    ${escapeHtml(truncateText(description, 135))}
-                                </p>
-
-                                <div class="pin-meta">
-                                    <span>${scenes} scene${scenes > 1 ? "s" : ""}</span>
-                                    ${cityText ? `<span>${escapeHtml(cityText)}</span>` : ""}
-                                    ${item.category_label ? `<span>${escapeHtml(item.category_label)}</span>` : ""}
-                                </div>
-                            </div>
-                        </a>
-                    </article>
-                `;
-            }
-
-            function getFilteredTours() {
-                const q = catalogState.q.toLowerCase();
-
-                return catalogTours.filter((item) => {
-                    const searchBlob = String(item.search_blob || "").toLowerCase();
-                    const title = String(item.title || "").toLowerCase();
-                    const org = String(item.organization || "").toLowerCase();
-                    const city = String(item.city || "").toLowerCase();
-                    const country = String(item.country || "").toLowerCase();
-
-                    const matchesQ =
-                        !q ||
-                        searchBlob.includes(q) ||
-                        title.includes(q) ||
-                        org.includes(q) ||
-                        city.includes(q) ||
-                        country.includes(q);
-
-                    const matchesCategory =
-                        !catalogState.category ||
-                        String(item.category || "") === catalogState.category;
-
-                    const matchesCity =
-                        !catalogState.city ||
-                        city === catalogState.city.toLowerCase();
-
-                    return matchesQ && matchesCategory && matchesCity;
+                    if (document.hidden) {
+                        stopHeroAutorotate();
+                    } else {
+                        startHeroAutorotate(500);
+                    }
                 });
+            } catch (error) {
+                console.error("Hero Marzipano init error:", error);
+                hideHeroLoader();
             }
+        }
 
-            function renderPagination(totalPages) {
-                if (!catalogPagination) return;
+        if (heroPanoEl) {
+            const startDelay = isMobileViewport() ? 900 : 260;
 
-                catalogPagination.innerHTML = "";
-
-                if (totalPages <= 1) return;
-
-                for (let page = 1; page <= totalPages; page++) {
-                    const btn = document.createElement("button");
-                    btn.type = "button";
-                    btn.textContent = page;
-                    btn.className = page === catalogState.page
-                        ? "pagination-btn active"
-                        : "pagination-btn";
-
-                    btn.addEventListener("click", () => {
-                        catalogState.page = page;
-                        renderCatalog();
-                        document.getElementById("allTours")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    });
-
-                    catalogPagination.appendChild(btn);
-                }
+            if ("requestIdleCallback" in window) {
+                window.requestIdleCallback(() => {
+                    window.setTimeout(initHeroPanorama, startDelay);
+                }, {
+                    timeout: 1800,
+                });
+            } else {
+                window.setTimeout(initHeroPanorama, startDelay);
             }
+        }
 
-            function renderCatalog() {
-                if (!catalogGrid) return;
+        /* ========================= FILTER SHEET ========================= */
 
-                const filtered = getFilteredTours();
-                const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+        function openSheet() {
+            filterSheet?.classList.add("open");
+            filterSheetBackdrop?.classList.add("show");
+            filterSheet?.setAttribute("aria-hidden", "false");
+            document.body.classList.add("overflow-hidden");
+        }
 
-                if (catalogState.page > totalPages) {
-                    catalogState.page = totalPages;
-                }
+        function closeSheet() {
+            filterSheet?.classList.remove("open");
+            filterSheetBackdrop?.classList.remove("show");
+            filterSheet?.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("overflow-hidden");
+        }
 
-                const start = (catalogState.page - 1) * pageSize;
-                const pageItems = filtered.slice(start, start + pageSize);
+        searchTriggers.forEach((btn) => {
+            btn.addEventListener("click", openSheet);
+        });
 
-                catalogGrid.innerHTML = pageItems.map(buildTourCard).join("");
+        closeFilterSheetBtn?.addEventListener("click", closeSheet);
+        filterSheetBackdrop?.addEventListener("click", closeSheet);
 
-                catalogEmptyState?.classList.toggle("show", filtered.length === 0);
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") closeSheet();
+        });
 
-                if (catalogResultsMeta) {
-                    catalogResultsMeta.textContent = `${filtered.length} visit${filtered.length > 1 ? "s" : ""} found`;
-                }
+        /* ========================= CATALOG ========================= */
 
-                renderPagination(totalPages);
-                syncForm();
-                syncCategoryPills();
-                updateUrl();
-            }
+        function syncForm() {
+            if (!catalogFilterForm) return;
 
-            catalogFilterForm?.addEventListener("submit", (event) => {
-                event.preventDefault();
+            const qInput = catalogFilterForm.querySelector('[name="q"]');
+            const categoryInput = catalogFilterForm.querySelector('[name="category"]');
+            const cityInput = catalogFilterForm.querySelector('[name="city"]');
 
-                const data = new FormData(catalogFilterForm);
+            if (qInput) qInput.value = catalogState.q;
+            if (categoryInput) categoryInput.value = catalogState.category;
+            if (cityInput) cityInput.value = catalogState.city;
+        }
 
-                catalogState.q = String(data.get("q") || "").trim();
-                catalogState.category = String(data.get("category") || "").trim();
-                catalogState.city = String(data.get("city") || "").trim();
-                catalogState.page = 1;
-
-                renderCatalog();
-                closeSheet();
-                document.getElementById("allTours")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            });
-
+        function syncCategoryPills() {
             categoryPills.forEach((pill) => {
-                pill.addEventListener("click", () => {
-                    catalogState.category = pill.dataset.categoryPill || "";
-                    catalogState.page = 1;
+                const active = (pill.dataset.categoryPill || "") === catalogState.category;
+                pill.classList.toggle("active", active);
+            });
+        }
 
+        function updateUrl() {
+            const params = new URLSearchParams(window.location.search);
+
+            catalogState.q ? params.set("q", catalogState.q) : params.delete("q");
+            catalogState.category ? params.set("category", catalogState.category) : params.delete("category");
+            catalogState.city ? params.set("city", catalogState.city) : params.delete("city");
+
+            const query = params.toString();
+            const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+
+            window.history.replaceState({}, "", nextUrl);
+        }
+
+        function getTourImage(item) {
+            const mobile = isMobileViewport();
+
+            return (
+                (mobile && item.image_mobile_url) ||
+                item.image_url ||
+                item.thumbnail_url ||
+                (mobile && item.viewer_mobile_url) ||
+                item.viewer_desktop_url ||
+                ""
+            );
+        }
+
+        function buildTourCard(item) {
+            const image = getTourImage(item);
+            const previewUrl = item.preview_url || "#";
+            const cityText = [item.city, item.country].filter(Boolean).join(", ");
+            const title = item.title || "Virtual tour";
+            const scenes = Number(item.scene_count || 0);
+
+            const description =
+                item.description ||
+                item.short_description ||
+                item.place_description ||
+                "Explore this immersive 360° visit and discover the space before going there.";
+
+            return `
+                <article class="pin-card">
+                    <a href="${escapeHtml(previewUrl)}" class="pin-link" aria-label="${escapeHtml(title)}">
+                        <div class="pin-media">
+                            ${
+                                image
+                                    ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async">`
+                                    : `<div class="pin-media-placeholder">No Preview</div>`
+                            }
+
+                            <div class="pin-badge-row">
+                                <span class="pin-badge">
+                                    <span class="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.9)]"></span>
+                                    360°
+                                </span>
+
+                                <span class="pin-play">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M6.5 5.5v9l7-4.5-7-4.5z" />
+                                    </svg>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="pin-body">
+                            <h3 class="pin-title line-clamp-2">
+                                ${escapeHtml(title)}
+                            </h3>
+
+                            <p class="pin-description line-clamp-3">
+                                ${escapeHtml(truncateText(description, 135))}
+                            </p>
+
+                            <div class="pin-meta">
+                                <span>${scenes} scene${scenes > 1 ? "s" : ""}</span>
+                                ${cityText ? `<span>${escapeHtml(cityText)}</span>` : ""}
+                                ${item.category_label ? `<span>${escapeHtml(item.category_label)}</span>` : ""}
+                            </div>
+                        </div>
+                    </a>
+                </article>
+            `;
+        }
+
+        function getFilteredTours() {
+            const q = catalogState.q.toLowerCase();
+
+            return catalogTours.filter((item) => {
+                const searchBlob = String(item.search_blob || "").toLowerCase();
+                const title = String(item.title || "").toLowerCase();
+                const org = String(item.organization || "").toLowerCase();
+                const city = String(item.city || "").toLowerCase();
+                const country = String(item.country || "").toLowerCase();
+
+                const matchesQ =
+                    !q ||
+                    searchBlob.includes(q) ||
+                    title.includes(q) ||
+                    org.includes(q) ||
+                    city.includes(q) ||
+                    country.includes(q);
+
+                const matchesCategory =
+                    !catalogState.category ||
+                    String(item.category || "") === catalogState.category;
+
+                const matchesCity =
+                    !catalogState.city ||
+                    city === catalogState.city.toLowerCase();
+
+                return matchesQ && matchesCategory && matchesCity;
+            });
+        }
+
+        function renderPagination(totalPages) {
+            if (!catalogPagination) return;
+
+            catalogPagination.innerHTML = "";
+
+            if (totalPages <= 1) return;
+
+            for (let page = 1; page <= totalPages; page++) {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = page;
+                btn.className = page === catalogState.page
+                    ? "pagination-btn active"
+                    : "pagination-btn";
+
+                btn.addEventListener("click", () => {
+                    catalogState.page = page;
                     renderCatalog();
-                    document.getElementById("allTours")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    document.getElementById("allTours")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                    });
                 });
-            });
 
-            resetFiltersBtn?.addEventListener("click", () => {
-                catalogState.q = "";
-                catalogState.category = "";
-                catalogState.city = "";
-                catalogState.page = 1;
+                catalogPagination.appendChild(btn);
+            }
+        }
 
-                renderCatalog();
-                closeSheet();
-            });
+        function renderCatalog() {
+            if (!catalogGrid) return;
 
-            /* ========================= SCROLL BEHAVIOR ========================= */
+            const filtered = getFilteredTours();
+            const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
 
-            let lastScrollY = window.scrollY;
-            let ticking = false;
-
-            function syncBarsOnScroll() {
-                const currentY = window.scrollY;
-                const scrollingDown = currentY > lastScrollY && currentY > 120;
-                const scrollingUp = currentY < lastScrollY;
-
-                desktopHeader?.classList.toggle("is-solid", currentY > 90);
-
-                if (scrollingDown) {
-                    desktopHeader?.classList.add("is-hidden");
-                    mobileTopActions?.classList.add("is-hidden");
-                    mobileBottomNav?.classList.add("is-hidden");
-                }
-
-                if (scrollingUp || currentY < 80) {
-                    desktopHeader?.classList.remove("is-hidden");
-                    mobileTopActions?.classList.remove("is-hidden");
-                    mobileBottomNav?.classList.remove("is-hidden");
-                }
-
-                lastScrollY = currentY;
-                ticking = false;
+            if (catalogState.page > totalPages) {
+                catalogState.page = totalPages;
             }
 
-            window.addEventListener("scroll", () => {
-                if (!ticking) {
-                    window.requestAnimationFrame(syncBarsOnScroll);
-                    ticking = true;
-                }
-            }, { passive: true });
+            const start = (catalogState.page - 1) * pageSize;
+            const pageItems = filtered.slice(start, start + pageSize);
+
+            catalogGrid.innerHTML = pageItems.map(buildTourCard).join("");
+
+            catalogEmptyState?.classList.toggle("show", filtered.length === 0);
+
+            if (catalogResultsMeta) {
+                catalogResultsMeta.textContent = `${filtered.length} visit${filtered.length > 1 ? "s" : ""} found`;
+            }
+
+            renderPagination(totalPages);
+            syncForm();
+            syncCategoryPills();
+            updateUrl();
+        }
+
+        catalogFilterForm?.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const data = new FormData(catalogFilterForm);
+
+            catalogState.q = String(data.get("q") || "").trim();
+            catalogState.category = String(data.get("category") || "").trim();
+            catalogState.city = String(data.get("city") || "").trim();
+            catalogState.page = 1;
 
             renderCatalog();
+            closeSheet();
+
+            document.getElementById("allTours")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
         });
-    </script>
+
+        categoryPills.forEach((pill) => {
+            pill.addEventListener("click", () => {
+                catalogState.category = pill.dataset.categoryPill || "";
+                catalogState.page = 1;
+
+                renderCatalog();
+
+                document.getElementById("allTours")?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            });
+        });
+
+        resetFiltersBtn?.addEventListener("click", () => {
+            catalogState.q = "";
+            catalogState.category = "";
+            catalogState.city = "";
+            catalogState.page = 1;
+
+            renderCatalog();
+            closeSheet();
+        });
+
+        /* ========================= SCROLL BEHAVIOR ========================= */
+
+        let lastScrollY = window.scrollY;
+        let ticking = false;
+
+        function syncBarsOnScroll() {
+            const currentY = window.scrollY;
+            const scrollingDown = currentY > lastScrollY && currentY > 120;
+            const scrollingUp = currentY < lastScrollY;
+
+            desktopHeader?.classList.toggle("is-solid", currentY > 90);
+
+            if (scrollingDown) {
+                desktopHeader?.classList.add("is-hidden");
+                mobileTopActions?.classList.add("is-hidden");
+                mobileBottomNav?.classList.add("is-hidden");
+            }
+
+            if (scrollingUp || currentY < 80) {
+                desktopHeader?.classList.remove("is-hidden");
+                mobileTopActions?.classList.remove("is-hidden");
+                mobileBottomNav?.classList.remove("is-hidden");
+            }
+
+            lastScrollY = currentY;
+            ticking = false;
+        }
+
+        window.addEventListener("scroll", () => {
+            if (!ticking) {
+                window.requestAnimationFrame(syncBarsOnScroll);
+                ticking = true;
+            }
+        }, { passive: true });
+
+        renderCatalog();
+    });
+</script>
 </body>
 </html>
