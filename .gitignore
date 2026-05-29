@@ -2,7 +2,6 @@
 __pycache__/
 *.py[oc]
 build/
-dist/
 wheels/
 *.egg-info
 
@@ -13,3 +12,7 @@ env/
 venv/   
 
 
+
+tools/tailwindcss.exe
+tools/tailwindcss
+node_modules/

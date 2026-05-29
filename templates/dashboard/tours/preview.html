@@ -10,11 +10,16 @@ Preview template adapté: transition cinéma + zoom manuel initial à 0, avec pr
     <style> @-ms-viewport { width: device-width; } </style>
     
     <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
-    <link rel="stylesheet" href="https://www.marzipano.net/demos/common/reset.css">
-    <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
+    {% comment %} <link rel="stylesheet" href="https://www.marzipano.net/demos/common/reset.css"> {% endcomment %}
+   <link rel="stylesheet" href="{% static 'public/vendor/marzipano/common/reset.css' %}">
+    {% comment %} <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script> {% endcomment %}
+  
+     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
+
+     
     <title>{{ tour.title }} - Preview</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}"> 
     <script>
         tailwind.config = {
             theme: {

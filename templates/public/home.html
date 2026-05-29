@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Virtual Tours - Explore</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+     <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">
     <script>
         tailwind.config = {
             theme: {
@@ -1950,6 +1950,10 @@
             <span>Account</span>
         </a>
     </nav>
+
+  
+  
+     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
 
     <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
     <script src="{% static 'public/js/loader_3d_global.js' %}"></script>

@@ -18,6 +18,7 @@ from apps.organizations.models import Organization, OrganizationMember
 from apps.organizations.selectors import get_user_membership
 from apps.places.models import Place
 from apps.tours.forms import TourForm
+from django.core.cache import cache
 
 from .models import Tour, Scene360, Hotspot
 from .services import (
@@ -959,8 +960,12 @@ def tour_builder_view(request, organization_slug, tour_id):
     return render(request, "dashboard/tours/builder.html", context)
 
 
+
+
+
 def tour_preview_view(request, organization_slug, tour_id):
     organization = _get_org_or_403(request, organization_slug, allow_public=True)
+
     if not organization:
         return render(request, "403.html", status=403)
 
@@ -970,17 +975,37 @@ def tour_preview_view(request, organization_slug, tour_id):
         organization=organization,
     )
 
-    # Toutes les scènes restent disponibles pour :
-    # - ouverture directe via URL
-    # - hotspots de navigation
-    # - navigation interne Marzipano
+    tour_updated_value = getattr(tour, "updated_at", None) or getattr(tour, "created_at", None)
+    tour_version = int(tour_updated_value.timestamp()) if tour_updated_value else "no-version"
+
+    cache_key = (
+        f"tour_preview_payload:v2:"
+        f"{request.get_host()}:"
+        f"{organization.slug}:"
+        f"{tour.id}:"
+        f"{tour_version}"
+    )
+
+    cached_payload = cache.get(cache_key)
+
+    if cached_payload is not None:
+        return render(
+            request,
+            "dashboard/tours/preview.html",
+            {
+                "tour": tour,
+                "current_organization": organization,
+                "scenes_json": cached_payload["scenes_json"],
+                "scene_list_json": cached_payload["scene_list_json"],
+            },
+        )
+
     all_scenes = list(
         tour.scenes
         .all()
         .order_by("order", "id")
     )
 
-    # Seulement les scènes publiques dans la liste du dock previewScenesList
     public_list_scenes = [
         scene for scene in all_scenes
         if getattr(scene, "is_public", True) is True
@@ -988,25 +1013,40 @@ def tour_preview_view(request, organization_slug, tour_id):
 
     prefetch_map = _build_prefetch_map(request, all_scenes)
 
-    scenes_payload = [
-        _serialize_scene_payload(
-            request=request,
-            scene=scene,
-            include_hotspots=True,
-            prefetch=prefetch_map.get(scene.id),
-        )
-        for scene in all_scenes
-    ]
+    scenes_payload = []
 
-    scene_list_payload = [
-        _serialize_scene_payload(
-            request=request,
-            scene=scene,
-            include_hotspots=False,
-            prefetch=prefetch_map.get(scene.id),
+    for scene in all_scenes:
+        scene_prefetch = prefetch_map.get(scene.id)
+
+        scenes_payload.append(
+            _serialize_scene_payload(
+                request=request,
+                scene=scene,
+                include_hotspots=True,
+                prefetch=scene_prefetch,
+            )
         )
-        for scene in public_list_scenes
-    ]
+
+    scene_list_payload = []
+
+    for scene in public_list_scenes:
+        scene_prefetch = prefetch_map.get(scene.id)
+
+        scene_list_payload.append(
+            _serialize_scene_payload(
+                request=request,
+                scene=scene,
+                include_hotspots=False,
+                prefetch=scene_prefetch,
+            )
+        )
+
+    payload = {
+        "scenes_json": scenes_payload,
+        "scene_list_json": scene_list_payload,
+    }
+
+    cache.set(cache_key, payload, 60 * 3)
 
     return render(
         request,
@@ -1022,6 +1062,7 @@ def tour_preview_view(request, organization_slug, tour_id):
             "scene_list_json": scene_list_payload,
         },
     )
+
 
 # =============================================================================
 # SCENES AJAX
