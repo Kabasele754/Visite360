@@ -527,10 +527,67 @@ def public_tours_map_view(request):
     return render(request, "public/public_tours_map.html", context)
 
 
+from django.db.models import Count, Q, Prefetch
+from django.views.generic import TemplateView
+
+from apps.organizations.models import Organization
+from apps.places.models import Place
+
+
 class PublicAboutView(TemplateView):
     template_name = "public/about.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
+        published_places_qs = (
+            Place.objects
+            .filter(status=Place.Status.PUBLISHED)
+            .order_by("-published_at", "-created_at")
+        )
+
+        clients = list(
+            Organization.objects
+            .filter(status=Organization.Status.ACTIVE)
+            .annotate(
+                published_places_count=Count(
+                    "places",
+                    filter=Q(places__status=Place.Status.PUBLISHED),
+                    distinct=True,
+                )
+            )
+            .filter(published_places_count__gt=0)
+            .prefetch_related(
+                Prefetch(
+                    "places",
+                    queryset=published_places_qs,
+                    to_attr="published_places",
+                )
+            )
+            .order_by("name")
+        )
+
+        for client in clients:
+            category_labels = []
+            seen_categories = set()
+
+            for place in getattr(client, "published_places", []):
+                if place.category not in seen_categories:
+                    seen_categories.add(place.category)
+                    category_labels.append(place.get_category_display())
+
+            client.category_labels = category_labels[:4]
+            client.featured_places = getattr(client, "published_places", [])[:3]
+
+        context["clients"] = clients
+        context["clients_count"] = len(clients)
+        context["clients_places_count"] = sum(
+            getattr(client, "published_places_count", 0)
+            for client in clients
+        )
+
+        return context
+    
 class PublicServicesView(TemplateView):
     template_name = "public/services.html"
 

@@ -43,13 +43,12 @@ DATABASES = {
 
 # static local this code for to search file css
 
-STATIC_ROOT = "/app/static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = "/app/staticfiles"
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = "/app/media"
 
-COMPRESS_ROOT = STATIC_ROOT 
-
-
-MEDIA_ROOT = '/app/media'
-
+COMPRESS_ROOT = STATIC_ROOT
 
 

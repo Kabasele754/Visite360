@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Virtual Tours - Home</title>
+    <title>Virtual Tours - Explore</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -29,10 +29,9 @@
                         }
                     },
                     boxShadow: {
-                        glow: '0 14px 40px rgba(34,211,238,0.14)',
-                        premium: '0 30px 80px rgba(15,23,42,0.16)',
-                        soft: '0 12px 30px rgba(15,23,42,0.10)',
-                        glass: '0 18px 45px rgba(15,23,42,0.10)',
+                        premium: '0 30px 90px rgba(15,23,42,0.22)',
+                        card: '0 24px 65px rgba(15,23,42,0.14)',
+                        soft: '0 14px 34px rgba(15,23,42,0.10)',
                     }
                 }
             }
@@ -49,48 +48,129 @@
             overscroll-behavior: none;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            position: relative;
             min-height: 100vh;
+            overflow-x: hidden;
             color: #0f172a;
             background:
-                radial-gradient(circle at top, rgba(34,211,238,0.10), transparent 26%),
-                radial-gradient(circle at bottom right, rgba(59,130,246,0.08), transparent 24%),
-                linear-gradient(180deg, #f8fdff 0%, #eef8ff 34%, #ffffff 100%);
+                radial-gradient(circle at 8% 10%, rgba(103,232,249,0.26), transparent 28%),
+                radial-gradient(circle at 90% 12%, rgba(59,130,246,0.20), transparent 30%),
+                radial-gradient(circle at 55% 90%, rgba(14,165,233,0.14), transparent 35%),
+                linear-gradient(135deg, #f8fdff 0%, #eef8ff 45%, #ffffff 100%);
+            padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+            transition: background .25s ease, color .25s ease;
         }
 
-        .glass {
-            background: rgba(255,255,255,0.68);
-            border: 1px solid rgba(255,255,255,0.72);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            box-shadow: 0 18px 50px rgba(15,23,42,0.08);
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            z-index: -1;
+            pointer-events: none;
+            border-radius: 999px;
+            filter: blur(4px);
+            opacity: 0.65;
         }
 
-        .glass-soft {
-            background: rgba(255,255,255,0.54);
-            border: 1px solid rgba(255,255,255,0.70);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            box-shadow: 0 14px 38px rgba(15,23,42,0.08);
-        }
-
-        .glass-search {
-            background: rgba(255,255,255,0.28);
-            border: 1px solid rgba(255,255,255,0.50);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+        body::before {
+            width: 340px;
+            height: 340px;
+            top: 190px;
+            right: -110px;
+            background:
+                radial-gradient(circle at 35% 35%, rgba(255,255,255,0.92), rgba(103,232,249,0.28) 36%, rgba(59,130,246,0.08) 70%, transparent 100%);
             box-shadow:
-                0 18px 55px rgba(15,23,42,0.14),
-                inset 0 1px 0 rgba(255,255,255,0.30);
+                -40px 50px 90px rgba(14,165,233,0.16),
+                inset 25px -25px 70px rgba(255,255,255,0.30);
         }
 
-        .card-hover {
-            transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+        body::after {
+            width: 280px;
+            height: 280px;
+            left: -120px;
+            bottom: 120px;
+            background:
+                radial-gradient(circle at 35% 35%, rgba(255,255,255,0.88), rgba(125,211,252,0.20) 38%, rgba(15,23,42,0.04) 80%, transparent 100%);
+            box-shadow:
+                50px -40px 90px rgba(59,130,246,0.14),
+                inset -20px 24px 60px rgba(255,255,255,0.36);
         }
 
-        .card-hover:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 22px 52px rgba(15,23,42,0.14);
+        body.theme-dark {
+            color: #e5e7eb;
+            background:
+                radial-gradient(circle at 8% 10%, rgba(34,211,238,0.18), transparent 30%),
+                radial-gradient(circle at 88% 12%, rgba(37,99,235,0.18), transparent 32%),
+                radial-gradient(circle at 55% 90%, rgba(14,165,233,0.10), transparent 35%),
+                linear-gradient(135deg, #020617 0%, #07111f 50%, #0f172a 100%);
+        }
+
+        body.theme-dark::before {
+            opacity: 0.38;
+            background:
+                radial-gradient(circle at 35% 35%, rgba(34,211,238,0.24), rgba(37,99,235,0.10) 44%, transparent 74%);
+            box-shadow:
+                -40px 50px 90px rgba(34,211,238,0.10),
+                inset 25px -25px 70px rgba(255,255,255,0.04);
+        }
+
+        body.theme-dark::after {
+            opacity: 0.35;
+            background:
+                radial-gradient(circle at 35% 35%, rgba(59,130,246,0.18), rgba(15,23,42,0.20) 50%, transparent 82%);
+            box-shadow:
+                50px -40px 90px rgba(59,130,246,0.10),
+                inset -20px 24px 60px rgba(255,255,255,0.035);
+        }
+
+        body.theme-dark .dark-title {
+            color: white !important;
+        }
+
+        body.theme-dark .dark-text {
+            color: rgba(255,255,255,0.64) !important;
+        }
+
+        body.theme-dark .dark-muted {
+            color: rgba(255,255,255,0.46) !important;
+        }
+
+        body.theme-dark .text-slate-950,
+        body.theme-dark .text-slate-900 {
+            color: #ffffff !important;
+        }
+
+        body.theme-dark .text-slate-800 {
+            color: rgba(255,255,255,0.86) !important;
+        }
+
+        body.theme-dark .text-slate-700 {
+            color: rgba(255,255,255,0.78) !important;
+        }
+
+        body.theme-dark .text-slate-600,
+        body.theme-dark .text-slate-500 {
+            color: rgba(255,255,255,0.58) !important;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .line-clamp-1 {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .line-clamp-2 {
@@ -107,51 +187,71 @@
             overflow: hidden;
         }
 
-        .soft-border {
-            border: 1px solid rgba(15,23,42,0.06);
-        }
+        /* ========================= DESKTOP HEADER ========================= */
 
-        .section-title {
-            color: #0f172a;
-            letter-spacing: -0.03em;
-        }
-
-        /* ========================= HEADER ========================= */
-        .app-header {
+        .desktop-header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            z-index: 90;
-            padding: 14px 14px 0;
-            background: transparent;
+            z-index: 95;
+            padding: 14px 16px 0;
             pointer-events: none;
+            transition: transform .28s ease, opacity .28s ease;
         }
 
-        .header-shell {
+        .desktop-header.is-hidden {
+            transform: translateY(-120%);
+            opacity: 0;
+        }
+
+        .desktop-header-shell {
             max-width: 1280px;
             margin: 0 auto;
-            padding: 12px 14px;
-            border-radius: 30px;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.24);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            border-radius: 999px;
+            padding: 8px 10px 8px 14px;
+            color: white;
+            background:
+                linear-gradient(145deg, rgba(15,23,42,0.30), rgba(15,23,42,0.12));
+            border: 1px solid rgba(255,255,255,0.18);
+            backdrop-filter: blur(24px) saturate(1.18);
+            -webkit-backdrop-filter: blur(24px) saturate(1.18);
             box-shadow:
-                0 18px 45px rgba(0,0,0,0.14),
-                inset 0 1px 0 rgba(255,255,255,0.20);
+                0 28px 80px rgba(0,0,0,0.20),
+                inset 0 1px 0 rgba(255,255,255,0.18),
+                inset 0 -20px 60px rgba(255,255,255,0.035);
             pointer-events: auto;
         }
 
-        .app-header.is-scrolled .header-shell {
-            background: rgba(15,23,42,0.22);
-            border-color: rgba(255,255,255,0.22);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+        .desktop-header.is-solid .desktop-header-shell {
+            background:
+                linear-gradient(145deg, rgba(15,23,42,0.76), rgba(15,23,42,0.46));
+            border-color: rgba(255,255,255,0.12);
         }
 
-        .header-brand-link {
-            display: flex;
+        body.theme-dark .desktop-header-shell {
+            background:
+                linear-gradient(145deg, rgba(2,6,23,0.62), rgba(15,23,42,0.34));
+            border-color: rgba(255,255,255,0.10);
+            box-shadow:
+                0 28px 80px rgba(0,0,0,0.36),
+                inset 0 1px 0 rgba(255,255,255,0.10),
+                inset 0 -20px 60px rgba(255,255,255,0.025);
+        }
+
+        body.theme-dark .desktop-header.is-solid .desktop-header-shell {
+            background:
+                linear-gradient(145deg, rgba(2,6,23,0.88), rgba(15,23,42,0.70));
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        .brand-link {
+            display: inline-flex;
             align-items: center;
             gap: 12px;
             min-width: 0;
@@ -160,269 +260,282 @@
         }
 
         .brand-mark {
-            position: relative;
-            display: flex;
-            width: 48px;
-            height: 48px;
+            display: inline-flex;
+            width: 46px;
+            height: 46px;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            border-radius: 20px;
-            color: white;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.24);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            box-shadow:
-                0 14px 34px rgba(0,0,0,0.14),
-                inset 0 1px 0 rgba(255,255,255,0.20);
-        }
-
-        .header-brand-title {
-            max-width: 180px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 15px;
-            line-height: 1rem;
-            font-weight: 950;
-            letter-spacing: -0.02em;
-            color: white;
-            text-shadow: 0 8px 22px rgba(0,0,0,0.28);
-        }
-
-        .header-brand-subtitle {
-            margin-top: 3px;
-            max-width: 190px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 10px;
-            font-weight: 850;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: rgba(255,255,255,0.72);
-            text-shadow: 0 8px 22px rgba(0,0,0,0.24);
-        }
-
-        .nav-pill {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 44px;
-            padding: 0 16px;
-            border-radius: 999px;
-            color: rgba(255,255,255,0.90);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 900;
-            letter-spacing: 0.01em;
-            background: rgba(255,255,255,0.10);
-            border: 1px solid rgba(255,255,255,0.20);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            transition: transform .2s ease, background .2s ease, border-color .2s ease, color .2s ease;
-        }
-
-        .nav-pill:hover,
-        .nav-pill.active {
-            transform: translateY(-1px);
-            color: white;
-            background: rgba(255,255,255,0.18);
-            border-color: rgba(255,255,255,0.38);
-        }
-
-        .header-cta,
-        .mobile-menu-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 48px;
-            padding: 0 20px;
             border-radius: 18px;
             color: white;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 950;
             background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.24);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,0.22);
             box-shadow:
-                0 18px 45px rgba(0,0,0,0.14),
-                inset 0 1px 0 rgba(255,255,255,0.20);
-            transition: transform .22s ease, background .22s ease, border-color .22s ease;
+                0 16px 32px rgba(0,0,0,0.12),
+                inset 0 1px 0 rgba(255,255,255,0.16);
         }
 
-        .header-cta:hover,
-        .mobile-menu-btn:hover {
+        body.theme-dark .brand-mark {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .desktop-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .desktop-nav-link {
+            display: inline-flex;
+            min-height: 44px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0 16px;
+            color: rgba(255,255,255,0.78);
+            font-size: 13px;
+            font-weight: 900;
+            text-decoration: none;
+            transition: .18s ease;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .desktop-nav-link:hover,
+        .desktop-nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.13);
+        }
+
+        body.theme-dark .desktop-nav-link:hover,
+        body.theme-dark .desktop-nav-link.active {
+            background: rgba(103,232,249,0.14);
+            color: #e0fbff;
+        }
+
+        .desktop-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .floating-icon-btn {
+            display: inline-flex;
+            width: 46px;
+            height: 46px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            color: white;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.22);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow:
+                0 18px 45px rgba(0,0,0,0.16),
+                inset 0 1px 0 rgba(255,255,255,0.18);
+            transition: transform .18s ease, background .18s ease, border-color .18s ease;
+            cursor: pointer;
+        }
+
+        .floating-icon-btn:hover {
             transform: translateY(-1px);
             background: rgba(255,255,255,0.20);
             border-color: rgba(255,255,255,0.34);
         }
 
-        .mobile-menu-btn {
-            display: none;
-            width: 48px;
-            height: 48px;
-            padding: 0;
+        body.theme-dark .floating-icon-btn {
+            color: #f8fafc;
+            background: rgba(15,23,42,0.56);
+            border-color: rgba(255,255,255,0.12);
+            box-shadow:
+                0 18px 45px rgba(0,0,0,0.30),
+                inset 0 1px 0 rgba(255,255,255,0.08);
         }
 
-        /* ========================= MOBILE MENU / SEARCH SHEET ========================= */
-        .menu-backdrop,
-        .search-sheet-backdrop {
-            position: fixed;
-            inset: 0;
-            opacity: 0;
-            pointer-events: none;
-            transition: .22s ease;
-            background: rgba(15,23,42,0.26);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+        body.theme-dark .floating-icon-btn:hover {
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(103,232,249,0.24);
         }
 
-        .menu-backdrop { z-index: 97; }
-        .search-sheet-backdrop { z-index: 95; }
-
-        .menu-backdrop.show,
-        .search-sheet-backdrop.show {
-            opacity: 1;
-            pointer-events: auto;
+        .service-dropdown {
+            position: relative;
         }
 
-        .mobile-menu-panel {
-            position: fixed;
-            top: 14px;
-            right: 14px;
-            bottom: 14px;
-            width: min(340px, calc(100vw - 28px));
-            z-index: 98;
-            transform: translateX(calc(100% + 24px));
-            transition: transform .28s cubic-bezier(.22,1,.36,1);
-            border-radius: 30px;
-            overflow: hidden;
-            background: rgba(255,255,255,0.78);
-            border: 1px solid rgba(255,255,255,0.80);
+        .service-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            width: 230px;
+            border-radius: 24px;
+            padding: 8px;
+            background: rgba(255,255,255,0.96);
+            border: 1px solid rgba(255,255,255,0.86);
+            box-shadow: 0 24px 70px rgba(15,23,42,0.18);
             backdrop-filter: blur(22px);
             -webkit-backdrop-filter: blur(22px);
-            box-shadow: 0 28px 80px rgba(15,23,42,0.20);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px);
+            transition: .2s ease;
         }
 
-        .mobile-menu-panel.open { transform: translateX(0); }
+        body.theme-dark .service-dropdown-menu {
+            background: rgba(15,23,42,0.94);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 24px 70px rgba(0,0,0,0.36);
+        }
 
-        .mobile-menu-link {
+        .service-dropdown:hover .service-dropdown-menu,
+        .service-dropdown.open .service-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border-radius: 17px;
+            padding: 13px 14px;
+            color: #0f172a;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .dropdown-link:hover {
+            background: rgba(15,23,42,0.06);
+        }
+
+        body.theme-dark .dropdown-link {
+            color: rgba(255,255,255,0.84);
+        }
+
+        body.theme-dark .dropdown-link:hover {
+            color: white;
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* ========================= MOBILE TOP ACTIONS ========================= */
+
+        .mobile-top-actions {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 95;
+            padding: 10px 10px 0;
+            display: flex;
+            gap: 9px;
+            transition: transform .28s ease, opacity .28s ease;
+        }
+
+        .mobile-top-actions.is-hidden {
+            transform: translateY(-120%);
+            opacity: 0;
+        }
+
+        /* ========================= SETTINGS MENU ========================= */
+
+        .settings-menu {
+            position: fixed;
+            top: 86px;
+            right: 16px;
+            z-index: 120;
+            width: min(286px, calc(100vw - 28px));
+            border-radius: 26px;
+            padding: 12px;
+            background: rgba(255,255,255,0.96);
+            border: 1px solid rgba(255,255,255,0.88);
+            box-shadow: 0 26px 75px rgba(15,23,42,0.20);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px);
+            transition: .2s ease;
+        }
+
+        body.theme-dark .settings-menu {
+            background: rgba(15,23,42,0.94);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 26px 75px rgba(0,0,0,0.38);
+        }
+
+        .settings-menu.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .setting-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 16px 18px;
-            border-radius: 20px;
-            text-decoration: none;
+            border-radius: 18px;
+            padding: 12px;
             color: #0f172a;
-            font-size: 15px;
-            font-weight: 900;
-            background: rgba(255,255,255,0.54);
-            border: 1px solid rgba(255,255,255,0.72);
-            transition: .18s ease;
+            background: rgba(248,250,252,0.88);
+            border: 1px solid rgba(226,232,240,0.88);
         }
 
-        .mobile-menu-link:hover {
-            transform: translateX(-2px);
-            background: rgba(255,255,255,0.74);
-        }
-
-        .mobile-search-trigger {
-            position: fixed;
-            left: 50%;
-            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-            transform: translateX(-50%);
-            z-index: 94;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            min-height: 56px;
-            padding: 0 18px;
-            border-radius: 999px;
+        body.theme-dark .setting-row {
             color: white;
-            background: rgba(255,255,255,0.14);
-            border: 1px solid rgba(255,255,255,0.34);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            box-shadow:
-                0 18px 45px rgba(0,0,0,0.18),
-                inset 0 1px 0 rgba(255,255,255,0.24);
-            font-size: 14px;
-            font-weight: 900;
-            transition: opacity .22s ease, transform .22s ease;
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(255,255,255,0.10);
         }
 
-        .mobile-search-trigger.is-hidden {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateX(-50%) translateY(18px);
-        }
-
-        .search-sheet-panel {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 96;
-            transform: translateY(105%);
-            transition: transform .30s cubic-bezier(.22,1,.36,1);
-            pointer-events: none;
-            border-radius: 28px 28px 0 0;
-            background: linear-gradient(180deg, rgba(245,250,255,0.98), rgba(255,255,255,0.96));
-            border: 1px solid rgba(255,255,255,0.88);
-            box-shadow: 0 -24px 60px rgba(15,23,42,0.22);
-            overflow: hidden;
-            max-height: min(82vh, 760px);
-        }
-
-        .search-sheet-panel.open {
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .search-sheet-handle {
-            width: 62px;
-            height: 6px;
+        .setting-select {
             border-radius: 999px;
-            margin: 10px auto 0;
-            background: rgba(100,116,139,0.32);
+            border: 1px solid rgba(226,232,240,0.96);
+            background: white;
+            color: #0f172a;
+            padding: 8px 10px;
+            font-size: 12px;
+            font-weight: 900;
+            outline: none;
         }
 
-        .search-sheet-header {
+        body.theme-dark .setting-select {
+            color: white;
+            background: rgba(2,6,23,0.72);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .settings-link {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 14px;
-            padding: 14px 18px 12px;
+            gap: 10px;
+            border-radius: 18px;
+            padding: 12px;
+            color: #0f172a;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 900;
         }
 
-        .search-sheet-close {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 42px;
-            height: 42px;
-            border-radius: 999px;
-            border: 1px solid rgba(255,255,255,0.84);
-            background: rgba(255,255,255,0.78);
-            color: #334155;
-            box-shadow: 0 12px 24px rgba(15,23,42,0.08);
+        .settings-link:hover {
+            background: rgba(15,23,42,0.06);
         }
 
-        .search-sheet-body {
-            overflow-y: auto;
-            padding: 0 16px 18px;
+        body.theme-dark .settings-link {
+            color: rgba(255,255,255,0.84);
+        }
+
+        body.theme-dark .settings-link:hover {
+            color: white;
+            background: rgba(255,255,255,0.08);
         }
 
         /* ========================= HERO ========================= */
+
         .hero-shell {
             position: relative;
             overflow: hidden;
@@ -451,14 +564,12 @@
         .hero-panorama-viewer {
             z-index: 1;
             touch-action: none !important;
-            -ms-touch-action: none !important;
-            overscroll-behavior: contain !important;
-            -webkit-user-select: none !important;
-            user-select: none !important;
             cursor: grab;
         }
 
-        .hero-panorama-viewer:active { cursor: grabbing; }
+        .hero-panorama-viewer:active {
+            cursor: grabbing;
+        }
 
         .hero-poster-layer {
             z-index: 2;
@@ -480,33 +591,32 @@
             object-fit: cover;
             object-position: center center;
             filter: saturate(1.08) contrast(1.04) brightness(1.02);
-            image-rendering: auto;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
         }
 
         .hero-panorama-viewer canvas {
             width: 100% !important;
             height: 100% !important;
-            transform: translateZ(0);
             filter: saturate(1.05) contrast(1.03) brightness(1.02);
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            touch-action: none !important;
-            -ms-touch-action: none !important;
-            overscroll-behavior: contain !important;
         }
 
         .hero-overlay {
             position: absolute;
             inset: 0;
+            z-index: 3;
             background:
-                linear-gradient(90deg, rgba(2,6,23,0.52) 0%, rgba(2,6,23,0.25) 38%, rgba(2,6,23,0.08) 70%, rgba(2,6,23,0.16) 100%),
-                linear-gradient(180deg, rgba(246,252,255,0.08) 0%, rgba(18,43,77,0.05) 30%, rgba(12,27,50,0.20) 68%, rgba(10,23,41,0.34) 100%),
+                linear-gradient(90deg, rgba(2,6,23,0.54) 0%, rgba(2,6,23,0.25) 38%, rgba(2,6,23,0.08) 70%, rgba(2,6,23,0.16) 100%),
+                linear-gradient(180deg, rgba(246,252,255,0.08) 0%, rgba(18,43,77,0.05) 30%, rgba(12,27,50,0.20) 68%, rgba(10,23,41,0.48) 100%),
                 radial-gradient(circle at 20% 18%, rgba(255,255,255,0.16), transparent 18%),
                 radial-gradient(circle at 80% 20%, rgba(34,211,238,0.10), transparent 20%);
-            z-index: 3;
             pointer-events: none;
+        }
+
+        body.theme-dark .hero-overlay {
+            background:
+                linear-gradient(90deg, rgba(2,6,23,0.66) 0%, rgba(2,6,23,0.36) 40%, rgba(2,6,23,0.14) 72%, rgba(2,6,23,0.28) 100%),
+                linear-gradient(180deg, rgba(2,6,23,0.04) 0%, rgba(2,6,23,0.14) 34%, rgba(2,6,23,0.34) 72%, rgba(2,6,23,0.70) 100%),
+                radial-gradient(circle at 20% 18%, rgba(103,232,249,0.12), transparent 18%),
+                radial-gradient(circle at 80% 20%, rgba(37,99,235,0.12), transparent 20%);
         }
 
         .hero-loader {
@@ -561,22 +671,15 @@
         }
 
         .hero-grid a,
-        .hero-grid button,
-        .desktop-hero-search,
-        .desktop-hero-search * {
+        .hero-grid button {
             pointer-events: auto;
         }
-
-        .hero-copy-floating { pointer-events: none; }
-        .hero-copy-floating a,
-        .hero-copy-floating button { pointer-events: auto; }
 
         .hero-kicker { animation: heroFadeUp .8s ease both; }
         .hero-title { animation: heroFadeUp 1s ease .08s both; }
         .hero-text { animation: heroFadeUp 1s ease .18s both; }
         .hero-actions { animation: heroFadeUp 1s ease .28s both; }
         .hero-stats { animation: heroFadeUp 1s ease .38s both; }
-        .hero-search { animation: heroFadeUp 1s ease .20s both; }
 
         @keyframes heroFadeUp {
             from { opacity: 0; transform: translateY(24px); }
@@ -590,6 +693,11 @@
             -webkit-backdrop-filter: blur(18px);
         }
 
+        body.theme-dark .hero-mini-panel {
+            background: rgba(2,6,23,0.34);
+            border-color: rgba(255,255,255,0.14);
+        }
+
         .hero-title,
         .hero-text {
             text-shadow:
@@ -597,198 +705,716 @@
                 0 4px 14px rgba(15,23,42,0.18);
         }
 
-        /* Zoom controls hero */
-        .hero-zoom-dock {
-            position: absolute;
-            right: 18px;
-            bottom: 22px;
-            z-index: 8;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            border-radius: 999px;
-            background: rgba(15, 23, 42, 0.34);
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+        /* ========================= CATEGORY STRIP ========================= */
+
+        .category-section {
+            position: sticky;
+            top: 0;
+            z-index: 70;
+            background:
+                linear-gradient(145deg, rgba(255,255,255,0.58), rgba(255,255,255,0.28));
+            backdrop-filter: blur(24px) saturate(1.18);
+            -webkit-backdrop-filter: blur(24px) saturate(1.18);
+            border-bottom: 1px solid rgba(255,255,255,0.56);
             box-shadow:
-                0 18px 45px rgba(0,0,0,0.18),
-                inset 0 1px 0 rgba(255,255,255,0.18);
-            pointer-events: auto;
+                0 18px 50px rgba(15,23,42,0.06),
+                inset 0 1px 0 rgba(255,255,255,0.70);
         }
 
-        .hero-zoom-btn {
+        body.theme-dark .category-section {
+            background:
+                linear-gradient(145deg, rgba(2,6,23,0.74), rgba(15,23,42,0.48));
+            border-bottom-color: rgba(255,255,255,0.08);
+            box-shadow:
+                0 18px 50px rgba(0,0,0,0.22),
+                inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        .category-strip {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 12px;
+        }
+
+        .category-pill {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 44px;
-            height: 44px;
-            border-radius: 999px;
-            color: #ffffff;
-            background: rgba(255,255,255,0.13);
-            border: 1px solid rgba(255,255,255,0.24);
-            font-size: 18px;
-            font-weight: 950;
-            line-height: 1;
+            min-height: 42px;
+            border-radius: 14px;
+            padding: 0 18px;
+            border: 1px solid rgba(226,232,240,0.92);
+            background: rgba(255,255,255,0.72);
+            color: #334155;
+            font-size: 14px;
+            font-weight: 900;
+            white-space: nowrap;
+            backdrop-filter: blur(16px);
+            transition: .18s ease;
             cursor: pointer;
-            transition: transform .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
-            touch-action: manipulation !important;
         }
 
-        .hero-zoom-btn:hover {
+        .category-pill:hover {
+            background: rgba(255,255,255,0.92);
             transform: translateY(-1px);
-            background: rgba(255,255,255,0.22);
-            border-color: rgba(255,255,255,0.36);
         }
 
-        .hero-zoom-btn:disabled {
-            opacity: .40;
-            cursor: default;
-            transform: none;
+        .category-pill.active {
+            color: white;
+            background: #0f172a;
+            border-color: #0f172a;
+            box-shadow: 0 14px 30px rgba(15,23,42,0.18);
+        }
+
+        body.theme-dark .category-pill {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.10);
+            color: rgba(255,255,255,0.76);
+        }
+
+        body.theme-dark .category-pill:hover {
+            background: rgba(255,255,255,0.12);
+            color: white;
+        }
+
+        body.theme-dark .category-pill.active {
+            color: #06111f;
+            background: #67e8f9;
+            border-color: #67e8f9;
+            box-shadow: 0 14px 30px rgba(34,211,238,0.16);
+        }
+
+        /* ========================= CONTENT SECTIONS ========================= */
+
+        .feed-shell {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 26px 14px 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .section-head {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 16px;
+            margin: 22px 0 18px;
+            border-radius: 28px;
+            padding: 16px 18px;
+            background: rgba(255,255,255,0.48);
+            border: 1px solid rgba(255,255,255,0.68);
+            backdrop-filter: blur(22px) saturate(1.18);
+            -webkit-backdrop-filter: blur(22px) saturate(1.18);
+            box-shadow:
+                0 24px 70px rgba(15,23,42,0.08),
+                inset 0 1px 0 rgba(255,255,255,0.76);
+        }
+
+        body.theme-dark .section-head {
+            background: rgba(15,23,42,0.42);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow:
+                0 24px 70px rgba(0,0,0,0.26),
+                inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        .section-title {
+            font-size: 26px;
+            line-height: 1;
+            font-weight: 950;
+            letter-spacing: -0.045em;
+            color: #0f172a;
+        }
+
+        body.theme-dark .section-title {
+            color: white;
+        }
+
+        .section-subtitle {
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        body.theme-dark .section-subtitle {
+            color: rgba(255,255,255,0.56);
+        }
+
+        .view-link {
+            display: inline-flex;
+            min-height: 38px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0 14px;
+            color: white;
+            background: #0f172a;
+            font-size: 11px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            text-decoration: none;
+        }
+
+        body.theme-dark .view-link {
+            color: #06111f;
+            background: #67e8f9;
+        }
+
+        /* ========================= PREMIUM FLAT GRID CARDS ========================= */
+
+        .pin-masonry {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .pin-card {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 28px;
+            background: rgba(255,255,255,0.96);
+            border: 1px solid rgba(226,232,240,0.82);
+            box-shadow:
+                0 18px 45px rgba(15,23,42,0.10),
+                0 1px 0 rgba(255,255,255,0.70) inset;
+            transition:
+                transform .25s ease,
+                box-shadow .25s ease,
+                border-color .25s ease,
+                background .25s ease;
+        }
+
+        .pin-card:hover {
+            transform: translateY(-5px);
+            box-shadow:
+                0 28px 70px rgba(15,23,42,0.16),
+                0 0 0 1px rgba(34,211,238,0.22);
+            border-color: rgba(34,211,238,0.24);
+        }
+
+        body.theme-dark .pin-card {
+            background: rgba(15,23,42,0.86);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 18px 45px rgba(0,0,0,0.26);
+        }
+
+        body.theme-dark .pin-card:hover {
+            border-color: rgba(103,232,249,0.28);
+            box-shadow:
+                0 28px 70px rgba(0,0,0,0.36),
+                0 0 0 1px rgba(103,232,249,0.18);
+        }
+
+        .pin-link {
+            display: block;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .pin-media {
+            position: relative;
+            overflow: hidden;
+            background: #e2e8f0;
+        }
+
+        body.theme-dark .pin-media {
+            background: rgba(2,6,23,0.80);
+        }
+
+        .pin-media img {
+            display: block;
+            width: 100%;
+            height: auto;
+            min-height: 240px;
+            object-fit: cover;
+            transition:
+                transform .65s ease,
+                filter .3s ease;
+        }
+
+        .pin-card:hover .pin-media img {
+            transform: scale(1.045);
+            filter: saturate(1.08) contrast(1.04);
+        }
+
+        .pin-media-placeholder {
+            min-height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                radial-gradient(circle at top left, rgba(103,232,249,0.22), transparent 28%),
+                linear-gradient(135deg, #dbeafe, #f0fdff);
+            color: #475569;
+            font-size: 12px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .18em;
+        }
+
+        body.theme-dark .pin-media-placeholder {
+            background:
+                radial-gradient(circle at top left, rgba(103,232,249,0.16), transparent 28%),
+                linear-gradient(135deg, rgba(15,23,42,0.96), rgba(2,6,23,0.92));
+            color: rgba(255,255,255,0.56);
+        }
+
+        .pin-badge-row {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .pin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            max-width: 72%;
+            border-radius: 999px;
+            padding: 7px 10px;
+            color: white;
+            background: rgba(15,23,42,0.34);
+            border: 1px solid rgba(255,255,255,0.22);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            font-size: 10px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            box-shadow: 0 12px 26px rgba(0,0,0,0.16);
+        }
+
+        body.theme-dark .pin-badge {
+            background: rgba(2,6,23,0.46);
+            border-color: rgba(255,255,255,0.16);
+        }
+
+        .pin-play {
+            display: inline-flex;
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            color: #06111f;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(255,255,255,0.80);
+            box-shadow: 0 14px 34px rgba(0,0,0,0.18);
+        }
+
+        body.theme-dark .pin-play {
+            color: #06111f;
+            background: rgba(103,232,249,0.92);
+            border-color: rgba(255,255,255,0.34);
+        }
+
+        .pin-body {
+            padding: 14px 15px 15px;
+        }
+
+        .pin-title {
+            color: #0f172a;
+            font-size: 18px;
+            line-height: 1.15;
+            font-weight: 950;
+            letter-spacing: -0.035em;
+        }
+
+        body.theme-dark .pin-title {
+            color: white;
+        }
+
+        .pin-description {
+            margin-top: 7px;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.55;
+            font-weight: 650;
+        }
+
+        body.theme-dark .pin-description {
+            color: rgba(255,255,255,0.62);
+        }
+
+        .pin-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 12px;
+        }
+
+        .pin-meta span {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 6px 9px;
+            color: #334155;
+            background: rgba(15,23,42,0.055);
+            border: 1px solid rgba(15,23,42,0.06);
+            font-size: 11px;
+            font-weight: 850;
+        }
+
+        body.theme-dark .pin-meta span {
+            color: rgba(255,255,255,0.76);
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .empty-state {
+            display: none;
+            border-radius: 28px;
+            padding: 36px 20px;
+            background: rgba(255,255,255,0.56);
+            border: 1px solid rgba(255,255,255,0.74);
+            text-align: center;
+            box-shadow: 0 18px 45px rgba(15,23,42,0.08);
+            backdrop-filter: blur(20px);
+        }
+
+        body.theme-dark .empty-state {
+            background: rgba(15,23,42,0.54);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 18px 45px rgba(0,0,0,0.28);
+        }
+
+        body.theme-dark .empty-state h2 {
+            color: white !important;
+        }
+
+        body.theme-dark .empty-state p {
+            color: rgba(255,255,255,0.58) !important;
+        }
+
+        .empty-state.show {
+            display: block;
+        }
+
+        .pagination-btn {
+            height: 42px;
+            min-width: 42px;
+            border-radius: 999px;
+            padding: 0 15px;
+            border: 1px solid rgba(226,232,240,0.90);
+            background: rgba(255,255,255,0.78);
+            color: #475569;
+            font-size: 14px;
+            font-weight: 950;
+            backdrop-filter: blur(14px);
+            cursor: pointer;
+        }
+
+        .pagination-btn.active {
+            color: white;
+            background: #0f172a;
+            border-color: #0f172a;
+        }
+
+        body.theme-dark .pagination-btn {
+            color: rgba(255,255,255,0.72);
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        body.theme-dark .pagination-btn:hover {
+            color: white;
+            background: rgba(255,255,255,0.12);
+        }
+
+        body.theme-dark .pagination-btn.active {
+            color: #06111f;
+            background: #67e8f9;
+            border-color: #67e8f9;
+        }
+
+        /* ========================= FILTER SHEET ========================= */
+
+        .sheet-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            background: rgba(15,23,42,0.36);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            transition: .22s ease;
+        }
+
+        body.theme-dark .sheet-backdrop {
+            background: rgba(2,6,23,0.62);
+        }
+
+        .sheet-backdrop.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .filter-sheet {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 115;
+            transform: translateY(105%);
+            transition: transform .30s cubic-bezier(.22,1,.36,1);
+            border-radius: 30px 30px 0 0;
+            background: rgba(255,255,255,0.84);
+            border: 1px solid rgba(255,255,255,0.90);
+            box-shadow: 0 -28px 70px rgba(15,23,42,0.24);
+            backdrop-filter: blur(24px) saturate(1.18);
+            -webkit-backdrop-filter: blur(24px) saturate(1.18);
+            overflow: hidden;
+        }
+
+        body.theme-dark .filter-sheet {
+            background: rgba(15,23,42,0.94);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 -28px 70px rgba(0,0,0,0.44);
+        }
+
+        .filter-sheet.open {
+            transform: translateY(0);
+        }
+
+        .sheet-handle {
+            width: 58px;
+            height: 6px;
+            border-radius: 999px;
+            margin: 10px auto 0;
+            background: rgba(100,116,139,0.30);
+        }
+
+        body.theme-dark .sheet-handle {
+            background: rgba(255,255,255,0.22);
         }
 
         .search-field {
             width: 100%;
-            border-radius: 1rem;
-            border: 1px solid rgba(255,255,255,0.40);
-            background: rgba(255,255,255,0.42);
+            height: 54px;
+            border-radius: 18px;
+            border: 1px solid rgba(226,232,240,0.96);
+            background: rgba(255,255,255,0.86);
             color: #0f172a;
-            padding: 0.9rem 1rem;
+            padding: 0 16px;
             outline: none;
-            transition: .2s ease;
-            backdrop-filter: blur(10px);
+            font-size: 14px;
+            font-weight: 800;
+            backdrop-filter: blur(14px);
         }
 
-        .search-field::placeholder { color: #64748b; }
+        .search-field::placeholder {
+            color: #94a3b8;
+        }
 
         .search-field:focus {
-            border-color: rgba(34,211,238,0.75);
+            border-color: rgba(34,211,238,0.85);
             box-shadow: 0 0 0 4px rgba(34,211,238,0.14);
-            background: rgba(255,255,255,0.58);
         }
 
-        .premium-search-submit {
-            position: relative;
-            overflow: hidden;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            min-height: 54px;
-            padding: 0 22px;
-            border-radius: 20px;
+        body.theme-dark .search-field {
             color: white;
+            background: rgba(2,6,23,0.58);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        body.theme-dark .search-field::placeholder {
+            color: rgba(255,255,255,0.38);
+        }
+
+        body.theme-dark .search-field:focus {
+            border-color: rgba(103,232,249,0.75);
+            box-shadow: 0 0 0 4px rgba(103,232,249,0.12);
+        }
+
+        .apply-btn {
+            width: 100%;
+            min-height: 54px;
+            border-radius: 18px;
+            color: white;
+            background: #0f172a;
             font-size: 14px;
             font-weight: 950;
-            background: linear-gradient(135deg, rgba(34,211,238,0.92), rgba(59,130,246,0.88));
-            border: 1px solid rgba(255,255,255,0.58);
-            box-shadow:
-                0 20px 44px rgba(37,99,235,0.20),
-                inset 0 1px 0 rgba(255,255,255,0.36);
-            transition: transform .22s ease, filter .22s ease, box-shadow .22s ease;
+            cursor: pointer;
         }
 
-        .premium-search-submit:hover {
-            transform: translateY(-1px);
-            filter: brightness(1.06);
+        body.theme-dark .apply-btn {
+            color: #06111f;
+            background: linear-gradient(135deg, #67e8f9, #38bdf8);
+            box-shadow: 0 16px 34px rgba(34,211,238,0.14);
         }
 
-        .premium-search-reset {
-            display: inline-flex;
+        .reset-btn {
+            width: 100%;
+            min-height: 54px;
+            border-radius: 18px;
+            border: 1px solid rgba(226,232,240,0.96);
+            background: rgba(255,255,255,0.86);
+            color: #475569;
+            font-size: 14px;
+            font-weight: 950;
+            cursor: pointer;
+        }
+
+        body.theme-dark .reset-btn {
+            color: rgba(255,255,255,0.78);
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        body.theme-dark .reset-btn:hover {
+            color: white;
+            background: rgba(255,255,255,0.10);
+        }
+
+        /* ========================= MOBILE BOTTOM NAV ========================= */
+
+        .mobile-bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 90;
+            display: none;
+            background: rgba(255,255,255,0.76);
+            border-top: 1px solid rgba(255,255,255,0.74);
+            backdrop-filter: blur(22px) saturate(1.18);
+            -webkit-backdrop-filter: blur(22px) saturate(1.18);
+            box-shadow: 0 -14px 38px rgba(15,23,42,0.12);
+            padding: 7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
+            transition: transform .24s ease, opacity .24s ease;
+        }
+
+        body.theme-dark .mobile-bottom-nav {
+            background: rgba(2,6,23,0.82);
+            border-top-color: rgba(255,255,255,0.08);
+            box-shadow: 0 -14px 38px rgba(0,0,0,0.32);
+        }
+
+        .mobile-bottom-nav.is-hidden {
+            transform: translateY(105%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .bottom-nav-link {
+            display: flex;
+            flex: 1;
+            min-width: 0;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 54px;
-            padding: 0 20px;
-            border-radius: 20px;
+            gap: 3px;
+            border-radius: 16px;
+            padding: 7px 4px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 800;
+            text-decoration: none;
+            transition: .18s ease;
+        }
+
+        body.theme-dark .bottom-nav-link {
+            color: rgba(255,255,255,0.58);
+        }
+
+        .bottom-nav-link svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .bottom-nav-link.active {
             color: #0f172a;
-            font-size: 14px;
-            font-weight: 900;
-            background: rgba(255,255,255,0.38);
-            border: 1px solid rgba(255,255,255,0.62);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            box-shadow:
-                0 14px 30px rgba(15,23,42,0.08),
-                inset 0 1px 0 rgba(255,255,255,0.36);
-            transition: transform .22s ease, background .22s ease, box-shadow .22s ease;
         }
 
-        .premium-search-reset:hover {
-            transform: translateY(-1px);
-            background: rgba(255,255,255,0.58);
+        body.theme-dark .bottom-nav-link.active {
+            color: #67e8f9;
+            background: rgba(103,232,249,0.08);
         }
 
-        /* ========================= CARDS ========================= */
-        .tour-card-thumb {
-            position: relative;
-            overflow: hidden;
-            background:
-                radial-gradient(circle at center, rgba(255,255,255,0.08), transparent 46%),
-                linear-gradient(180deg, rgba(7,16,32,0.02), rgba(7,16,32,0.10));
+        .bottom-nav-link.active svg {
+            fill: currentColor;
         }
 
-        .tour-card-thumb img {
-            transition: transform .7s ease, filter .35s ease;
-            filter: saturate(1.06) contrast(1.03) brightness(1.015);
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-        }
+        /* ========================= RESPONSIVE ========================= */
 
-        .tour-card-thumb:hover img { transform: scale(1.04); }
-
-        .card-image-overlay {
-            background:
-                linear-gradient(180deg, rgba(15,23,42,0.02) 0%, rgba(15,23,42,0.08) 45%, rgba(15,23,42,0.44) 100%);
-        }
-
-        .tour-scene-badge {
-            background: rgba(255,255,255,0.88);
-            border: 1px solid rgba(255,255,255,0.74);
-            box-shadow: 0 12px 26px rgba(15,23,42,0.10);
-        }
-
-        #featured,
-        #places,
-        #tours,
-        #organizations {
-            scroll-margin-top: 124px;
-        }
-
-        @media (max-width: 1024px) {
-            .hero-shell { min-height: 900px; }
-            .app-header { padding: 12px 12px 0; }
-            .header-shell { border-radius: 26px; padding: 10px 12px; }
-        }
-
-        @media (max-width: 1023px) {
-            .desktop-hero-search { display: none !important; }
-            .mobile-search-trigger { display: inline-flex; }
-            .hero-grid { padding-bottom: 100px; }
-            .hero-zoom-dock {
-                right: 14px;
-                bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+        @media (min-width: 640px) {
+            .pin-masonry {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 20px;
             }
         }
 
-        @media (max-width: 768px) {
-            .desktop-nav,
-            .desktop-cta { display: none !important; }
-            .mobile-menu-btn { display: inline-flex; }
-            .app-header { padding: 10px 10px 0; }
-            .header-shell { border-radius: 24px; padding: 10px 12px; }
-            .brand-mark { width: 44px; height: 44px; border-radius: 18px; }
-            .header-brand-title { font-size: 14px; }
-            .header-brand-subtitle { max-width: 150px; font-size: 9px; }
+        @media (min-width: 1024px) {
+            body {
+                padding-bottom: 0;
+            }
+
+            .mobile-top-actions,
+            .mobile-bottom-nav {
+                display: none !important;
+            }
+
+            .pin-masonry {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 24px;
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .pin-masonry {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 1023px) {
+            .desktop-header {
+                display: none !important;
+            }
+
+            .mobile-bottom-nav {
+                display: flex;
+            }
+
+            .hero-grid {
+                padding-bottom: 100px;
+            }
         }
 
         @media (max-width: 640px) {
-            .hero-shell { min-height: 760px; }
+            .floating-icon-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            .settings-menu {
+                top: 66px;
+                right: 10px;
+            }
+
+            .hero-shell {
+                min-height: 760px;
+            }
+
             .hero-grid {
                 padding-top: 118px !important;
                 padding-bottom: 96px !important;
             }
-            .hero-copy-floating { max-width: 92vw; }
+
             .hero-kicker {
                 margin-bottom: 14px !important;
                 padding: 8px 12px !important;
@@ -796,138 +1422,230 @@
                 letter-spacing: .18em !important;
                 background: rgba(255,255,255,0.08) !important;
             }
+
             .hero-title {
                 max-width: 92vw !important;
                 font-size: clamp(2.25rem, 11vw, 3.45rem) !important;
                 line-height: .94 !important;
                 letter-spacing: -0.065em !important;
             }
-            .hero-title span { margin-top: 4px !important; }
+
+            .hero-title span {
+                margin-top: 4px !important;
+            }
+
             .hero-text,
             .hero-stats,
-            .hero-mini-panel,
-            .mobile-soft-hide { display: none !important; }
+            .mobile-soft-hide {
+                display: none !important;
+            }
+
             .hero-actions {
                 margin-top: 18px !important;
                 gap: 10px !important;
             }
+
             .hero-actions a {
                 min-height: 48px !important;
                 padding-left: 16px !important;
                 padding-right: 16px !important;
                 font-size: 13px !important;
             }
+
             .hero-overlay {
                 background:
                     linear-gradient(180deg, rgba(2,6,23,0.16) 0%, rgba(2,6,23,0.02) 36%, rgba(2,6,23,0.10) 64%, rgba(2,6,23,0.54) 100%),
                     linear-gradient(90deg, rgba(2,6,23,0.34) 0%, rgba(2,6,23,0.12) 56%, rgba(2,6,23,0.04) 100%),
                     radial-gradient(circle at 18% 22%, rgba(255,255,255,0.10), transparent 18%);
             }
-            .hero-panorama-viewer canvas,
-            .hero-poster-layer img,
-            .hero-fallback-image img {
-                filter: saturate(1.07) contrast(1.04) brightness(1.04);
+
+            .category-strip {
+                padding: 10px;
+                gap: 9px;
             }
-            .hero-loader-card {
-                padding: .75rem .95rem;
-                font-size: 12px;
+
+            .category-pill {
+                min-height: 40px;
+                border-radius: 13px;
+                padding: 0 16px;
+                font-size: 13px;
             }
-            .hero-zoom-dock {
-                right: 12px;
-                bottom: calc(82px + env(safe-area-inset-bottom, 0px));
-                gap: 6px;
-                padding: 7px;
+
+            .feed-shell {
+                padding: 16px 10px 26px;
             }
-            .hero-zoom-btn {
-                width: 40px;
-                height: 40px;
+
+            .section-head {
+                border-radius: 24px;
+                padding: 14px;
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+
+            .pin-masonry {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+
+            .pin-card {
+                border-radius: 24px;
+            }
+
+            .pin-media img {
+                min-height: 230px;
+            }
+
+            .pin-body {
+                padding: 13px 14px 14px;
+            }
+
+            .pin-title {
                 font-size: 17px;
             }
-        }
 
-        @media (min-width: 1024px) {
-            .mobile-search-trigger,
-            .search-sheet-backdrop,
-            .search-sheet-panel {
-                display: none !important;
+            .pin-card:hover {
+                transform: translateY(-3px);
             }
         }
     </style>
 </head>
 
 <body class="antialiased">
+    <script>
+        (function () {
+            const savedTheme =
+                localStorage.getItem("twinscopesTheme") ||
+                localStorage.getItem("virtualToursTheme") ||
+                "light";
+
+            if (savedTheme === "dark") {
+                document.body.classList.add("theme-dark");
+            }
+        })();
+    </script>
+
     {% include 'public/partials/loader_3d_global.html' %}
 
-    <div id="menuBackdrop" class="menu-backdrop"></div>
+    <!-- DESKTOP HEADER -->
+    <header id="desktopHeader" class="desktop-header">
+        <div class="desktop-header-shell">
+            <a href="/explorer/" class="brand-link">
+                <span class="brand-mark">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
+                    </svg>
+                </span>
 
-    <header id="appHeader" class="app-header">
-        <div class="header-shell">
-            <div class="flex items-center justify-between gap-4">
-                <a href="/explorer/" class="header-brand-link">
-                    <div class="brand-mark">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
-                        </svg>
-                    </div>
+                <span class="min-w-0">
+                    <span class="block truncate text-sm font-black leading-none tracking-tight">Virtual Tours</span>
+                    <span class="mt-1 block truncate text-[10px] font-black uppercase tracking-[0.18em] text-white/60">Explore 360°</span>
+                </span>
+            </a>
 
-                    <div class="min-w-0">
-                        <p class="header-brand-title">Virtual Tours</p>
-                        <p class="header-brand-subtitle">Immersive showcase</p>
-                    </div>
-                </a>
+            <nav class="desktop-nav">
+                <a href="/" class="desktop-nav-link active">Home</a>
+                <a href="/explorer/" class="desktop-nav-link">Explore</a>
 
-                <nav class="desktop-nav hidden items-center gap-2 lg:flex">
-                    <a href="#featured" class="nav-pill active">Featured</a>
-                    <a href="#places" class="nav-pill">Places</a>
-                    <a href="#tours" class="nav-pill">Tours</a>
-                    <a href="#organizations" class="nav-pill">Organizations</a>
-                    <a href="/contact/" class="nav-pill">Contact</a>
-                </nav>
-
-                <div class="flex items-center gap-2">
-                    <a href="/dashboard/" class="desktop-cta header-cta hidden sm:inline-flex">
-                        Create a tour
-                        <span>→</span>
-                    </a>
-
-                    <button id="openMenuBtn" type="button" class="mobile-menu-btn" aria-label="Open menu">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
-                        </svg>
+                <div id="serviceDropdown" class="service-dropdown">
+                    <button type="button" class="desktop-nav-link">
+                        Services / About
+                        <span class="ml-1">⌄</span>
                     </button>
+
+                    <div class="service-dropdown-menu">
+                        <a href="/services/" class="dropdown-link">
+                            <span>Services</span>
+                            <span>→</span>
+                        </a>
+                        <a href="/about/" class="dropdown-link">
+                            <span>About</span>
+                            <span>→</span>
+                        </a>
+                    </div>
                 </div>
+
+                <a href="/contact/" class="desktop-nav-link">Contact</a>
+
+                {% if request.user.is_authenticated %}
+                    <a href="/dashboard/" class="desktop-nav-link">Account</a>
+                {% else %}
+                    <a href="/" class="desktop-nav-link">Account</a>
+                {% endif %}
+            </nav>
+
+            <div class="desktop-actions">
+                <button type="button" class="floating-icon-btn search-trigger" aria-label="Search and filter">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+                    </svg>
+                </button>
+
+                <button type="button" class="floating-icon-btn settings-trigger" aria-label="Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.89 3.31.877 2.42 2.42a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.89 1.543-.877 3.31-2.42 2.42a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.89-3.31-.877-2.42-2.42a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.89-1.543.877-3.31 2.42-2.42.996.575 2.245.047 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
             </div>
         </div>
     </header>
 
-    <aside id="mobileMenuPanel" class="mobile-menu-panel">
-        <div class="flex h-full flex-col p-5">
-            <div class="flex items-center justify-between gap-4">
-                <div>
-                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Menu</p>
-                    <h2 class="mt-1 text-2xl font-black tracking-tight text-slate-900">Explore</h2>
-                </div>
-                <button id="closeMenuBtn" type="button" class="flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/60 text-slate-700 shadow-soft" aria-label="Close menu">✕</button>
+    <!-- MOBILE TOP ACTIONS -->
+    <div id="mobileTopActions" class="mobile-top-actions">
+        <button type="button" class="floating-icon-btn search-trigger" aria-label="Search and filter">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
+            </svg>
+        </button>
+
+        <button type="button" class="floating-icon-btn settings-trigger" aria-label="Settings">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.89 3.31.877 2.42 2.42a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.89 1.543-.877 3.31-2.42 2.42a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.89-3.31-.877-2.42-2.42a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.89-1.543.877-3.31 2.42-2.42.996.575 2.245.047 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- SETTINGS MENU -->
+    <div id="settingsMenu" class="settings-menu">
+        <p class="mb-3 px-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark-text">Settings</p>
+
+        <div class="space-y-2">
+            <div class="setting-row">
+                <span class="text-sm font-black">Language</span>
+                <select id="languageSelect" class="setting-select">
+                    <option value="fr">FR</option>
+                    <option value="en">EN</option>
+                </select>
             </div>
 
-            <div class="mt-7 space-y-3">
-                <a href="#featured" class="mobile-menu-link" data-menu-link><span>Featured</span><span>→</span></a>
-                <a href="#places" class="mobile-menu-link" data-menu-link><span>Places</span><span>→</span></a>
-                <a href="#tours" class="mobile-menu-link" data-menu-link><span>Tours</span><span>→</span></a>
-                <a href="#organizations" class="mobile-menu-link" data-menu-link><span>Organizations</span><span>→</span></a>
-                <a href="/contact/" class="mobile-menu-link" data-menu-link><span>Contact</span><span>→</span></a>
-            </div>
+            <button id="themeToggleBtn" type="button" class="setting-row w-full">
+                <span class="text-sm font-black">Dark mode</span>
+                <span id="themeLabel" class="text-xs font-black uppercase tracking-[0.12em] text-slate-500 dark-text">Off</span>
+            </button>
 
-            <div class="mt-auto rounded-[28px] border border-white/80 bg-white/64 p-5">
-                <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Premium Experience</p>
-                <h3 class="mt-2 text-xl font-black tracking-tight text-slate-900">Show every place at its best</h3>
-                <p class="mt-2 text-sm leading-6 text-slate-600">
-                    Present tours, venues and spaces with a modern 360° experience.
-                </p>
-            </div>
+            {% if request.user.is_authenticated %}
+                <a href="/dashboard/" class="settings-link">
+                    <span>Account</span>
+                    <span>→</span>
+                </a>
+            {% else %}
+                <a href="/" class="settings-link">
+                    <span>Login</span>
+                    <span>→</span>
+                </a>
+            {% endif %}
+
+            <a href="#" class="settings-link">
+                <span>More settings</span>
+                <span>→</span>
+            </a>
         </div>
-    </aside>
+    </div>
 
+    <!-- HERO -->
     <section id="heroShell" class="hero-shell">
         <div id="heroPanoramaWrap" class="hero-panorama-wrap">
             {% if hero_scene_url or hero_scene_mobile_url or hero_scene_thumbnail_url %}
@@ -946,6 +1664,7 @@
                     {% if hero_scene_mobile_url %}
                         <source media="(max-width: 767px)" srcset="{{ hero_scene_mobile_url }}">
                     {% endif %}
+
                     {% if hero_scene_url %}
                         <img id="heroPosterImage" src="{{ hero_scene_url }}" alt="{{ hero_tour.title|default:'Virtual tour' }}" loading="eager" decoding="async" fetchpriority="high">
                     {% elif hero_scene_thumbnail_url %}
@@ -974,17 +1693,13 @@
             </div>
         </div>
 
-        {% comment %} {% if hero_scene_url or hero_scene_mobile_url or hero_scene_thumbnail_url %}
-            <div id="heroZoomDock" class="hero-zoom-dock" aria-label="Hero panorama zoom controls">
-                <button id="heroZoomOutBtn" type="button" class="hero-zoom-btn" title="Zoom arrière" aria-label="Zoom arrière">－</button>
-                <button id="heroZoomInBtn" type="button" class="hero-zoom-btn" title="Zoom avant" aria-label="Zoom avant">＋</button>
-                <button id="heroResetViewBtn" type="button" class="hero-zoom-btn" title="Revenir au zoom 0" aria-label="Revenir au zoom 0">⌾</button>
-            </div>
-        {% endif %} {% endcomment %}
+        {% if hero_tour and hero_tour.organization %}
+            {% url 'tour-preview-public' organization_slug=hero_tour.organization.slug tour_id=hero_tour.id as hero_preview_url %}
+        {% endif %}
 
         <div class="hero-grid relative mx-auto max-w-7xl px-4 py-24 lg:px-6 lg:py-32">
             <div class="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-                <div class="hero-copy-floating max-w-3xl relative z-10">
+                <div class="max-w-3xl relative z-10">
                     <div class="hero-kicker mb-6 inline-flex items-center gap-3 rounded-full border border-white/22 bg-white/10 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.26em] text-white backdrop-blur-md shadow-[0_12px_28px_rgba(15,23,42,0.16)]">
                         <span class="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-300/15 ring-1 ring-white/20">
                             <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_16px_rgba(103,232,249,0.9)]"></span>
@@ -992,340 +1707,293 @@
                         Premium 360 Experience
                     </div>
 
-                    <h2 class="hero-title max-w-2xl text-4xl font-black leading-[0.98] tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl">
-                        Turn your space into a
+                    <h1 class="hero-title max-w-2xl text-4xl font-black leading-[0.98] tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl">
+                        Visit places before
                         <span class="mt-2 block bg-gradient-to-r from-cyan-200 via-sky-200 to-white bg-clip-text text-transparent">
-                            stunning virtual experience
+                            you go there
                         </span>
-                    </h2>
+                    </h1>
 
                     <div class="mobile-soft-hide mt-6 flex max-w-xl items-center gap-3">
                         <div class="h-1.5 w-24 rounded-full bg-gradient-to-r from-cyan-300 via-sky-300 to-white shadow-[0_0_26px_rgba(103,232,249,0.38)]"></div>
-                        <span class="text-xs font-black uppercase tracking-[0.22em] text-white/72">Immersive · Modern · Trust-building</span>
+                        <span class="text-xs font-black uppercase tracking-[0.22em] text-white/72">Apartments · Hotels · Stores · Venues</span>
                     </div>
 
                     <p class="hero-text mt-6 max-w-2xl text-base leading-8 text-white/82 sm:text-lg">
-                        Showcase stores, apartments, venues, offices and event spaces with a cinematic 360° presentation that loads fast and feels premium on every screen.
+                        Explore apartments, hotels, stores and premium spaces with immersive 360° visits before choosing where to go.
                     </p>
 
                     <div class="hero-actions mt-8 flex flex-wrap gap-3">
-                        <a href="#tours" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-300 to-blue-400 px-6 py-4 text-sm font-black text-slate-950 shadow-[0_18px_38px_rgba(34,211,238,0.20)] transition hover:-translate-y-0.5 hover:brightness-110">
-                            Explore tours
-                            <span>→</span>
-                        </a>
-                        <a href="/dashboard/" class="inline-flex items-center justify-center rounded-2xl border border-white/24 bg-white/12 px-6 py-4 text-sm font-black text-white backdrop-blur-md transition hover:bg-white/20">
-                            Create a tour
+                        {% if hero_preview_url %}
+                            <a href="{{ hero_preview_url }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-300 via-sky-300 to-blue-400 px-6 py-4 text-sm font-black text-slate-950 shadow-[0_18px_38px_rgba(34,211,238,0.20)] transition hover:-translate-y-0.5 hover:brightness-110">
+                                Start visit
+                                <span>→</span>
+                            </a>
+                        {% endif %}
+
+                        <a href="#allTours" class="inline-flex items-center justify-center rounded-2xl border border-white/24 bg-white/12 px-6 py-4 text-sm font-black text-white backdrop-blur-md transition hover:bg-white/20">
+                            Explore
                         </a>
                     </div>
 
                     <div class="hero-stats mt-8 grid max-w-xl grid-cols-3 gap-3">
                         <div class="hero-mini-panel rounded-[22px] p-4 text-white">
                             <p class="text-2xl font-black">{{ stats.tour_count|default:0 }}</p>
-                            <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/62">Tours</p>
+                            <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/62">Visits</p>
                         </div>
                         <div class="hero-mini-panel rounded-[22px] p-4 text-white">
-                            <p class="text-2xl font-black">{{ stats.place_count|default:0 }}</p>
-                            <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/62">Places</p>
+                            <p class="text-2xl font-black">360°</p>
+                            <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/62">Immersive</p>
                         </div>
                         <div class="hero-mini-panel rounded-[22px] p-4 text-white">
-                            <p class="text-2xl font-black">{{ stats.organization_count|default:0 }}</p>
-                            <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/62">Brands</p>
+                            <p class="text-2xl font-black">24/7</p>
+                            <p class="mt-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/62">Online</p>
                         </div>
-                    </div>
-                </div>
-
-                <div class="desktop-hero-search hero-search relative z-10 hidden lg:block">
-                    <div class="glass-search rounded-[34px] p-5">
-                        <div class="mb-4">
-                            <p class="text-xs font-black uppercase tracking-[0.24em] text-cyan-100">Find a virtual tour</p>
-                            <h3 class="mt-2 text-2xl font-black tracking-tight text-white">Search by place, city or category</h3>
-                        </div>
-
-                        <form id="desktopCatalogFilterForm" class="space-y-3">
-                            <input name="q" value="{{ selected_q }}" class="search-field" placeholder="Search tour, organization, place...">
-
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                <select name="category" class="search-field">
-                                    <option value="">All categories</option>
-                                    {% for value, label in category_choices %}
-                                        <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
-                                    {% endfor %}
-                                </select>
-
-                                <select name="city" class="search-field">
-                                    <option value="">All cities</option>
-                                    {% for city in available_cities %}
-                                        <option value="{{ city }}" {% if selected_city == city %}selected{% endif %}>{{ city }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="flex flex-wrap gap-3 pt-2">
-                                <button type="submit" class="premium-search-submit flex-1">
-                                    <span>Search</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-                                    </svg>
-                                </button>
-
-                                <button type="button" data-catalog-reset class="premium-search-reset">
-                                    Reset
-                                </button>
-                            </div>
-                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <button id="openSearchSheetBtn" type="button" class="mobile-search-trigger">
-        <span>Search tours</span>
-        <span>⌕</span>
-    </button>
-
-    <div id="searchSheetBackdrop" class="search-sheet-backdrop"></div>
-    <div id="searchSheetPanel" class="search-sheet-panel" aria-hidden="true">
-        <div class="search-sheet-handle"></div>
-        <div class="search-sheet-header">
-            <div>
-                <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Search</p>
-                <h3 class="text-xl font-black tracking-tight text-slate-900">Find a virtual tour</h3>
-            </div>
-            <button id="closeSearchSheetBtn" type="button" class="search-sheet-close" aria-label="Close search">✕</button>
+    <!-- CATEGORIES -->
+    <section class="category-section">
+        <div class="category-strip no-scrollbar">
+            <button type="button" data-category-pill="" class="category-pill active">All</button>
+            {% for value, label in category_choices %}
+                <button type="button" data-category-pill="{{ value }}" class="category-pill">{{ label }}</button>
+            {% endfor %}
         </div>
-        <div class="search-sheet-body">
-            <form id="mobileCatalogFilterForm" class="space-y-3">
-                <input name="q" value="{{ selected_q }}" class="search-field" placeholder="Search tour, organization, place...">
+    </section>
+
+    {{ catalog_tours|json_script:"catalogToursData" }}
+
+    <main class="feed-shell">
+        <!-- FEATURED -->
+        <section id="featured">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">Featured visits</h2>
+                    <p class="section-subtitle">Premium spaces to explore now</p>
+                </div>
+
+                <a href="#allTours" class="view-link">View all</a>
+            </div>
+
+            {% if featured_tours %}
+                <div class="pin-masonry">
+                    {% for tour in featured_tours %}
+                        {% url 'tour-preview-public' organization_slug=tour.organization.slug tour_id=tour.id as preview_url %}
+
+                        <article class="pin-card">
+                            <a href="{{ preview_url }}" class="pin-link">
+                                <div class="pin-media">
+                                    {% if tour.ordered_scenes and tour.ordered_scenes.0.safe_thumbnail_url %}
+                                        <img src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                    {% elif tour.safe_thumbnail_image_url %}
+                                        <img src="{{ tour.safe_thumbnail_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                    {% elif tour.safe_place_cover_image_url %}
+                                        <img src="{{ tour.safe_place_cover_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                    {% else %}
+                                        <div class="pin-media-placeholder">No Preview</div>
+                                    {% endif %}
+
+                                    <div class="pin-badge-row">
+                                        <span class="pin-badge">
+                                            <span class="h-2 w-2 rounded-full bg-cyan-300"></span>
+                                            360°
+                                        </span>
+
+                                        <span class="pin-play">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M6.5 5.5v9l7-4.5-7-4.5z" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="pin-body">
+                                    <h3 class="pin-title line-clamp-2">{{ tour.title }}</h3>
+
+                                    <p class="pin-description line-clamp-3">
+                                        {% if tour.description %}
+                                            {{ tour.description|striptags|truncatechars:130 }}
+                                        {% elif tour.place and tour.place.description %}
+                                            {{ tour.place.description|striptags|truncatechars:130 }}
+                                        {% else %}
+                                            Explore this immersive 360° visit and discover the space before going there.
+                                        {% endif %}
+                                    </p>
+
+                                    <div class="pin-meta">
+                                        <span>{{ tour.scene_count|default:0 }} scenes</span>
+
+                                        {% if tour.place %}
+                                            <span>{{ tour.place.city }}{% if tour.place.city and tour.place.country %}, {% endif %}{{ tour.place.country }}</span>
+                                        {% endif %}
+
+                                        {% if tour.place %}
+                                            <span>{{ tour.place.get_category_display }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state show">
+                    <h2 class="text-2xl font-black tracking-tight text-slate-950">No featured visits</h2>
+                    <p class="mt-2 text-sm font-semibold text-slate-500">Add featured tours to make this section attractive.</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- ALL TOURS -->
+        <section id="allTours">
+            <div class="section-head">
+                <div>
+                    <h2 class="section-title">Explore all</h2>
+                    <p id="catalogResultsMeta" class="section-subtitle"></p>
+                </div>
+            </div>
+
+            <div id="catalogToursGrid" class="pin-masonry"></div>
+
+            <div id="catalogEmptyState" class="empty-state">
+                <h2 class="text-2xl font-black tracking-tight text-slate-950">No result found</h2>
+                <p class="mt-2 text-sm font-semibold text-slate-500">Try another search, category or city.</p>
+            </div>
+
+            <div id="catalogPagination" class="mt-8 flex flex-wrap items-center justify-center gap-2"></div>
+        </section>
+    </main>
+
+    <!-- FILTER SHEET -->
+    <div id="filterSheetBackdrop" class="sheet-backdrop"></div>
+
+    <section id="filterSheet" class="filter-sheet" aria-hidden="true">
+        <div class="sheet-handle"></div>
+
+        <div class="p-5">
+            <div class="mb-5 flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[0.20em] text-cyan-700">Search</p>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-950">Find a visit</h2>
+                </div>
+
+                <button id="closeFilterSheetBtn" type="button" class="floating-icon-btn !bg-slate-950 !text-white" aria-label="Close filters">
+                    ✕
+                </button>
+            </div>
+
+            <form id="catalogFilterForm" class="space-y-3">
+                <input name="q" value="{{ selected_q }}" class="search-field" placeholder="Search apartment, hotel, city...">
+
                 <select name="category" class="search-field">
                     <option value="">All categories</option>
                     {% for value, label in category_choices %}
                         <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
+
                 <select name="city" class="search-field">
                     <option value="">All cities</option>
                     {% for city in available_cities %}
                         <option value="{{ city }}" {% if selected_city == city %}selected{% endif %}>{{ city }}</option>
                     {% endfor %}
                 </select>
-                <div class="flex gap-3 pt-2">
-                    <button type="submit" class="premium-search-submit flex-1">
-                        <span>Search</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-                        </svg>
-                    </button>
-                    <button type="button" data-catalog-reset class="premium-search-reset">
-                        Reset
-                    </button>
-                </div>
+
+                <button type="submit" class="apply-btn">
+                    Apply filters
+                </button>
+
+                <button type="button" id="resetFiltersBtn" class="reset-btn">
+                    Reset
+                </button>
             </form>
         </div>
-    </div>
+    </section>
 
-    <section id="featured" class="mx-auto max-w-7xl px-4 py-16 lg:px-6">
-        <div class="mb-8">
-            <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Premium Presentation</p>
-            <h3 class="section-title mt-2 text-3xl font-black">Give every visitor a premium virtual experience</h3>
-            <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-                Present stores, apartments, venues, and business spaces with a polished immersive experience that builds trust, creates desire, and drives action.
-            </p>
-        </div>
+    <!-- MOBILE BOTTOM NAV -->
+    <nav id="mobileBottomNav" class="mobile-bottom-nav">
+        <a href="/" class="bottom-nav-link active">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
+            </svg>
+            <span>Home</span>
+        </a>
 
-        {% if featured_tours %}
-            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {% for tour in featured_tours %}
-                    {% url 'tour-preview-public' organization_slug=tour.organization.slug tour_id=tour.id as preview_url %}
-                    <article class="glass card-hover overflow-hidden rounded-[28px] shadow-premium soft-border">
-                        <div class="tour-card-thumb relative aspect-[16/10] overflow-hidden bg-slate-100">
-                            {% if tour.ordered_scenes and tour.ordered_scenes.0.safe_thumbnail_url %}
-                                <img src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" data-smart-tour-image data-mobile="{{ tour.ordered_scenes.0.safe_image_360_mobile_url|default:tour.ordered_scenes.0.safe_thumbnail_url }}" data-desktop="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover" loading="lazy" decoding="async">
-                            {% elif tour.ordered_scenes and tour.ordered_scenes.0.safe_image_360_mobile_url %}
-                                <img src="{{ tour.ordered_scenes.0.safe_image_360_mobile_url }}" data-smart-tour-image data-mobile="{{ tour.ordered_scenes.0.safe_image_360_mobile_url }}" data-desktop="{{ tour.ordered_scenes.0.safe_image_360_url|default:tour.ordered_scenes.0.safe_image_360_mobile_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover" loading="lazy" decoding="async">
-                            {% elif tour.safe_thumbnail_image_url %}
-                                <img src="{{ tour.safe_thumbnail_image_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover" loading="lazy" decoding="async">
-                            {% elif tour.safe_place_cover_image_url %}
-                                <img src="{{ tour.safe_place_cover_image_url }}" alt="{{ tour.title }}" class="h-full w-full object-cover" loading="lazy" decoding="async">
-                            {% else %}
-                                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-slate-500">
-                                    <span class="text-sm font-black tracking-[0.2em] uppercase">No Preview</span>
-                                </div>
-                            {% endif %}
+        <a href="/explorer/" class="bottom-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5M3.75 12h16.5M3.75 18.75h16.5" />
+            </svg>
+            <span>Explore</span>
+        </a>
 
-                            <div class="card-image-overlay absolute inset-0"></div>
-                            <div class="absolute left-4 top-4 inline-flex items-center rounded-full border border-white/30 bg-white/16 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
-                                Browse Tours
-                            </div>
-                            {% if tour.place %}
-                                <div class="absolute bottom-4 left-4 rounded-full border border-white/25 bg-white/16 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-xl">
-                                    {{ tour.place.get_category_display }}
-                                </div>
-                            {% endif %}
-                            <a href="{{ preview_url }}" class="tour-scene-badge absolute right-4 top-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-900 transition hover:-translate-y-0.5">
-                                View Highlights
-                            </a>
-                        </div>
+        <a href="/about/" class="bottom-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M12 8.25h.008v.008H12V8.25z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>About</span>
+        </a>
 
-                        <div class="p-5">
-                            <div class="mb-3 flex items-center justify-between gap-3">
-                                <span class="truncate text-xs font-black uppercase tracking-[0.22em] text-cyan-700">{{ tour.organization.name }}</span>
-                                {% if tour.price %}
-                                    <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">{{ tour.price }}</span>
-                                {% endif %}
-                            </div>
-                            <h4 class="text-xl font-black tracking-tight text-slate-900">{{ tour.title }}</h4>
-                            <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{{ tour.description }}</p>
-                            <div class="mt-5 flex items-center justify-between gap-3 text-xs font-bold text-slate-500">
-                                <span>{{ tour.scene_count|default:0 }} scene{{ tour.scene_count|pluralize }}</span>
-                                {% if tour.place %}<span>{{ tour.place.city }}{% if tour.place.city and tour.place.country %}, {% endif %}{{ tour.place.country }}</span>{% endif %}
-                            </div>
-                        </div>
-                    </article>
-                {% endfor %}
-            </div>
+        {% if request.user.is_authenticated %}
+            <a href="/dashboard/" class="bottom-nav-link">
         {% else %}
-            <div class="glass rounded-[28px] p-8 text-sm text-slate-600">No featured tour available.</div>
+            <a href="/" class="bottom-nav-link">
         {% endif %}
-    </section>
-
-    <section id="places" class="mx-auto max-w-7xl px-4 py-10 lg:px-6">
-        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-                <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Places</p>
-                <h3 class="section-title mt-2 text-3xl font-black">Explore published places</h3>
-                <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600">Discover spaces with active immersive tours.</p>
-            </div>
-        </div>
-
-        <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {% for place in top_places %}
-                <div class="glass-soft card-hover rounded-[26px] p-5 soft-border">
-                    <div class="mb-5 flex items-start justify-between gap-4">
-                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-100 to-blue-100 text-lg font-black text-cyan-700">
-                            {{ place.name|slice:':1'|upper }}
-                        </div>
-                        <div class="rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-white">
-                            {{ place.published_tour_count }} tour{{ place.published_tour_count|pluralize }}
-                        </div>
-                    </div>
-                    <h4 class="text-lg font-black tracking-tight text-slate-900">{{ place.name }}</h4>
-                    <div class="mt-3 space-y-2 text-sm text-slate-600">
-                        {% if place.city or place.country %}<p>{{ place.city }}{% if place.city and place.country %}, {% endif %}{{ place.country }}</p>{% endif %}
-                        {% if place.address_line %}<p class="line-clamp-2">{{ place.address_line }}</p>{% endif %}
-                    </div>
-                </div>
-            {% empty %}
-                <div class="glass rounded-[24px] p-6 text-sm text-slate-600">No places available.</div>
-            {% endfor %}
-        </div>
-    </section>
-
-    <section id="tours" class="mx-auto max-w-7xl px-4 py-16 lg:px-6">
-        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-                <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Catalog</p>
-                <h3 class="section-title mt-2 text-3xl font-black">Latest published tours</h3>
-                <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-600">Browse immersive properties, stores, halls and more.</p>
-            </div>
-
-            <div id="catalogCategoryPills" class="flex flex-wrap gap-2">
-                <button type="button" data-category-pill="" class="rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.15em] transition border-cyan-300 bg-cyan-50 text-cyan-700">All</button>
-                {% for value, label in category_choices %}
-                    <button type="button" data-category-pill="{{ value }}" class="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">{{ label }}</button>
-                {% endfor %}
-            </div>
-        </div>
-
-        {{ catalog_tours|json_script:"catalogToursData" }}
-
-        <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div id="catalogResultsMeta" class="text-sm font-semibold text-slate-600"></div>
-            <div id="catalogPaginationSummary" class="text-xs font-black uppercase tracking-[0.18em] text-slate-500"></div>
-        </div>
-
-        <div id="catalogToursGrid" class="grid gap-6 md:grid-cols-2 xl:grid-cols-3"></div>
-
-        <div id="catalogEmptyState" class="glass hidden rounded-[28px] p-10 text-center">
-            <h4 class="text-2xl font-black text-slate-900">No result found</h4>
-            <p class="mt-3 text-sm leading-7 text-slate-600">Try another keyword, category, or city.</p>
-        </div>
-
-        <div id="catalogPagination" class="mt-8 flex flex-wrap items-center justify-center gap-2"></div>
-    </section>
-
-    <section id="organizations" class="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-        <div class="mb-8">
-            <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Brands</p>
-            <h3 class="section-title mt-2 text-3xl font-black">Organizations publishing tours</h3>
-        </div>
-
-        <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            {% for org in top_organizations %}
-                <div class="glass-soft card-hover rounded-[26px] p-5 soft-border">
-                    <div class="flex items-start gap-4">
-                        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-100 to-blue-100 text-lg font-black text-cyan-700">
-                            {{ org.name|slice:':1'|upper }}
-                        </div>
-                        <div class="min-w-0">
-                            <h4 class="truncate text-lg font-black tracking-tight text-slate-900">{{ org.name }}</h4>
-                            <p class="mt-1 text-sm text-slate-600">
-                                {{ org.published_tour_count }} tour{{ org.published_tour_count|pluralize }} · {{ org.published_place_count }} place{{ org.published_place_count|pluralize }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            {% empty %}
-                <div class="glass rounded-[24px] p-6 text-sm text-slate-600">No organization available.</div>
-            {% endfor %}
-        </div>
-    </section>
-
-    <footer class="mx-auto max-w-7xl px-4 py-12 lg:px-6">
-        <div class="glass-soft flex flex-col gap-4 rounded-[28px] p-6 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
-            <p class="font-semibold">© {% now 'Y' %} Virtual Tours. Professional public showcase.</p>
-            <div class="flex flex-wrap gap-4">
-                <a href="#featured" class="transition hover:text-slate-900">Featured</a>
-                <a href="#places" class="transition hover:text-slate-900">Places</a>
-                <a href="#tours" class="transition hover:text-slate-900">Tours</a>
-                <a href="#organizations" class="transition hover:text-slate-900">Organizations</a>
-            </div>
-        </div>
-    </footer>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 20.25a7.5 7.5 0 0115 0" />
+            </svg>
+            <span>Account</span>
+        </a>
+    </nav>
 
     <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
     <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            const appHeader = document.getElementById("appHeader");
-            const heroShell = document.getElementById("heroShell");
+            const desktopHeader = document.getElementById("desktopHeader");
+            const mobileTopActions = document.getElementById("mobileTopActions");
+            const mobileBottomNav = document.getElementById("mobileBottomNav");
+
             const heroWrap = document.getElementById("heroPanoramaWrap");
             const heroPanoEl = document.getElementById("heroMarzipano");
             const heroPosterImage = document.getElementById("heroPosterImage");
             const heroLoader = document.getElementById("heroLoader");
-            const heroZoomDock = document.getElementById("heroZoomDock");
-            const heroZoomOutBtn = document.getElementById("heroZoomOutBtn");
-            const heroZoomInBtn = document.getElementById("heroZoomInBtn");
-            const heroResetViewBtn = document.getElementById("heroResetViewBtn");
 
-            const openMenuBtn = document.getElementById("openMenuBtn");
-            const closeMenuBtn = document.getElementById("closeMenuBtn");
-            const menuBackdrop = document.getElementById("menuBackdrop");
-            const mobileMenuPanel = document.getElementById("mobileMenuPanel");
+            const settingsMenu = document.getElementById("settingsMenu");
+            const settingsTriggers = Array.from(document.querySelectorAll(".settings-trigger"));
+            const searchTriggers = Array.from(document.querySelectorAll(".search-trigger"));
+            const themeToggleBtn = document.getElementById("themeToggleBtn");
+            const themeLabel = document.getElementById("themeLabel");
+            const languageSelect = document.getElementById("languageSelect");
 
-            const openSearchSheetBtn = document.getElementById("openSearchSheetBtn");
-            const closeSearchSheetBtn = document.getElementById("closeSearchSheetBtn");
-            const searchSheetBackdrop = document.getElementById("searchSheetBackdrop");
-            const searchSheetPanel = document.getElementById("searchSheetPanel");
+            const filterSheet = document.getElementById("filterSheet");
+            const filterSheetBackdrop = document.getElementById("filterSheetBackdrop");
+            const closeFilterSheetBtn = document.getElementById("closeFilterSheetBtn");
+            const catalogFilterForm = document.getElementById("catalogFilterForm");
+            const resetFiltersBtn = document.getElementById("resetFiltersBtn");
+            const categoryPills = Array.from(document.querySelectorAll("[data-category-pill]"));
 
-            function syncHeaderGlassState() {
-                if (!appHeader) return;
-                appHeader.classList.toggle("is-scrolled", window.scrollY > 70);
-            }
+            const catalogDataNode = document.getElementById("catalogToursData");
+            const catalogGrid = document.getElementById("catalogToursGrid");
+            const catalogPagination = document.getElementById("catalogPagination");
+            const catalogEmptyState = document.getElementById("catalogEmptyState");
+            const catalogResultsMeta = document.getElementById("catalogResultsMeta");
 
-            syncHeaderGlassState();
-            window.addEventListener("scroll", syncHeaderGlassState, { passive: true });
+            const catalogTours = catalogDataNode ? JSON.parse(catalogDataNode.textContent) : [];
+            const pageSize = 15;
+
+            const catalogState = {
+                q: (catalogFilterForm?.querySelector('[name="q"]')?.value || "").trim(),
+                category: (catalogFilterForm?.querySelector('[name="category"]')?.value || "").trim(),
+                city: (catalogFilterForm?.querySelector('[name="city"]')?.value || "").trim(),
+                page: 1,
+            };
 
             function isMobileViewport() {
                 return window.matchMedia("(max-width: 767px)").matches;
@@ -1339,59 +2007,26 @@
                 return Math.min(Math.max(value, min), max);
             }
 
-            const HERO_MIN_FOV = degToRad(6);
-            const HERO_MAX_FOV = degToRad(132);
-            const HERO_MOBILE_PINCH_SENSITIVITY = 2.15;
-
-            // Zoom initial = 0 : on démarre au champ de vision le plus large.
-            // Le visiteur choisit ensuite lui-même son niveau de zoom.
-            function getHeroStartFov() {
-                return HERO_MAX_FOV;
+            function escapeHtml(value) {
+                return String(value ?? "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
             }
 
-            function syncBodyLock() {
-                const menuOpen = mobileMenuPanel?.classList.contains("open");
-                const searchOpen = searchSheetPanel?.classList.contains("open");
-                const shouldLock = (menuOpen || searchOpen) && window.innerWidth < 1024;
-                document.body.classList.toggle("overflow-hidden", shouldLock);
+            function stripHtml(value) {
+                const temp = document.createElement("div");
+                temp.innerHTML = String(value || "");
+                return temp.textContent || temp.innerText || "";
             }
 
-            function setMobileMenuOpen(isOpen) {
-                if (!menuBackdrop || !mobileMenuPanel) return;
-                menuBackdrop.classList.toggle("show", isOpen);
-                mobileMenuPanel.classList.toggle("open", isOpen);
-                syncBodyLock();
+            function truncateText(value, limit = 135) {
+                const text = stripHtml(value).trim();
+                if (text.length <= limit) return text;
+                return text.slice(0, limit).trim() + "...";
             }
-
-            function setSearchSheetOpen(isOpen) {
-                if (!searchSheetBackdrop || !searchSheetPanel) return;
-                searchSheetBackdrop.classList.toggle("show", isOpen);
-                searchSheetPanel.classList.toggle("open", isOpen);
-                searchSheetPanel.setAttribute("aria-hidden", isOpen ? "false" : "true");
-                openSearchSheetBtn?.classList.toggle("is-hidden", isOpen);
-                syncBodyLock();
-            }
-
-            openMenuBtn?.addEventListener("click", () => setMobileMenuOpen(true));
-            closeMenuBtn?.addEventListener("click", () => setMobileMenuOpen(false));
-            menuBackdrop?.addEventListener("click", () => setMobileMenuOpen(false));
-            document.querySelectorAll("[data-menu-link]").forEach((link) => link.addEventListener("click", () => setMobileMenuOpen(false)));
-
-            openSearchSheetBtn?.addEventListener("click", () => setSearchSheetOpen(true));
-            closeSearchSheetBtn?.addEventListener("click", () => setSearchSheetOpen(false));
-            searchSheetBackdrop?.addEventListener("click", () => setSearchSheetOpen(false));
-
-            document.addEventListener("keydown", (event) => {
-                if (event.key === "Escape") {
-                    setMobileMenuOpen(false);
-                    setSearchSheetOpen(false);
-                }
-            });
-
-            window.addEventListener("resize", () => {
-                if (window.innerWidth >= 768) setMobileMenuOpen(false);
-                if (window.innerWidth >= 1024) setSearchSheetOpen(false);
-            });
 
             function hideHeroLoader() {
                 heroLoader?.classList.add("is-hidden");
@@ -1409,17 +2044,71 @@
                 setTimeout(hideHeroLoader, 500);
             }
 
+            /* ========================= SETTINGS ========================= */
+
+            function applyTheme(mode) {
+                const dark = mode === "dark";
+
+                document.body.classList.toggle("theme-dark", dark);
+
+                if (themeLabel) {
+                    themeLabel.textContent = dark ? "On" : "Off";
+                }
+
+                localStorage.setItem("twinscopesTheme", dark ? "dark" : "light");
+                localStorage.setItem("virtualToursTheme", dark ? "dark" : "light");
+            }
+
+            const savedTheme =
+                localStorage.getItem("twinscopesTheme") ||
+                localStorage.getItem("virtualToursTheme") ||
+                "light";
+
+            applyTheme(savedTheme);
+
+            settingsTriggers.forEach((btn) => {
+                btn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    settingsMenu?.classList.toggle("open");
+                });
+            });
+
+            themeToggleBtn?.addEventListener("click", () => {
+                const isDark = document.body.classList.contains("theme-dark");
+                applyTheme(isDark ? "light" : "dark");
+            });
+
+            languageSelect?.addEventListener("change", () => {
+                const lang = languageSelect.value;
+                const params = new URLSearchParams(window.location.search);
+                params.set("lang", lang);
+                window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+            });
+
+            document.addEventListener("click", (event) => {
+                if (!settingsMenu) return;
+
+                const clickedTrigger = settingsTriggers.some((btn) => btn.contains(event.target));
+
+                if (!settingsMenu.contains(event.target) && !clickedTrigger) {
+                    settingsMenu.classList.remove("open");
+                }
+            });
+
+            /* ========================= HERO MARZIPANO ========================= */
+
             let heroViewer = null;
-            let heroScene = null;
             let heroView = null;
+            let heroScene = null;
             let heroAutorotate = null;
             let heroContextLost = false;
-            let heroZoomGesturesReady = false;
-            let heroZoomAnimationFrame = null;
-            let heroRestartAutorotateTimer = null;
+
+            const HERO_MIN_FOV = degToRad(6);
+            const HERO_MAX_FOV = degToRad(132);
 
             function pickHeroPanoramaUrl() {
                 if (!heroPanoEl) return "";
+
                 const mobile = isMobileViewport();
                 const viewerMobile = heroPanoEl.dataset.viewerMobileUrl || "";
                 const viewerDesktop = heroPanoEl.dataset.viewerDesktopUrl || "";
@@ -1437,333 +2126,19 @@
                 );
             }
 
-            function syncHeroZoomButtonsState() {
-                if (!heroView) return;
-
-                const currentFov = heroView.fov();
-
-                if (heroZoomInBtn) {
-                    heroZoomInBtn.disabled = currentFov <= HERO_MIN_FOV + 0.01;
-                }
-
-                if (heroZoomOutBtn) {
-                    heroZoomOutBtn.disabled = currentFov >= HERO_MAX_FOV - 0.01;
-                }
-            }
-
             function stopHeroAutorotate() {
                 if (!heroViewer) return;
-                try {
-                    heroViewer.stopMovement();
-                } catch (_) {}
+                try { heroViewer.stopMovement(); } catch (_) {}
             }
 
-            function restartHeroAutorotateDelayed(delay = 1100) {
-                window.clearTimeout(heroRestartAutorotateTimer);
-
+            function restartHeroAutorotate(delay = 900) {
                 if (!heroViewer || !heroAutorotate || heroContextLost) return;
 
-                heroRestartAutorotateTimer = window.setTimeout(() => {
+                setTimeout(() => {
                     if (heroViewer && heroAutorotate && !heroContextLost) {
-                        try {
-                            heroViewer.startMovement(heroAutorotate);
-                        } catch (_) {}
+                        try { heroViewer.startMovement(heroAutorotate); } catch (_) {}
                     }
                 }, delay);
-            }
-
-            function setHeroZoomInstant(nextFov) {
-                if (!heroView) return;
-
-                heroView.setParameters({
-                    fov: clamp(nextFov, HERO_MIN_FOV, HERO_MAX_FOV)
-                });
-
-                syncHeroZoomButtonsState();
-            }
-
-            function heroZoomToFov(nextFov, duration = 160) {
-                if (!heroView) return;
-
-                const startFov = heroView.fov();
-                const endFov = clamp(nextFov, HERO_MIN_FOV, HERO_MAX_FOV);
-                const startTime = performance.now();
-
-                if (heroZoomAnimationFrame) {
-                    cancelAnimationFrame(heroZoomAnimationFrame);
-                    heroZoomAnimationFrame = null;
-                }
-
-                function animate(now) {
-                    const progress = Math.min((now - startTime) / duration, 1);
-                    const eased = 1 - Math.pow(1 - progress, 3);
-                    const currentFov = startFov + (endFov - startFov) * eased;
-
-                    heroView.setParameters({ fov: currentFov });
-                    syncHeroZoomButtonsState();
-
-                    if (progress < 1) {
-                        heroZoomAnimationFrame = requestAnimationFrame(animate);
-                    } else {
-                        heroZoomAnimationFrame = null;
-                        heroView.setParameters({ fov: endFov });
-                        syncHeroZoomButtonsState();
-                    }
-                }
-
-                heroZoomAnimationFrame = requestAnimationFrame(animate);
-            }
-
-            function heroZoomBy(deltaDeg, duration = 130) {
-                if (!heroView) return;
-
-                stopHeroAutorotate();
-
-                const nextFov = heroView.fov() + degToRad(deltaDeg);
-                heroZoomToFov(nextFov, duration);
-                restartHeroAutorotateDelayed(1300);
-            }
-
-            function resetHeroView() {
-                if (!heroView) return;
-
-                stopHeroAutorotate();
-
-                heroView.setParameters({
-                    yaw: degToRad(-18),
-                    pitch: 0,
-                    fov: getHeroStartFov()
-                });
-
-                syncHeroZoomButtonsState();
-                restartHeroAutorotateDelayed(1300);
-            }
-
-            function getTouchDistance(touches) {
-                if (!touches || touches.length < 2) return 0;
-
-                const dx = touches[0].clientX - touches[1].clientX;
-                const dy = touches[0].clientY - touches[1].clientY;
-
-                return Math.sqrt(dx * dx + dy * dy);
-            }
-
-            function setupHeroZoomGestures() {
-                if (!heroPanoEl || !heroShell || heroZoomGesturesReady) return;
-
-                heroZoomGesturesReady = true;
-
-                heroPanoEl.style.touchAction = "none";
-                heroPanoEl.style.webkitUserSelect = "none";
-                heroPanoEl.style.userSelect = "none";
-
-                let pinchActive = false;
-                let startDistance = 0;
-                let startFov = 0;
-                let lastTapTs = 0;
-                let gestureStartFov = 0;
-
-                function isHeroZoneTarget(target) {
-                    return !!(target && heroShell.contains(target));
-                }
-
-                function isUiTarget(target) {
-                    return !!(
-                        target?.closest?.("#heroZoomDock") ||
-                        target?.closest?.("#appHeader") ||
-                        target?.closest?.("#mobileMenuPanel") ||
-                        target?.closest?.("#searchSheetPanel") ||
-                        target?.closest?.("#openSearchSheetBtn") ||
-                        target?.closest?.("a") ||
-                        target?.closest?.("button") ||
-                        target?.closest?.("input") ||
-                        target?.closest?.("select") ||
-                        target?.closest?.("textarea")
-                    );
-                }
-
-                function beginPinch(event) {
-                    if (!event.touches || event.touches.length !== 2) return;
-                    if (!isHeroZoneTarget(event.target) || isUiTarget(event.target)) return;
-                    if (!heroView) return;
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    stopHeroAutorotate();
-
-                    pinchActive = true;
-                    startDistance = getTouchDistance(event.touches);
-                    startFov = heroView.fov();
-                }
-
-                function movePinch(event) {
-                    if (!pinchActive || !event.touches || event.touches.length !== 2) return;
-                    if (!heroView) return;
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    const currentDistance = getTouchDistance(event.touches);
-                    if (!startDistance || !currentDistance) return;
-
-                    const ratio = currentDistance / startDistance;
-                    const zoomDelta = Math.log2(ratio) * degToRad(58) * HERO_MOBILE_PINCH_SENSITIVITY;
-                    const nextFov = clamp(startFov - zoomDelta, HERO_MIN_FOV, HERO_MAX_FOV);
-
-                    setHeroZoomInstant(nextFov);
-                }
-
-                function endPinch(event) {
-                    if (!event.touches || event.touches.length < 2) {
-                        pinchActive = false;
-                        startDistance = 0;
-                        startFov = 0;
-                        restartHeroAutorotateDelayed(1100);
-                    }
-
-                    syncHeroZoomButtonsState();
-                }
-
-                function handleTouchStart(event) {
-                    if (event.touches && event.touches.length === 2) {
-                        beginPinch(event);
-                        return;
-                    }
-
-                    if (
-                        event.touches &&
-                        event.touches.length === 1 &&
-                        isHeroZoneTarget(event.target) &&
-                        !isUiTarget(event.target)
-                    ) {
-                        const now = Date.now();
-
-                        if (now - lastTapTs < 290) {
-                            event.preventDefault();
-                            event.stopPropagation();
-
-                            if (!heroView) return;
-
-                            stopHeroAutorotate();
-
-                            const currentFov = heroView.fov();
-                            const targetFov = currentFov > degToRad(64)
-                                ? clamp(currentFov - degToRad(30), HERO_MIN_FOV, HERO_MAX_FOV)
-                                : getHeroStartFov();
-
-                            heroZoomToFov(targetFov, 170);
-                            restartHeroAutorotateDelayed(1300);
-                        }
-
-                        lastTapTs = now;
-                    }
-                }
-
-                document.addEventListener("touchstart", handleTouchStart, {
-                    passive: false,
-                    capture: true
-                });
-
-                document.addEventListener("touchmove", (event) => {
-                    if (pinchActive) movePinch(event);
-                }, {
-                    passive: false,
-                    capture: true
-                });
-
-                document.addEventListener("touchend", endPinch, {
-                    passive: false,
-                    capture: true
-                });
-
-                document.addEventListener("touchcancel", endPinch, {
-                    passive: false,
-                    capture: true
-                });
-
-                document.addEventListener("wheel", (event) => {
-                    if (!isHeroZoneTarget(event.target) || isUiTarget(event.target)) return;
-                    if (!heroView) return;
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    stopHeroAutorotate();
-
-                    const direction = event.deltaY > 0 ? 1 : -1;
-                    const step = event.ctrlKey ? 3.5 : 7;
-                    const nextFov = clamp(
-                        heroView.fov() + degToRad(direction * step),
-                        HERO_MIN_FOV,
-                        HERO_MAX_FOV
-                    );
-
-                    setHeroZoomInstant(nextFov);
-                    restartHeroAutorotateDelayed(1300);
-                }, {
-                    passive: false,
-                    capture: true
-                });
-
-                heroPanoEl.addEventListener("gesturestart", (event) => {
-                    if (!heroView) return;
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    stopHeroAutorotate();
-                    gestureStartFov = heroView.fov();
-                }, {
-                    passive: false,
-                    capture: true
-                });
-
-                heroPanoEl.addEventListener("gesturechange", (event) => {
-                    if (!heroView || !gestureStartFov) return;
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    const scale = event.scale || 1;
-                    const zoomDelta = Math.log2(scale) * degToRad(60) * HERO_MOBILE_PINCH_SENSITIVITY;
-
-                    setHeroZoomInstant(gestureStartFov - zoomDelta);
-                }, {
-                    passive: false,
-                    capture: true
-                });
-
-                heroPanoEl.addEventListener("gestureend", (event) => {
-                    event.preventDefault();
-
-                    gestureStartFov = 0;
-                    syncHeroZoomButtonsState();
-                    restartHeroAutorotateDelayed(1100);
-                }, {
-                    passive: false,
-                    capture: true
-                });
-
-                heroZoomOutBtn?.addEventListener("click", (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    heroZoomBy(isMobileViewport() ? 8 : 10);
-                }, { passive: false });
-
-                heroZoomInBtn?.addEventListener("click", (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    heroZoomBy(isMobileViewport() ? -8 : -10);
-                }, { passive: false });
-
-                heroResetViewBtn?.addEventListener("click", (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    resetHeroView();
-                }, { passive: false });
-
-                syncHeroZoomButtonsState();
             }
 
             function initHeroPanorama() {
@@ -1788,22 +2163,18 @@
 
                     const source = Marzipano.ImageUrlSource.fromString(url);
                     const geometry = new Marzipano.EquirectGeometry([{ width: 4096 }]);
-                    const limiter = Marzipano.RectilinearView.limit.traditional(
-                        4096,
-                        HERO_MAX_FOV
-                    );
-                    const view = new Marzipano.RectilinearView({
+                    const limiter = Marzipano.RectilinearView.limit.traditional(4096, HERO_MAX_FOV);
+
+                    heroView = new Marzipano.RectilinearView({
                         yaw: degToRad(-18),
                         pitch: 0,
-                        fov: getHeroStartFov(),
+                        fov: HERO_MAX_FOV,
                     }, limiter);
-
-                    heroView = view;
 
                     heroScene = heroViewer.createScene({
                         source,
                         geometry,
-                        view,
+                        view: heroView,
                         pinFirstLevel: true,
                     });
 
@@ -1811,7 +2182,6 @@
                         requestAnimationFrame(() => {
                             heroWrap?.classList.add("is-panorama-ready");
                             hideHeroLoader();
-                            syncHeroZoomButtonsState();
 
                             if (heroViewer && typeof heroViewer.updateSize === "function") {
                                 heroViewer.updateSize();
@@ -1819,12 +2189,10 @@
                         });
                     });
 
-                    setupHeroZoomGestures();
-
                     heroAutorotate = Marzipano.autorotate({
                         yawSpeed: 0.018,
                         targetPitch: 0,
-                        targetFov: null
+                        targetFov: null,
                     });
 
                     setTimeout(() => {
@@ -1833,25 +2201,25 @@
                         }
                     }, isMobileViewport() ? 1100 : 650);
 
-                    heroPanoEl.addEventListener("mouseenter", () => stopHeroAutorotate());
-                    heroPanoEl.addEventListener("mouseleave", () => restartHeroAutorotateDelayed(650));
-                    heroPanoEl.addEventListener("touchstart", () => stopHeroAutorotate(), { passive: true });
-                    heroPanoEl.addEventListener("touchend", () => restartHeroAutorotateDelayed(900), { passive: true });
+                    heroPanoEl.addEventListener("mouseenter", stopHeroAutorotate);
+                    heroPanoEl.addEventListener("mouseleave", () => restartHeroAutorotate(650));
+
+                    heroPanoEl.addEventListener("wheel", (event) => {
+                        if (!heroView) return;
+
+                        event.preventDefault();
+                        stopHeroAutorotate();
+
+                        const direction = event.deltaY > 0 ? 1 : -1;
+                        const nextFov = clamp(heroView.fov() + degToRad(direction * 7), HERO_MIN_FOV, HERO_MAX_FOV);
+
+                        heroView.setParameters({ fov: nextFov });
+                        restartHeroAutorotate(1200);
+                    }, { passive: false });
 
                     window.addEventListener("resize", () => {
                         if (!heroViewer || heroContextLost) return;
-                        try {
-                            if (typeof heroViewer.updateSize === "function") heroViewer.updateSize();
-                            syncHeroZoomButtonsState();
-                        } catch (error) {
-                            console.warn("Hero resize warning:", error);
-                        }
-                    });
-
-                    document.addEventListener("visibilitychange", () => {
-                        if (!heroViewer || heroContextLost || !heroAutorotate) return;
-                        if (document.hidden) stopHeroAutorotate();
-                        else restartHeroAutorotateDelayed(300);
+                        try { heroViewer.updateSize(); } catch (_) {}
                     });
                 } catch (error) {
                     console.error("Hero Marzipano init error:", error);
@@ -1860,7 +2228,8 @@
             }
 
             if (heroPanoEl) {
-                const startDelay = isMobileViewport() ? 950 : 260;
+                const startDelay = isMobileViewport() ? 900 : 260;
+
                 if ("requestIdleCallback" in window) {
                     window.requestIdleCallback(() => setTimeout(initHeroPanorama, startDelay), { timeout: 1800 });
                 } else {
@@ -1868,68 +2237,70 @@
                 }
             }
 
-            const catalogDataNode = document.getElementById("catalogToursData");
-            const catalogGrid = document.getElementById("catalogToursGrid");
-            const catalogPagination = document.getElementById("catalogPagination");
-            const catalogEmptyState = document.getElementById("catalogEmptyState");
-            const catalogResultsMeta = document.getElementById("catalogResultsMeta");
-            const catalogPaginationSummary = document.getElementById("catalogPaginationSummary");
-            const desktopCatalogFilterForm = document.getElementById("desktopCatalogFilterForm");
-            const mobileCatalogFilterForm = document.getElementById("mobileCatalogFilterForm");
-            const categoryPills = Array.from(document.querySelectorAll("[data-category-pill]"));
-            const resetButtons = Array.from(document.querySelectorAll("[data-catalog-reset]"));
+            /* ========================= FILTER SHEET ========================= */
 
-            const catalogTours = catalogDataNode ? JSON.parse(catalogDataNode.textContent) : [];
-            const pageSize = 6;
-            const catalogState = {
-                q: (desktopCatalogFilterForm?.querySelector('[name="q"]')?.value || "").trim(),
-                category: (desktopCatalogFilterForm?.querySelector('[name="category"]')?.value || "").trim(),
-                city: (desktopCatalogFilterForm?.querySelector('[name="city"]')?.value || "").trim(),
-                page: 1,
-            };
-
-            function escapeHtml(value) {
-                return String(value ?? "")
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/\"/g, "&quot;")
-                    .replace(/'/g, "&#39;");
+            function openSheet() {
+                filterSheet?.classList.add("open");
+                filterSheetBackdrop?.classList.add("show");
+                filterSheet?.setAttribute("aria-hidden", "false");
+                document.body.classList.add("overflow-hidden");
             }
 
-            function syncForms() {
-                [desktopCatalogFilterForm, mobileCatalogFilterForm].forEach((form) => {
-                    if (!form) return;
-                    const qInput = form.querySelector('[name="q"]');
-                    const categoryInput = form.querySelector('[name="category"]');
-                    const cityInput = form.querySelector('[name="city"]');
-                    if (qInput) qInput.value = catalogState.q;
-                    if (categoryInput) categoryInput.value = catalogState.category;
-                    if (cityInput) cityInput.value = catalogState.city;
-                });
+            function closeSheet() {
+                filterSheet?.classList.remove("open");
+                filterSheetBackdrop?.classList.remove("show");
+                filterSheet?.setAttribute("aria-hidden", "true");
+                document.body.classList.remove("overflow-hidden");
+            }
+
+            searchTriggers.forEach((btn) => {
+                btn.addEventListener("click", openSheet);
+            });
+
+            closeFilterSheetBtn?.addEventListener("click", closeSheet);
+            filterSheetBackdrop?.addEventListener("click", closeSheet);
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") closeSheet();
+            });
+
+            /* ========================= CATALOG ========================= */
+
+            function syncForm() {
+                if (!catalogFilterForm) return;
+
+                const qInput = catalogFilterForm.querySelector('[name="q"]');
+                const categoryInput = catalogFilterForm.querySelector('[name="category"]');
+                const cityInput = catalogFilterForm.querySelector('[name="city"]');
+
+                if (qInput) qInput.value = catalogState.q;
+                if (categoryInput) categoryInput.value = catalogState.category;
+                if (cityInput) cityInput.value = catalogState.city;
             }
 
             function syncCategoryPills() {
                 categoryPills.forEach((pill) => {
                     const active = (pill.dataset.categoryPill || "") === catalogState.category;
-                    pill.className = active
-                        ? "rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.15em] transition border-cyan-300 bg-cyan-50 text-cyan-700"
-                        : "rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.15em] text-slate-600 transition hover:bg-slate-50 hover:text-slate-900";
+                    pill.classList.toggle("active", active);
                 });
             }
 
             function updateUrl() {
                 const params = new URLSearchParams(window.location.search);
+
                 catalogState.q ? params.set("q", catalogState.q) : params.delete("q");
                 catalogState.category ? params.set("category", catalogState.category) : params.delete("category");
                 catalogState.city ? params.set("city", catalogState.city) : params.delete("city");
+
                 const query = params.toString();
                 const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+
                 window.history.replaceState({}, "", nextUrl);
             }
 
             function getTourImage(item) {
                 const mobile = isMobileViewport();
+
                 return (
                     (mobile && item.image_mobile_url) ||
                     item.image_url ||
@@ -1942,45 +2313,95 @@
 
             function buildTourCard(item) {
                 const image = getTourImage(item);
-                const placeholder = `<div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-slate-500"><span class="text-sm font-black uppercase tracking-[0.2em]">No Preview</span></div>`;
+                const previewUrl = item.preview_url || "#";
+                const cityText = [item.city, item.country].filter(Boolean).join(", ");
+                const title = item.title || "Virtual tour";
+                const scenes = Number(item.scene_count || 0);
+                const description =
+                    item.description ||
+                    item.short_description ||
+                    item.place_description ||
+                    "Explore this immersive 360° visit and discover the space before going there.";
+
                 return `
-                    <article class="glass card-hover overflow-hidden rounded-[28px] shadow-premium soft-border">
-                        <div class="tour-card-thumb relative aspect-[16/10] overflow-hidden bg-slate-100">
-                            ${image ? `<img src="${escapeHtml(image)}" data-smart-tour-image data-mobile="${escapeHtml(item.image_mobile_url || item.thumbnail_url || '')}" data-desktop="${escapeHtml(item.image_url || item.thumbnail_url || '')}" data-viewer-mobile="${escapeHtml(item.viewer_mobile_url || '')}" data-viewer-desktop="${escapeHtml(item.viewer_desktop_url || '')}" alt="${escapeHtml(item.title)}" class="h-full w-full object-cover" loading="lazy" decoding="async">` : placeholder}
-                            <div class="card-image-overlay absolute inset-0"></div>
-                            ${item.category_label ? `<div class="absolute bottom-4 left-4 rounded-full border border-white/25 bg-white/16 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-xl">${escapeHtml(item.category_label)}</div>` : ""}
-                            ${item.is_featured ? `<div class="absolute left-4 top-4 inline-flex items-center rounded-full border border-white/30 bg-white/16 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">Featured</div>` : ""}
-                            <a href="${escapeHtml(item.preview_url || '#')}" class="tour-scene-badge absolute right-4 top-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-900 transition hover:-translate-y-0.5">View</a>
-                        </div>
-                        <div class="p-5">
-                            <div class="mb-3 flex items-center justify-between gap-3">
-                                <span class="truncate text-xs font-black uppercase tracking-[0.22em] text-cyan-700">${escapeHtml(item.organization || '')}</span>
-                                ${item.price ? `<span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">${escapeHtml(item.price)}</span>` : ""}
+                    <article class="pin-card">
+                        <a href="${escapeHtml(previewUrl)}" class="pin-link" aria-label="${escapeHtml(title)}">
+                            <div class="pin-media">
+                                ${
+                                    image
+                                        ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async">`
+                                        : `<div class="pin-media-placeholder">No Preview</div>`
+                                }
+
+                                <div class="pin-badge-row">
+                                    <span class="pin-badge">
+                                        <span class="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.9)]"></span>
+                                        360°
+                                    </span>
+
+                                    <span class="pin-play">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M6.5 5.5v9l7-4.5-7-4.5z" />
+                                        </svg>
+                                    </span>
+                                </div>
                             </div>
-                            <h4 class="text-xl font-black tracking-tight text-slate-900">${escapeHtml(item.title || 'Untitled tour')}</h4>
-                            <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">${escapeHtml(item.description || '')}</p>
-                            <div class="mt-5 flex items-center justify-between gap-3 text-xs font-bold text-slate-500">
-                                <span>${Number(item.scene_count || 0)} scene${Number(item.scene_count || 0) > 1 ? 's' : ''}</span>
-                                <span>${escapeHtml([item.city, item.country].filter(Boolean).join(', '))}</span>
+
+                            <div class="pin-body">
+                                <h3 class="pin-title line-clamp-2">
+                                    ${escapeHtml(title)}
+                                </h3>
+
+                                <p class="pin-description line-clamp-3">
+                                    ${escapeHtml(truncateText(description, 135))}
+                                </p>
+
+                                <div class="pin-meta">
+                                    <span>${scenes} scene${scenes > 1 ? "s" : ""}</span>
+                                    ${cityText ? `<span>${escapeHtml(cityText)}</span>` : ""}
+                                    ${item.category_label ? `<span>${escapeHtml(item.category_label)}</span>` : ""}
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </article>
                 `;
             }
 
             function getFilteredTours() {
                 const q = catalogState.q.toLowerCase();
+
                 return catalogTours.filter((item) => {
-                    const matchesQ = !q || String(item.search_blob || "").includes(q) || String(item.title || "").toLowerCase().includes(q);
-                    const matchesCategory = !catalogState.category || String(item.category || "") === catalogState.category;
-                    const matchesCity = !catalogState.city || String(item.city || "").toLowerCase() === catalogState.city.toLowerCase();
+                    const searchBlob = String(item.search_blob || "").toLowerCase();
+                    const title = String(item.title || "").toLowerCase();
+                    const org = String(item.organization || "").toLowerCase();
+                    const city = String(item.city || "").toLowerCase();
+                    const country = String(item.country || "").toLowerCase();
+
+                    const matchesQ =
+                        !q ||
+                        searchBlob.includes(q) ||
+                        title.includes(q) ||
+                        org.includes(q) ||
+                        city.includes(q) ||
+                        country.includes(q);
+
+                    const matchesCategory =
+                        !catalogState.category ||
+                        String(item.category || "") === catalogState.category;
+
+                    const matchesCity =
+                        !catalogState.city ||
+                        city === catalogState.city.toLowerCase();
+
                     return matchesQ && matchesCategory && matchesCity;
                 });
             }
 
             function renderPagination(totalPages) {
                 if (!catalogPagination) return;
+
                 catalogPagination.innerHTML = "";
+
                 if (totalPages <= 1) return;
 
                 for (let page = 1; page <= totalPages; page++) {
@@ -1988,13 +2409,15 @@
                     btn.type = "button";
                     btn.textContent = page;
                     btn.className = page === catalogState.page
-                        ? "h-10 min-w-10 rounded-full bg-slate-900 px-4 text-sm font-black text-white"
-                        : "h-10 min-w-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 transition hover:bg-slate-50";
+                        ? "pagination-btn active"
+                        : "pagination-btn";
+
                     btn.addEventListener("click", () => {
                         catalogState.page = page;
                         renderCatalog();
-                        document.getElementById("tours")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        document.getElementById("allTours")?.scrollIntoView({ behavior: "smooth", block: "start" });
                     });
+
                     catalogPagination.appendChild(btn);
                 }
             }
@@ -2004,83 +2427,98 @@
 
                 const filtered = getFilteredTours();
                 const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-                if (catalogState.page > totalPages) catalogState.page = totalPages;
+
+                if (catalogState.page > totalPages) {
+                    catalogState.page = totalPages;
+                }
 
                 const start = (catalogState.page - 1) * pageSize;
                 const pageItems = filtered.slice(start, start + pageSize);
 
                 catalogGrid.innerHTML = pageItems.map(buildTourCard).join("");
-                catalogEmptyState?.classList.toggle("hidden", filtered.length > 0);
+
+                catalogEmptyState?.classList.toggle("show", filtered.length === 0);
 
                 if (catalogResultsMeta) {
-                    catalogResultsMeta.textContent = `${filtered.length} tour${filtered.length > 1 ? "s" : ""} found`;
-                }
-
-                if (catalogPaginationSummary) {
-                    catalogPaginationSummary.textContent = filtered.length ? `Page ${catalogState.page} / ${totalPages}` : "";
+                    catalogResultsMeta.textContent = `${filtered.length} visit${filtered.length > 1 ? "s" : ""} found`;
                 }
 
                 renderPagination(totalPages);
-                syncForms();
+                syncForm();
                 syncCategoryPills();
                 updateUrl();
-                hydrateSmartImages();
             }
 
-            function applyForm(form) {
-                if (!form) return;
-                const data = new FormData(form);
+            catalogFilterForm?.addEventListener("submit", (event) => {
+                event.preventDefault();
+
+                const data = new FormData(catalogFilterForm);
+
                 catalogState.q = String(data.get("q") || "").trim();
                 catalogState.category = String(data.get("category") || "").trim();
                 catalogState.city = String(data.get("city") || "").trim();
                 catalogState.page = 1;
+
                 renderCatalog();
-            }
-
-            [desktopCatalogFilterForm, mobileCatalogFilterForm].forEach((form) => {
-                form?.addEventListener("submit", (event) => {
-                    event.preventDefault();
-                    applyForm(form);
-                    setSearchSheetOpen(false);
-                    document.getElementById("tours")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                });
-
-                form?.querySelectorAll("input, select").forEach((input) => {
-                    input.addEventListener("change", () => applyForm(form));
-                });
+                closeSheet();
+                document.getElementById("allTours")?.scrollIntoView({ behavior: "smooth", block: "start" });
             });
 
             categoryPills.forEach((pill) => {
                 pill.addEventListener("click", () => {
                     catalogState.category = pill.dataset.categoryPill || "";
                     catalogState.page = 1;
+
                     renderCatalog();
-                    document.getElementById("tours")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    document.getElementById("allTours")?.scrollIntoView({ behavior: "smooth", block: "start" });
                 });
             });
 
-            resetButtons.forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    catalogState.q = "";
-                    catalogState.category = "";
-                    catalogState.city = "";
-                    catalogState.page = 1;
-                    renderCatalog();
-                });
+            resetFiltersBtn?.addEventListener("click", () => {
+                catalogState.q = "";
+                catalogState.category = "";
+                catalogState.city = "";
+                catalogState.page = 1;
+
+                renderCatalog();
+                closeSheet();
             });
 
-            function hydrateSmartImages() {
-                const mobile = isMobileViewport();
-                document.querySelectorAll("[data-smart-tour-image]").forEach((img) => {
-                    const selected = mobile
-                        ? (img.dataset.mobile || img.dataset.desktop || img.src)
-                        : (img.dataset.desktop || img.dataset.mobile || img.src);
-                    if (selected && img.src !== selected) img.src = selected;
-                });
+            /* ========================= SCROLL BEHAVIOR ========================= */
+
+            let lastScrollY = window.scrollY;
+            let ticking = false;
+
+            function syncBarsOnScroll() {
+                const currentY = window.scrollY;
+                const scrollingDown = currentY > lastScrollY && currentY > 120;
+                const scrollingUp = currentY < lastScrollY;
+
+                desktopHeader?.classList.toggle("is-solid", currentY > 90);
+
+                if (scrollingDown) {
+                    desktopHeader?.classList.add("is-hidden");
+                    mobileTopActions?.classList.add("is-hidden");
+                    mobileBottomNav?.classList.add("is-hidden");
+                }
+
+                if (scrollingUp || currentY < 80) {
+                    desktopHeader?.classList.remove("is-hidden");
+                    mobileTopActions?.classList.remove("is-hidden");
+                    mobileBottomNav?.classList.remove("is-hidden");
+                }
+
+                lastScrollY = currentY;
+                ticking = false;
             }
 
-            window.addEventListener("resize", hydrateSmartImages);
-            hydrateSmartImages();
+            window.addEventListener("scroll", () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(syncBarsOnScroll);
+                    ticking = true;
+                }
+            }, { passive: true });
+
             renderCatalog();
         });
     </script>

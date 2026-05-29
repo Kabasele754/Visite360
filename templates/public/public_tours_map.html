@@ -3,10 +3,11 @@
 <html lang="fr" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{{ page_title }}</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -37,829 +38,1259 @@
         }
     </script>
 
-   <style>
-    html, body {
-        height: 100%;
-        margin: 0;
-    }
+    <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 
-    * {
-        box-sizing: border-box;
-    }
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overscroll-behavior: none;
+        }
 
-    body {
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-        background:
-            radial-gradient(circle at top left, rgba(34,211,238,0.18), transparent 26%),
-            radial-gradient(circle at top right, rgba(59,130,246,0.16), transparent 24%),
-            radial-gradient(circle at bottom, rgba(16,185,129,0.10), transparent 24%),
-            linear-gradient(180deg, #f9fdff 0%, #eef7ff 36%, #f8fbff 100%);
-        color: #0f172a;
-    }
+        * {
+            box-sizing: border-box;
+        }
 
-    * {
-        scrollbar-width: thin;
-        scrollbar-color: rgba(148,163,184,0.45) transparent;
-    }
+        body {
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+            color: #0f172a;
+            background:
+                radial-gradient(circle at top left, rgba(34,211,238,0.18), transparent 26%),
+                radial-gradient(circle at top right, rgba(59,130,246,0.16), transparent 24%),
+                radial-gradient(circle at bottom, rgba(16,185,129,0.10), transparent 24%),
+                linear-gradient(180deg, #f9fdff 0%, #eef7ff 36%, #f8fbff 100%);
+            transition: background .25s ease, color .25s ease;
+        }
 
-    .soft-grid {
-        background-image:
-            linear-gradient(rgba(255,255,255,0.38) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.38) 1px, transparent 1px);
-        background-size: 24px 24px;
-        mask-image: linear-gradient(180deg, rgba(0,0,0,0.75), transparent 92%);
-        -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.75), transparent 92%);
-    }
+        body.theme-dark {
+            color: #f8fafc;
+            background:
+                radial-gradient(circle at top left, rgba(34,211,238,0.14), transparent 28%),
+                radial-gradient(circle at top right, rgba(59,130,246,0.13), transparent 26%),
+                radial-gradient(circle at bottom, rgba(16,185,129,0.08), transparent 26%),
+                linear-gradient(180deg, #020617 0%, #0f172a 52%, #111827 100%);
+        }
 
-    .glass-panel {
-        background: rgba(255,255,255,0.62);
-        border: 1px solid rgba(255,255,255,0.75);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-        box-shadow:
-            0 24px 80px rgba(15, 23, 42, 0.12),
-            inset 0 1px 0 rgba(255,255,255,0.70);
-    }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148,163,184,0.45) transparent;
+        }
 
-    .app-header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 90;
-        padding: 12px 14px;
-        pointer-events: none;
-    }
+        .soft-grid {
+            background-image:
+                linear-gradient(rgba(255,255,255,0.38) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.38) 1px, transparent 1px);
+            background-size: 24px 24px;
+            mask-image: linear-gradient(180deg, rgba(0,0,0,0.75), transparent 92%);
+            -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.75), transparent 92%);
+        }
 
-    .header-shell {
-        max-width: 1680px;
-        margin: 0 auto;
-        padding: 12px 14px;
-        border-radius: 28px;
-        border: 1px solid rgba(255,255,255,0.44);
-        background: linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0.10));
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        box-shadow:
-            0 18px 48px rgba(15, 23, 42, 0.14),
-            inset 0 1px 0 rgba(255,255,255,0.34);
-        pointer-events: auto;
-    }
+        body.theme-dark .soft-grid {
+            opacity: .18 !important;
+        }
 
-    .nav-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 999px;
-        padding: 10px 14px;
-        font-size: 13px;
-        font-weight: 900;
-        color: #0f172a;
-        text-decoration: none;
-        transition: 0.18s ease;
-        background: rgba(255,255,255,0.42);
-        border: 1px solid rgba(255,255,255,0.44);
-    }
+        .glass-panel {
+            background: rgba(255,255,255,0.62);
+            border: 1px solid rgba(255,255,255,0.75);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow:
+                0 24px 80px rgba(15, 23, 42, 0.12),
+                inset 0 1px 0 rgba(255,255,255,0.70);
+        }
 
-    .nav-link:hover {
-        transform: translateY(-1px);
-        background: rgba(255,255,255,0.62);
-    }
+        body.theme-dark .glass-panel {
+            background: rgba(15,23,42,0.72);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow:
+                0 24px 80px rgba(0,0,0,0.30),
+                inset 0 1px 0 rgba(255,255,255,0.08);
+        }
 
-    .cta-chip {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        border-radius: 999px;
-        padding: 10px 14px;
-        font-size: 13px;
-        font-weight: 900;
-        color: #082f49;
-        background: linear-gradient(135deg, rgba(34,211,238,0.82), rgba(59,130,246,0.75));
-        border: 1px solid rgba(255,255,255,0.56);
-        text-decoration: none;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
-    }
+        body.theme-dark .dark-title {
+            color: white !important;
+        }
 
-    .mobile-menu-btn {
-        display: none;
-        height: 48px;
-        width: 48px;
-        align-items: center;
-        justify-content: center;
-        border-radius: 18px;
-        border: 1px solid rgba(255,255,255,0.50);
-        background: rgba(255,255,255,0.26);
-        color: #0f172a;
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
-    }
+        body.theme-dark .dark-text {
+            color: rgba(255,255,255,0.66) !important;
+        }
 
-    .menu-backdrop,
-    .mobile-sheet-backdrop {
-        position: fixed;
-        inset: 0;
-        opacity: 0;
-        pointer-events: none;
-        transition: 0.22s ease;
-    }
+        body.theme-dark .dark-muted {
+            color: rgba(255,255,255,0.48) !important;
+        }
 
-    .menu-backdrop {
-        z-index: 97;
-        background: rgba(15, 23, 42, 0.28);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
-    }
-
-    .mobile-sheet-backdrop {
-        z-index: 120;
-        background: rgba(15, 23, 42, 0.24);
-        backdrop-filter: blur(3px);
-        -webkit-backdrop-filter: blur(3px);
-    }
-
-    .menu-backdrop.show,
-    .mobile-sheet-backdrop.show {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .mobile-menu-panel {
-        position: fixed;
-        top: 14px;
-        right: 14px;
-        bottom: 14px;
-        width: min(340px, calc(100vw - 28px));
-        z-index: 98;
-        transform: translateX(calc(100% + 24px));
-        transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-        border-radius: 30px;
-        overflow: hidden;
-        background: rgba(255,255,255,0.74);
-        border: 1px solid rgba(255,255,255,0.76);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        box-shadow: 0 28px 80px rgba(15, 23, 42, 0.20);
-    }
-
-    .mobile-menu-panel.open {
-        transform: translateX(0);
-    }
-
-    .mobile-menu-link {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 16px 18px;
-        border-radius: 20px;
-        text-decoration: none;
-        color: #0f172a;
-        font-size: 15px;
-        font-weight: 900;
-        background: rgba(255,255,255,0.54);
-        border: 1px solid rgba(255,255,255,0.72);
-        transition: 0.18s ease;
-    }
-
-    .mobile-menu-link:hover {
-        transform: translateX(-2px);
-        background: rgba(255,255,255,0.72);
-    }
-
-    .main-stage {
-        position: relative;
-        max-width: 1680px;
-        margin: 0 auto;
-        padding: 110px 16px 24px;
-    }
-
-    .main-grid {
-        display: grid;
-        gap: 20px;
-        grid-template-columns: 420px minmax(0, 1fr);
-    }
-
-    .filters-panel {
-        position: relative;
-        z-index: 40;
-        border-radius: 32px;
-        overflow: hidden;
-        pointer-events: auto;
-        isolation: isolate;
-    }
-
-    .filters-head-mobile {
-        display: none;
-    }
-
-    .filters-scroll {
-        overflow: visible;
-    }
-
-    .map-shell {
-        position: relative;
-        overflow: hidden;
-        border-radius: 34px;
-        border: 1px solid rgba(255,255,255,0.76);
-        background:
-            linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.40));
-        box-shadow:
-            0 30px 90px rgba(15, 23, 42, 0.16),
-            inset 0 1px 0 rgba(255,255,255,0.78);
-        min-height: 760px;
-    }
-
-    #tourMap {
-        width: 100%;
-        height: 760px;
-    }
-
-    .map-shell::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        z-index: 2;
-        background:
-            radial-gradient(circle at 18% 10%, rgba(255,255,255,0.42), transparent 18%),
-            linear-gradient(180deg, rgba(255,255,255,0.08), transparent 22%);
-    }
-
-    .map-fade-bottom {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 120px;
-        z-index: 2;
-        pointer-events: none;
-        background: linear-gradient(0deg, rgba(248,251,255,0.22), transparent);
-    }
-
-    .floating-toolbar {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        z-index: 7;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .toolbar-btn {
-        border: 1px solid rgba(255,255,255,0.74);
-        background: rgba(255,255,255,0.54);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border-radius: 18px;
-        padding: 12px 14px;
-        font-size: 13px;
-        font-weight: 900;
-        color: #0f172a;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        cursor: pointer;
-        transition: 0.18s ease;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
-        white-space: nowrap;
-    }
-
-    .toolbar-btn:hover {
-        transform: translateY(-1px);
-        background: rgba(255,255,255,0.72);
-    }
-
-    .toolbar-btn.is-active {
-        box-shadow:
-            0 14px 28px rgba(15, 23, 42, 0.14),
-            0 0 0 4px rgba(34,211,238,0.16);
-    }
-
-    .selected-tour-card {
-        position: absolute;
-        left: 18px;
-        top: 18px;
-        z-index: 8;
-        width: min(460px, calc(100% - 36px));
-        pointer-events: none;
-    }
-
-    .selected-tour-card:empty {
-        display: none;
-    }
-
-    .tour-action-card {
-        pointer-events: auto;
-    }
-
-    .street-panel {
-        position: absolute;
-        left: 18px;
-        right: 18px;
-        bottom: 18px;
-        z-index: 6;
-        border-radius: 28px;
-        border: 1px solid rgba(255,255,255,0.78);
-        background: rgba(255,255,255,0.68);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
-        overflow: hidden;
-        transform: translateY(24px);
-        opacity: 0;
-        pointer-events: none;
-        transition: 0.28s ease;
-    }
-
-    .street-panel.open {
-        transform: translateY(0);
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    #streetView {
-        width: 100%;
-        height: 330px;
-        background: #e2e8f0;
-    }
-
-    .result-card {
-        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-    }
-
-    .result-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.10);
-    }
-
-    .result-card.active {
-        border-color: rgba(34, 211, 238, 0.62);
-        box-shadow:
-            0 18px 38px rgba(15, 23, 42, 0.12),
-            0 0 0 2px rgba(34, 211, 238, 0.12);
-    }
-
-    .gm-marker-card {
-        position: relative;
-        cursor: pointer;
-        transform: translateY(0);
-        transition: transform 0.18s ease;
-    }
-
-    .gm-marker-card:hover {
-        transform: translateY(-2px) scale(1.02);
-    }
-
-    .gm-marker-card .inner {
-        min-width: 142px;
-        max-width: 186px;
-        border-radius: 18px;
-        border: 1px solid rgba(255,255,255,0.82);
-        background: rgba(255,255,255,0.92);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
-        overflow: hidden;
-    }
-
-    .gm-marker-card.is-selected .inner {
-        border-color: rgba(34, 211, 238, 0.75);
-        box-shadow:
-            0 16px 34px rgba(15, 23, 42, 0.18),
-            0 0 0 2px rgba(34, 211, 238, 0.18);
-    }
-
-    .gm-marker-thumb {
-        width: 100%;
-        height: 76px;
-        object-fit: cover;
-        display: block;
-    }
-
-    .gm-marker-noimg {
-        width: 100%;
-        height: 76px;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(135deg, #cffafe, #dbeafe);
-        color: #0f172a;
-        font-size: 13px;
-        font-weight: 900;
-    }
-
-    .gm-marker-dot {
-        position: absolute;
-        left: 50%;
-        bottom: -12px;
-        width: 18px;
-        height: 18px;
-        transform: translateX(-50%);
-        border-radius: 999px;
-        background: linear-gradient(135deg, #06b6d4, #3b82f6);
-        border: 3px solid rgba(255,255,255,0.95);
-        box-shadow: 0 10px 22px rgba(59, 130, 246, 0.35);
-    }
-
-    .gm-marker-actions {
-        display: none;
-    }
-
-    .scrollbar-thin::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-
-    .scrollbar-thin::-webkit-scrollbar-thumb {
-        background: rgba(148, 163, 184, 0.45);
-        border-radius: 999px;
-    }
-
-    .scrollbar-thin::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .mobile-sheet-trigger {
-        display: none;
-    }
-
-    .desktop-results-scroll {
-        max-height: calc(100vh - 340px);
-        overflow-y: auto;
-        padding-right: 4px;
-    }
-
-    .footer-card {
-        border-radius: 30px;
-        border: 1px solid rgba(255,255,255,0.76);
-        background: rgba(255,255,255,0.64);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.12);
-    }
-
-    .tour-close-btn {
-        border: 1px solid rgba(255,255,255,0.82);
-        background: rgba(255,255,255,0.86);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 999px;
-        width: 42px;
-        height: 42px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        font-weight: 900;
-        color: #334155;
-        cursor: pointer;
-        transition: 0.18s ease;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
-    }
-
-    .tour-close-btn:hover {
-        transform: translateY(-1px);
-        background: rgba(255,255,255,0.98);
-    }
-
-    .tour-action-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        border-radius: 18px;
-        padding: 12px 16px;
-        font-size: 13px;
-        font-weight: 900;
-        text-decoration: none;
-        transition: 0.18s ease;
-        cursor: pointer;
-    }
-
-    .tour-action-btn:hover {
-        transform: translateY(-1px);
-    }
-
-    .tour-action-btn.secondary {
-        border: 1px solid rgba(255,255,255,0.82);
-        background: rgba(255,255,255,0.86);
-        color: #334155;
-    }
-
-    .tour-action-btn.primary {
-        background: linear-gradient(90deg, #22d3ee, #38bdf8, #3b82f6);
-        color: #082f49;
-        border: none;
-        box-shadow: 0 12px 28px rgba(59, 130, 246, 0.22);
-    }
-
-    .tour-address-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border-radius: 999px;
-        padding: 8px 12px;
-        font-size: 12px;
-        font-weight: 800;
-        color: #475569;
-        border: 1px solid rgba(255,255,255,0.8);
-        background: rgba(255,255,255,0.76);
-    }
-
-    @media (max-width: 1279px) {
         .app-header {
-            padding: 12px 12px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 90;
+            padding: 12px 14px;
+            pointer-events: none;
+            transition: opacity .22s ease, transform .22s ease;
         }
 
         .header-shell {
-            padding: 10px 12px;
-            border-radius: 24px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06));
-            border-color: rgba(255,255,255,0.34);
+            max-width: 1680px;
+            margin: 0 auto;
+            padding: 0;
+            border-radius: 0;
+            border: 0;
+            background: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            box-shadow: none;
+            pointer-events: auto;
         }
 
-        .desktop-nav,
-        .desktop-cta {
-            display: none !important;
+        .brand-glass {
+            min-height: 56px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 999px;
+            padding: 6px 14px 6px 6px;
+            background: rgba(255,255,255,0.42);
+            border: 1px solid rgba(255,255,255,0.60);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.12);
+        }
+
+        body.theme-dark .brand-glass {
+            background: rgba(2,6,23,0.42);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 14px 38px rgba(0,0,0,0.28);
+        }
+
+        .brand-mark {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 17px;
+            color: #06111f;
+            background: linear-gradient(135deg, #67e8f9, #60a5fa);
+            font-weight: 950;
+            box-shadow: 0 14px 30px rgba(14,165,233,0.20);
+        }
+
+        .desktop-nav-shell {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 6px;
+            background: rgba(255,255,255,0.32);
+            border: 1px solid rgba(255,255,255,0.48);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.10);
+        }
+
+        body.theme-dark .desktop-nav-shell {
+            background: rgba(2,6,23,0.42);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 14px 38px rgba(0,0,0,0.28);
+        }
+
+        .nav-link {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0 14px;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 900;
+            text-decoration: none;
+            transition: .18s ease;
+            background: transparent;
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            transform: translateY(-1px);
+            color: #0f172a;
+            background: rgba(255,255,255,0.66);
+            border-color: rgba(255,255,255,0.74);
+        }
+
+        body.theme-dark .nav-link {
+            color: rgba(255,255,255,0.66);
+        }
+
+        body.theme-dark .nav-link:hover,
+        body.theme-dark .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .cta-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 950;
+            color: #082f49;
+            background: linear-gradient(135deg, rgba(34,211,238,0.94), rgba(59,130,246,0.86));
+            border: 1px solid rgba(255,255,255,0.56);
+            text-decoration: none;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+            transition: .18s ease;
+        }
+
+        .cta-chip:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.04);
+        }
+
+        .icon-btn,
+        .mobile-menu-btn {
+            height: 46px;
+            width: 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.62);
+            background: rgba(255,255,255,0.46);
+            color: #0f172a;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+            transition: .18s ease;
+            cursor: pointer;
+        }
+
+        .icon-btn:hover,
+        .mobile-menu-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,0.72);
+        }
+
+        body.theme-dark .icon-btn,
+        body.theme-dark .mobile-menu-btn {
+            color: white;
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.12);
         }
 
         .mobile-menu-btn {
-            display: inline-flex;
-        }
-
-        .main-stage {
-            max-width: none;
-            padding: 0;
-        }
-
-        .main-grid {
-            display: block;
-        }
-
-        .map-shell,
-        #tourMap {
-            height: 100dvh;
-            min-height: 100dvh;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
-        }
-
-        .map-shell::before {
-            background:
-                radial-gradient(circle at 18% 10%, rgba(255,255,255,0.30), transparent 16%),
-                linear-gradient(180deg, rgba(255,255,255,0.04), transparent 22%);
-        }
-
-        .floating-toolbar {
-            top: 88px;
-            left: 12px;
-            right: 12px;
-            justify-content: flex-start;
-            overflow-x: auto;
-            flex-wrap: nowrap;
-            padding-right: 70px;
-        }
-
-        .toolbar-btn {
-            min-width: 46px;
-            width: 46px;
-            height: 46px;
-            padding: 0;
-            border-radius: 16px;
-            flex: 0 0 auto;
-        }
-
-        .toolbar-btn .label {
             display: none;
         }
 
-        .selected-tour-card {
-            left: 12px;
-            right: 12px;
-            width: auto;
-            top: auto;
-            bottom: 84px;
-            display: none !important;
-        }
-
-        .street-panel {
-            left: 12px;
-            right: 12px;
-            bottom: 86px;
-            border-radius: 24px;
-        }
-
-        #streetView {
-            height: 230px;
-        }
-
-        .filters-panel {
+        .mobile-filter-fab {
             position: fixed;
-            left: 12px;
-            right: 12px;
-            bottom: 12px;
-            z-index: 140;
-            height: var(--sheet-height, 82dvh);
-            transform: translateY(calc(100% + 24px));
-            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-            border-radius: 30px;
-            overflow: hidden;
-            background: #ffffff;
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            pointer-events: auto;
-            touch-action: auto;
-            box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24);
+            left: 50%;
+            bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+            z-index: 88;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 54px;
+            min-width: 158px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.76);
+            background: rgba(255,255,255,0.74);
+            color: #0f172a;
+            transform: translateX(-50%);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow:
+                0 22px 60px rgba(15,23,42,0.20),
+                inset 0 1px 0 rgba(255,255,255,0.68);
+            font-size: 14px;
+            font-weight: 950;
+            transition: opacity .22s ease, transform .22s ease, background .18s ease;
         }
 
-        .filters-panel.sheet-half {
-            transform: translateY(var(--sheet-half, 40%));
+        .mobile-filter-fab:hover {
+            background: rgba(255,255,255,0.92);
+            transform: translateX(-50%) translateY(-2px);
         }
 
-        .filters-panel.sheet-full {
+        body.theme-dark .mobile-filter-fab {
+            color: white;
+            background: rgba(15,23,42,0.78);
+            border-color: rgba(255,255,255,0.12);
+            box-shadow:
+                0 22px 60px rgba(0,0,0,0.36),
+                inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        body.sheet-open .mobile-filter-fab,
+        body.menu-open .mobile-filter-fab,
+        body.street-open .mobile-filter-fab {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(22px);
+        }
+
+        .settings-menu {
+            position: fixed;
+            top: 84px;
+            right: 18px;
+            z-index: 110;
+            width: min(280px, calc(100vw - 28px));
+            border-radius: 24px;
+            padding: 12px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px);
+            transition: .2s ease;
+        }
+
+        .settings-menu.open {
+            opacity: 1;
+            visibility: visible;
             transform: translateY(0);
         }
 
-        .filters-head-mobile {
+        .setting-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            position: sticky;
-            top: 0;
-            z-index: 3;
-            padding: 16px 18px 12px;
-            background: #ffffff;
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            border-bottom: 1px solid rgba(226, 232, 240, 0.95);
-            touch-action: none;
-        }
-
-        .filters-head-mobile .grabber {
-            position: absolute;
-            left: 50%;
-            top: 8px;
-            transform: translateX(-50%);
-            width: 54px;
-            height: 6px;
-            border-radius: 999px;
-            background: rgba(148,163,184,0.45);
-        }
-
-        .filters-scroll {
-            height: calc(100% - 76px);
-            overflow-y: auto;
-            padding: 18px;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-            background: #ffffff;
-        }
-
-        .desktop-results-scroll {
-            max-height: none;
-            overflow: visible;
-            padding-right: 0;
-        }
-
-        .mobile-sheet-trigger {
-            display: inline-flex;
-            position: fixed;
-            left: 50%;
-            bottom: 18px;
-            transform: translateX(-50%);
-            z-index: 130;
-            min-width: 188px;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            border-radius: 999px;
-            border: 1px solid rgba(255,255,255,0.46);
-            background: rgba(255,255,255,0.24);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            box-shadow:
-                0 18px 44px rgba(15, 23, 42, 0.14),
-                inset 0 1px 0 rgba(255,255,255,0.34);
-            padding: 12px 18px;
-            font-size: 13px;
-            font-weight: 900;
+            border-radius: 16px;
+            padding: 12px;
+            background: rgba(248,250,252,0.85);
+            border: 1px solid rgba(226,232,240,0.85);
             color: #0f172a;
+            text-decoration: none;
         }
 
-        body.sheet-open .floating-toolbar,
-        body.sheet-open .street-panel,
-        body.menu-open .floating-toolbar,
-        body.menu-open .street-panel {
+        body.theme-dark .setting-row {
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(255,255,255,0.10);
+            color: white;
+        }
+
+        .setting-select {
+            border-radius: 999px;
+            border: 1px solid rgba(226,232,240,0.95);
+            background: white;
+            padding: 7px 10px;
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 900;
+            outline: none;
+        }
+
+        body.theme-dark .setting-select {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.12);
+            color: white;
+        }
+
+        .menu-backdrop,
+        .mobile-sheet-backdrop {
+            position: fixed;
+            inset: 0;
             opacity: 0;
             pointer-events: none;
+            transition: 0.22s ease;
         }
 
-        body.sheet-open #tourMap,
-        body.sheet-open .map-shell,
-        body.menu-open #tourMap {
-            pointer-events: none;
+        .menu-backdrop {
+            z-index: 97;
+            background: rgba(15, 23, 42, 0.28);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
         }
 
-        body.sheet-open .filters-panel,
-        body.sheet-open .filters-panel *,
-        body.menu-open .mobile-menu-panel,
-        body.menu-open .mobile-menu-panel * {
+        .mobile-sheet-backdrop {
+            z-index: 120;
+            background: rgba(15, 23, 42, 0.24);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        .menu-backdrop.show,
+        .mobile-sheet-backdrop.show {
+            opacity: 1;
             pointer-events: auto;
         }
 
-        body.sheet-open .mobile-sheet-trigger {
-            opacity: 0;
-            pointer-events: none;
-            transform: translate(-50%, 16px);
+        .mobile-menu-panel {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            bottom: 12px;
+            width: min(360px, calc(100vw - 24px));
+            z-index: 98;
+            transform: translateX(calc(100% + 24px));
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+            border-radius: 30px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.80);
+            border: 1px solid rgba(255,255,255,0.76);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            box-shadow: 0 28px 80px rgba(15, 23, 42, 0.20);
         }
 
-        body.sheet-open .app-header,
-        body.sheet-open .selected-tour-card {
+        body.theme-dark .mobile-menu-panel {
+            background: rgba(15,23,42,0.88);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 28px 80px rgba(0,0,0,0.38);
+        }
+
+        .mobile-menu-panel.open {
+            transform: translateX(0);
+        }
+
+        .mobile-menu-link,
+        .mobile-menu-action {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 18px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 950;
+            background: rgba(255,255,255,0.56);
+            border: 1px solid rgba(255,255,255,0.72);
+            transition: 0.18s ease;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .mobile-menu-link:hover,
+        .mobile-menu-action:hover {
+            transform: translateX(-2px);
+            background: rgba(255,255,255,0.76);
+        }
+
+        body.theme-dark .mobile-menu-link,
+        body.theme-dark .mobile-menu-action {
+            color: white;
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        /* ===================== RESPONSIVE DESKTOP LAYOUT FIX ===================== */
+
+        .main-stage {
+            position: relative;
+            max-width: 1680px;
+            height: 100dvh;
+            margin: 0 auto;
+            padding: clamp(82px, 8.6vh, 98px) 16px 18px;
+        }
+
+        .main-grid {
+            display: grid;
+            height: 100%;
+            min-height: 0;
+            gap: 20px;
+            grid-template-columns: minmax(360px, 400px) minmax(0, 1fr);
+        }
+
+        .filters-panel {
+            position: relative;
+            z-index: 40;
+            height: 100%;
+            min-height: 0;
+            border-radius: 32px;
+            overflow: hidden;
+            pointer-events: auto;
+            isolation: isolate;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filters-head-mobile {
+            display: none;
+        }
+
+        .filters-scroll {
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .desktop-filter-intro,
+        .filter-controls-block,
+        .stats-grid,
+        .results-header,
+        #paginationWrap {
+            flex: 0 0 auto;
+        }
+
+        .desktop-results-scroll {
+            flex: 1 1 auto;
+            min-height: 120px;
+            max-height: none;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .map-shell {
+            position: relative;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+            border-radius: 34px;
+            border: 1px solid rgba(255,255,255,0.76);
+            background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.40));
+            box-shadow:
+                0 30px 90px rgba(15, 23, 42, 0.16),
+                inset 0 1px 0 rgba(255,255,255,0.78);
+        }
+
+        body.theme-dark .map-shell {
+            border-color: rgba(255,255,255,0.10);
+            background: rgba(15,23,42,0.72);
+            box-shadow:
+                0 30px 90px rgba(0,0,0,0.36),
+                inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        #tourMap {
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            background: #dbeafe;
+        }
+
+        #tourMap .gm-style {
+            transition: filter .25s ease, background .25s ease;
+        }
+
+        body.theme-dark #tourMap .gm-style {
+            filter: invert(92%) hue-rotate(180deg) saturate(85%) brightness(78%) contrast(112%);
+        }
+
+        body.theme-dark #tourMap .gm-marker-card {
+            filter: invert(100%) hue-rotate(180deg) saturate(115%) brightness(118%) contrast(92%);
+        }
+
+        body.theme-dark #tourMap .gm-control-active,
+        body.theme-dark #tourMap .gmnoprint,
+        body.theme-dark #tourMap .gm-style-cc {
+            filter: invert(100%) hue-rotate(180deg);
+        }
+
+        .map-shell::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            background:
+                radial-gradient(circle at 18% 10%, rgba(255,255,255,0.42), transparent 18%),
+                linear-gradient(180deg, rgba(255,255,255,0.08), transparent 22%);
+        }
+
+        body.theme-dark .map-shell::before {
+            background:
+                radial-gradient(circle at 18% 10%, rgba(255,255,255,0.16), transparent 18%),
+                linear-gradient(180deg, rgba(2,6,23,0.04), transparent 22%);
+        }
+
+        .map-fade-bottom {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 120px;
+            z-index: 2;
+            pointer-events: none;
+            background: linear-gradient(0deg, rgba(248,251,255,0.22), transparent);
+        }
+
+        body.theme-dark .map-fade-bottom {
+            background: linear-gradient(0deg, rgba(2,6,23,0.26), transparent);
+        }
+
+        .floating-toolbar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 7;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-btn {
+            border: 1px solid rgba(255,255,255,0.74);
+            background: rgba(255,255,255,0.54);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-radius: 18px;
+            padding: 12px 14px;
+            font-size: 13px;
+            font-weight: 900;
+            color: #0f172a;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.18s ease;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
+            white-space: nowrap;
+        }
+
+        .toolbar-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,0.72);
+        }
+
+        .toolbar-btn.is-active {
+            box-shadow:
+                0 14px 28px rgba(15, 23, 42, 0.14),
+                0 0 0 4px rgba(34,211,238,0.16);
+        }
+
+        body.theme-dark .toolbar-btn {
+            color: white;
+            background: rgba(15,23,42,0.72);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .selected-tour-card {
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            z-index: 8;
+            width: min(460px, calc(100% - 36px));
+            pointer-events: none;
+        }
+
+        .selected-tour-card:empty {
+            display: none;
+        }
+
+        .tour-action-card {
+            pointer-events: auto;
+        }
+
+        .street-panel {
+            position: absolute;
+            left: 18px;
+            right: 18px;
+            bottom: 18px;
+            z-index: 6;
+            border-radius: 28px;
+            border: 1px solid rgba(255,255,255,0.78);
+            background: rgba(255,255,255,0.68);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+            overflow: hidden;
+            transform: translateY(24px);
             opacity: 0;
             pointer-events: none;
+            transition: 0.28s ease;
+        }
+
+        body.theme-dark .street-panel {
+            background: rgba(15,23,42,0.82);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        .street-panel.open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #streetView {
+            width: 100%;
+            height: 330px;
+            background: #e2e8f0;
+        }
+
+        body.theme-dark #streetView .gm-style {
+            filter: invert(92%) hue-rotate(180deg) saturate(85%) brightness(78%) contrast(112%);
+        }
+
+        .filter-input {
+            width: 100%;
+            border-radius: 1rem;
+            border: 1px solid rgba(255,255,255,0.80);
+            background: rgba(255,255,255,0.82);
+            padding: 0.78rem 1rem;
+            color: #0f172a;
+            outline: none;
+        }
+
+        .filter-input:focus {
+            border-color: rgba(34,211,238,0.85);
+            box-shadow: 0 0 0 4px rgba(34,211,238,0.15);
+        }
+
+        body.theme-dark .filter-input {
+            color: white;
+            background: rgba(2,6,23,0.46);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        body.theme-dark .filter-input::placeholder {
+            color: rgba(255,255,255,0.40);
+        }
+
+        .stats-card {
+            border-radius: 1rem;
+            border: 1px solid rgba(255,255,255,0.80);
+            background: rgba(255,255,255,0.76);
+            padding: 1rem;
+        }
+
+        body.theme-dark .stats-card {
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        body.theme-dark .stats-card p:first-child {
+            color: rgba(255,255,255,0.48) !important;
+        }
+
+        body.theme-dark .stats-card p:last-child {
+            color: white !important;
+        }
+
+        .result-card {
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.10);
+        }
+
+        .result-card.active {
+            border-color: rgba(34, 211, 238, 0.62);
+            box-shadow:
+                0 18px 38px rgba(15, 23, 42, 0.12),
+                0 0 0 2px rgba(34, 211, 238, 0.12);
+        }
+
+        body.theme-dark .result-card {
+            background: rgba(255,255,255,0.07) !important;
+            border-color: rgba(255,255,255,0.10) !important;
+        }
+
+        body.theme-dark .result-card.active {
+            border-color: rgba(103,232,249,0.60) !important;
+            box-shadow:
+                0 18px 38px rgba(0,0,0,0.28),
+                0 0 0 2px rgba(103,232,249,0.10);
+        }
+
+        .gm-marker-card {
+            position: relative;
+            cursor: pointer;
+            transform: translateY(0);
+            transition: transform 0.18s ease;
+        }
+
+        .gm-marker-card:hover {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .gm-marker-card .inner {
+            min-width: 142px;
+            max-width: 186px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.82);
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+            overflow: hidden;
+        }
+
+        .gm-marker-card.is-selected .inner {
+            border-color: rgba(34, 211, 238, 0.75);
+            box-shadow:
+                0 16px 34px rgba(15, 23, 42, 0.18),
+                0 0 0 2px rgba(34, 211, 238, 0.18);
+        }
+
+        .gm-marker-thumb {
+            width: 100%;
+            height: 76px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gm-marker-noimg {
+            width: 100%;
+            height: 76px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, #cffafe, #dbeafe);
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .gm-marker-dot {
+            position: absolute;
+            left: 50%;
+            bottom: -12px;
+            width: 18px;
+            height: 18px;
+            transform: translateX(-50%);
+            border-radius: 999px;
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            border: 3px solid rgba(255,255,255,0.95);
+            box-shadow: 0 10px 22px rgba(59, 130, 246, 0.35);
         }
 
         .gm-marker-actions {
             display: none;
-            gap: 6px;
-            flex-wrap: wrap;
-            padding: 0 10px 10px;
         }
 
-        .gm-marker-card.is-selected .gm-marker-actions {
-            display: flex;
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
         }
 
-        .gm-marker-action-btn {
-            flex: 1 1 calc(50% - 6px);
-            min-height: 34px;
-            border: 1px solid rgba(255,255,255,0.82);
-            background: rgba(255,255,255,0.92);
-            color: #0f172a;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 900;
-            padding: 8px 10px;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.18s ease;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.45);
+            border-radius: 999px;
         }
 
-        .gm-marker-action-btn.primary {
-            background: linear-gradient(135deg, #22d3ee, #3b82f6);
-            color: #082f49;
-            border-color: rgba(255,255,255,0.88);
-        }
-    }
-
-    @media (max-width: 767px) {
-        .app-header {
-            padding: 10px 10px 0;
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
         }
 
-        .header-shell {
-            border-radius: 22px;
-            padding: 10px 10px;
+        @media (min-width: 1536px) {
+            .main-grid {
+                grid-template-columns: minmax(390px, 420px) minmax(0, 1fr);
+            }
         }
 
-        .street-panel {
-            bottom: 84px;
+        @media (min-width: 1280px) and (max-height: 900px) {
+            .main-stage {
+                padding-top: 82px;
+                padding-bottom: 14px;
+            }
+
+            .filters-scroll {
+                padding: 16px !important;
+            }
+
+            .desktop-filter-intro {
+                margin-bottom: 14px !important;
+            }
+
+            .desktop-filter-intro h2 {
+                margin-top: 6px !important;
+                font-size: 1.25rem !important;
+                line-height: 1.15 !important;
+            }
+
+            .desktop-filter-intro p:last-child {
+                display: none;
+            }
+
+            .filter-controls-block {
+                gap: 12px !important;
+            }
+
+            .stats-grid {
+                margin-top: 14px !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                gap: 8px !important;
+            }
+
+            .stats-card {
+                padding: 10px !important;
+            }
+
+            .stats-card p:first-child {
+                font-size: 9px !important;
+                letter-spacing: .14em !important;
+            }
+
+            .stats-card p:last-child {
+                margin-top: 4px !important;
+                font-size: 1.2rem !important;
+            }
+
+            .results-header {
+                margin-top: 14px !important;
+            }
+
+            .results-header h3 {
+                font-size: 1rem !important;
+            }
+
+            .desktop-results-scroll {
+                margin-top: 10px !important;
+                gap: 10px !important;
+            }
+
+            #paginationWrap {
+                margin-top: 12px !important;
+            }
         }
 
-        #streetView {
-            height: 210px;
+        @media (min-width: 1280px) and (max-height: 780px) {
+            .main-stage {
+                padding-top: 76px;
+                padding-bottom: 10px;
+            }
+
+            .brand-glass {
+                min-height: 50px;
+            }
+
+            .brand-mark {
+                width: 38px;
+                height: 38px;
+                border-radius: 14px;
+            }
+
+            .desktop-filter-intro {
+                display: none !important;
+            }
+
+            .stats-grid {
+                display: none !important;
+            }
+
+            .filter-controls-block label {
+                display: none !important;
+            }
+
+            .filter-controls-block {
+                gap: 10px !important;
+            }
+
+            .filter-input {
+                padding-top: 0.68rem;
+                padding-bottom: 0.68rem;
+            }
+
+            .results-header {
+                margin-top: 12px !important;
+            }
+
+            .result-card {
+                border-radius: 22px !important;
+                padding: 12px !important;
+            }
+
+            .result-card h4 {
+                margin-top: 8px !important;
+                font-size: 1rem !important;
+            }
+
+            .result-card .card-actions {
+                margin-top: 10px !important;
+            }
         }
 
-        .gm-marker-card .inner {
-            min-width: 126px;
-            max-width: 170px;
+        @media (max-width: 1279px) {
+            body {
+                overflow: hidden;
+            }
+
+            .app-header {
+                padding: 10px;
+            }
+
+            .brand-glass {
+                min-height: 52px;
+                padding-right: 12px;
+                background: rgba(255,255,255,0.28);
+                border-color: rgba(255,255,255,0.42);
+            }
+
+            body.theme-dark .brand-glass {
+                background: rgba(2,6,23,0.38);
+            }
+
+            .desktop-nav,
+            .desktop-cta,
+            .desktop-settings {
+                display: none !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-flex;
+            }
+
+            .mobile-filter-fab {
+                display: inline-flex;
+            }
+
+            .main-stage {
+                max-width: none;
+                height: 100dvh;
+                padding: 0;
+            }
+
+            .main-grid {
+                display: block;
+                height: 100dvh;
+            }
+
+            .map-shell,
+            #tourMap {
+                height: 100dvh;
+                min-height: 100dvh;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+            }
+
+            .map-shell::before {
+                background:
+                    radial-gradient(circle at 18% 10%, rgba(255,255,255,0.26), transparent 16%),
+                    linear-gradient(180deg, rgba(255,255,255,0.04), transparent 22%);
+            }
+
+            .floating-toolbar {
+                top: 88px;
+                left: 12px;
+                right: 12px;
+                justify-content: flex-start;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-right: 70px;
+            }
+
+            .toolbar-btn {
+                min-width: 46px;
+                width: 46px;
+                height: 46px;
+                padding: 0;
+                border-radius: 16px;
+                flex: 0 0 auto;
+            }
+
+            .toolbar-btn .label {
+                display: none;
+            }
+
+            .selected-tour-card {
+                display: none !important;
+            }
+
+            .street-panel {
+                left: 12px;
+                right: 12px;
+                bottom: 16px;
+                border-radius: 24px;
+            }
+
+            #streetView {
+                height: 230px;
+            }
+
+            .filters-panel {
+                position: fixed;
+                left: 12px;
+                right: 12px;
+                bottom: 12px;
+                z-index: 140;
+                height: var(--sheet-height, 82dvh);
+                transform: translateY(calc(100% + 24px));
+                transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+                border-radius: 30px;
+                overflow: hidden;
+                background: rgba(255,255,255,0.96);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                pointer-events: auto;
+                touch-action: auto;
+                box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24);
+            }
+
+            body.theme-dark .filters-panel {
+                background: rgba(15,23,42,0.96);
+                border-color: rgba(255,255,255,0.10);
+            }
+
+            .filters-panel.sheet-full {
+                transform: translateY(0);
+            }
+
+            .filters-head-mobile {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                position: sticky;
+                top: 0;
+                z-index: 3;
+                padding: 16px 18px 12px;
+                background: rgba(255,255,255,0.96);
+                border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+                touch-action: none;
+            }
+
+            body.theme-dark .filters-head-mobile {
+                background: rgba(15,23,42,0.96);
+                border-color: rgba(255,255,255,0.10);
+            }
+
+            .filters-head-mobile .grabber {
+                position: absolute;
+                left: 50%;
+                top: 8px;
+                transform: translateX(-50%);
+                width: 54px;
+                height: 6px;
+                border-radius: 999px;
+                background: rgba(148,163,184,0.45);
+            }
+
+            .filters-scroll {
+                height: calc(100% - 76px);
+                overflow-y: auto;
+                display: block;
+                padding: 18px;
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
+            }
+
+            .desktop-results-scroll {
+                max-height: none;
+                overflow: visible;
+                padding-right: 0;
+            }
+
+            body.sheet-open .floating-toolbar,
+            body.sheet-open .street-panel,
+            body.menu-open .floating-toolbar,
+            body.menu-open .street-panel {
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            body.sheet-open #tourMap,
+            body.sheet-open .map-shell,
+            body.menu-open #tourMap {
+                pointer-events: none;
+            }
+
+            body.sheet-open .filters-panel,
+            body.sheet-open .filters-panel *,
+            body.menu-open .mobile-menu-panel,
+            body.menu-open .mobile-menu-panel * {
+                pointer-events: auto;
+            }
+
+            body.sheet-open .app-header {
+                opacity: 0;
+                transform: translateY(-12px);
+                pointer-events: none;
+            }
+
+            .gm-marker-actions {
+                display: none;
+                gap: 6px;
+                flex-wrap: wrap;
+                padding: 0 10px 10px;
+            }
+
+            .gm-marker-card.is-selected .gm-marker-actions {
+                display: flex;
+            }
+
+            .gm-marker-action-btn {
+                flex: 1 1 calc(50% - 6px);
+                min-height: 34px;
+                border: 1px solid rgba(255,255,255,0.82);
+                background: rgba(255,255,255,0.92);
+                color: #0f172a;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 900;
+                padding: 8px 10px;
+                cursor: pointer;
+                text-align: center;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                transition: 0.18s ease;
+                box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+            }
+
+            .gm-marker-action-btn.primary {
+                background: linear-gradient(135deg, #22d3ee, #3b82f6);
+                color: #082f49;
+                border-color: rgba(255,255,255,0.88);
+            }
         }
 
-        .gm-marker-thumb,
-        .gm-marker-noimg {
-            height: 64px;
+        @media (max-width: 767px) {
+            .app-header {
+                padding: 10px;
+            }
+
+            .brand-mark {
+                width: 42px;
+                height: 42px;
+                border-radius: 16px;
+            }
+
+            .brand-glass h1 {
+                max-width: 150px;
+            }
+
+            .street-panel {
+                bottom: 14px;
+            }
+
+            #streetView {
+                height: 210px;
+            }
+
+            .gm-marker-card .inner {
+                min-width: 126px;
+                max-width: 170px;
+            }
+
+            .gm-marker-thumb,
+            .gm-marker-noimg {
+                height: 64px;
+            }
         }
-    }
-</style>
- <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
+    </style>
 </head>
 
-{% include 'public/partials/loader_3d_global.html' %}
-
-<script src="{% static 'public/js/loader_3d_global.js' %}"></script>
-
 <body class="min-h-screen antialiased">
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem("twinscopesTheme") || "light";
+            if (savedTheme === "dark") {
+                document.body.classList.add("theme-dark");
+            }
+        })();
+    </script>
+
+    {% include 'public/partials/loader_3d_global.html' %}
+
     <div class="pointer-events-none fixed inset-0 soft-grid opacity-50"></div>
 
     <div id="menuBackdrop" class="menu-backdrop"></div>
@@ -868,51 +1299,89 @@
     <header class="app-header">
         <div class="header-shell">
             <div class="flex items-center justify-between gap-4">
-                <a href="/" class="flex min-w-0 items-center gap-3 text-slate-900 no-underline">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-[20px] border border-white/50 bg-white/28 shadow-glass">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-cyan-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
-                        </svg>
-                    </div>
+                <a href="/explorer/" class="brand-glass text-slate-900 no-underline">
+                    <span class="brand-mark">TS</span>
 
                     <div class="min-w-0">
-                        <p class="truncate text-[11px] font-black uppercase tracking-[0.28em] text-cyan-700">Public Explorer</p>
-                        <h1 class="truncate text-lg font-black tracking-tight text-slate-900 sm:text-xl">
+                        <p class="truncate text-[10px] font-black uppercase tracking-[0.22em] text-cyan-700 dark-text">
+                            Public Explorer
+                        </p>
+                        <h1 class="truncate text-base font-black tracking-tight text-slate-900 dark-title sm:text-lg">
                             Explore Virtual Tours
                         </h1>
                     </div>
                 </a>
 
-                <nav class="desktop-nav hidden items-center gap-2 xl:flex">
-                    <a href="/" class="nav-link">Home</a>
+                <nav class="desktop-nav desktop-nav-shell hidden xl:flex">
+                    <a href="/explorer/" class="nav-link active">Home</a>
                     <a href="/about/" class="nav-link">About</a>
                     <a href="/services/" class="nav-link">Services</a>
                     <a href="/contact/" class="nav-link">Contact</a>
+
+                    {% if request.user.is_authenticated %}
+                        <a href="/dashboard/" class="nav-link">Account</a>
+                    {% else %}
+                        <a href="/accounts/login/?next=/explorer/" class="nav-link">Account</a>
+                    {% endif %}
                 </nav>
 
                 <div class="desktop-cta hidden items-center gap-2 xl:flex">
                     <a href="/contact/" class="cta-chip">Get in touch</a>
+
+                    <button type="button" class="icon-btn settings-trigger desktop-settings" aria-label="Settings">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.89 3.31.877 2.42 2.42a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.89 1.543-.877 3.31-2.42 2.42a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.89-3.31-.877-2.42-2.42a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.89-1.543.877-3.31 2.42-2.42.996.575 2.245.047 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
                 </div>
 
-                <button id="openMenuBtn" type="button" class="mobile-menu-btn xl:hidden">
-                    ☰
+                <button id="openMenuBtn" type="button" class="mobile-menu-btn xl:hidden" aria-label="Open menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+                    </svg>
                 </button>
             </div>
         </div>
     </header>
 
+    <button id="mobileFilterFab" type="button" class="mobile-filter-fab xl:hidden" aria-label="Open filters">
+        <span>🔎</span>
+        <span>Filter</span>
+    </button>
+
+    <div id="settingsMenu" class="settings-menu glass-panel">
+        <p class="mb-3 px-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark-text">Settings</p>
+
+        <div class="space-y-2">
+            <div class="setting-row">
+                <span class="text-sm font-black">Language</span>
+                <select id="languageSelect" class="setting-select">
+                    <option value="fr">FR</option>
+                    <option value="en">EN</option>
+                </select>
+            </div>
+
+            <button id="themeToggleBtn" type="button" class="setting-row w-full">
+                <span class="text-sm font-black">Dark mode</span>
+                <span id="themeLabel" class="text-xs font-black uppercase tracking-[0.12em] text-slate-500 dark-text">Off</span>
+            </button>
+        </div>
+    </div>
+
     <aside id="mobileMenuPanel" class="mobile-menu-panel xl:hidden">
         <div class="flex h-full flex-col">
             <div class="flex items-center justify-between gap-3 border-b border-white/70 px-5 py-5">
                 <div>
-                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Navigation</p>
-                    <h2 class="mt-1 text-xl font-black tracking-tight text-slate-900">Menu</h2>
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">TwinScopes</p>
+                    <h2 class="mt-1 text-xl font-black tracking-tight text-slate-900 dark-title">Menu</h2>
                 </div>
 
                 <button
                     id="closeMenuBtn"
                     type="button"
                     class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/80 text-slate-700"
+                    aria-label="Close menu"
                 >
                     ✕
                 </button>
@@ -920,28 +1389,58 @@
 
             <div class="scrollbar-thin flex-1 overflow-y-auto p-5">
                 <div class="space-y-3">
+                    <button id="openFiltersFromMenuBtn" type="button" class="mobile-menu-action">
+                        <span>Search & filters</span>
+                        <span>🔎</span>
+                    </button>
+
+                    <button id="fitAllFromMenuBtn" type="button" class="mobile-menu-action">
+                        <span>Fit all tours</span>
+                        <span>📍</span>
+                    </button>
+
                     <a href="/" class="mobile-menu-link" data-menu-link>
                         <span>Home</span>
                         <span>→</span>
                     </a>
+
                     <a href="/about/" class="mobile-menu-link" data-menu-link>
                         <span>About</span>
                         <span>→</span>
                     </a>
+
                     <a href="/services/" class="mobile-menu-link" data-menu-link>
                         <span>Services</span>
                         <span>→</span>
                     </a>
+
                     <a href="/contact/" class="mobile-menu-link" data-menu-link>
                         <span>Contact</span>
                         <span>→</span>
                     </a>
+
+                    {% if request.user.is_authenticated %}
+                        <a href="/dashboard/" class="mobile-menu-link" data-menu-link>
+                            <span>Account</span>
+                            <span>→</span>
+                        </a>
+                    {% else %}
+                        <a href="/" class="mobile-menu-link" data-menu-link>
+                            <span>Login</span>
+                            <span>→</span>
+                        </a>
+                    {% endif %}
+
+                    <button id="mobileThemeToggleBtn" type="button" class="mobile-menu-action">
+                        <span>Dark mode</span>
+                        <span id="mobileThemeLabel">Off</span>
+                    </button>
                 </div>
 
                 <div class="mt-6 rounded-[28px] border border-white/80 bg-white/64 p-5">
                     <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Explorer</p>
-                    <h3 class="mt-2 text-xl font-black tracking-tight text-slate-900">Find tours beautifully</h3>
-                    <p class="mt-2 text-sm leading-6 text-slate-600">
+                    <h3 class="mt-2 text-xl font-black tracking-tight text-slate-900 dark-title">Find tours beautifully</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-600 dark-text">
                         Search tours, preview maps, open Street View, and launch immersive 360 visits.
                     </p>
                 </div>
@@ -950,14 +1449,15 @@
     </aside>
 
     <main id="home" class="main-stage">
-        <div class="main-grid xl:grid xl:grid-cols-[420px_minmax(0,1fr)]">
+        <div class="main-grid xl:grid">
             <aside id="filtersPanel" class="filters-panel glass-panel shadow-premium xl:p-0">
                 <div class="filters-head-mobile">
                     <div class="grabber"></div>
                     <div>
                         <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Search & results</p>
-                        <h2 class="mt-1 text-lg font-black tracking-tight text-slate-900">Find the right tour</h2>
+                        <h2 class="mt-1 text-lg font-black tracking-tight text-slate-900 dark-title">Find the right tour</h2>
                     </div>
+
                     <button
                         id="closeMobileSheetBtn"
                         type="button"
@@ -967,36 +1467,33 @@
                     </button>
                 </div>
 
-                <div class="filters-scroll scrollbar-thin p-5 lg:p-6">
-                    <div class="mb-5 hidden xl:block">
+                <div class="filters-scroll scrollbar-thin p-5 lg:p-5 2xl:p-6">
+                    <div class="desktop-filter-intro mb-5 hidden xl:block">
                         <p class="text-xs font-black uppercase tracking-[0.26em] text-cyan-700">Search & discovery</p>
-                        <h2 class="mt-2 text-2xl font-black tracking-tight text-slate-900">
+                        <h2 class="mt-2 text-2xl font-black tracking-tight text-slate-900 dark-title">
                             Find the right tour
                         </h2>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">
+                        <p class="mt-2 text-sm leading-6 text-slate-600 dark-text">
                             Search by place, category, city, product keywords, hotspot labels, or tour name.
                         </p>
                     </div>
 
-                    <div class="space-y-4">
+                    <div class="filter-controls-block space-y-4">
                         <div>
-                            <label class="mb-2 block text-sm font-extrabold text-slate-800">Keyword</label>
+                            <label class="mb-2 block text-sm font-extrabold text-slate-800 dark-title">Keyword</label>
                             <input
                                 id="searchInput"
                                 type="text"
                                 value="{{ selected_q }}"
                                 placeholder="Apartment, restaurant, product, wedding hall..."
-                                class="w-full rounded-2xl border border-white/80 bg-white/82 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-400/15"
+                                class="filter-input placeholder:text-slate-400"
                             >
                         </div>
 
-                        <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                             <div>
-                                <label class="mb-2 block text-sm font-extrabold text-slate-800">Category</label>
-                                <select
-                                    id="categoryFilter"
-                                    class="w-full rounded-2xl border border-white/80 bg-white/82 px-4 py-3 text-slate-900 focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-400/15"
-                                >
+                                <label class="mb-2 block text-sm font-extrabold text-slate-800 dark-title">Category</label>
+                                <select id="categoryFilter" class="filter-input">
                                     <option value="">All categories</option>
                                     {% for value, label in category_choices %}
                                         <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
@@ -1005,11 +1502,8 @@
                             </div>
 
                             <div>
-                                <label class="mb-2 block text-sm font-extrabold text-slate-800">City</label>
-                                <select
-                                    id="cityFilter"
-                                    class="w-full rounded-2xl border border-white/80 bg-white/82 px-4 py-3 text-slate-900 focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-400/15"
-                                >
+                                <label class="mb-2 block text-sm font-extrabold text-slate-800 dark-title">City</label>
+                                <select id="cityFilter" class="filter-input">
                                     <option value="">All cities</option>
                                     {% for city_name in available_cities %}
                                         <option value="{{ city_name }}" {% if selected_city == city_name %}selected{% endif %}>{{ city_name }}</option>
@@ -1018,54 +1512,56 @@
                             </div>
                         </div>
 
-                        <div class="flex flex-wrap gap-3 pt-1">
+                        <div class="grid grid-cols-2 gap-3 pt-1">
                             <button
                                 id="resetFiltersBtn"
                                 type="button"
                                 class="inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/84 px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-white"
                             >
-                                Reset filters
+                                Reset
                             </button>
 
                             <button
                                 id="fitAllBtn"
                                 type="button"
-                                class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
+                                class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
                             >
-                                Fit all tours
+                                Fit all
                             </button>
                         </div>
                     </div>
 
-                    <div class="mt-6 grid gap-3 sm:grid-cols-3 xl:grid">
-                        <div class="rounded-2xl border border-white/80 bg-white/76 p-4">
+                    <div class="stats-grid mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-3">
+                        <div class="stats-card">
                             <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Tours</p>
                             <p id="statTours" class="mt-2 text-2xl font-black tracking-tight text-slate-900">0</p>
                         </div>
-                        <div class="rounded-2xl border border-white/80 bg-white/76 p-4">
+
+                        <div class="stats-card">
                             <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Cities</p>
                             <p id="statCities" class="mt-2 text-2xl font-black tracking-tight text-slate-900">0</p>
                         </div>
-                        <div class="rounded-2xl border border-white/80 bg-white/76 p-4">
+
+                        <div class="stats-card">
                             <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Filtered</p>
                             <p id="statFiltered" class="mt-2 text-2xl font-black tracking-tight text-slate-900">0</p>
                         </div>
                     </div>
 
-                    <div class="mt-6 flex items-center justify-between gap-3">
+                    <div class="results-header mt-5 flex items-center justify-between gap-3">
                         <div>
-                            <h3 class="text-lg font-black tracking-tight text-slate-900">Results</h3>
-                            <p id="resultsLabel" class="text-sm text-slate-600">Loading tours...</p>
+                            <h3 class="text-lg font-black tracking-tight text-slate-900 dark-title">Results</h3>
+                            <p id="resultsLabel" class="text-sm text-slate-600 dark-text">Loading tours...</p>
                         </div>
 
-                        <div class="rounded-full border border-white/80 bg-white/82 px-3 py-2 text-xs font-black text-slate-700">
-                            Smart map view
+                        <div class="rounded-full border border-white/80 bg-white/82 px-3 py-2 text-xs font-black text-slate-700 dark-text">
+                            Smart map
                         </div>
                     </div>
 
                     <div id="resultsList" class="desktop-results-scroll scrollbar-thin mt-4 flex flex-col gap-4"></div>
 
-                    <div id="paginationWrap" class="mt-5 flex items-center justify-between gap-3">
+                    <div id="paginationWrap" class="mt-4 flex items-center justify-between gap-3">
                         <button
                             id="prevPageBtn"
                             type="button"
@@ -1074,7 +1570,7 @@
                             Previous
                         </button>
 
-                        <div id="paginationInfo" class="text-sm font-bold text-slate-600">Page 1</div>
+                        <div id="paginationInfo" class="text-sm font-bold text-slate-600 dark-text">Page 1</div>
 
                         <button
                             id="nextPageBtn"
@@ -1087,7 +1583,7 @@
                 </div>
             </aside>
 
-            <section class="relative min-h-[100dvh] xl:min-h-[760px]">
+            <section class="relative min-h-0">
                 <div class="map-shell">
                     <div id="tourMap"></div>
                     <div class="map-fade-bottom"></div>
@@ -1097,14 +1593,17 @@
                             <span>🧭</span>
                             <span class="label">3D</span>
                         </button>
+
                         <button id="resetCameraBtn" type="button" class="toolbar-btn" title="Reset camera">
                             <span>✨</span>
                             <span class="label">Reset</span>
                         </button>
+
                         <button id="fitVisibleBtn" type="button" class="toolbar-btn" title="Fit visible">
                             <span>📍</span>
                             <span class="label">Fit visible</span>
                         </button>
+
                         <button id="closeStreetBtnTop" type="button" class="toolbar-btn hidden" title="Close Street View">
                             <span>🛣️</span>
                             <span class="label">Close</span>
@@ -1117,7 +1616,7 @@
                         <div class="flex items-center justify-between gap-3 border-b border-white/70 px-5 py-4">
                             <div>
                                 <p class="text-xs font-black uppercase tracking-[0.24em] text-cyan-700">Google Street View</p>
-                                <h3 id="streetPanelTitle" class="mt-1 text-lg font-black tracking-tight text-slate-900">Street View</h3>
+                                <h3 id="streetPanelTitle" class="mt-1 text-lg font-black tracking-tight text-slate-900 dark-title">Street View</h3>
                             </div>
 
                             <button
@@ -1132,7 +1631,7 @@
                         <div id="streetView"></div>
 
                         <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-                            <p id="streetPanelMessage" class="text-sm font-semibold text-slate-600">
+                            <p id="streetPanelMessage" class="text-sm font-semibold text-slate-600 dark-text">
                                 Move around the area in Street View.
                             </p>
 
@@ -1150,892 +1649,965 @@
                 </div>
             </section>
         </div>
-
-       
     </main>
-
-    <button id="openMobileSheetBtn" type="button" class="mobile-sheet-trigger xl:hidden">
-        <span>🔎</span>
-        <span>Open filters</span>
-    </button>
 
     {{ tours_map_data|json_script:"tours-map-data" }}
 
-   <script>
-    const TOURS_DATA = JSON.parse(document.getElementById("tours-map-data").textContent || "[]");
+    <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
 
-    const state = {
-        allTours: TOURS_DATA,
-        filteredTours: [],
-        currentPage: 1,
-        perPage: window.innerWidth < 768 ? 4 : 6,
-        selectedId: null,
-        map: null,
-        markers: new Map(),
-        panorama: null,
-        streetService: null,
-        streetViewOpen: false,
-        is3D: true,
-        MarkerLib: null,
-        mobileSheetState: "closed",
-        mobileMenuOpen: false,
-        markerRenderLimitDesktop: 220,
-        markerRenderLimitMobile: 90,
-    };
+    <script>
+        const TOURS_DATA = JSON.parse(document.getElementById("tours-map-data").textContent || "[]");
 
-    const dom = {
-        searchInput: document.getElementById("searchInput"),
-        categoryFilter: document.getElementById("categoryFilter"),
-        cityFilter: document.getElementById("cityFilter"),
-        resetFiltersBtn: document.getElementById("resetFiltersBtn"),
-        fitAllBtn: document.getElementById("fitAllBtn"),
-        fitVisibleBtn: document.getElementById("fitVisibleBtn"),
-        resetCameraBtn: document.getElementById("resetCameraBtn"),
-        toggle3DBtn: document.getElementById("toggle3DBtn"),
-        closeStreetBtnTop: document.getElementById("closeStreetBtnTop"),
+        const state = {
+            allTours: TOURS_DATA,
+            filteredTours: [],
+            currentPage: 1,
+            perPage: window.innerWidth < 768 ? 4 : 6,
+            selectedId: null,
+            map: null,
+            markers: new Map(),
+            panorama: null,
+            streetService: null,
+            streetViewOpen: false,
+            is3D: true,
+            MarkerLib: null,
+            mobileSheetState: "closed",
+            mobileMenuOpen: false,
+            markerRenderLimitDesktop: 220,
+            markerRenderLimitMobile: 90,
+        };
 
-        resultsList: document.getElementById("resultsList"),
-        resultsLabel: document.getElementById("resultsLabel"),
-        paginationInfo: document.getElementById("paginationInfo"),
-        prevPageBtn: document.getElementById("prevPageBtn"),
-        nextPageBtn: document.getElementById("nextPageBtn"),
+        const dom = {
+            searchInput: document.getElementById("searchInput"),
+            categoryFilter: document.getElementById("categoryFilter"),
+            cityFilter: document.getElementById("cityFilter"),
+            resetFiltersBtn: document.getElementById("resetFiltersBtn"),
+            fitAllBtn: document.getElementById("fitAllBtn"),
+            fitVisibleBtn: document.getElementById("fitVisibleBtn"),
+            resetCameraBtn: document.getElementById("resetCameraBtn"),
+            toggle3DBtn: document.getElementById("toggle3DBtn"),
+            closeStreetBtnTop: document.getElementById("closeStreetBtnTop"),
 
-        selectedTourCard: document.getElementById("selectedTourCard"),
+            resultsList: document.getElementById("resultsList"),
+            resultsLabel: document.getElementById("resultsLabel"),
+            paginationInfo: document.getElementById("paginationInfo"),
+            prevPageBtn: document.getElementById("prevPageBtn"),
+            nextPageBtn: document.getElementById("nextPageBtn"),
 
-        streetPanel: document.getElementById("streetPanel"),
-        streetPanelTitle: document.getElementById("streetPanelTitle"),
-        streetPanelMessage: document.getElementById("streetPanelMessage"),
-        streetView: document.getElementById("streetView"),
-        closeStreetBtn: document.getElementById("closeStreetBtn"),
-        openPreviewFromStreetBtn: document.getElementById("openPreviewFromStreetBtn"),
+            selectedTourCard: document.getElementById("selectedTourCard"),
 
-        statTours: document.getElementById("statTours"),
-        statCities: document.getElementById("statCities"),
-        statFiltered: document.getElementById("statFiltered"),
+            streetPanel: document.getElementById("streetPanel"),
+            streetPanelTitle: document.getElementById("streetPanelTitle"),
+            streetPanelMessage: document.getElementById("streetPanelMessage"),
+            streetView: document.getElementById("streetView"),
+            closeStreetBtn: document.getElementById("closeStreetBtn"),
+            openPreviewFromStreetBtn: document.getElementById("openPreviewFromStreetBtn"),
 
-        filtersPanel: document.getElementById("filtersPanel"),
-        mobileSheetBackdrop: document.getElementById("mobileSheetBackdrop"),
-        openMobileSheetBtn: document.getElementById("openMobileSheetBtn"),
-        closeMobileSheetBtn: document.getElementById("closeMobileSheetBtn"),
+            statTours: document.getElementById("statTours"),
+            statCities: document.getElementById("statCities"),
+            statFiltered: document.getElementById("statFiltered"),
 
-        openMenuBtn: document.getElementById("openMenuBtn"),
-        closeMenuBtn: document.getElementById("closeMenuBtn"),
-        menuBackdrop: document.getElementById("menuBackdrop"),
-        mobileMenuPanel: document.getElementById("mobileMenuPanel"),
-    };
+            filtersPanel: document.getElementById("filtersPanel"),
+            mobileSheetBackdrop: document.getElementById("mobileSheetBackdrop"),
+            closeMobileSheetBtn: document.getElementById("closeMobileSheetBtn"),
+            mobileFilterFab: document.getElementById("mobileFilterFab"),
 
-    function isMobileLayout() {
-        return window.innerWidth < 1280;
-    }
+            openMenuBtn: document.getElementById("openMenuBtn"),
+            closeMenuBtn: document.getElementById("closeMenuBtn"),
+            menuBackdrop: document.getElementById("menuBackdrop"),
+            mobileMenuPanel: document.getElementById("mobileMenuPanel"),
 
-    function escapeHtml(value) {
-        return String(value || "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
+            openFiltersFromMenuBtn: document.getElementById("openFiltersFromMenuBtn"),
+            fitAllFromMenuBtn: document.getElementById("fitAllFromMenuBtn"),
 
-    function getOrgInitials(name) {
-        const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-        return parts.slice(0, 2).map(p => p[0].toUpperCase()).join("") || "VT";
-    }
+            settingsMenu: document.getElementById("settingsMenu"),
+            settingsTriggers: Array.from(document.querySelectorAll(".settings-trigger")),
+            themeToggleBtn: document.getElementById("themeToggleBtn"),
+            mobileThemeToggleBtn: document.getElementById("mobileThemeToggleBtn"),
+            themeLabel: document.getElementById("themeLabel"),
+            mobileThemeLabel: document.getElementById("mobileThemeLabel"),
+            languageSelect: document.getElementById("languageSelect"),
+        };
 
-    function formatPrice(value) {
-        if (value === null || value === undefined || value === "") return "On request";
-        const num = Number(value);
-        if (Number.isNaN(num)) return value;
-        return new Intl.NumberFormat("fr-FR", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2
-        }).format(num);
-    }
-
-    // ✅ CORRECTION : ouvre maintenant dans le même onglet
-    function openTourPreview(url) {
-        if (!url) return;
-        window.location.href = url;
-    }
-
-    function getTourById(id) {
-        return state.allTours.find(t => String(t.id) === String(id)) || null;
-    }
-
-    function syncResponsiveValues() {
-        state.perPage = window.innerWidth < 768 ? 4 : 6;
-    }
-
-    function syncBodyLock() {
-        const sheetOpen = isMobileLayout() && state.mobileSheetState !== "closed";
-        const menuOpen = isMobileLayout() && state.mobileMenuOpen;
-
-        document.body.classList.toggle("overflow-hidden", sheetOpen || menuOpen);
-        document.body.classList.toggle("sheet-open", sheetOpen);
-        document.body.classList.toggle("menu-open", menuOpen);
-    }
-
-    function updateMobileSheetMetrics() {
-        if (!dom.filtersPanel || !isMobileLayout()) return;
-
-        const panelHeight = Math.min(window.innerHeight * 0.82, 760);
-        const halfVisible = Math.min(window.innerHeight * 0.46, 400);
-        const halfTranslate = Math.max(panelHeight - halfVisible, 0);
-
-        dom.filtersPanel.style.setProperty("--sheet-height", `${panelHeight}px`);
-        dom.filtersPanel.style.setProperty("--sheet-half", `${halfTranslate}px`);
-    }
-
-    function updateMobileSheetTriggerLabel() {
-        if (!dom.openMobileSheetBtn) return;
-        const label = dom.openMobileSheetBtn.querySelector("span:last-child");
-        if (!label) return;
-
-        if (state.mobileSheetState === "closed") {
-            label.textContent = "Open filters";
-        } else if (state.mobileSheetState === "half") {
-            label.textContent = "Expand filters";
-        } else {
-            label.textContent = "Close filters";
-        }
-    }
-
-    function setMobileMenuOpen(isOpen) {
-        if (!isMobileLayout()) return;
-
-        state.mobileMenuOpen = isOpen;
-        dom.menuBackdrop.classList.toggle("show", isOpen);
-        dom.mobileMenuPanel.classList.toggle("open", isOpen);
-
-        if (isOpen) {
-            state.mobileSheetState = "closed";
-            dom.filtersPanel.classList.remove("sheet-half", "sheet-full");
-            dom.mobileSheetBackdrop.classList.remove("show");
+        function isMobileLayout() {
+            return window.innerWidth < 1280;
         }
 
-        syncBodyLock();
-    }
-
-    function setMobileSheetState(nextState) {
-        if (!isMobileLayout()) return;
-
-        if (nextState !== "closed" && state.mobileMenuOpen) {
-            setMobileMenuOpen(false);
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
 
-        state.mobileSheetState = nextState;
-        dom.filtersPanel.classList.remove("sheet-half", "sheet-full");
-
-        if (nextState === "half") {
-            dom.filtersPanel.classList.add("sheet-half");
-        } else if (nextState === "full") {
-            dom.filtersPanel.classList.add("sheet-full");
+        function getOrgInitials(name) {
+            const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+            return parts.slice(0, 2).map(p => p[0].toUpperCase()).join("") || "VT";
         }
 
-        dom.mobileSheetBackdrop.classList.toggle("show", nextState !== "closed");
-        updateMobileSheetTriggerLabel();
-        syncBodyLock();
-    }
+        function formatPrice(value) {
+            if (value === null || value === undefined || value === "") return "On request";
 
-    function openMobileSheet() {
-        setMobileSheetState("full");
-    }
+            const num = Number(value);
 
-    function expandMobileSheet() {
-        setMobileSheetState("full");
-    }
+            if (Number.isNaN(num)) return value;
 
-    function closeMobileSheet() {
-        setMobileSheetState("closed");
-    }
-
-    function maybeCloseMobileSheet() {
-        if (isMobileLayout()) {
-            closeMobileSheet();
+            return new Intl.NumberFormat("fr-FR", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }).format(num);
         }
-    }
 
-    function buildFilteredTours() {
-        const q = (dom.searchInput.value || "").trim().toLowerCase();
-        const category = dom.categoryFilter.value || "";
-        const city = dom.cityFilter.value || "";
+        function openTourPreview(url) {
+            if (!url) return;
+            window.location.href = url;
+        }
 
-        const filtered = state.allTours.filter(tour => {
-            const blob = String(tour.search_blob || "").toLowerCase();
-            const matchesQ = !q || blob.includes(q);
-            const matchesCategory = !category || tour.category === category;
-            const matchesCity = !city || tour.city === city;
-            return matchesQ && matchesCategory && matchesCity;
-        });
+        function getTourById(id) {
+            return state.allTours.find(t => String(t.id) === String(id)) || null;
+        }
 
-        state.filteredTours = filtered;
-        dom.statFiltered.textContent = filtered.length;
-        dom.resultsLabel.textContent = `${filtered.length} tour(s) found`;
-        return filtered;
-    }
+        function applyGoogleMapTheme(dark) {
+            if (!state.map) return;
 
-    function renderStats() {
-        const tourCount = state.allTours.length;
-        const cityCount = new Set(
-            state.allTours.map(t => t.city).filter(Boolean)
-        ).size;
+            try {
+                state.map.setOptions({
+                    backgroundColor: dark ? "#020617" : "#dbeafe",
+                });
+            } catch (error) {
+                console.warn("Google Map theme background could not be updated.", error);
+            }
+        }
 
-        dom.statTours.textContent = tourCount;
-        dom.statCities.textContent = cityCount;
-    }
+        function applyTheme(mode) {
+            const dark = mode === "dark";
 
-    function buildResultCard(tour) {
-        const isActive = String(state.selectedId) === String(tour.id);
+            document.body.classList.toggle("theme-dark", dark);
 
-        return `
-            <article class="result-card ${isActive ? 'active' : ''} rounded-[28px] border border-white/80 bg-white/78 p-4 shadow-glass" data-tour-id="${tour.id}">
-                <div class="grid gap-4 sm:grid-cols-[120px_minmax(0,1fr)]">
-                    <div class="overflow-hidden rounded-2xl border border-white/80 bg-slate-100">
-                        ${
-                            tour.thumbnail
-                                ? `<img src="${tour.thumbnail}" alt="${escapeHtml(tour.title)}" class="h-[120px] w-full object-cover sm:h-full">`
-                                : `<div class="flex h-[120px] items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-sm font-black text-slate-700">Virtual Tour</div>`
-                        }
+            if (dom.themeLabel) {
+                dom.themeLabel.textContent = dark ? "On" : "Off";
+            }
+
+            if (dom.mobileThemeLabel) {
+                dom.mobileThemeLabel.textContent = dark ? "On" : "Off";
+            }
+
+            localStorage.setItem("twinscopesTheme", dark ? "dark" : "light");
+
+            applyGoogleMapTheme(dark);
+        }
+
+        function toggleTheme() {
+            const isDark = document.body.classList.contains("theme-dark");
+            applyTheme(isDark ? "light" : "dark");
+        }
+
+        function syncResponsiveValues() {
+            state.perPage = window.innerWidth < 768 ? 4 : 6;
+        }
+
+        function syncBodyLock() {
+            const sheetOpen = isMobileLayout() && state.mobileSheetState !== "closed";
+            const menuOpen = isMobileLayout() && state.mobileMenuOpen;
+
+            document.body.classList.toggle("overflow-hidden", sheetOpen || menuOpen);
+            document.body.classList.toggle("sheet-open", sheetOpen);
+            document.body.classList.toggle("menu-open", menuOpen);
+        }
+
+        function updateMobileSheetMetrics() {
+            if (!dom.filtersPanel || !isMobileLayout()) return;
+
+            const panelHeight = Math.min(window.innerHeight * 0.82, 760);
+            dom.filtersPanel.style.setProperty("--sheet-height", `${panelHeight}px`);
+        }
+
+        function setMobileMenuOpen(isOpen) {
+            if (!isMobileLayout()) return;
+
+            state.mobileMenuOpen = isOpen;
+            dom.menuBackdrop?.classList.toggle("show", isOpen);
+            dom.mobileMenuPanel?.classList.toggle("open", isOpen);
+
+            if (isOpen) {
+                state.mobileSheetState = "closed";
+                dom.filtersPanel?.classList.remove("sheet-full");
+                dom.mobileSheetBackdrop?.classList.remove("show");
+                dom.settingsMenu?.classList.remove("open");
+            }
+
+            syncBodyLock();
+        }
+
+        function setMobileSheetState(nextState) {
+            if (!isMobileLayout()) return;
+
+            if (nextState !== "closed" && state.mobileMenuOpen) {
+                setMobileMenuOpen(false);
+            }
+
+            state.mobileSheetState = nextState;
+            dom.filtersPanel?.classList.remove("sheet-full");
+
+            if (nextState === "full") {
+                dom.filtersPanel?.classList.add("sheet-full");
+            }
+
+            dom.mobileSheetBackdrop?.classList.toggle("show", nextState !== "closed");
+            syncBodyLock();
+        }
+
+        function openMobileSheet() {
+            setMobileSheetState("full");
+        }
+
+        function closeMobileSheet() {
+            setMobileSheetState("closed");
+        }
+
+        function maybeCloseMobileSheet() {
+            if (isMobileLayout()) {
+                closeMobileSheet();
+            }
+        }
+
+        function buildFilteredTours() {
+            const q = (dom.searchInput?.value || "").trim().toLowerCase();
+            const category = dom.categoryFilter?.value || "";
+            const city = dom.cityFilter?.value || "";
+
+            const filtered = state.allTours.filter(tour => {
+                const blob = String(tour.search_blob || "").toLowerCase();
+                const matchesQ = !q || blob.includes(q);
+                const matchesCategory = !category || tour.category === category;
+                const matchesCity = !city || tour.city === city;
+                return matchesQ && matchesCategory && matchesCity;
+            });
+
+            state.filteredTours = filtered;
+
+            if (dom.statFiltered) {
+                dom.statFiltered.textContent = filtered.length;
+            }
+
+            if (dom.resultsLabel) {
+                dom.resultsLabel.textContent = `${filtered.length} tour(s) found`;
+            }
+
+            return filtered;
+        }
+
+        function renderStats() {
+            const tourCount = state.allTours.length;
+            const cityCount = new Set(
+                state.allTours.map(t => t.city).filter(Boolean)
+            ).size;
+
+            if (dom.statTours) dom.statTours.textContent = tourCount;
+            if (dom.statCities) dom.statCities.textContent = cityCount;
+        }
+
+        function buildResultCard(tour) {
+            const isActive = String(state.selectedId) === String(tour.id);
+
+            return `
+                <article class="result-card ${isActive ? 'active' : ''} rounded-[28px] border border-white/80 bg-white/78 p-4 shadow-glass" data-tour-id="${tour.id}">
+                    <div class="grid gap-4 sm:grid-cols-[120px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[112px_minmax(0,1fr)]">
+                        <div class="overflow-hidden rounded-2xl border border-white/80 bg-slate-100">
+                            ${
+                                tour.thumbnail
+                                    ? `<img src="${tour.thumbnail}" alt="${escapeHtml(tour.title)}" class="h-[120px] w-full object-cover xl:h-[118px] 2xl:h-full">`
+                                    : `<div class="flex h-[120px] items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-sm font-black text-slate-700">Virtual Tour</div>`
+                            }
+                        </div>
+
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="inline-flex items-center rounded-full bg-cyan-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-cyan-800">
+                                    ${escapeHtml(tour.category_label)}
+                                </span>
+                            </div>
+
+                            <h4 class="mt-3 truncate text-lg font-black tracking-tight text-slate-900 dark-title">${escapeHtml(tour.title)}</h4>
+                            <p class="mt-1 truncate text-sm font-bold text-slate-600 dark-text">${escapeHtml(tour.organization_name)} · ${escapeHtml(tour.place_name)}</p>
+                            <p class="mt-1 text-sm text-slate-500 dark-muted">${escapeHtml(tour.city || "Unknown city")}</p>
+
+                            <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600 dark-text">
+                                <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${tour.scene_count} scenes</span>
+                                <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${tour.hotspot_count} hotspots</span>
+                                <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${formatPrice(tour.price)}</span>
+                            </div>
+
+                            <div class="card-actions mt-4 flex flex-wrap gap-2">
+                                <button type="button" class="focus-tour-btn inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-2.5 text-sm font-black text-slate-700 transition hover:bg-white" data-tour-id="${tour.id}">
+                                    Map
+                                </button>
+
+                                <button type="button" class="street-tour-btn inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-2.5 text-sm font-black text-slate-700 transition hover:bg-white" data-tour-id="${tour.id}">
+                                    Street
+                                </button>
+
+                                <button type="button" class="preview-tour-btn inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110" data-preview-url="${tour.preview_url}">
+                                    360 Tour
+                                </button>
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="inline-flex items-center rounded-full bg-cyan-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-cyan-800">
-                                ${escapeHtml(tour.category_label)}
-                            </span>
-                        </div>
-
-                        <h4 class="mt-3 truncate text-lg font-black tracking-tight text-slate-900">${escapeHtml(tour.title)}</h4>
-                        <p class="mt-1 text-sm font-bold text-slate-600">${escapeHtml(tour.organization_name)} · ${escapeHtml(tour.place_name)}</p>
-                        <p class="mt-1 text-sm text-slate-500">${escapeHtml(tour.city || "Unknown city")}</p>
-
-                        <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
-                            <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${tour.scene_count} scenes</span>
-                            <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${tour.hotspot_count} hotspots</span>
-                            <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${formatPrice(tour.price)}</span>
-                        </div>
-
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <button type="button" class="focus-tour-btn inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-2.5 text-sm font-black text-slate-700 transition hover:bg-white" data-tour-id="${tour.id}">
-                                Show on map
-                            </button>
-                            <button type="button" class="street-tour-btn inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-2.5 text-sm font-black text-slate-700 transition hover:bg-white" data-tour-id="${tour.id}">
-                                Street View
-                            </button>
-                            <button type="button" class="preview-tour-btn inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110" data-preview-url="${tour.preview_url}">
-                                Start 360 tour
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </article>
-        `;
-    }
-
-    function renderResults() {
-        const filtered = buildFilteredTours();
-        const totalPages = Math.max(1, Math.ceil(filtered.length / state.perPage));
-
-        if (state.currentPage > totalPages) {
-            state.currentPage = totalPages;
+                </article>
+            `;
         }
 
-        const start = (state.currentPage - 1) * state.perPage;
-        const pageItems = filtered.slice(start, start + state.perPage);
+        function renderResults() {
+            const filtered = buildFilteredTours();
+            const totalPages = Math.max(1, Math.ceil(filtered.length / state.perPage));
 
-        if (!pageItems.length) {
-            dom.resultsList.innerHTML = `
-                <div class="rounded-[28px] border border-white/80 bg-white/78 p-6 text-center shadow-glass">
-                    <p class="text-lg font-black text-slate-900">No tours found</p>
-                    <p class="mt-2 text-sm text-slate-600">Try another keyword, city, or category.</p>
+            if (state.currentPage > totalPages) {
+                state.currentPage = totalPages;
+            }
+
+            const start = (state.currentPage - 1) * state.perPage;
+            const pageItems = filtered.slice(start, start + state.perPage);
+
+            if (!pageItems.length) {
+                dom.resultsList.innerHTML = `
+                    <div class="rounded-[28px] border border-white/80 bg-white/78 p-6 text-center shadow-glass">
+                        <p class="text-lg font-black text-slate-900 dark-title">No tours found</p>
+                        <p class="mt-2 text-sm text-slate-600 dark-text">Try another keyword, city, or category.</p>
+                    </div>
+                `;
+            } else {
+                dom.resultsList.innerHTML = pageItems.map(buildResultCard).join("");
+            }
+
+            dom.paginationInfo.textContent = `Page ${state.currentPage} / ${totalPages}`;
+            dom.prevPageBtn.disabled = state.currentPage <= 1;
+            dom.nextPageBtn.disabled = state.currentPage >= totalPages;
+
+            dom.prevPageBtn.classList.toggle("opacity-50", state.currentPage <= 1);
+            dom.nextPageBtn.classList.toggle("opacity-50", state.currentPage >= totalPages);
+
+            const visibleSelected = filtered.some(t => String(t.id) === String(state.selectedId));
+
+            if (!visibleSelected) {
+                const first = filtered[0] || null;
+                state.selectedId = first ? first.id : null;
+                renderSelectedTourCard();
+            }
+
+            attachResultEvents();
+            updateMarkerSelectionStyles();
+            renderMarkersForCurrentViewport();
+        }
+
+        function attachResultEvents() {
+            document.querySelectorAll(".focus-tour-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const tour = getTourById(btn.dataset.tourId);
+
+                    if (tour) {
+                        focusTour(tour, true);
+                        maybeCloseMobileSheet();
+                    }
+                });
+            });
+
+            document.querySelectorAll(".street-tour-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const tour = getTourById(btn.dataset.tourId);
+
+                    if (tour) {
+                        focusTour(tour, true);
+                        openStreetViewForTour(tour);
+                        maybeCloseMobileSheet();
+                    }
+                });
+            });
+
+            document.querySelectorAll(".preview-tour-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    openTourPreview(btn.dataset.previewUrl);
+                });
+            });
+
+            document.querySelectorAll(".result-card").forEach(card => {
+                card.addEventListener("click", (e) => {
+                    if (
+                        e.target.closest(".focus-tour-btn") ||
+                        e.target.closest(".street-tour-btn") ||
+                        e.target.closest(".preview-tour-btn") ||
+                        e.target.closest("a")
+                    ) {
+                        return;
+                    }
+
+                    const tour = getTourById(card.dataset.tourId);
+
+                    if (tour) {
+                        focusTour(tour, true);
+                        maybeCloseMobileSheet();
+                    }
+                });
+            });
+        }
+
+        function renderSelectedTourCard() {
+            const tour = getTourById(state.selectedId);
+
+            if (!tour || isMobileLayout()) {
+                dom.selectedTourCard.innerHTML = "";
+                return;
+            }
+
+            dom.selectedTourCard.innerHTML = `
+                <div class="tour-action-card glass-panel rounded-[28px] p-4 shadow-premium">
+                    <div class="grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
+                        <div class="overflow-hidden rounded-2xl border border-white/80 bg-slate-100">
+                            ${
+                                tour.thumbnail
+                                    ? `<img src="${tour.thumbnail}" alt="${escapeHtml(tour.title)}" class="h-[112px] w-full object-cover">`
+                                    : `<div class="flex h-[112px] items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-sm font-black text-slate-700">Tour</div>`
+                            }
+                        </div>
+
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-sm font-black text-slate-950">
+                                    ${escapeHtml(getOrgInitials(tour.organization_name))}
+                                </div>
+
+                                <div class="min-w-0">
+                                    <p class="truncate text-xs font-black uppercase tracking-[0.18em] text-cyan-700">${escapeHtml(tour.organization_name)}</p>
+                                    <h3 class="truncate text-xl font-black tracking-tight text-slate-900 dark-title">${escapeHtml(tour.title)}</h3>
+                                </div>
+                            </div>
+
+                            <p class="mt-3 text-sm font-semibold text-slate-600 dark-text">
+                                ${escapeHtml(tour.place_name)} · ${escapeHtml(tour.city || "Unknown city")}
+                            </p>
+
+                            <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600 dark-text">
+                                <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${tour.scene_count} scenes</span>
+                                <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${tour.hotspot_count} hotspots</span>
+                                <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${formatPrice(tour.price)}</span>
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <button type="button" id="selectedStreetBtn" class="inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-white">
+                                    Street View
+                                </button>
+
+                                <button type="button" id="selectedPreviewBtn" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110">
+                                    Start 360 tour
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
-        } else {
-            dom.resultsList.innerHTML = pageItems.map(buildResultCard).join("");
+
+            document.getElementById("selectedStreetBtn")?.addEventListener("click", () => openStreetViewForTour(tour));
+            document.getElementById("selectedPreviewBtn")?.addEventListener("click", () => openTourPreview(tour.preview_url));
         }
 
-        dom.paginationInfo.textContent = `Page ${state.currentPage} / ${totalPages}`;
-        dom.prevPageBtn.disabled = state.currentPage <= 1;
-        dom.nextPageBtn.disabled = state.currentPage >= totalPages;
+        function createMarkerNode(tour) {
+            const wrapper = document.createElement("div");
+            wrapper.className = "gm-marker-card";
+            wrapper.dataset.tourId = tour.id;
 
-        dom.prevPageBtn.classList.toggle("opacity-50", state.currentPage <= 1);
-        dom.nextPageBtn.classList.toggle("opacity-50", state.currentPage >= totalPages);
+            wrapper.innerHTML = `
+                <div class="inner">
+                    ${
+                        tour.thumbnail
+                            ? `<img src="${tour.thumbnail}" alt="${escapeHtml(tour.title)}" class="gm-marker-thumb">`
+                            : `<div class="gm-marker-noimg">Virtual Tour</div>`
+                    }
 
-        const visibleSelected = filtered.some(t => String(t.id) === String(state.selectedId));
-        if (!visibleSelected) {
-            const first = filtered[0] || null;
-            state.selectedId = first ? first.id : null;
-            renderSelectedTourCard();
-        }
-
-        attachResultEvents();
-        updateMarkerSelectionStyles();
-        renderMarkersForCurrentViewport();
-    }
-
-    function attachResultEvents() {
-        document.querySelectorAll(".focus-tour-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const tour = getTourById(btn.dataset.tourId);
-                if (tour) {
-                    focusTour(tour, true);
-                    maybeCloseMobileSheet();
-                }
-            });
-        });
-
-        document.querySelectorAll(".street-tour-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const tour = getTourById(btn.dataset.tourId);
-                if (tour) {
-                    focusTour(tour, true);
-                    openStreetViewForTour(tour);
-                    maybeCloseMobileSheet();
-                }
-            });
-        });
-
-        document.querySelectorAll(".preview-tour-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                openTourPreview(btn.dataset.previewUrl);
-            });
-        });
-
-        document.querySelectorAll(".result-card").forEach(card => {
-            card.addEventListener("click", (e) => {
-                if (
-                    e.target.closest(".focus-tour-btn") ||
-                    e.target.closest(".street-tour-btn") ||
-                    e.target.closest(".preview-tour-btn") ||
-                    e.target.closest("a")
-                ) {
-                    return;
-                }
-                const tour = getTourById(card.dataset.tourId);
-                if (tour) {
-                    focusTour(tour, true);
-                    maybeCloseMobileSheet();
-                }
-            });
-        });
-    }
-
-    function renderSelectedTourCard() {
-        const tour = getTourById(state.selectedId);
-
-        if (!tour || isMobileLayout()) {
-            dom.selectedTourCard.innerHTML = "";
-            return;
-        }
-
-        dom.selectedTourCard.innerHTML = `
-            <div class="tour-action-card glass-panel rounded-[28px] p-4 shadow-premium">
-                <div class="grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
-                    <div class="overflow-hidden rounded-2xl border border-white/80 bg-slate-100">
-                        ${
-                            tour.thumbnail
-                                ? `<img src="${tour.thumbnail}" alt="${escapeHtml(tour.title)}" class="h-[112px] w-full object-cover">`
-                                : `<div class="flex h-[112px] items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 text-sm font-black text-slate-700">Tour</div>`
-                        }
-                    </div>
-
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-sm font-black text-slate-950">
-                                ${escapeHtml(getOrgInitials(tour.organization_name))}
-                            </div>
-
-                            <div class="min-w-0">
-                                <p class="truncate text-xs font-black uppercase tracking-[0.18em] text-cyan-700">${escapeHtml(tour.organization_name)}</p>
-                                <h3 class="truncate text-xl font-black tracking-tight text-slate-900">${escapeHtml(tour.title)}</h3>
-                            </div>
+                    <div style="padding:10px 12px 8px;">
+                        <div style="font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#0e7490;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            ${escapeHtml(tour.category_label)}
                         </div>
 
-                        <p class="mt-3 text-sm font-semibold text-slate-600">
-                            ${escapeHtml(tour.place_name)} · ${escapeHtml(tour.city || "Unknown city")}
-                        </p>
-
-                        <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
-                            <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${tour.scene_count} scenes</span>
-                            <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${tour.hotspot_count} hotspots</span>
-                            <span class="rounded-full border border-white/80 bg-white/82 px-3 py-1">${formatPrice(tour.price)}</span>
+                        <div style="margin-top:6px;font-size:14px;font-weight:900;line-height:1.15;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            ${escapeHtml(tour.title)}
                         </div>
 
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <button type="button" id="selectedStreetBtn" class="inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-white">
-                                Street View
-                            </button>
-                            <button type="button" id="selectedPreviewBtn" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110">
-                                Start 360 tour
-                            </button>
+                        <div style="margin-top:4px;font-size:12px;font-weight:700;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            ${escapeHtml(tour.city || tour.place_name)}
                         </div>
                     </div>
-                </div>
-            </div>
-        `;
 
-        const selectedStreetBtn = document.getElementById("selectedStreetBtn");
-        if (selectedStreetBtn) {
-            selectedStreetBtn.addEventListener("click", () => openStreetViewForTour(tour));
-        }
-
-        const selectedPreviewBtn = document.getElementById("selectedPreviewBtn");
-        if (selectedPreviewBtn) {
-            selectedPreviewBtn.addEventListener("click", () => openTourPreview(tour.preview_url));
-        }
-    }
-
-    function createMarkerNode(tour) {
-        const wrapper = document.createElement("div");
-        wrapper.className = "gm-marker-card";
-        wrapper.dataset.tourId = tour.id;
-
-        wrapper.innerHTML = `
-            <div class="inner">
-                ${
-                    tour.thumbnail
-                        ? `<img src="${tour.thumbnail}" alt="${escapeHtml(tour.title)}" class="gm-marker-thumb">`
-                        : `<div class="gm-marker-noimg">Virtual Tour</div>`
-                }
-                <div style="padding:10px 12px 8px;">
-                    <div style="font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#0e7490;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        ${escapeHtml(tour.category_label)}
-                    </div>
-                    <div style="margin-top:6px;font-size:14px;font-weight:900;line-height:1.15;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        ${escapeHtml(tour.title)}
-                    </div>
-                    <div style="margin-top:4px;font-size:12px;font-weight:700;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        ${escapeHtml(tour.city || tour.place_name)}
+                    <div class="gm-marker-actions">
+                        <button type="button" class="gm-marker-action-btn marker-focus-btn">Focus</button>
+                        <button type="button" class="gm-marker-action-btn marker-street-btn">Street</button>
+                        <button type="button" class="gm-marker-action-btn primary marker-preview-btn">360 Tour</button>
                     </div>
                 </div>
 
-                <div class="gm-marker-actions">
-                    <button type="button" class="gm-marker-action-btn marker-focus-btn">Focus</button>
-                    <button type="button" class="gm-marker-action-btn marker-street-btn">Street</button>
-                    <button type="button" class="gm-marker-action-btn primary marker-preview-btn">360 Tour</button>
-                </div>
-            </div>
-            <div class="gm-marker-dot"></div>
-        `;
+                <div class="gm-marker-dot"></div>
+            `;
 
-        wrapper.addEventListener("click", (e) => {
-            if (e.target.closest(".gm-marker-action-btn")) return;
-            focusTour(tour, true);
-        });
+            wrapper.addEventListener("click", (e) => {
+                if (e.target.closest(".gm-marker-action-btn")) return;
+                focusTour(tour, true);
+            });
 
-        const focusBtn = wrapper.querySelector(".marker-focus-btn");
-        const streetBtn = wrapper.querySelector(".marker-street-btn");
-        const previewBtn = wrapper.querySelector(".marker-preview-btn");
-
-        if (focusBtn) {
-            focusBtn.addEventListener("click", (e) => {
+            wrapper.querySelector(".marker-focus-btn")?.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 focusTour(tour, true);
             });
-        }
 
-        if (streetBtn) {
-            streetBtn.addEventListener("click", (e) => {
+            wrapper.querySelector(".marker-street-btn")?.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 focusTour(tour, true);
                 openStreetViewForTour(tour);
             });
-        }
 
-        if (previewBtn) {
-            previewBtn.addEventListener("click", (e) => {
+            wrapper.querySelector(".marker-preview-btn")?.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 openTourPreview(tour.preview_url);
             });
+
+            return wrapper;
         }
 
-        return wrapper;
-    }
-
-    function updateMarkerSelectionStyles() {
-        state.markers.forEach((entry, id) => {
-            if (!entry || !entry.node) return;
-            entry.node.classList.toggle("is-selected", String(id) === String(state.selectedId));
-        });
-
-        document.querySelectorAll(".result-card").forEach(card => {
-            card.classList.toggle("active", String(card.dataset.tourId) === String(state.selectedId));
-        });
-    }
-
-    function getMarkerRenderLimit() {
-        return window.innerWidth < 768 ? state.markerRenderLimitMobile : state.markerRenderLimitDesktop;
-    }
-
-    function getToursForCurrentViewport() {
-        const source = state.filteredTours.length ? state.filteredTours : state.allTours;
-        if (!state.map || !state.map.getBounds()) {
-            return source.slice(0, getMarkerRenderLimit());
-        }
-
-        const bounds = state.map.getBounds();
-        const inside = source.filter(t => bounds.contains({ lat: t.lat, lng: t.lng }));
-        const base = inside.length ? inside : source;
-        return base.slice(0, getMarkerRenderLimit());
-    }
-
-    function renderMarkersForCurrentViewport() {
-        if (!state.map || !state.MarkerLib) return;
-
-        const AdvancedMarkerElement = state.MarkerLib.AdvancedMarkerElement;
-        const toursToRender = getToursForCurrentViewport();
-        const desiredIds = new Set(toursToRender.map(t => String(t.id)));
-
-        state.markers.forEach((entry, id) => {
-            if (!desiredIds.has(String(id))) {
-                if (entry && entry.marker) entry.marker.map = null;
-                state.markers.delete(id);
-            }
-        });
-
-        toursToRender.forEach(tour => {
-            const id = String(tour.id);
-            if (state.markers.has(id)) return;
-
-            const node = createMarkerNode(tour);
-
-            const marker = new AdvancedMarkerElement({
-                map: state.map,
-                position: { lat: tour.lat, lng: tour.lng },
-                content: node,
-                title: tour.title,
+        function updateMarkerSelectionStyles() {
+            state.markers.forEach((entry, id) => {
+                if (!entry || !entry.node) return;
+                entry.node.classList.toggle("is-selected", String(id) === String(state.selectedId));
             });
 
-            state.markers.set(id, { marker, node });
-        });
+            document.querySelectorAll(".result-card").forEach(card => {
+                card.classList.toggle("active", String(card.dataset.tourId) === String(state.selectedId));
+            });
+        }
 
-        updateMarkerSelectionStyles();
-    }
+        function getMarkerRenderLimit() {
+            return window.innerWidth < 768 ? state.markerRenderLimitMobile : state.markerRenderLimitDesktop;
+        }
 
-    function fitTours(tours) {
-        if (!state.map || !tours.length) return;
+        function getToursForCurrentViewport() {
+            const source = state.filteredTours.length ? state.filteredTours : state.allTours;
 
-        const bounds = new google.maps.LatLngBounds();
-        tours.forEach(t => bounds.extend({ lat: t.lat, lng: t.lng }));
-        state.map.fitBounds(bounds, 80);
-    }
-
-    function apply3D(enabled) {
-        state.is3D = enabled;
-        if (!state.map) return;
-
-        try {
-            if (enabled) {
-                state.map.setTilt(55);
-                state.map.setHeading(18);
-            } else {
-                state.map.setTilt(0);
-                state.map.setHeading(0);
+            if (!state.map || !state.map.getBounds()) {
+                return source.slice(0, getMarkerRenderLimit());
             }
-        } catch (error) {
-            console.warn("3D camera not available on this device/map mode.", error);
+
+            const bounds = state.map.getBounds();
+            const inside = source.filter(t => bounds.contains({ lat: t.lat, lng: t.lng }));
+            const base = inside.length ? inside : source;
+
+            return base.slice(0, getMarkerRenderLimit());
         }
 
-        dom.toggle3DBtn.classList.toggle("is-active", enabled);
-    }
+        function renderMarkersForCurrentViewport() {
+            if (!state.map || !state.MarkerLib) return;
 
-    function focusTour(tour, panAndZoom = true) {
-        state.selectedId = tour.id;
-        renderSelectedTourCard();
-        updateMarkerSelectionStyles();
+            const AdvancedMarkerElement = state.MarkerLib.AdvancedMarkerElement;
+            const toursToRender = getToursForCurrentViewport();
+            const desiredIds = new Set(toursToRender.map(t => String(t.id)));
 
-        if (state.map && panAndZoom) {
-            state.map.panTo({ lat: tour.lat, lng: tour.lng });
-            state.map.setZoom(Math.max(state.map.getZoom() || 15, 16));
+            state.markers.forEach((entry, id) => {
+                if (!desiredIds.has(String(id))) {
+                    if (entry && entry.marker) entry.marker.map = null;
+                    state.markers.delete(id);
+                }
+            });
+
+            toursToRender.forEach(tour => {
+                const id = String(tour.id);
+
+                if (state.markers.has(id)) return;
+
+                const node = createMarkerNode(tour);
+
+                const marker = new AdvancedMarkerElement({
+                    map: state.map,
+                    position: { lat: tour.lat, lng: tour.lng },
+                    content: node,
+                    title: tour.title,
+                });
+
+                state.markers.set(id, { marker, node });
+            });
+
+            updateMarkerSelectionStyles();
         }
 
-        renderMarkersForCurrentViewport();
-    }
+        function fitTours(tours) {
+            if (!state.map || !tours.length) return;
 
-    function closeStreetView() {
-        state.streetViewOpen = false;
-        dom.streetPanel.classList.remove("open");
-        dom.closeStreetBtnTop.classList.add("hidden");
-    }
+            const bounds = new google.maps.LatLngBounds();
+            tours.forEach(t => bounds.extend({ lat: t.lat, lng: t.lng }));
+            state.map.fitBounds(bounds, 80);
+        }
 
-    function openStreetViewForTour(tour) {
-        if (!state.streetService || !state.panorama) return;
+        function apply3D(enabled) {
+            state.is3D = enabled;
 
-        const location = { lat: tour.street_view_lat, lng: tour.street_view_lng };
-        dom.streetPanelTitle.textContent = `${tour.title} · Street View`;
-        dom.streetPanelMessage.textContent = `Searching Street View near ${tour.place_name}...`;
+            if (!state.map) return;
 
-        state.streetService.getPanorama(
-            { location, radius: 120 },
-            (data, status) => {
-                dom.streetPanel.classList.add("open");
-                dom.closeStreetBtnTop.classList.remove("hidden");
-                state.streetViewOpen = true;
-
-                if (status === google.maps.StreetViewStatus.OK && data && data.location) {
-                    state.panorama.setPano(data.location.pano);
-                    state.panorama.setPov({ heading: 34, pitch: 0 });
-                    state.panorama.setVisible(true);
-                    dom.streetPanelMessage.textContent = `Street View loaded near ${tour.place_name}.`;
+            try {
+                if (enabled) {
+                    state.map.setTilt(55);
+                    state.map.setHeading(18);
                 } else {
-                    dom.streetPanelMessage.textContent = `No Street View available close to this location.`;
+                    state.map.setTilt(0);
+                    state.map.setHeading(0);
                 }
+            } catch (error) {
+                console.warn("3D camera not available on this device/map mode.", error);
             }
-        );
 
-        dom.openPreviewFromStreetBtn.onclick = () => {
-            openTourPreview(tour.preview_url);
-        };
-    }
-
-    async function initMapCore() {
-        const { Map } = await google.maps.importLibrary("maps");
-        const MarkerLib = await google.maps.importLibrary("marker");
-
-        state.MarkerLib = MarkerLib;
-
-        const firstTour = state.allTours[0] || { lat: -26.2041, lng: 28.0473 };
-
-        state.map = new Map(document.getElementById("tourMap"), {
-            center: { lat: firstTour.lat, lng: firstTour.lng },
-            zoom: 12,
-            mapId: "{{ google_maps_map_id|default:'DEMO_MAP_ID' }}",
-            mapTypeControl: false,
-            fullscreenControl: false,
-            streetViewControl: false,
-            zoomControl: true,
-            gestureHandling: "greedy",
-            clickableIcons: false,
-        });
-
-        state.panorama = new google.maps.StreetViewPanorama(dom.streetView, {
-            pov: { heading: 34, pitch: 0 },
-            zoom: 1,
-            addressControl: false,
-            fullscreenControl: false,
-            motionTracking: false,
-            showRoadLabels: true,
-        });
-
-        state.streetService = new google.maps.StreetViewService();
-
-        renderStats();
-        renderResults();
-        apply3D(true);
-
-        if (state.filteredTours.length) {
-            fitTours(state.filteredTours);
-            focusTour(state.filteredTours[0], false);
+            dom.toggle3DBtn.classList.toggle("is-active", enabled);
         }
 
-        state.map.addListener("idle", () => {
+        function focusTour(tour, panAndZoom = true) {
+            state.selectedId = tour.id;
+            renderSelectedTourCard();
+            updateMarkerSelectionStyles();
+
+            if (state.map && panAndZoom) {
+                state.map.panTo({ lat: tour.lat, lng: tour.lng });
+                state.map.setZoom(Math.max(state.map.getZoom() || 15, 16));
+            }
+
             renderMarkersForCurrentViewport();
-        });
-    }
+        }
 
-    function debounce(fn, delay = 220) {
-        let timer = null;
-        return (...args) => {
-            clearTimeout(timer);
-            timer = setTimeout(() => fn(...args), delay);
-        };
-    }
+        function closeStreetView() {
+            state.streetViewOpen = false;
+            document.body.classList.remove("street-open");
+            dom.streetPanel.classList.remove("open");
+            dom.closeStreetBtnTop.classList.add("hidden");
+        }
 
-    function attachMobileSheetGestures() {
-        const handle = dom.filtersPanel?.querySelector(".filters-head-mobile");
-        if (!handle) return;
+        function openStreetViewForTour(tour) {
+            if (!state.streetService || !state.panorama) return;
 
-        let startY = 0;
-        let endY = 0;
+            const location = { lat: tour.street_view_lat, lng: tour.street_view_lng };
 
-        handle.addEventListener("touchstart", (e) => {
-            startY = e.touches[0].clientY;
-        }, { passive: true });
+            dom.streetPanelTitle.textContent = `${tour.title} · Street View`;
+            dom.streetPanelMessage.textContent = `Searching Street View near ${tour.place_name}...`;
 
-        handle.addEventListener("touchend", (e) => {
-            endY = e.changedTouches[0].clientY;
-            const deltaY = endY - startY;
+            state.streetService.getPanorama(
+                { location, radius: 120 },
+                (data, status) => {
+                    dom.streetPanel.classList.add("open");
+                    dom.closeStreetBtnTop.classList.remove("hidden");
+                    document.body.classList.add("street-open");
+                    state.streetViewOpen = true;
 
-            if (Math.abs(deltaY) < 35) return;
-
-            if (deltaY < 0) {
-                if (state.mobileSheetState === "closed") {
-                    setMobileSheetState("full");
-                } else if (state.mobileSheetState === "half") {
-                    setMobileSheetState("full");
+                    if (status === google.maps.StreetViewStatus.OK && data && data.location) {
+                        state.panorama.setPano(data.location.pano);
+                        state.panorama.setPov({ heading: 34, pitch: 0 });
+                        state.panorama.setVisible(true);
+                        dom.streetPanelMessage.textContent = `Street View loaded near ${tour.place_name}.`;
+                    } else {
+                        dom.streetPanelMessage.textContent = `No Street View available close to this location.`;
+                    }
                 }
-            } else {
-                if (state.mobileSheetState === "full") {
-                    setMobileSheetState("half");
-                } else if (state.mobileSheetState === "half") {
-                    setMobileSheetState("closed");
-                }
-            }
-        }, { passive: true });
+            );
 
-        handle.addEventListener("dblclick", () => {
-            if (!isMobileLayout()) return;
-            if (state.mobileSheetState === "full") {
-                setMobileSheetState("half");
-            } else {
-                setMobileSheetState("full");
-            }
-        });
-    }
+            dom.openPreviewFromStreetBtn.onclick = () => {
+                openTourPreview(tour.preview_url);
+            };
+        }
 
-    function attachGlobalEvents() {
-        const rerenderDebounced = debounce(() => {
-            state.currentPage = 1;
+        async function initMapCore() {
+            const { Map } = await google.maps.importLibrary("maps");
+            const MarkerLib = await google.maps.importLibrary("marker");
+
+            state.MarkerLib = MarkerLib;
+
+            const firstTour = state.allTours[0] || { lat: -26.2041, lng: 28.0473 };
+            const dark = document.body.classList.contains("theme-dark");
+
+            state.map = new Map(document.getElementById("tourMap"), {
+                center: { lat: firstTour.lat, lng: firstTour.lng },
+                zoom: 12,
+                mapId: "{{ google_maps_map_id|default:'DEMO_MAP_ID' }}",
+                mapTypeControl: false,
+                fullscreenControl: false,
+                streetViewControl: false,
+                zoomControl: true,
+                gestureHandling: "greedy",
+                clickableIcons: false,
+                backgroundColor: dark ? "#020617" : "#dbeafe",
+            });
+
+            applyGoogleMapTheme(dark);
+
+            state.panorama = new google.maps.StreetViewPanorama(dom.streetView, {
+                pov: { heading: 34, pitch: 0 },
+                zoom: 1,
+                addressControl: false,
+                fullscreenControl: false,
+                motionTracking: false,
+                showRoadLabels: true,
+            });
+
+            state.streetService = new google.maps.StreetViewService();
+
+            renderStats();
             renderResults();
-        });
-
-        dom.searchInput.addEventListener("input", rerenderDebounced);
-        dom.searchInput.addEventListener("focus", () => {
-            if (isMobileLayout()) expandMobileSheet();
-        });
-
-        dom.categoryFilter.addEventListener("change", () => {
-            state.currentPage = 1;
-            renderResults();
-        });
-        dom.categoryFilter.addEventListener("focus", () => {
-            if (isMobileLayout()) expandMobileSheet();
-        });
-
-        dom.cityFilter.addEventListener("change", () => {
-            state.currentPage = 1;
-            renderResults();
-        });
-        dom.cityFilter.addEventListener("focus", () => {
-            if (isMobileLayout()) expandMobileSheet();
-        });
-
-        dom.resetFiltersBtn.addEventListener("click", () => {
-            dom.searchInput.value = "";
-            dom.categoryFilter.value = "";
-            dom.cityFilter.value = "";
-            state.currentPage = 1;
-            renderResults();
-            closeStreetView();
+            apply3D(true);
 
             if (state.filteredTours.length) {
                 fitTours(state.filteredTours);
                 focusTour(state.filteredTours[0], false);
             }
-        });
 
-        dom.fitAllBtn.addEventListener("click", () => {
-            if (state.allTours.length) {
-                fitTours(state.allTours);
-                maybeCloseMobileSheet();
-            }
-        });
-
-        dom.fitVisibleBtn.addEventListener("click", () => {
-            if (state.filteredTours.length) {
-                fitTours(state.filteredTours);
-            }
-        });
-
-        dom.resetCameraBtn.addEventListener("click", () => {
-            if (state.filteredTours.length) fitTours(state.filteredTours);
-            apply3D(state.is3D);
-        });
-
-        dom.toggle3DBtn.addEventListener("click", () => {
-            apply3D(!state.is3D);
-        });
-
-        dom.prevPageBtn.addEventListener("click", () => {
-            if (state.currentPage > 1) {
-                state.currentPage -= 1;
-                renderResults();
-            }
-        });
-
-        dom.nextPageBtn.addEventListener("click", () => {
-            const totalPages = Math.max(1, Math.ceil(state.filteredTours.length / state.perPage));
-            if (state.currentPage < totalPages) {
-                state.currentPage += 1;
-                renderResults();
-            }
-        });
-
-        dom.closeStreetBtn.addEventListener("click", closeStreetView);
-        dom.closeStreetBtnTop.addEventListener("click", closeStreetView);
-
-        dom.openMobileSheetBtn.addEventListener("click", () => {
-            if (!isMobileLayout()) return;
-
-            if (state.mobileSheetState === "closed") {
-                setMobileSheetState("full");
-            } else if (state.mobileSheetState === "half") {
-                setMobileSheetState("full");
-            } else {
-                setMobileSheetState("closed");
-            }
-        });
-
-        dom.closeMobileSheetBtn.addEventListener("click", closeMobileSheet);
-        dom.mobileSheetBackdrop.addEventListener("click", closeMobileSheet);
-
-        dom.openMenuBtn.addEventListener("click", () => setMobileMenuOpen(true));
-        dom.closeMenuBtn.addEventListener("click", () => setMobileMenuOpen(false));
-        dom.menuBackdrop.addEventListener("click", () => setMobileMenuOpen(false));
-
-        ["click", "touchstart", "touchmove", "pointerdown"].forEach((eventName) => {
-            dom.filtersPanel.addEventListener(
-                eventName,
-                (e) => e.stopPropagation(),
-                { passive: eventName !== "click" }
-            );
-        });
-
-        document.querySelectorAll("[data-menu-link]").forEach(link => {
-            link.addEventListener("click", () => setMobileMenuOpen(false));
-        });
-
-        window.addEventListener("resize", debounce(() => {
-            syncResponsiveValues();
-            updateMobileSheetMetrics();
-
-            if (!isMobileLayout()) {
-                state.mobileSheetState = "closed";
-                state.mobileMenuOpen = false;
-                dom.filtersPanel.classList.remove("sheet-half", "sheet-full");
-                dom.mobileSheetBackdrop.classList.remove("show");
-                dom.menuBackdrop.classList.remove("show");
-                dom.mobileMenuPanel.classList.remove("open");
-            }
-
-            syncBodyLock();
-            updateMobileSheetTriggerLabel();
-            renderResults();
-
-            if (state.map) {
-                google.maps.event.trigger(state.map, "resize");
+            state.map.addListener("idle", () => {
                 renderMarkersForCurrentViewport();
-            }
-        }, 180));
-    }
+            });
+        }
 
-    window.initToursExplorerMap = async function () {
-        updateMobileSheetMetrics();
-        attachGlobalEvents();
-        attachMobileSheetGestures();
-        updateMobileSheetTriggerLabel();
-        await initMapCore();
-    };
-</script>
+        function debounce(fn, delay = 220) {
+            let timer = null;
 
-    <script
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn(...args), delay);
+            };
+        }
+
+        function attachMobileSheetGestures() {
+            const handle = dom.filtersPanel?.querySelector(".filters-head-mobile");
+
+            if (!handle) return;
+
+            let startY = 0;
+            let endY = 0;
+
+            handle.addEventListener("touchstart", (e) => {
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
+            handle.addEventListener("touchend", (e) => {
+                endY = e.changedTouches[0].clientY;
+
+                const deltaY = endY - startY;
+
+                if (Math.abs(deltaY) < 35) return;
+
+                if (deltaY > 0) {
+                    closeMobileSheet();
+                }
+            }, { passive: true });
+        }
+
+        function attachSettingsEvents() {
+            applyTheme(localStorage.getItem("twinscopesTheme") || "light");
+
+            dom.settingsTriggers.forEach((button) => {
+                button.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    dom.settingsMenu?.classList.toggle("open");
+                });
+            });
+
+            dom.themeToggleBtn?.addEventListener("click", toggleTheme);
+            dom.mobileThemeToggleBtn?.addEventListener("click", toggleTheme);
+
+            dom.languageSelect?.addEventListener("change", () => {
+                const params = new URLSearchParams(window.location.search);
+                params.set("lang", dom.languageSelect.value);
+                window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+            });
+
+            document.addEventListener("click", (event) => {
+                const clickedTrigger = dom.settingsTriggers.some((btn) => btn.contains(event.target));
+
+                if (dom.settingsMenu && !dom.settingsMenu.contains(event.target) && !clickedTrigger) {
+                    dom.settingsMenu.classList.remove("open");
+                }
+            });
+        }
+
+        function attachGlobalEvents() {
+            const rerenderDebounced = debounce(() => {
+                state.currentPage = 1;
+                renderResults();
+            });
+
+            dom.searchInput.addEventListener("input", rerenderDebounced);
+            dom.searchInput.addEventListener("focus", () => {
+                if (isMobileLayout()) openMobileSheet();
+            });
+
+            dom.categoryFilter.addEventListener("change", () => {
+                state.currentPage = 1;
+                renderResults();
+            });
+
+            dom.categoryFilter.addEventListener("focus", () => {
+                if (isMobileLayout()) openMobileSheet();
+            });
+
+            dom.cityFilter.addEventListener("change", () => {
+                state.currentPage = 1;
+                renderResults();
+            });
+
+            dom.cityFilter.addEventListener("focus", () => {
+                if (isMobileLayout()) openMobileSheet();
+            });
+
+            dom.resetFiltersBtn.addEventListener("click", () => {
+                dom.searchInput.value = "";
+                dom.categoryFilter.value = "";
+                dom.cityFilter.value = "";
+                state.currentPage = 1;
+                renderResults();
+                closeStreetView();
+
+                if (state.filteredTours.length) {
+                    fitTours(state.filteredTours);
+                    focusTour(state.filteredTours[0], false);
+                }
+            });
+
+            dom.fitAllBtn.addEventListener("click", () => {
+                if (state.allTours.length) {
+                    fitTours(state.allTours);
+                    maybeCloseMobileSheet();
+                }
+            });
+
+            dom.fitAllFromMenuBtn?.addEventListener("click", () => {
+                setMobileMenuOpen(false);
+
+                if (state.allTours.length) {
+                    fitTours(state.allTours);
+                }
+            });
+
+            dom.openFiltersFromMenuBtn?.addEventListener("click", () => {
+                setMobileMenuOpen(false);
+                window.setTimeout(() => openMobileSheet(), 160);
+            });
+
+            dom.mobileFilterFab?.addEventListener("click", () => {
+                openMobileSheet();
+            });
+
+            dom.fitVisibleBtn.addEventListener("click", () => {
+                if (state.filteredTours.length) {
+                    fitTours(state.filteredTours);
+                }
+            });
+
+            dom.resetCameraBtn.addEventListener("click", () => {
+                if (state.filteredTours.length) fitTours(state.filteredTours);
+                apply3D(state.is3D);
+            });
+
+            dom.toggle3DBtn.addEventListener("click", () => {
+                apply3D(!state.is3D);
+            });
+
+            dom.prevPageBtn.addEventListener("click", () => {
+                if (state.currentPage > 1) {
+                    state.currentPage -= 1;
+                    renderResults();
+                }
+            });
+
+            dom.nextPageBtn.addEventListener("click", () => {
+                const totalPages = Math.max(1, Math.ceil(state.filteredTours.length / state.perPage));
+
+                if (state.currentPage < totalPages) {
+                    state.currentPage += 1;
+                    renderResults();
+                }
+            });
+
+            dom.closeStreetBtn.addEventListener("click", closeStreetView);
+            dom.closeStreetBtnTop.addEventListener("click", closeStreetView);
+
+            dom.closeMobileSheetBtn.addEventListener("click", closeMobileSheet);
+            dom.mobileSheetBackdrop.addEventListener("click", closeMobileSheet);
+
+            dom.openMenuBtn.addEventListener("click", () => setMobileMenuOpen(true));
+            dom.closeMenuBtn.addEventListener("click", () => setMobileMenuOpen(false));
+            dom.menuBackdrop.addEventListener("click", () => setMobileMenuOpen(false));
+
+            ["click", "touchstart", "touchmove", "pointerdown"].forEach((eventName) => {
+                dom.filtersPanel.addEventListener(
+                    eventName,
+                    (e) => e.stopPropagation(),
+                    { passive: eventName !== "click" }
+                );
+            });
+
+            document.querySelectorAll("[data-menu-link]").forEach(link => {
+                link.addEventListener("click", () => setMobileMenuOpen(false));
+            });
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key !== "Escape") return;
+
+                if (state.mobileSheetState !== "closed") {
+                    closeMobileSheet();
+                    return;
+                }
+
+                if (state.mobileMenuOpen) {
+                    setMobileMenuOpen(false);
+                    return;
+                }
+
+                dom.settingsMenu?.classList.remove("open");
+            });
+
+            window.addEventListener("resize", debounce(() => {
+                syncResponsiveValues();
+                updateMobileSheetMetrics();
+
+                if (!isMobileLayout()) {
+                    state.mobileSheetState = "closed";
+                    state.mobileMenuOpen = false;
+                    dom.filtersPanel.classList.remove("sheet-full");
+                    dom.mobileSheetBackdrop.classList.remove("show");
+                    dom.menuBackdrop.classList.remove("show");
+                    dom.mobileMenuPanel.classList.remove("open");
+                }
+
+                syncBodyLock();
+                renderResults();
+
+                if (state.map) {
+                    google.maps.event.trigger(state.map, "resize");
+                    renderMarkersForCurrentViewport();
+                    applyGoogleMapTheme(document.body.classList.contains("theme-dark"));
+                }
+            }, 180));
+        }
+
+        window.initToursExplorerMap = async function () {
+            updateMobileSheetMetrics();
+            attachSettingsEvents();
+            attachGlobalEvents();
+            attachMobileSheetGestures();
+            await initMapCore();
+        };
+    </script>
+
+    {% comment %} <script
+        async
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&loading=async&v=weekly&libraries=places,geometry,marker&callback=initToursExplorerMap">
+    </script> {% endcomment %}
+
+
+        <script
         async
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVrWrJYK2DrDokWGZZvmk8tuxFRb-iZ1w&loading=async&v=weekly&libraries=places,geometry,marker&callback=initToursExplorerMap">
     </script>
 
-    
 </body>
 </html>

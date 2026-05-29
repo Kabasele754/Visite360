@@ -3,212 +3,371 @@
 <html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact | Intelligent Virtual Tours</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Contact | TwinScopes</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    boxShadow: {
-                        premium: "0 20px 60px rgba(15, 23, 42, 0.14)",
-                        soft: "0 14px 34px rgba(15, 23, 42, 0.08)",
-                    },
                     fontFamily: {
                         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+                    },
+                    boxShadow: {
+                        soft: "0 18px 45px rgba(15,23,42,0.10)",
+                        card: "0 16px 40px rgba(15,23,42,0.08)",
                     },
                 },
             },
         };
     </script>
 
+    <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
+
     <style>
+        html,
         body {
-            background:
-                radial-gradient(circle at top left, rgba(103,232,249,0.22), transparent 26%),
-                radial-gradient(circle at top right, rgba(59,130,246,0.18), transparent 22%),
-                linear-gradient(180deg, #f8fbff 0%, #eef6ff 42%, #ffffff 100%);
+            margin: 0;
+            padding: 0;
+            overscroll-behavior: none;
+        }
+
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
             color: #0f172a;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(34,211,238,0.16), transparent 28%),
+                radial-gradient(circle at 90% 15%, rgba(59,130,246,0.13), transparent 28%),
+                linear-gradient(135deg, #f8fafc 0%, #f0f9ff 48%, #ffffff 100%);
+            padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+            transition: background .25s ease, color .25s ease;
         }
 
-        .glass-soft {
+        body.theme-dark {
+            color: white;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(34,211,238,0.14), transparent 30%),
+                radial-gradient(circle at 90% 15%, rgba(59,130,246,0.14), transparent 30%),
+                linear-gradient(135deg, #020617 0%, #0f172a 55%, #111827 100%);
+        }
+
+        .dark-card {
+            transition: background .25s ease, border-color .25s ease;
+        }
+
+        body.theme-dark .dark-card {
+            background: rgba(15,23,42,0.72);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        body.theme-dark .dark-title {
+            color: white !important;
+        }
+
+        body.theme-dark .dark-text {
+            color: rgba(255,255,255,0.68) !important;
+        }
+
+        body.theme-dark .dark-muted {
+            color: rgba(255,255,255,0.50) !important;
+        }
+
+        .glass {
             background: rgba(255,255,255,0.72);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            border: 1px solid rgba(255,255,255,0.72);
-            box-shadow: 0 18px 50px rgba(15,23,42,0.08);
+            border: 1px solid rgba(255,255,255,0.78);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 16px 45px rgba(15,23,42,0.08);
         }
 
-        .soft-border {
-            border: 1px solid rgba(148,163,184,0.14);
+        body.theme-dark .glass {
+            background: rgba(15,23,42,0.72);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 18px 50px rgba(0,0,0,0.28);
         }
 
-        .page-header {
+        .desktop-header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            z-index: 120;
-            padding: 14px 14px 0;
-        }
-
-        .header-shell {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 12px 14px;
-            border-radius: 28px;
-            border: 1px solid rgba(255,255,255,0.48);
-            background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.18));
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            box-shadow: 0 22px 60px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.42);
-        }
-
-        .nav-pill {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 44px;
-            padding: 0 16px;
-            border-radius: 999px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 900;
-            color: #0f172a;
-            background: rgba(255,255,255,0.34);
-            border: 1px solid rgba(255,255,255,0.42);
-            transition: .2s ease;
-        }
-
-        .nav-pill:hover {
-            transform: translateY(-1px);
-            background: rgba(255,255,255,0.58);
-            box-shadow: 0 14px 28px rgba(15,23,42,0.08);
-        }
-
-        .nav-pill.active {
-            color: #083344;
-            background: linear-gradient(135deg, rgba(34,211,238,0.26), rgba(59,130,246,0.18));
-            border-color: rgba(103,232,249,0.52);
-        }
-
-        .header-cta {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 46px;
-            padding: 0 18px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, rgba(34,211,238,0.92), rgba(59,130,246,0.86));
-            color: #082f49;
-            font-size: 13px;
-            font-weight: 900;
-            text-decoration: none;
-            border: 1px solid rgba(255,255,255,0.58);
-            box-shadow: 0 18px 35px rgba(59,130,246,0.16);
-            transition: .2s ease;
-        }
-
-        .header-cta:hover {
-            transform: translateY(-1px);
-            filter: brightness(1.04);
-        }
-
-        .mobile-menu-btn {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            width: 46px;
-            height: 46px;
-            border-radius: 18px;
-            border: 1px solid rgba(255,255,255,0.52);
-            background: rgba(255,255,255,0.28);
-            color: #0f172a;
-            box-shadow: 0 14px 30px rgba(15,23,42,0.10);
-            cursor: pointer;
-        }
-
-        .menu-backdrop,
-        .contact-backdrop {
-            position: fixed;
-            inset: 0;
-            opacity: 0;
+            z-index: 60;
+            padding: 14px 16px 0;
+            transition: transform .25s ease, opacity .25s ease;
             pointer-events: none;
-            transition: .22s ease;
-            background: rgba(15,23,42,0.26);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
         }
 
-        .menu-backdrop { z-index: 130; }
-        .contact-backdrop { z-index: 149; }
+        .desktop-header.is-hidden {
+            transform: translateY(-110%);
+            opacity: 0;
+        }
 
-        .menu-backdrop.show,
-        .contact-backdrop.show {
-            opacity: 1;
+        .desktop-shell {
+            max-width: 1180px;
+            min-height: 62px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            border-radius: 999px;
+            padding: 8px 10px 8px 14px;
             pointer-events: auto;
         }
 
-        .mobile-menu-panel {
+        .brand-mark {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 17px;
+            color: #06111f;
+            background: linear-gradient(135deg, #67e8f9, #60a5fa);
+            font-weight: 950;
+            box-shadow: 0 14px 30px rgba(14,165,233,0.20);
+        }
+
+        .nav-link {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0 14px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 850;
+            text-decoration: none;
+            transition: .18s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #0f172a;
+            background: rgba(15,23,42,0.06);
+        }
+
+        body.theme-dark .nav-link {
+            color: rgba(255,255,255,0.62);
+        }
+
+        body.theme-dark .nav-link:hover,
+        body.theme-dark .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.10);
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.75);
+            border: 1px solid rgba(226,232,240,0.8);
+            color: #0f172a;
+            box-shadow: 0 12px 26px rgba(15,23,42,0.08);
+            transition: transform .18s ease, background .18s ease;
+        }
+
+        .icon-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,0.95);
+        }
+
+        body.theme-dark .icon-btn {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.10);
+            color: white;
+        }
+
+        .mobile-top-actions {
             position: fixed;
-            top: 14px;
-            right: 14px;
-            bottom: 14px;
-            width: min(340px, calc(100vw - 28px));
-            z-index: 140;
-            transform: translateX(calc(100% + 24px));
-            transition: transform .28s cubic-bezier(.22,1,.36,1);
-            border-radius: 30px;
-            overflow: hidden;
-            background: rgba(255,255,255,0.90);
-            border: 1px solid rgba(255,255,255,0.80);
-            backdrop-filter: blur(22px);
-            -webkit-backdrop-filter: blur(22px);
-            box-shadow: 0 28px 80px rgba(15,23,42,0.20);
+            top: 10px;
+            right: 10px;
+            z-index: 65;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform .25s ease, opacity .25s ease;
         }
 
-        .mobile-menu-panel.open {
-            transform: translateX(0);
+        .mobile-top-actions.is-hidden {
+            transform: translateY(-110%);
+            opacity: 0;
         }
 
-        .mobile-menu-link {
+        .mobile-context-link {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0 15px;
+            color: #0f172a;
+            background: rgba(255,255,255,0.78);
+            border: 1px solid rgba(226,232,240,0.82);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 12px 26px rgba(15,23,42,0.08);
+            font-size: 12px;
+            font-weight: 950;
+            text-decoration: none;
+            transition: transform .18s ease, background .18s ease;
+        }
+
+        .mobile-context-link:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,0.95);
+        }
+
+        body.theme-dark .mobile-context-link {
+            color: white;
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        .settings-menu {
+            position: fixed;
+            top: 82px;
+            right: 16px;
+            z-index: 90;
+            width: min(280px, calc(100vw - 28px));
+            border-radius: 24px;
+            padding: 12px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px);
+            transition: .2s ease;
+        }
+
+        .settings-menu.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .setting-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 16px 18px;
-            border-radius: 20px;
-            text-decoration: none;
+            border-radius: 16px;
+            padding: 12px;
+            background: rgba(248,250,252,0.85);
+            border: 1px solid rgba(226,232,240,0.85);
             color: #0f172a;
-            font-size: 15px;
+        }
+
+        body.theme-dark .setting-row {
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(255,255,255,0.10);
+            color: white;
+        }
+
+        .setting-select {
+            border-radius: 999px;
+            border: 1px solid rgba(226,232,240,0.95);
+            padding: 7px 10px;
+            color: #0f172a;
+            font-size: 12px;
             font-weight: 900;
-            background: rgba(255,255,255,0.54);
-            border: 1px solid rgba(255,255,255,0.72);
+            outline: none;
+        }
+
+        body.theme-dark .setting-select {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.12);
+            color: white;
+        }
+
+        .hero {
+            padding: 126px 16px 40px;
+        }
+
+        .hero-card {
+            max-width: 1180px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 34px;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(34,211,238,0.22), transparent 26%),
+                radial-gradient(circle at 80% 30%, rgba(59,130,246,0.18), transparent 28%),
+                linear-gradient(135deg, #0f172a 0%, #172554 55%, #0f172a 100%);
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 30px 80px rgba(15,23,42,0.18);
+        }
+
+        .field {
+            width: 100%;
+            min-height: 54px;
+            border-radius: 18px;
+            border: 1px solid rgba(148,163,184,0.20);
+            background: rgba(255,255,255,0.88);
+            padding: 0 16px;
+            color: #0f172a;
+            font-size: 14px;
+            outline: none;
             transition: .18s ease;
         }
 
-        .hero-grid {
-            background:
-                radial-gradient(circle at 15% 15%, rgba(34,211,238,0.20), transparent 24%),
-                radial-gradient(circle at 85% 20%, rgba(59,130,246,0.16), transparent 24%),
-                linear-gradient(135deg, #0f172a 0%, #13233f 48%, #12314d 100%);
+        textarea.field {
+            min-height: 140px;
+            padding: 14px 16px;
+            resize: vertical;
         }
 
-        .section-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border-radius: 999px;
-            padding: 10px 16px;
-            font-size: 12px;
-            font-weight: 900;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: #cffafe;
-            background: rgba(255,255,255,0.10);
-            border: 1px solid rgba(255,255,255,0.18);
+        .field:focus {
+            border-color: rgba(34,211,238,0.58);
+            box-shadow: 0 0 0 4px rgba(34,211,238,0.12);
+        }
+
+        body.theme-dark .field {
+            color: white;
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        body.theme-dark .field::placeholder {
+            color: rgba(255,255,255,0.42);
+        }
+
+        .contact-card {
+            border-radius: 28px;
+            padding: 24px;
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+        }
+
+        .contact-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(34,211,238,0.32);
+            box-shadow: 0 24px 60px rgba(15,23,42,0.12);
+        }
+
+        body.theme-dark .contact-card:hover {
+            box-shadow: 0 24px 60px rgba(0,0,0,0.34);
+        }
+
+        .contact-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 149;
+            opacity: 0;
+            pointer-events: none;
+            transition: .22s ease;
+            background: rgba(15,23,42,0.34);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .contact-backdrop.show {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .contact-modal {
@@ -233,10 +392,10 @@
             max-height: min(90vh, 900px);
             overflow-y: auto;
             border-radius: 32px;
-            background: rgba(255,255,255,0.92);
+            background: rgba(255,255,255,0.94);
             border: 1px solid rgba(255,255,255,0.85);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             box-shadow: 0 30px 80px rgba(15,23,42,0.20);
             transform: translateY(18px) scale(.98);
             transition: .24s ease;
@@ -246,162 +405,273 @@
             transform: translateY(0) scale(1);
         }
 
-        .field {
-            width: 100%;
-            min-height: 54px;
-            border-radius: 18px;
-            border: 1px solid rgba(148,163,184,0.20);
-            background: rgba(255,255,255,0.88);
-            padding: 0 16px;
-            font-size: 14px;
+        body.theme-dark .contact-modal-card {
+            background: rgba(15,23,42,0.94);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.42);
+        }
+
+        .mobile-bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 55;
+            display: none;
+            background: rgba(255,255,255,0.82);
+            border-top: 1px solid rgba(226,232,240,0.8);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            padding: 7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
+            transition: transform .24s ease, opacity .24s ease;
+        }
+
+        body.theme-dark .mobile-bottom-nav {
+            background: rgba(2,6,23,0.88);
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .mobile-bottom-nav.is-hidden {
+            transform: translateY(105%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .bottom-nav-link {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            border-radius: 16px;
+            padding: 7px 4px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .bottom-nav-link svg {
+            width: 23px;
+            height: 23px;
+        }
+
+        .bottom-nav-link.active {
             color: #0f172a;
-            outline: none;
-            transition: .18s ease;
         }
 
-        textarea.field {
-            min-height: 140px;
-            padding: 14px 16px;
-            resize: vertical;
+        body.theme-dark .bottom-nav-link {
+            color: rgba(255,255,255,0.58);
         }
 
-        .field:focus {
-            border-color: rgba(34,211,238,0.58);
-            box-shadow: 0 0 0 4px rgba(34,211,238,0.12);
+        body.theme-dark .bottom-nav-link.active {
+            color: #67e8f9;
         }
 
-        @media (max-width: 768px) {
-            .desktop-nav,
-            .desktop-cta {
-                display: none !important;
+        @media (min-width: 1024px) {
+            body {
+                padding-bottom: 0;
             }
 
-            .mobile-menu-btn {
-                display: inline-flex;
+            .mobile-top-actions,
+            .mobile-bottom-nav {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 1023px) {
+            .desktop-header {
+                display: none;
+            }
+
+            .mobile-bottom-nav {
+                display: flex;
+            }
+
+            .hero {
+                padding-top: 78px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            .hero-card {
+                border-radius: 28px;
+            }
+
+            .settings-menu {
+                top: 64px;
+                right: 10px;
+            }
+
+            .contact-modal {
+                padding: 10px;
+            }
+
+            .contact-modal-card {
+                border-radius: 26px;
             }
         }
     </style>
- <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
 </head>
 
-{% include 'public/partials/loader_3d_global.html' %}
+<body class="antialiased">
+    {% include 'public/partials/loader_3d_global.html' %}
 
-<script src="{% static 'public/js/loader_3d_global.js' %}"></script>
-<body class="min-h-screen antialiased">
-    <div id="menuBackdrop" class="menu-backdrop"></div>
     <div id="contactBackdrop" class="contact-backdrop"></div>
 
-    <header class="page-header">
-        <div class="header-shell">
-            <div class="flex items-center justify-between gap-4">
-                <a href="{% url 'public_home' %}" class="flex min-w-0 items-center gap-3 text-slate-900 no-underline">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-[20px] bg-gradient-to-br from-cyan-300 via-sky-300 to-blue-500 text-slate-950 shadow-premium">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5A2.25 2.25 0 0119.5 19.5h-15A2.25 2.25 0 012.25 17.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15A2.25 2.25 0 002.25 6.75m19.5 0v.243a2.25 2.25 0 01-.97 1.854l-7.5 5.25a2.25 2.25 0 01-2.56 0l-7.5-5.25a2.25 2.25 0 01-.97-1.854V6.75" />
-                        </svg>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="truncate text-[11px] font-black uppercase tracking-[0.28em] text-cyan-700">Virtual Tours</p>
-                        <h1 class="truncate text-lg font-black tracking-tight text-slate-900">Contact</h1>
-                    </div>
-                </a>
+    <!-- DESKTOP HEADER -->
+    <header id="desktopHeader" class="desktop-header">
+        <div class="desktop-shell glass dark-card">
+            <a href="/explorer/" class="flex min-w-0 items-center gap-3 text-inherit no-underline">
+                <span class="brand-mark">TS</span>
+                <span class="min-w-0">
+                    <span class="block truncate text-sm font-black tracking-tight dark-title">TwinScopes</span>
+                    <span class="block truncate text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark-text">
+                        AI Business Tours
+                    </span>
+                </span>
+            </a>
 
-                <nav class="desktop-nav hidden items-center gap-2 md:flex">
-                    <a href="{% url 'public_home' %}" class="nav-pill">Home</a>
-                    <a href="{% url 'public_about' %}" class="nav-pill">About</a>
-                    <a href="{% url 'public_services' %}" class="nav-pill">Services</a>
-                    <a href="{% url 'public_contact' %}" class="nav-pill active">Contact</a>
-                </nav>
+            <nav class="hidden items-center gap-1 lg:flex">
+                <a href="/explorer/" class="nav-link">Home</a>
+                <a href="/explorer/#allTours" class="nav-link">Explore</a>
+                <a href="{% url 'public_about' %}" class="nav-link">About</a>
+                <a href="{% url 'public_services' %}" class="nav-link">Services</a>
+                <a href="{% url 'public_contact' %}" class="nav-link active">Contact</a>
 
-                <div class="desktop-cta hidden items-center gap-2 md:flex">
-                    <button type="button" class="header-cta" data-open-contact data-contact-topic="General inquiry">
-                        Open contact form
-                    </button>
-                </div>
+                {% if request.user.is_authenticated %}
+                    <a href="/dashboard/" class="nav-link">Account</a>
+                {% else %}
+                    <a href="/" class="nav-link">Account</a>
+                {% endif %}
+            </nav>
 
-                <button id="openMenuBtn" type="button" class="mobile-menu-btn md:hidden" aria-label="Open menu">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            <div class="flex items-center gap-2">
+                <button type="button" class="hidden rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 lg:inline-flex" data-open-contact data-contact-topic="General inquiry">
+                    Open form
+                </button>
+
+                <button type="button" class="icon-btn settings-trigger" aria-label="Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.89 3.31.877 2.42 2.42a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.89 1.543-.877 3.31-2.42 2.42a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.89-3.31-.877-2.42-2.42a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.89-1.543.877-3.31 2.42-2.42.996.575 2.245.047 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                 </button>
             </div>
         </div>
     </header>
 
-    <aside id="mobileMenuPanel" class="mobile-menu-panel md:hidden">
-        <div class="flex h-full flex-col">
-            <div class="flex items-center justify-between gap-3 border-b border-white/70 px-5 py-5">
-                <div>
-                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Navigation</p>
-                    <h2 class="mt-1 text-xl font-black tracking-tight text-slate-900">Contact us</h2>
-                </div>
-                <button id="closeMenuBtn" type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/80 text-slate-700">✕</button>
+    <!-- MOBILE TOP ACTIONS -->
+    <div id="mobileTopActions" class="mobile-top-actions">
+
+        
+        <a href="{% url 'public_about' %}" class="mobile-context-link">
+            About
+        </a>
+
+        
+        <a href="{% url 'public_services' %}" class="mobile-context-link">
+            Services
+        </a>
+
+
+
+        <button type="button" class="icon-btn settings-trigger" aria-label="Settings">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.89 3.31.877 2.42 2.42a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.89 1.543-.877 3.31-2.42 2.42a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.89-3.31-.877-2.42-2.42a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.89-1.543.877-3.31 2.42-2.42.996.575 2.245.047 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- SETTINGS MENU -->
+    <div id="settingsMenu" class="settings-menu glass dark-card">
+        <p class="mb-3 px-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark-text">Settings</p>
+
+        <div class="space-y-2">
+            <div class="setting-row">
+                <span class="text-sm font-black">Language</span>
+                <select id="languageSelect" class="setting-select">
+                    <option value="en">EN</option>
+                    <option value="fr">FR</option>
+                </select>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-5">
-                <div class="space-y-3">
-                    <a href="{% url 'public_home' %}" class="mobile-menu-link" data-menu-link><span>Home</span><span>→</span></a>
-                    <a href="{% url 'public_about' %}" class="mobile-menu-link" data-menu-link><span>About</span><span>→</span></a>
-                    <a href="{% url 'public_services' %}" class="mobile-menu-link" data-menu-link><span>Services</span><span>→</span></a>
-                    <a href="{% url 'public_contact' %}" class="mobile-menu-link" data-menu-link><span>Contact</span><span>→</span></a>
-                </div>
+            <button id="themeToggleBtn" type="button" class="setting-row w-full">
+                <span class="text-sm font-black">Dark mode</span>
+                <span id="themeLabel" class="text-xs font-black uppercase tracking-[0.12em] text-slate-500 dark-text">Off</span>
+            </button>
 
-                <div class="mt-6 rounded-[28px] border border-white/80 bg-white/64 p-5">
-                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Get in touch</p>
-                    <h3 class="mt-2 text-xl font-black tracking-tight text-slate-900">Let’s talk about your next immersive experience</h3>
-                    <p class="mt-2 text-sm leading-6 text-slate-600">
-                        Open the form, share your project, and let’s explore how to make your space more engaging and conversion-ready.
-                    </p>
-                    <button type="button" class="mt-4 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-5 py-3 text-sm font-black text-slate-950" data-open-contact data-contact-topic="General inquiry">
-                        Start your request
-                    </button>
-                </div>
-            </div>
+            {% if request.user.is_authenticated %}
+                <a href="/dashboard/" class="setting-row text-sm font-black no-underline">
+                    <span>Account</span>
+                    <span>→</span>
+                </a>
+            {% else %}
+                <a href="/" class="setting-row text-sm font-black no-underline">
+                    <span>Login</span>
+                    <span>→</span>
+                </a>
+            {% endif %}
         </div>
-    </aside>
+    </div>
 
     <main>
-        <section class="px-4 pt-32 pb-8 lg:px-6 lg:pt-36">
-            <div class="hero-grid mx-auto max-w-7xl overflow-hidden rounded-[38px] border border-white/14 shadow-premium">
+        <!-- HERO -->
+        <section class="hero">
+            <div class="hero-card">
                 <div class="grid gap-10 px-6 py-12 md:px-10 lg:grid-cols-[1.1fr_0.9fr] lg:px-14 lg:py-16">
                     <div class="text-white">
-                        <div class="section-chip">
-                            <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.8)]"></span>
-                            Contact us
+                        <div class="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-100">
+                            Contact TwinScopes
                         </div>
-                        <h2 class="mt-6 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                            Let’s turn your space into a premium digital experience
-                        </h2>
-                        <p class="mt-5 max-w-2xl text-base leading-8 text-slate-100 sm:text-lg">
-                            Whether you want to showcase a property, venue, showroom, or destination, we are ready to help you create a more engaging, modern, and business-ready virtual presence.
+
+                        <h1 class="mt-6 max-w-3xl text-4xl font-black leading-[0.98] tracking-[-0.055em] sm:text-5xl lg:text-6xl">
+                            Let’s turn your space into a
+                            <span class="block bg-gradient-to-r from-cyan-200 to-white bg-clip-text text-transparent">
+                                premium digital experience
+                            </span>
+                        </h1>
+
+                        <p class="mt-6 max-w-2xl text-base leading-8 text-white/72">
+                            Tell us about your business, your place and your goals. We will help you build a smarter virtual presence with TwinScopes AI.
                         </p>
 
-                        <div class="mt-8 flex flex-wrap gap-4">
-                            <button type="button" class="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-900 shadow-premium transition hover:-translate-y-0.5 hover:brightness-105" data-open-contact data-contact-topic="General inquiry">
+                        <div class="mt-8 flex flex-wrap gap-3">
+                            <button type="button" class="rounded-2xl bg-cyan-300 px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-0.5" data-open-contact data-contact-topic="General inquiry">
                                 Open the form
                             </button>
-                            <a href="mailto:hello@virtualtours.com" class="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/16">
-                                Email us directly
+                            <a href="mailto:hello@virtualtours.com" class="rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-sm font-black text-white no-underline transition hover:bg-white/15">
+                                Email us
                             </a>
                         </div>
                     </div>
 
-                    <div class="grid gap-4 self-center">
-                        <div class="glass-soft rounded-[30px] p-6">
-                            <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Fast response</p>
-                            <h3 class="mt-3 text-2xl font-black tracking-tight text-slate-900">Tell us about your project</h3>
-                            <p class="mt-3 text-sm leading-7 text-slate-600">
-                                Share your needs, goals, and type of space. We will help you identify the right immersive experience for your audience.
+                    <div class="grid content-center gap-4">
+                        <div class="rounded-[28px] border border-white/15 bg-white/10 p-6 text-white backdrop-blur-xl">
+                            <p class="text-xs font-black uppercase tracking-[0.18em] text-cyan-100">Fast response</p>
+                            <h2 class="mt-3 text-2xl font-black">Tell us about your project</h2>
+                            <p class="mt-3 text-sm leading-7 text-white/64">
+                                Share your needs, goals and type of space. We will guide you toward the right immersive solution.
                             </p>
                         </div>
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="glass-soft rounded-[28px] p-5 text-center">
-                                <div class="text-3xl font-black text-slate-900">Email</div>
-                                <div class="mt-2 text-sm font-semibold text-slate-600">hello@virtualtours.com</div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="rounded-[24px] border border-white/15 bg-white/10 p-5 text-center text-white backdrop-blur-xl">
+                                <div class="text-2xl font-black">Email</div>
+                                <div class="mt-1 text-xs font-bold text-white/56">hello@virtualtours.com</div>
                             </div>
-                            <div class="glass-soft rounded-[28px] p-5 text-center">
-                                <div class="text-3xl font-black text-slate-900">Call</div>
-                                <div class="mt-2 text-sm font-semibold text-slate-600">+1 (206) 643-8123</div>
+
+                            <div class="rounded-[24px] border border-white/15 bg-white/10 p-5 text-center text-white backdrop-blur-xl">
+                                <div class="text-2xl font-black">Call</div>
+                                <div class="mt-1 text-xs font-bold text-white/56">+1 (206) 643-8123</div>
                             </div>
                         </div>
                     </div>
@@ -409,9 +679,10 @@
             </div>
         </section>
 
-        <section class="mx-auto max-w-7xl px-4 py-8 lg:px-6 lg:py-12">
+        <!-- MESSAGES -->
+        <section class="mx-auto max-w-6xl px-4 lg:px-6">
             {% if messages %}
-                <div class="mb-8 space-y-3">
+                <div class="mb-6 space-y-3">
                     {% for message in messages %}
                         <div class="rounded-[22px] border px-5 py-4 text-sm font-semibold {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-700{% else %}border-amber-200 bg-amber-50 text-amber-700{% endif %}">
                             {{ message }}
@@ -421,7 +692,7 @@
             {% endif %}
 
             {% if form.errors %}
-                <div class="mb-8 rounded-[22px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                <div class="mb-6 rounded-[22px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
                     <strong>Please fix the following errors:</strong>
                     <ul class="mt-2 list-disc pl-5">
                         {% for field in form %}
@@ -435,83 +706,107 @@
                     </ul>
                 </div>
             {% endif %}
+        </section>
 
-            <div class="grid gap-5 md:grid-cols-3">
-                <article class="glass-soft rounded-[28px] p-6 soft-border">
-                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">General inquiries</p>
-                    <h3 class="mt-3 text-2xl font-black tracking-tight text-slate-900">Ask about your project</h3>
-                    <p class="mt-3 text-sm leading-7 text-slate-600">Tell us what you want to present and what kind of audience you want to attract.</p>
-                    <button type="button" class="mt-5 inline-flex rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white" data-open-contact data-contact-topic="General inquiry">
+        <!-- CONTACT OPTIONS -->
+        <section class="mx-auto max-w-6xl px-4 py-8 lg:px-6">
+            <div class="mb-6 max-w-2xl">
+                <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Start here</p>
+                <h2 class="mt-2 text-3xl font-black tracking-tight text-slate-950 dark-title">
+                    Choose how you want to contact us
+                </h2>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-3">
+                <article class="contact-card glass dark-card">
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">General inquiries</p>
+                    <h3 class="mt-3 text-xl font-black tracking-tight text-slate-950 dark-title">Ask about your project</h3>
+                    <p class="mt-3 text-sm leading-7 text-slate-600 dark-text">
+                        Tell us what you want to present and what kind of audience you want to attract.
+                    </p>
+                    <button type="button" class="mt-5 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white" data-open-contact data-contact-topic="General inquiry">
                         Contact us
                     </button>
                 </article>
 
-                <article class="glass-soft rounded-[28px] p-6 soft-border">
-                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Consultation</p>
-                    <h3 class="mt-3 text-2xl font-black tracking-tight text-slate-900">Request a discovery call</h3>
-                    <p class="mt-3 text-sm leading-7 text-slate-600">Let’s discuss your goals and find the best immersive format for your brand, venue, or property.</p>
-                    <button type="button" class="mt-5 inline-flex rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white" data-open-contact data-contact-topic="Discovery call">
+                <article class="contact-card glass dark-card">
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Consultation</p>
+                    <h3 class="mt-3 text-xl font-black tracking-tight text-slate-950 dark-title">Request a discovery call</h3>
+                    <p class="mt-3 text-sm leading-7 text-slate-600 dark-text">
+                        Let’s discuss your goals and find the best immersive format for your brand or property.
+                    </p>
+                    <button type="button" class="mt-5 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white" data-open-contact data-contact-topic="Discovery call">
                         Book a call
                     </button>
                 </article>
 
-                <article class="glass-soft rounded-[28px] p-6 soft-border">
-                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Custom request</p>
-                    <h3 class="mt-3 text-2xl font-black tracking-tight text-slate-900">Need something specific?</h3>
-                    <p class="mt-3 text-sm leading-7 text-slate-600">Share your vision and we will help shape a custom experience around your space and your business goals.</p>
-                    <button type="button" class="mt-5 inline-flex rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white" data-open-contact data-contact-topic="Custom request">
+                <article class="contact-card glass dark-card">
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Custom request</p>
+                    <h3 class="mt-3 text-xl font-black tracking-tight text-slate-950 dark-title">Need something specific?</h3>
+                    <p class="mt-3 text-sm leading-7 text-slate-600 dark-text">
+                        Share your vision and we will help shape a custom experience around your space.
+                    </p>
+                    <button type="button" class="mt-5 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white" data-open-contact data-contact-topic="Custom request">
                         Send request
                     </button>
                 </article>
             </div>
         </section>
 
-        <section class="mx-auto max-w-7xl px-4 py-8 lg:px-6 lg:py-12">
-            <div class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-                <div class="glass-soft rounded-[34px] p-8 soft-border lg:p-10">
-                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Send a message</p>
-                    <h3 class="mt-3 text-3xl font-black tracking-tight text-slate-900">Prefer to contact us directly from the page?</h3>
-                    <p class="mt-4 text-base leading-8 text-slate-600">
-                        Fill out the form below and send us your project details. This form uses the same Django view as the modal form, so everything stays connected.
+        <!-- FORM -->
+        <section class="mx-auto max-w-6xl px-4 py-8 pb-12 lg:px-6">
+            <div class="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+                <div class="glass dark-card rounded-[30px] p-7 lg:p-9">
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Send a message</p>
+                    <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 dark-title">
+                        Prefer to contact us directly from the page?
+                    </h2>
+                    <p class="mt-4 text-base leading-8 text-slate-600 dark-text">
+                        Fill out the form and send your project details. This form uses the same Django view as the modal form.
                     </p>
-                    <div class="mt-6 space-y-4 text-sm leading-7 text-slate-700">
-                        <p>• Ideal for property showcases, venues, showrooms, and branded spaces</p>
-                        <p>• Perfect if you want a quick inquiry form visible on the page</p>
+
+                    <div class="mt-6 space-y-4 text-sm leading-7 text-slate-700 dark-text">
+                        <p>• Ideal for property showcases, venues and branded spaces</p>
+                        <p>• Perfect for quick inquiries visible on the page</p>
                         <p>• Visitors can still use the popup modal if they prefer</p>
                     </div>
                 </div>
 
-                <div class="glass-soft rounded-[34px] p-8 soft-border lg:p-10">
-                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Contact form</p>
-                    <h3 class="mt-3 text-3xl font-black tracking-tight text-slate-900">Send your request</h3>
+                <div class="glass dark-card rounded-[30px] p-7 lg:p-9">
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Contact form</p>
+                    <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 dark-title">
+                        Send your request
+                    </h2>
 
                     <form method="post" action="{% url 'public_contact' %}" class="mt-6 space-y-5">
                         {% csrf_token %}
 
                         <div class="grid gap-5 sm:grid-cols-2">
                             <div>
-                                <label class="mb-2 block text-sm font-bold text-slate-900">Full name</label>
+                                <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Full name</label>
                                 <input type="text" name="full_name" class="field" placeholder="Your full name" required>
                             </div>
+
                             <div>
-                                <label class="mb-2 block text-sm font-bold text-slate-900">Email address</label>
+                                <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Email address</label>
                                 <input type="email" name="email" class="field" placeholder="you@example.com" required>
                             </div>
                         </div>
 
                         <div class="grid gap-5 sm:grid-cols-2">
                             <div>
-                                <label class="mb-2 block text-sm font-bold text-slate-900">Phone number</label>
+                                <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Phone number</label>
                                 <input type="text" name="phone" class="field" placeholder="+1 234 567 890">
                             </div>
+
                             <div>
-                                <label class="mb-2 block text-sm font-bold text-slate-900">Company or brand name</label>
+                                <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Company or brand name</label>
                                 <input type="text" name="company_name" class="field" placeholder="Company or brand name">
                             </div>
                         </div>
 
                         <div>
-                            <label class="mb-2 block text-sm font-bold text-slate-900">What service do you need?</label>
+                            <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">What service do you need?</label>
                             <select name="service_interest" class="field" required>
                                 <option value="">Select a service</option>
                                 <option value="virtual_tour">360° Virtual Tour</option>
@@ -524,20 +819,21 @@
                         </div>
 
                         <div>
-                            <label class="mb-2 block text-sm font-bold text-slate-900">Subject</label>
+                            <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Subject</label>
                             <input type="text" name="subject" class="field" placeholder="Tell us what you need" required>
                         </div>
 
                         <div>
-                            <label class="mb-2 block text-sm font-bold text-slate-900">Message</label>
+                            <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Message</label>
                             <textarea name="message" class="field" placeholder="Describe your project, space, or goals..." required></textarea>
                         </div>
 
-                        <div class="flex flex-wrap gap-4 pt-2">
-                            <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-4 text-sm font-black text-slate-950">
+                        <div class="flex flex-wrap gap-3 pt-2">
+                            <button type="submit" class="rounded-2xl bg-cyan-300 px-6 py-4 text-sm font-black text-slate-950">
                                 Send from page
                             </button>
-                            <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700" data-open-contact data-contact-topic="General inquiry">
+
+                            <button type="button" class="rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700" data-open-contact data-contact-topic="General inquiry">
                                 Open modal instead
                             </button>
                         </div>
@@ -547,15 +843,19 @@
         </section>
     </main>
 
+    <!-- CONTACT MODAL -->
     <div id="contactModal" class="contact-modal" aria-hidden="true">
         <div class="contact-modal-card">
             <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-6 sm:px-8">
                 <div>
-                    <p class="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Contact form</p>
-                    <h3 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Tell us about your project</h3>
-                    <p class="mt-2 text-sm leading-6 text-slate-600">Fill out the form and we will get back to you as soon as possible.</p>
+                    <p class="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Contact form</p>
+                    <h3 class="mt-2 text-2xl font-black tracking-tight text-slate-900 dark-title">Tell us about your project</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-600 dark-text">Fill out the form and we will get back to you as soon as possible.</p>
                 </div>
-                <button type="button" id="closeContactModalBtn" class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-soft">✕</button>
+
+                <button type="button" id="closeContactModalBtn" class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-soft">
+                    ✕
+                </button>
             </div>
 
             <form method="post" action="{% url 'public_contact' %}" class="space-y-5 px-6 py-6 sm:px-8 sm:py-8">
@@ -564,49 +864,52 @@
 
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div>
-                        <label class="mb-2 block text-sm font-bold text-slate-900">Full name</label>
+                        <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Full name</label>
                         <input type="text" name="full_name" id="contactNameField" class="field" placeholder="Your full name" required>
                     </div>
+
                     <div>
-                        <label class="mb-2 block text-sm font-bold text-slate-900">Email address</label>
+                        <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Email address</label>
                         <input type="email" name="email" class="field" placeholder="you@example.com" required>
                     </div>
                 </div>
 
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div>
-                        <label class="mb-2 block text-sm font-bold text-slate-900">Phone number</label>
+                        <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Phone number</label>
                         <input type="text" name="phone" class="field" placeholder="+1 234 567 890">
                     </div>
+
                     <div>
-                        <label class="mb-2 block text-sm font-bold text-slate-900">Company or brand name</label>
+                        <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Company or brand name</label>
                         <input type="text" name="company_name" class="field" placeholder="Company or brand name">
                     </div>
                 </div>
 
                 <div>
-                    <label class="mb-2 block text-sm font-bold text-slate-900">What service do you need?</label>
-                   <select name="service_interest" class="field" required>
-    <option value="">Select a service</option>
-    <option value="virtual_tour">360° Virtual Tour</option>
-    <option value="hotspots">Interactive Hotspots</option>
-    <option value="showcase">Property / Venue Showcase</option>
-    <option value="lead_capture">Lead Capture & Booking</option>
-    <option value="branding">Branded Presentation</option>
-    <option value="other">Other</option>
-</select>
+                    <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">What service do you need?</label>
+                    <select name="service_interest" class="field" required>
+                        <option value="">Select a service</option>
+                        <option value="virtual_tour">360° Virtual Tour</option>
+                        <option value="hotspots">Interactive Hotspots</option>
+                        <option value="showcase">Property / Venue Showcase</option>
+                        <option value="lead_capture">Lead Capture & Booking</option>
+                        <option value="branding">Branded Presentation</option>
+                        <option value="other">Other</option>
+                    </select>
                 </div>
 
                 <div>
-                    <label class="mb-2 block text-sm font-bold text-slate-900">Message</label>
+                    <label class="mb-2 block text-sm font-bold text-slate-900 dark-title">Message</label>
                     <textarea name="message" class="field" placeholder="Describe your project, space, or goals..." required></textarea>
                 </div>
 
-                <div class="flex flex-wrap gap-4 pt-2">
-                    <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-4 text-sm font-black text-slate-950">
+                <div class="flex flex-wrap gap-3 pt-2">
+                    <button type="submit" class="rounded-2xl bg-cyan-300 px-6 py-4 text-sm font-black text-slate-950">
                         Send message
                     </button>
-                    <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700" data-close-contact>
+
+                    <button type="button" class="rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700" data-close-contact>
                         Cancel
                     </button>
                 </div>
@@ -614,24 +917,64 @@
         </div>
     </div>
 
-    <footer class="mx-auto max-w-7xl px-4 py-10 text-sm text-slate-500 lg:px-6">
-        <div class="flex flex-col gap-3 border-t border-slate-200/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p>© {% now "Y" %} Virtual Tours. Contact us to build your next immersive experience.</p>
-            <div class="flex flex-wrap gap-4">
-                <a href="{% url 'public_about' %}" class="transition hover:text-slate-900">About</a>
-                <a href="{% url 'public_services' %}" class="transition hover:text-slate-900">Services</a>
-                <a href="{% url 'public_contact' %}" class="transition hover:text-slate-900">Contact</a>
-            </div>
+    <!-- MOBILE BOTTOM NAV -->
+    <nav id="mobileBottomNav" class="mobile-bottom-nav">
+        <a href="/" class="bottom-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
+            </svg>
+            <span>Home</span>
+        </a>
+
+        <a href="/explorer/" class="bottom-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5M3.75 12h16.5M3.75 18.75h16.5" />
+            </svg>
+            <span>Explore</span>
+        </a>
+
+        <a href="{% url 'public_about' %}" class="bottom-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M12 8.25h.008v.008H12V8.25z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>About</span>
+        </a>
+
+        {% if request.user.is_authenticated %}
+            <a href="/dashboard/" class="bottom-nav-link">
+        {% else %}
+            <a href="/" class="bottom-nav-link">
+        {% endif %}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 20.25a7.5 7.5 0 0115 0" />
+            </svg>
+            <span>Account</span>
+        </a>
+    </nav>
+
+    <footer class="mx-auto max-w-6xl px-4 py-8 text-sm font-semibold text-slate-500 dark-text lg:px-6">
+        <div class="border-t border-slate-200 pt-6">
+            © {% now "Y" %} TwinScopes. Contact us to build your next immersive experience.
         </div>
     </footer>
 
+    <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", () => {
             const body = document.body;
-            const openMenuBtn = document.getElementById("openMenuBtn");
-            const closeMenuBtn = document.getElementById("closeMenuBtn");
-            const menuBackdrop = document.getElementById("menuBackdrop");
-            const mobileMenuPanel = document.getElementById("mobileMenuPanel");
+
+            const desktopHeader = document.getElementById("desktopHeader");
+            const mobileTopActions = document.getElementById("mobileTopActions");
+            const mobileBottomNav = document.getElementById("mobileBottomNav");
+
+            const settingsMenu = document.getElementById("settingsMenu");
+            const settingsTriggers = Array.from(document.querySelectorAll(".settings-trigger"));
+            const themeToggleBtn = document.getElementById("themeToggleBtn");
+            const themeLabel = document.getElementById("themeLabel");
+            const languageSelect = document.getElementById("languageSelect");
 
             const contactModal = document.getElementById("contactModal");
             const contactBackdrop = document.getElementById("contactBackdrop");
@@ -639,35 +982,61 @@
             const contactTopicField = document.getElementById("contactTopicField");
             const contactNameField = document.getElementById("contactNameField");
 
+            function applyTheme(mode) {
+                const dark = mode === "dark";
+                body.classList.toggle("theme-dark", dark);
+
+                if (themeLabel) {
+                    themeLabel.textContent = dark ? "On" : "Off";
+                }
+
+                localStorage.setItem("twinscopesTheme", dark ? "dark" : "light");
+            }
+
+            applyTheme(localStorage.getItem("twinscopesTheme") || "light");
+
+            settingsTriggers.forEach((button) => {
+                button.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    settingsMenu?.classList.toggle("open");
+                });
+            });
+
+            themeToggleBtn?.addEventListener("click", () => {
+                const isDark = body.classList.contains("theme-dark");
+                applyTheme(isDark ? "light" : "dark");
+            });
+
+            languageSelect?.addEventListener("change", () => {
+                const params = new URLSearchParams(window.location.search);
+                params.set("lang", languageSelect.value);
+                window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+            });
+
+            document.addEventListener("click", (event) => {
+                const clickedTrigger = settingsTriggers.some((btn) => btn.contains(event.target));
+
+                if (settingsMenu && !settingsMenu.contains(event.target) && !clickedTrigger) {
+                    settingsMenu.classList.remove("open");
+                }
+            });
+
             function lockBody() {
                 body.classList.add("overflow-hidden");
             }
 
             function unlockBody() {
-                const menuOpen = mobileMenuPanel && mobileMenuPanel.classList.contains("open");
                 const modalOpen = contactModal && contactModal.classList.contains("show");
-                if (!menuOpen && !modalOpen) {
+
+                if (!modalOpen) {
                     body.classList.remove("overflow-hidden");
-                }
-            }
-
-            function setMobileMenuOpen(isOpen) {
-                if (!menuBackdrop || !mobileMenuPanel) return;
-
-                if (isOpen) {
-                    menuBackdrop.classList.add("show");
-                    mobileMenuPanel.classList.add("open");
-                    lockBody();
-                } else {
-                    menuBackdrop.classList.remove("show");
-                    mobileMenuPanel.classList.remove("open");
-                    unlockBody();
                 }
             }
 
             function openContactModal(topic) {
                 if (!contactModal || !contactBackdrop) return;
 
+                settingsMenu?.classList.remove("open");
                 contactModal.classList.add("show");
                 contactBackdrop.classList.add("show");
                 contactModal.setAttribute("aria-hidden", "false");
@@ -678,8 +1047,8 @@
 
                 lockBody();
 
-                window.setTimeout(function () {
-                    if (contactNameField) contactNameField.focus();
+                window.setTimeout(() => {
+                    contactNameField?.focus();
                 }, 120);
             }
 
@@ -692,74 +1061,63 @@
                 unlockBody();
             }
 
-            if (openMenuBtn) {
-                openMenuBtn.addEventListener("click", function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setMobileMenuOpen(true);
-                });
-            }
-
-            if (closeMenuBtn) {
-                closeMenuBtn.addEventListener("click", function () {
-                    setMobileMenuOpen(false);
-                });
-            }
-
-            if (menuBackdrop) {
-                menuBackdrop.addEventListener("click", function () {
-                    setMobileMenuOpen(false);
-                });
-            }
-
-            document.querySelectorAll("[data-menu-link]").forEach(function (link) {
-                link.addEventListener("click", function () {
-                    setMobileMenuOpen(false);
+            document.querySelectorAll("[data-open-contact]").forEach((button) => {
+                button.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    openContactModal(button.getAttribute("data-contact-topic") || "General inquiry");
                 });
             });
 
-            document.querySelectorAll("[data-open-contact]").forEach(function (button) {
-                button.addEventListener("click", function (e) {
-                    e.preventDefault();
-                    const topic = button.getAttribute("data-contact-topic") || "General inquiry";
-                    setMobileMenuOpen(false);
-                    openContactModal(topic);
-                });
-            });
-
-            document.querySelectorAll("[data-close-contact]").forEach(function (button) {
-                button.addEventListener("click", function () {
+            document.querySelectorAll("[data-close-contact]").forEach((button) => {
+                button.addEventListener("click", () => {
                     closeContactModal();
                 });
             });
 
-            if (closeContactModalBtn) {
-                closeContactModalBtn.addEventListener("click", function () {
-                    closeContactModal();
-                });
-            }
+            closeContactModalBtn?.addEventListener("click", closeContactModal);
+            contactBackdrop?.addEventListener("click", closeContactModal);
 
-            if (contactBackdrop) {
-                contactBackdrop.addEventListener("click", function () {
-                    closeContactModal();
-                });
-            }
-
-            window.addEventListener("keydown", function (event) {
+            document.addEventListener("keydown", (event) => {
                 if (event.key === "Escape") {
                     if (contactModal && contactModal.classList.contains("show")) {
                         closeContactModal();
-                    } else if (mobileMenuPanel && mobileMenuPanel.classList.contains("open")) {
-                        setMobileMenuOpen(false);
+                    } else {
+                        settingsMenu?.classList.remove("open");
                     }
                 }
             });
 
-            window.addEventListener("resize", function () {
-                if (window.innerWidth >= 768) {
-                    setMobileMenuOpen(false);
+            let lastScrollY = window.scrollY;
+            let ticking = false;
+
+            function handleScroll() {
+                const currentY = window.scrollY;
+                const scrollingDown = currentY > lastScrollY && currentY > 120;
+                const scrollingUp = currentY < lastScrollY;
+
+                if (scrollingDown) {
+                    desktopHeader?.classList.add("is-hidden");
+                    mobileTopActions?.classList.add("is-hidden");
+                    mobileBottomNav?.classList.add("is-hidden");
+                    settingsMenu?.classList.remove("open");
                 }
-            });
+
+                if (scrollingUp || currentY < 80) {
+                    desktopHeader?.classList.remove("is-hidden");
+                    mobileTopActions?.classList.remove("is-hidden");
+                    mobileBottomNav?.classList.remove("is-hidden");
+                }
+
+                lastScrollY = currentY;
+                ticking = false;
+            }
+
+            window.addEventListener("scroll", () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(handleScroll);
+                    ticking = true;
+                }
+            }, { passive: true });
         });
     </script>
 </body>
