@@ -1,4 +1,6 @@
 import os
+
+from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -51,6 +53,30 @@ def generate_hotspot_id(scene: Scene360) -> str:
     return hotspot_id
 
 
+def model_has_field(model_class, field_name: str) -> bool:
+    """
+    Vérifie si un champ existe dans le modèle.
+    Utile pour garder le service compatible si is_public/status existe ou non.
+    """
+    try:
+        model_class._meta.get_field(field_name)
+        return True
+    except Exception:
+        return False
+
+
+def get_file_url(file_field):
+    """
+    Retourne l'URL d'un FileField/ImageField si disponible.
+    """
+    try:
+        if file_field:
+            return file_field.url
+    except Exception:
+        return None
+    return None
+
+
 def build_tour_manifest(tour: Tour) -> dict:
     """
     Reconstruit le manifest JSON du tour à partir des scènes et hotspots.
@@ -64,20 +90,37 @@ def build_tour_manifest(tour: Tour) -> dict:
     )
 
     initial_scene_id = None
+    has_is_public = model_has_field(Scene360, "is_public")
 
     for index, scene in enumerate(ordered_scenes):
         if index == 0:
             initial_scene_id = scene.id
 
-        scenes_data.append({
+        image_360_original_url = get_file_url(getattr(scene, "image_360_original", None))
+        image_360_url = get_file_url(getattr(scene, "image_360", None))
+        image_360_mobile_url = get_file_url(getattr(scene, "image_360_mobile", None))
+        image_360_preview_url = get_file_url(getattr(scene, "image_360_preview", None))
+        thumbnail_url = get_file_url(getattr(scene, "thumbnail_image", None))
+
+        scene_payload = {
             "id": scene.id,
             "scene_id": scene.scene_id,
             "title": scene.title,
-            "image_url": scene.image_360.url if scene.image_360 else None,
-            "thumbnail_url": scene.thumbnail_image.url if scene.thumbnail_image else None,
+
+            # Ancien champ gardé pour compatibilité.
+            "image_url": image_360_url or image_360_original_url,
+
+            # Nouveaux champs utiles pour preview/mobile/Celery.
+            "image_360_original_url": image_360_original_url,
+            "image_360_url": image_360_url,
+            "image_360_mobile_url": image_360_mobile_url,
+            "image_360_preview_url": image_360_preview_url,
+            "thumbnail_url": thumbnail_url,
+
             "yaw_default": scene.yaw_default,
             "pitch_default": scene.pitch_default,
             "hfov_default": scene.hfov_default,
+
             "hotspots": [
                 {
                     "id": hotspot.id,
@@ -96,7 +139,12 @@ def build_tour_manifest(tour: Tour) -> dict:
                 }
                 for hotspot in scene.hotspots.all()
             ],
-        })
+        }
+
+        if has_is_public:
+            scene_payload["is_public"] = scene.is_public
+
+        scenes_data.append(scene_payload)
 
     manifest = {
         "tour_id": tour.id,
@@ -111,10 +159,16 @@ def build_tour_manifest(tour: Tour) -> dict:
     return manifest
 
 
-def handle_uploaded_scenes(tour: Tour, files):
+@transaction.atomic
+def handle_uploaded_scenes(tour: Tour, files, is_public=True):
     """
     Crée plusieurs Scene360 à partir d'un upload multiple de fichiers.
-    Le nom de fichier sert de base pour le titre.
+
+    Très important :
+    - L'image uploadée doit être enregistrée dans image_360_original.
+    - Celery utilise image_360_original comme image source.
+    - image_360, image_360_mobile, image_360_preview et thumbnail_image
+      seront générés ensuite par la task Celery.
     """
     created_scenes = []
 
@@ -126,24 +180,52 @@ def handle_uploaded_scenes(tour: Tour, files):
     )
     start_order = max_order + 1
 
+    has_is_public = model_has_field(Scene360, "is_public")
+    has_status = model_has_field(Scene360, "status")
+
     for index, uploaded_file in enumerate(files):
         filename = os.path.splitext(uploaded_file.name)[0]
         title = filename.replace("_", " ").replace("-", " ").strip()
+
         if not title:
             title = f"Scene {start_order + index}"
 
-        scene = Scene360.objects.create(
-            organization=tour.organization,
-            tour=tour,
-            scene_id=generate_scene_id(tour, title),
-            title=title,
-            image_360=uploaded_file,
-            order=start_order + index,
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+
+        scene_kwargs = {
+            "organization": tour.organization,
+            "tour": tour,
+            "scene_id": generate_scene_id(tour, title),
+            "title": title,
+            "order": start_order + index,
+        }
+
+        if has_is_public:
+            scene_kwargs["is_public"] = bool(is_public)
+
+        if has_status and hasattr(Scene360, "Status"):
+            scene_kwargs["status"] = Scene360.Status.DRAFT
+
+        scene = Scene360(**scene_kwargs)
+
+        # Correction principale :
+        # avant tu faisais image_360=uploaded_file.
+        # Maintenant on garde l'image source originale ici.
+        scene.image_360_original.save(
+            uploaded_file.name,
+            uploaded_file,
+            save=False,
         )
+
+        scene.save()
         created_scenes.append(scene)
 
     build_tour_manifest(tour)
     return created_scenes
+
 
 def reorder_scenes_for_tour(tour: Tour, ordered_scene_ids: list[int]):
     """
@@ -154,7 +236,11 @@ def reorder_scenes_for_tour(tour: Tour, ordered_scene_ids: list[int]):
     )
     existing_ids = {scene.id for scene in scenes}
 
-    cleaned_ids = [int(scene_id) for scene_id in ordered_scene_ids if int(scene_id) in existing_ids]
+    cleaned_ids = [
+        int(scene_id)
+        for scene_id in ordered_scene_ids
+        if int(scene_id) in existing_ids
+    ]
 
     remaining_ids = [scene.id for scene in scenes if scene.id not in cleaned_ids]
     final_ids = cleaned_ids + remaining_ids
@@ -208,6 +294,7 @@ def create_hotspot(
 
     build_tour_manifest(scene.tour)
     return hotspot
+
 
 def update_hotspot(
     hotspot: Hotspot,
@@ -268,27 +355,42 @@ def update_scene_properties(
     pitch_default=None,
     hfov_default=None,
     order=None,
+    is_public=None,
 ):
     """
     Met à jour les propriétés principales d'une scène.
     """
+    update_fields = []
+
     if title is not None:
         scene.title = title
+        update_fields.append("title")
 
     if yaw_default is not None:
         scene.yaw_default = yaw_default
+        update_fields.append("yaw_default")
 
     if pitch_default is not None:
         scene.pitch_default = pitch_default
+        update_fields.append("pitch_default")
 
     if hfov_default is not None:
         scene.hfov_default = hfov_default
+        update_fields.append("hfov_default")
 
     if order is not None:
         scene.order = order
+        update_fields.append("order")
 
-    scene.save()
-    build_tour_manifest(scene.tour)
+    if is_public is not None and model_has_field(Scene360, "is_public"):
+        scene.is_public = bool(is_public)
+        update_fields.append("is_public")
+
+    if update_fields:
+        update_fields.append("updated_at")
+        scene.save(update_fields=update_fields)
+        build_tour_manifest(scene.tour)
+
     return scene
 
 

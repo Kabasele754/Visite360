@@ -1040,7 +1040,12 @@ def upload_scenes_ajax_view(request, organization_slug, tour_id):
     if not files:
         return JsonResponse({"detail": "No files uploaded."}, status=400)
 
-    created_scenes = handle_uploaded_scenes(tour, files)
+    created_scenes = handle_uploaded_scenes(
+        tour=tour,
+        files=files,
+        is_public=True,
+    )
+
     build_tour_manifest(tour)
 
     created_ids = [scene.id for scene in created_scenes]
@@ -1071,8 +1076,6 @@ def upload_scenes_ajax_view(request, organization_slug, tour_id):
         "message": "Scenes uploaded. Processing started.",
         "scenes": data,
     }, status=201)
-
-
 
 
 
