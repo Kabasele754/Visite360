@@ -1056,7 +1056,7 @@ def tour_preview_view(request, organization_slug, tour_id):
     payload_version = _build_preview_payload_version(tour, all_scenes)
 
     cache_key = (
-        f"tour_preview_payload:v5:"
+        f"tour_preview_payload:v6:"
         f"{request.get_host()}:"
         f"{organization.slug}:"
         f"{tour.id}:"

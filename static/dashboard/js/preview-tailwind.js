@@ -165,15 +165,24 @@ document.addEventListener("DOMContentLoaded", () => {
     let focusMode = false;
     let toastTimer = null;
 
-    const MIN_FOV = degToRad(28);
-    const MAX_FOV = degToRad(118);
+    // Zoom Marzipano:
+    // - FOV grand  = image dézoomée
+    // - FOV petit  = image zoomée
+    // Donc zoom 0 = FOV maximum.
+    const MIN_FOV = degToRad(6);
+    const MAX_FOV = degToRad(132);
+    const ZERO_ZOOM_FOV = MAX_FOV;
 
-    const EXTRA_WIDE_OFFSET = degToRad(12);
-    const INITIAL_START_OFFSET = degToRad(16);
-    const SCENE_SWITCH_START_OFFSET = degToRad(14);
+    // On ne laisse plus hfov_default forcer un zoom initial.
+    // Toutes les scènes commencent à zoom 0, surtout sur mobile.
+    const EXTRA_WIDE_OFFSET = degToRad(0);
+    const INITIAL_OPEN_ZOOM_OFFSET = degToRad(0);
+    const NAVIGATION_ZOOM_IN_OFFSET_1 = degToRad(7);
+    const NAVIGATION_ZOOM_IN_OFFSET_2 = degToRad(13);
+    const SCENE_INCOMING_DEZOOM_OFFSET = degToRad(0);
 
-    const MOBILE_EXTRA_WIDE_OFFSET = degToRad(4);
-    const MOBILE_PINCH_SENSITIVITY = 0.0045;
+    const MOBILE_EXTRA_WIDE_OFFSET = degToRad(0);
+    const MOBILE_PINCH_SENSITIVITY = 2.15;
 
     const pinchState = {
         active: false,
@@ -225,6 +234,192 @@ document.addEventListener("DOMContentLoaded", () => {
         }, { passive: true });
     }
 
+
+
+    function injectPreviewCinematicStyles() {
+        if (document.getElementById("preview-cinematic-js-style")) return;
+
+        const style = document.createElement("style");
+        style.id = "preview-cinematic-js-style";
+        style.textContent = `
+            .preview-viewer {
+                position: relative;
+                overflow: hidden;
+                isolation: isolate;
+                perspective: 1200px;
+                transform-style: preserve-3d;
+                background: #020617;
+            }
+
+            .preview-viewer canvas {
+                width: 100% !important;
+                height: 100% !important;
+                display: block;
+            }
+
+            .preview-layer {
+                position: absolute;
+                inset: 0;
+                z-index: 0;
+                opacity: 0;
+                pointer-events: none;
+                transform: translate3d(0, 0, 0) scale(1);
+                transform-origin: center center;
+                filter: none;
+                will-change: opacity, transform, filter;
+                backface-visibility: hidden;
+                transition:
+                    opacity var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1),
+                    transform var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1),
+                    filter var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1);
+            }
+
+            .preview-layer.active-layer {
+                z-index: 1;
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .preview-layer.standby-layer {
+                z-index: 0;
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .preview-mount {
+                width: 100%;
+                height: 100%;
+            }
+
+            .preview-layer.layer-incoming {
+                z-index: 2;
+                opacity: 0;
+                pointer-events: none;
+                transform: translate3d(0, 0, 0) scale(1.035);
+                filter: blur(8px) brightness(.78) saturate(.94);
+            }
+
+            .preview-viewer.is-cinematic-transition .preview-layer.layer-incoming {
+                opacity: 1;
+                transform: translate3d(0, 0, 0) scale(1);
+                filter: blur(0) brightness(1) saturate(1);
+            }
+
+            .preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing {
+                z-index: 1;
+                opacity: 0;
+                pointer-events: none;
+                transform: translate3d(0, 0, 0) scale(1.075);
+                filter: blur(7px) brightness(.62) saturate(.82);
+            }
+
+            .preview-viewer::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                z-index: 8;
+                pointer-events: none;
+                opacity: 0;
+                background:
+                    radial-gradient(circle at 50% 48%, rgba(255,255,255,.18), transparent 18%),
+                    radial-gradient(circle at center, transparent 32%, rgba(2,6,23,.48) 72%, rgba(2,6,23,.72) 100%),
+                    linear-gradient(90deg, rgba(2,6,23,.36), transparent 24%, transparent 76%, rgba(2,6,23,.36));
+            }
+
+            .preview-viewer::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                z-index: 9;
+                pointer-events: none;
+                opacity: 0;
+                box-shadow:
+                    inset 0 10vh 0 rgba(2, 6, 23, .46),
+                    inset 0 -10vh 0 rgba(2, 6, 23, .46);
+            }
+
+            .preview-viewer.is-cinematic-transition::before {
+                animation: previewCinematicFlash var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1) both;
+            }
+
+            .preview-viewer.is-cinematic-transition::after {
+                animation: previewCinematicBars var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1) both;
+            }
+
+            .preview-viewer.is-opening::before {
+                animation: previewOpeningVignette 520ms ease both;
+            }
+
+            @keyframes previewCinematicFlash {
+                0% { opacity: 0; }
+                14% { opacity: .50; }
+                42% { opacity: .28; }
+                72% { opacity: .18; }
+                100% { opacity: 0; }
+            }
+
+            @keyframes previewCinematicBars {
+                0% { opacity: 0; }
+                16% { opacity: .95; }
+                58% { opacity: .78; }
+                100% { opacity: 0; }
+            }
+
+            @keyframes previewOpeningVignette {
+                0% { opacity: .72; }
+                100% { opacity: 0; }
+            }
+
+            @media (max-width: 768px) {
+                .preview-layer {
+                    transition:
+                        opacity var(--preview-cinematic-ms, 980ms) cubic-bezier(.22,.9,.25,1),
+                        transform var(--preview-cinematic-ms, 980ms) cubic-bezier(.22,.9,.25,1),
+                        filter var(--preview-cinematic-ms, 980ms) cubic-bezier(.22,.9,.25,1);
+                }
+
+                .preview-layer.layer-incoming {
+                    transform: translate3d(0, 0, 0) scale(1.025);
+                    filter: blur(5px) brightness(.82) saturate(.95);
+                }
+
+                .preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing {
+                    transform: translate3d(0, 0, 0) scale(1.045);
+                    filter: blur(5px) brightness(.66) saturate(.86);
+                }
+
+                .preview-viewer::after {
+                    box-shadow:
+                        inset 0 7vh 0 rgba(2, 6, 23, .42),
+                        inset 0 -7vh 0 rgba(2, 6, 23, .42);
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .preview-layer {
+                    transition: opacity 180ms ease !important;
+                    transform: none !important;
+                    filter: none !important;
+                }
+
+                .preview-viewer::before,
+                .preview-viewer::after {
+                    animation: none !important;
+                    opacity: 0 !important;
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    function getCinematicTransitionMs() {
+        return isMobileViewport() ? 980 : 1180;
+    }
+
+    function getCinematicCameraMs() {
+        return isMobileViewport() ? 620 : 760;
+    }
 
     function getLayerEl(key) {
         return key === "A" ? previewLayerA : previewLayerB;
@@ -309,16 +504,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getSceneBaseFov(scene) {
-        return clamp(degToRad(scene?.hfov_default || 100), MIN_FOV, MAX_FOV);
+        // Zoom 0: on ignore hfov_default pour ne pas commencer déjà zoomé.
+        return ZERO_ZOOM_FOV;
     }
 
     function getSceneFinalFov(scene) {
-        const mobileBoost = isMobileViewport() ? MOBILE_EXTRA_WIDE_OFFSET : 0;
-        return clamp(
-            getSceneBaseFov(scene) + EXTRA_WIDE_OFFSET + mobileBoost,
-            MIN_FOV,
-            MAX_FOV
-        );
+        // Vue maximale au chargement et après chaque changement de scène.
+        return clamp(ZERO_ZOOM_FOV, MIN_FOV, MAX_FOV);
     }
 
     function getCurrentView() {
@@ -343,6 +535,385 @@ document.addEventListener("DOMContentLoaded", () => {
         toastTimer = setTimeout(() => {
             previewToast.classList.remove("toast-show");
         }, 1700);
+    }
+
+    const imageZoomState = {
+        overlay: null,
+        image: null,
+        scale: 1,
+        translateX: 0,
+        translateY: 0,
+        isDragging: false,
+        dragStartX: 0,
+        dragStartY: 0,
+        startTranslateX: 0,
+        startTranslateY: 0,
+        pointers: new Map(),
+        pinchStartDistance: 0,
+        pinchStartScale: 1
+    };
+
+    function injectImageZoomStyles() {
+        if (document.getElementById("previewImageZoomStyles")) return;
+
+        const style = document.createElement("style");
+        style.id = "previewImageZoomStyles";
+        style.textContent = `
+            .info-media-image-zoomable {
+                cursor: zoom-in;
+                transition: transform .22s ease, filter .22s ease;
+            }
+
+            .info-media-image-zoomable:hover {
+                transform: scale(1.018);
+                filter: saturate(1.06) contrast(1.03);
+            }
+
+            .preview-image-zoom-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 99999;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                background: rgba(2, 6, 23, .88);
+                backdrop-filter: blur(14px);
+                -webkit-backdrop-filter: blur(14px);
+                opacity: 0;
+                transition: opacity .18s ease;
+                touch-action: none;
+            }
+
+            .preview-image-zoom-overlay.open {
+                display: flex;
+                opacity: 1;
+            }
+
+            .preview-image-zoom-stage {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                touch-action: none;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+
+            .preview-image-zoom-img {
+                max-width: 94vw;
+                max-height: 86vh;
+                object-fit: contain;
+                border-radius: 22px;
+                box-shadow: 0 30px 90px rgba(0,0,0,.55);
+                transform-origin: center center;
+                will-change: transform;
+                transition: transform .12s ease;
+                cursor: zoom-in;
+                user-select: none;
+                -webkit-user-drag: none;
+            }
+
+            .preview-image-zoom-overlay.zoomed .preview-image-zoom-img {
+                cursor: grab;
+            }
+
+            .preview-image-zoom-overlay.dragging .preview-image-zoom-img {
+                cursor: grabbing;
+                transition: none;
+            }
+
+            .preview-image-zoom-toolbar {
+                position: absolute;
+                top: max(18px, env(safe-area-inset-top));
+                right: max(18px, env(safe-area-inset-right));
+                z-index: 2;
+                display: flex;
+                gap: 10px;
+                padding: 8px;
+                border: 1px solid rgba(255,255,255,.16);
+                border-radius: 999px;
+                background: rgba(15, 23, 42, .68);
+                box-shadow: 0 18px 50px rgba(0,0,0,.3);
+            }
+
+            .preview-image-zoom-btn {
+                width: 42px;
+                height: 42px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border: 0;
+                border-radius: 999px;
+                color: #fff;
+                background: rgba(255,255,255,.14);
+                font-size: 19px;
+                font-weight: 900;
+                line-height: 1;
+                cursor: pointer;
+                transition: transform .18s ease, background .18s ease;
+            }
+
+            .preview-image-zoom-btn:hover {
+                transform: translateY(-1px);
+                background: rgba(255,255,255,.24);
+            }
+
+            .preview-image-zoom-hint {
+                position: absolute;
+                left: 50%;
+                bottom: max(20px, env(safe-area-inset-bottom));
+                transform: translateX(-50%);
+                z-index: 2;
+                max-width: calc(100vw - 36px);
+                padding: 9px 14px;
+                border-radius: 999px;
+                color: rgba(255,255,255,.86);
+                background: rgba(15, 23, 42, .64);
+                font-size: 12px;
+                font-weight: 700;
+                text-align: center;
+                pointer-events: none;
+            }
+
+            @media (max-width: 768px) {
+                .preview-image-zoom-img {
+                    max-width: 96vw;
+                    max-height: 78vh;
+                    border-radius: 18px;
+                }
+
+                .preview-image-zoom-toolbar {
+                    top: max(12px, env(safe-area-inset-top));
+                    right: max(12px, env(safe-area-inset-right));
+                    gap: 7px;
+                    padding: 6px;
+                }
+
+                .preview-image-zoom-btn {
+                    width: 38px;
+                    height: 38px;
+                    font-size: 17px;
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    function clampImageTranslate() {
+        if (imageZoomState.scale <= 1.02) {
+            imageZoomState.translateX = 0;
+            imageZoomState.translateY = 0;
+            return;
+        }
+
+        const maxX = Math.min(window.innerWidth * 0.55 * imageZoomState.scale, window.innerWidth * 1.2);
+        const maxY = Math.min(window.innerHeight * 0.55 * imageZoomState.scale, window.innerHeight * 1.2);
+
+        imageZoomState.translateX = clamp(imageZoomState.translateX, -maxX, maxX);
+        imageZoomState.translateY = clamp(imageZoomState.translateY, -maxY, maxY);
+    }
+
+    function applyImageZoomTransform() {
+        if (!imageZoomState.image || !imageZoomState.overlay) return;
+
+        clampImageTranslate();
+
+        imageZoomState.image.style.transform = `translate3d(${imageZoomState.translateX}px, ${imageZoomState.translateY}px, 0) scale(${imageZoomState.scale})`;
+        imageZoomState.overlay.classList.toggle("zoomed", imageZoomState.scale > 1.02);
+    }
+
+    function resetImageZoom() {
+        imageZoomState.scale = 1;
+        imageZoomState.translateX = 0;
+        imageZoomState.translateY = 0;
+        imageZoomState.pointers.clear();
+        imageZoomState.pinchStartDistance = 0;
+        imageZoomState.pinchStartScale = 1;
+        applyImageZoomTransform();
+    }
+
+    function setImageZoomScale(nextScale) {
+        imageZoomState.scale = clamp(nextScale, 1, 5);
+        applyImageZoomTransform();
+    }
+
+    function getImagePointerDistance() {
+        const points = Array.from(imageZoomState.pointers.values());
+        if (points.length < 2) return 0;
+
+        const dx = points[0].clientX - points[1].clientX;
+        const dy = points[0].clientY - points[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function closeImageZoomViewer() {
+        if (!imageZoomState.overlay) return;
+
+        imageZoomState.overlay.classList.remove("open", "dragging", "zoomed");
+        document.body.classList.remove("image-zoom-open");
+        imageZoomState.pointers.clear();
+        imageZoomState.isDragging = false;
+    }
+
+    function ensureImageZoomViewer() {
+        injectImageZoomStyles();
+
+        if (imageZoomState.overlay && imageZoomState.image) {
+            return imageZoomState.overlay;
+        }
+
+        const overlay = document.createElement("div");
+        overlay.id = "previewImageZoomOverlay";
+        overlay.className = "preview-image-zoom-overlay";
+        overlay.innerHTML = `
+            <div class="preview-image-zoom-toolbar" data-image-zoom-toolbar>
+                <button type="button" class="preview-image-zoom-btn" data-image-zoom="out" aria-label="Zoom out">−</button>
+                <button type="button" class="preview-image-zoom-btn" data-image-zoom="reset" aria-label="Reset zoom">1×</button>
+                <button type="button" class="preview-image-zoom-btn" data-image-zoom="in" aria-label="Zoom in">+</button>
+                <button type="button" class="preview-image-zoom-btn" data-image-zoom="close" aria-label="Close">×</button>
+            </div>
+            <div class="preview-image-zoom-stage" data-image-zoom-stage>
+                <img class="preview-image-zoom-img" alt="Zoomed image" draggable="false">
+            </div>
+            <div class="preview-image-zoom-hint">Scroll / pinch to zoom • drag to move • double click to reset</div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const stage = overlay.querySelector("[data-image-zoom-stage]");
+        const image = overlay.querySelector(".preview-image-zoom-img");
+
+        imageZoomState.overlay = overlay;
+        imageZoomState.image = image;
+
+        overlay.addEventListener("click", (event) => {
+            if (event.target === overlay || event.target === stage) {
+                closeImageZoomViewer();
+            }
+        });
+
+        overlay.querySelectorAll("[data-image-zoom]").forEach((button) => {
+            button.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const action = button.dataset.imageZoom;
+                if (action === "close") closeImageZoomViewer();
+                if (action === "reset") resetImageZoom();
+                if (action === "in") setImageZoomScale(imageZoomState.scale + 0.35);
+                if (action === "out") setImageZoomScale(imageZoomState.scale - 0.35);
+            });
+        });
+
+        overlay.addEventListener("wheel", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const direction = event.deltaY > 0 ? -1 : 1;
+            setImageZoomScale(imageZoomState.scale + direction * 0.25);
+        }, { passive: false });
+
+        image.addEventListener("dblclick", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (imageZoomState.scale > 1.02) {
+                resetImageZoom();
+            } else {
+                setImageZoomScale(2.2);
+            }
+        });
+
+        stage.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            imageZoomState.pointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (imageZoomState.pointers.size === 2) {
+                imageZoomState.pinchStartDistance = getImagePointerDistance();
+                imageZoomState.pinchStartScale = imageZoomState.scale;
+                return;
+            }
+
+            if (imageZoomState.scale <= 1.02) return;
+
+            imageZoomState.isDragging = true;
+            imageZoomState.dragStartX = event.clientX;
+            imageZoomState.dragStartY = event.clientY;
+            imageZoomState.startTranslateX = imageZoomState.translateX;
+            imageZoomState.startTranslateY = imageZoomState.translateY;
+            overlay.classList.add("dragging");
+
+            try { stage.setPointerCapture?.(event.pointerId); } catch (_) {}
+        }, { passive: false });
+
+        stage.addEventListener("pointermove", (event) => {
+            if (!imageZoomState.pointers.has(event.pointerId)) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            imageZoomState.pointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (imageZoomState.pointers.size >= 2 && imageZoomState.pinchStartDistance) {
+                const currentDistance = getImagePointerDistance();
+                if (currentDistance) {
+                    const ratio = currentDistance / imageZoomState.pinchStartDistance;
+                    setImageZoomScale(imageZoomState.pinchStartScale * ratio);
+                }
+                return;
+            }
+
+            if (!imageZoomState.isDragging) return;
+
+            imageZoomState.translateX = imageZoomState.startTranslateX + (event.clientX - imageZoomState.dragStartX);
+            imageZoomState.translateY = imageZoomState.startTranslateY + (event.clientY - imageZoomState.dragStartY);
+            applyImageZoomTransform();
+        }, { passive: false });
+
+        function endImagePointer(event) {
+            imageZoomState.pointers.delete(event.pointerId);
+
+            if (imageZoomState.pointers.size < 2) {
+                imageZoomState.pinchStartDistance = 0;
+                imageZoomState.pinchStartScale = imageZoomState.scale;
+            }
+
+            if (imageZoomState.pointers.size === 0) {
+                imageZoomState.isDragging = false;
+                overlay.classList.remove("dragging");
+            }
+        }
+
+        stage.addEventListener("pointerup", endImagePointer);
+        stage.addEventListener("pointercancel", endImagePointer);
+        stage.addEventListener("pointerleave", endImagePointer);
+
+        return overlay;
+    }
+
+    function openImageZoomViewer(imageUrl, imageAlt = "Image") {
+        if (!imageUrl) return;
+
+        const overlay = ensureImageZoomViewer();
+        const image = imageZoomState.image;
+
+        image.src = imageUrl;
+        image.alt = imageAlt || "Image";
+
+        resetImageZoom();
+        overlay.classList.add("open");
+        document.body.classList.add("image-zoom-open");
     }
 
     function syncZoomButtonsState() {
@@ -393,7 +964,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!previewInfoPanel) return;
 
         const content = hotspot.payload?.content || {};
-        const imageUrl = content.image_url || hotspot.ad_image_url || "";
+        const imageUrl =
+            content.image_url ||
+            content.product_image_url ||
+            content.photo_url ||
+            hotspot.image_url ||
+            hotspot.ad_image_url ||
+            "";
         const ctaUrl = content.cta_url || "";
         const buttonText = content.button_text || "Open";
         const badge = content.badge || "";
@@ -404,9 +981,41 @@ document.addEventListener("DOMContentLoaded", () => {
         const whatsappNumber = content.whatsapp_number || "";
         const whatsappMessage = content.whatsapp_message || "Hello";
 
-        previewInfoMedia.innerHTML = imageUrl
-            ? `<img src="${imageUrl}" alt="${hotspot.title || hotspot.label || "Hotspot"}" class="info-media-image">`
-            : `<div class="info-media-empty">Preview unavailable</div>`;
+        previewInfoMedia.innerHTML = "";
+
+        if (imageUrl) {
+            const infoImage = document.createElement("img");
+            infoImage.src = imageUrl;
+            infoImage.alt = hotspot.title || hotspot.label || "Hotspot";
+            infoImage.className = "info-media-image info-media-image-zoomable";
+            infoImage.loading = "lazy";
+            infoImage.decoding = "async";
+            infoImage.title = "Click to zoom";
+            infoImage.setAttribute("role", "button");
+            infoImage.setAttribute("tabindex", "0");
+
+            infoImage.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openImageZoomViewer(imageUrl, infoImage.alt);
+            });
+
+            infoImage.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openImageZoomViewer(imageUrl, infoImage.alt);
+                }
+            });
+
+            infoImage.onerror = () => {
+                previewInfoMedia.innerHTML = `<div class="info-media-empty">Image unavailable</div>`;
+            };
+
+            previewInfoMedia.appendChild(infoImage);
+        } else {
+            previewInfoMedia.innerHTML = `<div class="info-media-empty">Preview unavailable</div>`;
+        }
 
         previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
         previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
@@ -725,14 +1334,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     ]
                 ),
                 limiter: Marzipano.RectilinearView.limit.traditional(
-                    sceneData.face_size || (mobile ? 1024 : 2048),
+                    Math.max(
+                        Number(sceneData.face_size || 0),
+                        Number(sceneData.max_resolution || 0),
+                        mobile ? 2048 : 4096
+                    ),
                     MAX_FOV
                 )
             };
         }
 
-        const textureWidth = mobile ? 1536 : 3072;
-        const faceSize = mobile ? 1536 : 3072;
+        // Résolution logique plus élevée pour permettre un vrai zoom avant,
+        // surtout sur mobile où Marzipano bride vite le zoom si la largeur est trop basse.
+        const logicalResolution = Math.max(
+            Number(sceneData?.face_size || 0),
+            Number(sceneData?.max_resolution || 0),
+            mobile ? 3072 : 4096
+        );
+        const textureWidth = logicalResolution;
+        const faceSize = logicalResolution;
 
         const preferredImageUrl = getPreferredImageUrl(sceneData);
 
@@ -800,40 +1420,29 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!view || !scene) return;
 
         const finalFov = getSceneFinalFov(scene);
-        const startFov = clamp(finalFov - INITIAL_START_OFFSET, MIN_FOV, MAX_FOV);
-
         const finalYaw = degToRad(scene.yaw_default || 0);
         const finalPitch = degToRad(scene.pitch_default || 0);
 
-        previewViewer.classList.add("is-cinematic-transition");
+        // Démarrage direct à zoom 0, même sur mobile.
+        // Pas de zoom automatique au chargement: l'utilisateur contrôle le zoom lui-même.
+        previewViewer.classList.add("is-opening");
 
         view.setParameters({
             yaw: finalYaw,
             pitch: finalPitch,
-            fov: startFov
+            fov: clamp(finalFov - INITIAL_OPEN_ZOOM_OFFSET, MIN_FOV, MAX_FOV)
         });
-
-        setTimeout(() => {
-            view.setParameters(
-                {
-                    yaw: finalYaw,
-                    pitch: finalPitch,
-                    fov: finalFov
-                },
-                { transitionDuration: 1600 }
-            );
-            syncZoomButtonsState();
-        }, 140);
 
         setTimeout(() => {
             previewIntroOverlay?.classList.add("is-hidden");
             document.body.classList.add("preview-has-loaded");
-        }, 650);
+            syncZoomButtonsState();
+        }, 220);
 
         setTimeout(() => {
-            previewViewer.classList.remove("is-cinematic-transition");
+            previewViewer.classList.remove("is-cinematic-transition", "transitioning", "is-opening");
             syncZoomButtonsState();
-        }, 1850);
+        }, 520);
     }
 
     function cinematicSwitchScene(targetScene, options = {}) {
@@ -844,6 +1453,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const outgoingKey = activeLayerKey;
         const incomingKey = standbyLayerKey();
+        const cinematicMs = getCinematicTransitionMs();
+        const cameraMs = getCinematicCameraMs();
+
+        previewViewer?.style?.setProperty("--preview-cinematic-ms", `${cinematicMs}ms`);
 
         buildSceneOnLayer(incomingKey, targetScene);
 
@@ -863,13 +1476,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const endPitch = degToRad(targetScene.pitch_default || 0);
 
         const finalFov = getSceneFinalFov(targetScene);
-        const introFov = clamp(finalFov - SCENE_SWITCH_START_OFFSET, MIN_FOV, MAX_FOV);
+        const incomingStartFov = clamp(
+            finalFov - SCENE_INCOMING_DEZOOM_OFFSET,
+            MIN_FOV,
+            MAX_FOV
+        );
 
         if (incomingView) {
             incomingView.setParameters({
                 yaw: startYaw,
                 pitch: startPitch,
-                fov: introFov
+                fov: incomingStartFov
             });
         }
 
@@ -880,7 +1497,7 @@ document.addEventListener("DOMContentLoaded", () => {
         incomingEl.classList.add("layer-incoming");
         incomingEl.style.opacity = "0";
 
-        previewViewer.classList.add("is-cinematic-transition");
+        previewViewer.classList.add("is-cinematic-transition", "transitioning");
 
         currentSceneId = targetScene.id;
         updateSceneMeta(targetScene);
@@ -899,10 +1516,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         pitch: endPitch,
                         fov: finalFov
                     },
-                    { transitionDuration: 1250 }
+                    { transitionDuration: cameraMs }
                 );
             }
-        }, 100);
+        }, 70);
 
         setTimeout(() => {
             outgoingEl.classList.remove("active-layer", "layer-outgoing");
@@ -913,12 +1530,12 @@ document.addEventListener("DOMContentLoaded", () => {
             incomingEl.classList.add("active-layer");
             incomingEl.style.opacity = "1";
 
-            previewViewer.classList.remove("is-cinematic-transition");
+            previewViewer.classList.remove("is-cinematic-transition", "transitioning");
             activeLayerKey = incomingKey;
             isTransitioning = false;
             updateAllViewerSizes();
             syncZoomButtonsState();
-        }, 1550);
+        }, cinematicMs);
     }
 
     async function navigateToScene(targetSceneId, hotspot) {
@@ -930,14 +1547,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
         isTransitioning = true;
         closeInfoPanel();
+        closeSceneStack();
         stopAutorotate();
 
         const hotspotYaw = normalizeAngle(Number(hotspot.yaw ?? currentView.yaw()));
         const hotspotPitch = Number(hotspot.pitch ?? currentView.pitch());
 
         const currentFov = currentView.fov();
-        const preSwitchFov = clamp(currentFov + degToRad(8), MIN_FOV, MAX_FOV);
-        const preSwitchFov2 = clamp(currentFov + degToRad(14), MIN_FOV, MAX_FOV);
+
+        // Petit zoom cinéma vers le hotspot avant le changement.
+        // On diminue le FOV pour zoomer, puis la nouvelle scène revient à zoom 0.
+        const firstZoomOffset = isMobileViewport() ? degToRad(10) : degToRad(12);
+        const secondZoomOffset = isMobileViewport() ? degToRad(20) : degToRad(24);
+
+        const preSwitchFov = clamp(
+            currentFov - firstZoomOffset,
+            MIN_FOV,
+            MAX_FOV
+        );
+        const preSwitchFov2 = clamp(
+            currentFov - secondZoomOffset,
+            MIN_FOV,
+            MAX_FOV
+        );
 
         currentView.setParameters(
             {
@@ -945,7 +1577,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 pitch: hotspotPitch,
                 fov: preSwitchFov
             },
-            { transitionDuration: 280 }
+            { transitionDuration: 260 }
         );
 
         setTimeout(() => {
@@ -955,17 +1587,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     pitch: hotspotPitch,
                     fov: preSwitchFov2
                 },
-                { transitionDuration: 420 }
+                { transitionDuration: 260 }
             );
             syncZoomButtonsState();
-        }, 140);
+        }, 180);
 
         setTimeout(() => {
             cinematicSwitchScene(targetScene, {
                 fromYaw: hotspotYaw,
                 fromPitch: hotspotPitch
             });
-        }, 460);
+        }, 420);
     }
 
     function zoomToFov(nextFov, duration = 220) {
@@ -1020,21 +1652,28 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!targetScene) return;
 
         closeInfoPanel();
+        closeSceneStack();
         isTransitioning = true;
         stopAutorotate();
 
         const currentView = getCurrentView();
         if (currentView) {
-            const widenedFov = clamp(currentView.fov() + degToRad(12), MIN_FOV, MAX_FOV);
+            const relativeZoomOffset = isMobileViewport() ? degToRad(12) : degToRad(16);
+            const zoomInFov = clamp(
+                currentView.fov() - relativeZoomOffset,
+                MIN_FOV,
+                MAX_FOV
+            );
+
             currentView.setParameters(
-                { fov: widenedFov },
+                { fov: zoomInFov },
                 { transitionDuration: 260 }
             );
             syncZoomButtonsState();
 
             setTimeout(() => {
                 cinematicSwitchScene(targetScene);
-            }, 180);
+            }, 300);
         } else {
             cinematicSwitchScene(targetScene);
         }
@@ -1079,74 +1718,306 @@ document.addEventListener("DOMContentLoaded", () => {
         return Math.sqrt(dx * dx + dy * dy);
     }
 
+    function setZoomInstant(nextFov) {
+        const view = getCurrentView();
+        if (!view) return;
+
+        view.setParameters({ fov: clamp(nextFov, MIN_FOV, MAX_FOV) });
+        syncZoomButtonsState();
+    }
+
     function setupMobileZoomGestures() {
         if (!previewViewer) return;
 
-        previewViewer.addEventListener("touchstart", (event) => {
-            if (event.touches.length === 2) {
-                const view = getCurrentView();
-                if (!view) return;
+        // MOBILE ZOOM FIX:
+        // - 1 doigt: Marzipano garde le drag normal.
+        // - 2 doigts: on force nous-mêmes le zoom en changeant le FOV.
+        // - Pas de stopPropagation: Marzipano continue de recevoir les events.
+        // - preventDefault seulement pendant le pinch pour empêcher le navigateur de zoomer la page.
+        [previewViewer, previewLayerA, previewLayerB, previewMountA, previewMountB].forEach((el) => {
+            if (!el) return;
+            el.style.touchAction = "none";
+            el.style.webkitUserSelect = "none";
+            el.style.userSelect = "none";
+        });
 
-                stopAutorotate();
-                pinchState.active = true;
-                pinchState.startDistance = getTouchDistance(event.touches);
-                pinchState.startFov = view.fov();
-            }
-        }, { passive: false });
+        let lastTapTs = 0;
+        const activePointers = new Map();
 
-        previewViewer.addEventListener("touchmove", (event) => {
-            if (!pinchState.active || event.touches.length !== 2) return;
+        const localPinch = {
+            active: false,
+            startDistance: 0,
+            startFov: 0
+        };
+
+        const pointerPinch = {
+            active: false,
+            startDistance: 0,
+            startFov: 0
+        };
+
+        function shouldIgnoreZoomTarget(target) {
+            return !!(
+                target?.closest?.("#previewControlDock") ||
+                target?.closest?.("#previewInfoPanel") ||
+                target?.closest?.("#previewSceneRail") ||
+                target?.closest?.("#previewImageZoomOverlay") ||
+                target?.closest?.(".preview-hotspot") ||
+                target?.closest?.("[data-ui='chrome']")
+            );
+        }
+
+        function isInsidePreview(target) {
+            return !!(previewViewer && target && previewViewer.contains(target));
+        }
+
+        function resetTouchPinch() {
+            localPinch.active = false;
+            localPinch.startDistance = 0;
+            localPinch.startFov = 0;
+            syncZoomButtonsState();
+        }
+
+        function resetPointerPinch() {
+            pointerPinch.active = false;
+            pointerPinch.startDistance = 0;
+            pointerPinch.startFov = 0;
+            syncZoomButtonsState();
+        }
+
+        function applyPinchZoom(startDistance, currentDistance, startFov, strength = 72) {
+            const view = getCurrentView();
+            if (!view || !startDistance || !currentDistance) return;
+
+            // distance augmente => zoom avant => FOV diminue.
+            // distance diminue => zoom arrière => FOV augmente.
+            const ratio = currentDistance / startDistance;
+            const zoomDelta = Math.log2(ratio) * degToRad(strength);
+            const nextFov = clamp(startFov - zoomDelta, MIN_FOV, MAX_FOV);
+
+            view.setParameters({ fov: nextFov });
+            syncZoomButtonsState();
+        }
+
+        function startTouchPinch(event) {
+            if (!event.touches || event.touches.length !== 2) return;
+            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
 
             const view = getCurrentView();
             if (!view) return;
 
             event.preventDefault();
+            stopAutorotate();
 
+            localPinch.active = true;
+            localPinch.startDistance = getTouchDistance(event.touches);
+            localPinch.startFov = view.fov();
+        }
+
+        function moveTouchPinch(event) {
+            if (!localPinch.active || !event.touches || event.touches.length !== 2) return;
+            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
+
+            event.preventDefault();
             const currentDistance = getTouchDistance(event.touches);
-            const distanceDelta = pinchState.startDistance - currentDistance;
+            applyPinchZoom(localPinch.startDistance, currentDistance, localPinch.startFov, isMobileViewport() ? 78 : 66);
+        }
 
-            const nextFov = clamp(
-                pinchState.startFov + distanceDelta * MOBILE_PINCH_SENSITIVITY,
-                MIN_FOV,
-                MAX_FOV
-            );
+        function endTouchPinch(event) {
+            if (!localPinch.active) return;
 
-            view.setParameters({ fov: nextFov });
-            syncZoomButtonsState();
-        }, { passive: false });
+            if (!event.touches || event.touches.length < 2) {
+                resetTouchPinch();
+            }
+        }
+
+        // Capture = on reçoit le pinch même si le vrai target est le canvas WebGL.
+        // Pas de stopPropagation = Marzipano continue de gérer le drag / inertie.
+        previewViewer.addEventListener("touchstart", (event) => {
+            if (event.touches && event.touches.length === 2) {
+                startTouchPinch(event);
+                return;
+            }
+
+            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
+
+            stopAutorotate();
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("touchmove", (event) => {
+            if (event.touches && event.touches.length === 2) {
+                moveTouchPinch(event);
+            }
+        }, { passive: false, capture: true });
 
         previewViewer.addEventListener("touchend", (event) => {
-            if (event.touches.length < 2) {
-                pinchState.active = false;
+            if (localPinch.active) {
+                endTouchPinch(event);
+                return;
             }
-            syncZoomButtonsState();
-        }, { passive: true });
 
-        previewViewer.addEventListener("touchcancel", () => {
-            pinchState.active = false;
-            syncZoomButtonsState();
-        }, { passive: true });
+            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
 
-        ["gesturestart", "gesturechange", "gestureend"].forEach((evt) => {
-            previewViewer.addEventListener(evt, (event) => {
+            // Double tap mobile: zoom avant / retour zoom 0.
+            const now = Date.now();
+            if (now - lastTapTs < 300) {
                 event.preventDefault();
-            }, { passive: false });
-        });
+                stopAutorotate();
+
+                const view = getCurrentView();
+                if (view) {
+                    const currentFov = view.fov();
+                    const zeroZoomFov = getSceneFinalFov(findScene(currentSceneId) || scenes[0]);
+                    const targetFov = currentFov > degToRad(58)
+                        ? clamp(currentFov - degToRad(34), MIN_FOV, MAX_FOV)
+                        : zeroZoomFov;
+
+                    view.setParameters({ fov: targetFov }, { transitionDuration: 160 });
+                    setTimeout(syncZoomButtonsState, 180);
+                }
+            }
+
+            lastTapTs = now;
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("touchcancel", resetTouchPinch, { passive: false, capture: true });
+
+        // Document fallback: certains navigateurs envoient le move au document pendant le pinch.
+        document.addEventListener("touchmove", (event) => {
+            if (localPinch.active && event.touches && event.touches.length === 2) {
+                moveTouchPinch(event);
+            }
+        }, { passive: false, capture: true });
+
+        document.addEventListener("touchend", endTouchPinch, { passive: false, capture: true });
+        document.addEventListener("touchcancel", resetTouchPinch, { passive: false, capture: true });
+
+        // Pointer Events fallback pour Android/Chrome.
+        function getPointerDistance() {
+            const points = Array.from(activePointers.values());
+            if (points.length < 2) return 0;
+            const dx = points[0].clientX - points[1].clientX;
+            const dy = points[0].clientY - points[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        previewViewer.addEventListener("pointerdown", (event) => {
+            if (event.pointerType !== "touch") return;
+            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
+
+            stopAutorotate();
+            activePointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (activePointers.size === 2) {
+                const view = getCurrentView();
+                if (!view) return;
+
+                event.preventDefault();
+                pointerPinch.active = true;
+                pointerPinch.startDistance = getPointerDistance();
+                pointerPinch.startFov = view.fov();
+            }
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("pointermove", (event) => {
+            if (event.pointerType !== "touch" || !activePointers.has(event.pointerId)) return;
+            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
+
+            activePointers.set(event.pointerId, {
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+
+            if (!pointerPinch.active || activePointers.size < 2) return;
+
+            event.preventDefault();
+            applyPinchZoom(pointerPinch.startDistance, getPointerDistance(), pointerPinch.startFov, isMobileViewport() ? 78 : 66);
+        }, { passive: false, capture: true });
+
+        function endPointer(event) {
+            if (event.pointerType !== "touch") return;
+            activePointers.delete(event.pointerId);
+            if (activePointers.size < 2) resetPointerPinch();
+        }
+
+        previewViewer.addEventListener("pointerup", endPointer, { passive: false, capture: true });
+        previewViewer.addEventListener("pointercancel", endPointer, { passive: false, capture: true });
+        previewViewer.addEventListener("pointerleave", endPointer, { passive: false, capture: true });
+
+        // iOS Safari native gesture fallback.
+        let gestureStartFov = 0;
+
+        previewViewer.addEventListener("gesturestart", (event) => {
+            const view = getCurrentView();
+            if (!view || shouldIgnoreZoomTarget(event.target)) return;
+
+            event.preventDefault();
+            stopAutorotate();
+            gestureStartFov = view.fov();
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("gesturechange", (event) => {
+            const view = getCurrentView();
+            if (!view || !gestureStartFov || shouldIgnoreZoomTarget(event.target)) return;
+
+            event.preventDefault();
+            const scale = event.scale || 1;
+            const zoomDelta = Math.log2(scale) * degToRad(76);
+            const nextFov = clamp(gestureStartFov - zoomDelta, MIN_FOV, MAX_FOV);
+            view.setParameters({ fov: nextFov });
+            syncZoomButtonsState();
+        }, { passive: false, capture: true });
+
+        previewViewer.addEventListener("gestureend", (event) => {
+            event.preventDefault();
+            gestureStartFov = 0;
+            syncZoomButtonsState();
+        }, { passive: false, capture: true });
+
+        // Desktop / trackpad: molette pour zoomer le panorama.
+        previewViewer.addEventListener("wheel", (event) => {
+            const target = event.target;
+            if (shouldIgnoreZoomTarget(target)) return;
+
+            const view = getCurrentView();
+            if (!view) return;
+
+            event.preventDefault();
+            stopAutorotate();
+
+            const direction = event.deltaY > 0 ? 1 : -1;
+            const nextFov = clamp(view.fov() + degToRad(direction * 7), MIN_FOV, MAX_FOV);
+            setZoomInstant(nextFov);
+        }, { passive: false, capture: true });
     }
+
 
     sceneStackToggle?.addEventListener("click", toggleSceneStack);
 
     prevSceneBtn?.addEventListener("click", () => goToRelativeScene(-1));
     nextSceneBtn?.addEventListener("click", () => goToRelativeScene(1));
 
-    zoomOutBtn?.addEventListener("click", () => {
+    function bindZoomButton(button, handler) {
+        if (!button) return;
+
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            handler();
+        }, { passive: false });
+    }
+
+    bindZoomButton(zoomOutBtn, () => {
         stopAutorotate();
-        zoomBy(8);
+        zoomBy(isMobileViewport() ? 8 : 10, 120);
     });
 
-    zoomInBtn?.addEventListener("click", () => {
+    bindZoomButton(zoomInBtn, () => {
         stopAutorotate();
-        zoomBy(-8);
+        zoomBy(isMobileViewport() ? -8 : -10, 120);
     });
 
     resetViewBtn?.addEventListener("click", resetCurrentView);
@@ -1198,6 +2069,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
+            closeImageZoomViewer();
             closeInfoPanel();
             closeSceneStack();
         }
@@ -1220,6 +2092,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     setupResponsiveMode();
+    injectPreviewCinematicStyles();
 
     if (!scenes.length) {
         if (sceneCountBadge) sceneCountBadge.textContent = "0";

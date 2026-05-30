@@ -3,7 +3,10 @@
 <html lang="fr" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
+    <style>@-ms-viewport { width: device-width; }</style>
+
     <title>{{ tour.title }} - Preview</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,36 +15,35 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
                     },
                     colors: {
                         brand: {
-                            50: '#ecfeff',
-                            100: '#cffafe',
-                            200: '#a5f3fc',
-                            300: '#67e8f9',
-                            400: '#22d3ee',
-                            500: '#06b6d4',
-                            600: '#0891b2',
-                            700: '#0e7490',
-                            800: '#155e75',
-                            900: '#164e63',
+                            50: "#ecfeff",
+                            100: "#cffafe",
+                            200: "#a5f3fc",
+                            300: "#67e8f9",
+                            400: "#22d3ee",
+                            500: "#06b6d4",
+                            600: "#0891b2",
+                            700: "#0e7490",
+                            800: "#155e75",
+                            900: "#164e63",
                         }
                     },
                     boxShadow: {
-                        glow: '0 0 0 1px rgba(255,255,255,0.06), 0 18px 40px rgba(0,0,0,0.32)',
-                        premium: '0 30px 90px rgba(0,0,0,0.48)',
-                        soft: '0 12px 28px rgba(0,0,0,0.22)',
+                        glow: "0 0 0 1px rgba(255,255,255,0.06), 0 18px 40px rgba(0,0,0,0.32)",
+                        premium: "0 30px 90px rgba(0,0,0,0.48)",
+                        soft: "0 12px 28px rgba(0,0,0,0.22)",
                     }
                 }
             }
-        }
+        };
     </script>
 
-    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=layer-ab-final-20260530">
 
     <style>
-        /* Safety: hide any old mobile debug overlay if the browser still has cached JS. */
         #previewDebugDialog,
         #previewMobileDebug {
             display: none !important;
@@ -51,8 +53,9 @@
         }
     </style>
 </head>
+
 <body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
-    <div class="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_45%,#01040d_100%)]">
+    <div class="preview-page-shell relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_45%,#01040d_100%)]">
 
         <div class="pointer-events-none absolute inset-0 overflow-hidden">
             <div class="absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl"></div>
@@ -116,12 +119,23 @@
 
                     <div class="pointer-events-none absolute inset-x-0 top-0 z-[6] h-32 bg-gradient-to-b from-slate-950/40 to-transparent"></div>
 
-                    <div id="previewLayerA" class="preview-layer active-layer">
+                    <!-- Layer A/B utilisé par preview-tailwind.js pour la transition cinéma -->
+                    <div id="previewLayerA" class="preview-layer active-layer" aria-hidden="false">
                         <div id="previewMountA" class="preview-mount"></div>
                     </div>
 
-                    <div id="previewLayerB" class="preview-layer standby-layer">
+                    <div id="previewLayerB" class="preview-layer standby-layer" aria-hidden="true">
                         <div id="previewMountB" class="preview-mount"></div>
+                    </div>
+
+                    <!-- loading preview pendant le changement de scène -->
+                    <div id="previewSceneLoadingOverlay" class="preview-scene-loading-overlay" aria-hidden="true">
+                        <img id="previewSceneLoadingImage" class="preview-scene-loading-image hidden" alt="Preview scene">
+                        <div class="preview-scene-loading-shade"></div>
+                        <div class="preview-scene-loading-chip">
+                            <span class="preview-scene-loading-dot"></span>
+                            <span id="previewSceneLoadingText">Loading panorama</span>
+                        </div>
                     </div>
 
                     <!-- info panel -->
@@ -132,7 +146,8 @@
                            class="info-panel absolute bottom-6 right-6 z-40 w-[420px] max-w-[calc(100%-2rem)] overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/78 shadow-premium backdrop-blur-2xl">
                         <button id="previewInfoClose"
                                 type="button"
-                                class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white transition hover:bg-black/60">
+                                class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white transition hover:bg-black/60"
+                                aria-label="Fermer">
                             ✕
                         </button>
 
@@ -191,7 +206,7 @@
         <div id="previewControlDock"
              data-ui="chrome"
              class="absolute bottom-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 md:bottom-5 md:w-auto">
-            
+
             <!-- scene panel opens upward -->
             <div id="previewSceneRail" class="scene-stack-panel scene-stack-panel-up">
                 <div class="scene-stack-panel-inner">
@@ -268,8 +283,7 @@
     {{ scenes_json|json_script:"preview-scenes-data" }}
     {{ scene_list_json|json_script:"preview-scene-list-data" }}
 
-         <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
-
-    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=no-mobile-debug-20260530"></script>
+    <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=layer-ab-final-20260530"></script>
 </body>
 </html>
