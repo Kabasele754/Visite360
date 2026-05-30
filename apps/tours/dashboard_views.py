@@ -168,6 +168,8 @@ def _get_or_create_default_workspace(user):
 # SCENE / HOTSPOT PAYLOAD HELPERS
 # =============================================================================
 
+
+
 def _safe_file_url(request, file_field):
     """
     Retourne une URL absolue propre pour ImageField/FileField.
@@ -962,6 +964,76 @@ def tour_builder_view(request, organization_slug, tour_id):
 
 
 
+import hashlib
+import json
+
+from django.core.cache import cache
+from django.shortcuts import get_object_or_404, render
+
+
+def _safe_dt_version(value):
+    try:
+        return int(value.timestamp()) if value else 0
+    except Exception:
+        return 0
+
+
+def _safe_file_name(file_field):
+    try:
+        return file_field.name or ""
+    except Exception:
+        return ""
+
+
+def _build_preview_payload_version(tour, scenes):
+    parts = []
+
+    tour_updated_value = getattr(tour, "updated_at", None) or getattr(tour, "created_at", None)
+    parts.append(f"tour:{tour.id}:{_safe_dt_version(tour_updated_value)}")
+
+    for scene in scenes:
+        scene_updated_value = getattr(scene, "updated_at", None) or getattr(scene, "created_at", None)
+
+        scene_part = {
+            "id": scene.id,
+            "scene_id": str(getattr(scene, "scene_id", "")),
+            "updated": _safe_dt_version(scene_updated_value),
+            "order": getattr(scene, "order", 0),
+            "is_public": bool(getattr(scene, "is_public", True)),
+            "status": getattr(scene, "status", ""),
+            "assets_status": getattr(scene, "assets_status", ""),
+            "tiles_status": getattr(scene, "tiles_status", ""),
+            "image_360": _safe_file_name(getattr(scene, "image_360", None)),
+            "image_360_mobile": _safe_file_name(getattr(scene, "image_360_mobile", None)),
+            "image_360_preview": _safe_file_name(getattr(scene, "image_360_preview", None)),
+            "image_360_original": _safe_file_name(getattr(scene, "image_360_original", None)),
+            "thumbnail_image": _safe_file_name(getattr(scene, "thumbnail_image", None)),
+            "tiles_manifest": getattr(scene, "tiles_manifest", {}) or {},
+        }
+
+        parts.append(json.dumps(scene_part, sort_keys=True, default=str))
+
+        for hotspot in scene.hotspots.all():
+            hotspot_updated_value = getattr(hotspot, "updated_at", None) or getattr(hotspot, "created_at", None)
+
+            hotspot_part = {
+                "id": hotspot.id,
+                "hotspot_id": str(getattr(hotspot, "hotspot_id", "")),
+                "updated": _safe_dt_version(hotspot_updated_value),
+                "type": getattr(hotspot, "type", ""),
+                "yaw": getattr(hotspot, "yaw", None),
+                "pitch": getattr(hotspot, "pitch", None),
+                "target_scene_id": getattr(hotspot, "target_scene_id", None),
+                "selected_icon": getattr(hotspot, "selected_icon", ""),
+                "payload": getattr(hotspot, "payload", {}) or {},
+                "ad_image": _safe_file_name(getattr(hotspot, "ad_image", None)),
+            }
+
+            parts.append(json.dumps(hotspot_part, sort_keys=True, default=str))
+
+    raw = "|".join(parts)
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()
+
 
 def tour_preview_view(request, organization_slug, tour_id):
     organization = _get_org_or_403(request, organization_slug, allow_public=True)
@@ -975,15 +1047,20 @@ def tour_preview_view(request, organization_slug, tour_id):
         organization=organization,
     )
 
-    tour_updated_value = getattr(tour, "updated_at", None) or getattr(tour, "created_at", None)
-    tour_version = int(tour_updated_value.timestamp()) if tour_updated_value else "no-version"
+    all_scenes = list(
+        tour.scenes
+        .all()
+        .order_by("order", "id")
+    )
+
+    payload_version = _build_preview_payload_version(tour, all_scenes)
 
     cache_key = (
-        f"tour_preview_payload:v2:"
+        f"tour_preview_payload:v5:"
         f"{request.get_host()}:"
         f"{organization.slug}:"
         f"{tour.id}:"
-        f"{tour_version}"
+        f"{payload_version}"
     )
 
     cached_payload = cache.get(cache_key)
@@ -1000,46 +1077,32 @@ def tour_preview_view(request, organization_slug, tour_id):
             },
         )
 
-    all_scenes = list(
-        tour.scenes
-        .all()
-        .order_by("order", "id")
-    )
-
     public_list_scenes = [
         scene for scene in all_scenes
-        if getattr(scene, "is_public", True) is True
+        if bool(getattr(scene, "is_public", True))
     ]
 
     prefetch_map = _build_prefetch_map(request, all_scenes)
 
-    scenes_payload = []
-
-    for scene in all_scenes:
-        scene_prefetch = prefetch_map.get(scene.id)
-
-        scenes_payload.append(
-            _serialize_scene_payload(
-                request=request,
-                scene=scene,
-                include_hotspots=True,
-                prefetch=scene_prefetch,
-            )
+    scenes_payload = [
+        _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=True,
+            prefetch=prefetch_map.get(scene.id),
         )
+        for scene in all_scenes
+    ]
 
-    scene_list_payload = []
-
-    for scene in public_list_scenes:
-        scene_prefetch = prefetch_map.get(scene.id)
-
-        scene_list_payload.append(
-            _serialize_scene_payload(
-                request=request,
-                scene=scene,
-                include_hotspots=False,
-                prefetch=scene_prefetch,
-            )
+    scene_list_payload = [
+        _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=False,
+            prefetch=prefetch_map.get(scene.id),
         )
+        for scene in public_list_scenes
+    ]
 
     payload = {
         "scenes_json": scenes_payload,
@@ -1054,15 +1117,10 @@ def tour_preview_view(request, organization_slug, tour_id):
         {
             "tour": tour,
             "current_organization": organization,
-
-            # Toutes les scènes pour Marzipano + hotspots
             "scenes_json": scenes_payload,
-
-            # Seulement les scènes visibles dans la liste du dock
             "scene_list_json": scene_list_payload,
         },
     )
-
 
 # =============================================================================
 # SCENES AJAX
