@@ -1748,11 +1748,14 @@ document.addEventListener("DOMContentLoaded", () => {
     function setupMobileZoomGestures() {
         if (!previewViewer) return;
 
-        // MOBILE ZOOM FIX:
+        // MOBILE PINCH STABLE FIX:
+        // Le problème venait du fait que plusieurs moteurs de zoom pouvaient agir en même temps
+        // sur mobile physique: touch events + pointer events + gesture events + parfois Marzipano.
+        // Résultat: quand l'utilisateur dézoomait, un autre handler pouvait remettre un zoom avant.
+        // Ici on garde un seul moteur principal pour le mobile: touchstart/touchmove à 2 doigts.
         // - 1 doigt: Marzipano garde le drag normal.
-        // - 2 doigts: on force nous-mêmes le zoom en changeant le FOV.
-        // - Pas de stopPropagation: Marzipano continue de recevoir les events.
-        // - preventDefault seulement pendant le pinch pour empêcher le navigateur de zoomer la page.
+        // - 2 doigts: on bloque Marzipano/le navigateur et on contrôle nous-mêmes le FOV.
+        // - Après un pinch: on bloque le double tap quelques ms pour éviter un re-zoom involontaire.
         [previewViewer, previewLayerA, previewLayerB, previewMountA, previewMountB].forEach((el) => {
             if (!el) return;
             el.style.touchAction = "none";
@@ -1761,18 +1764,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         let lastTapTs = 0;
-        const activePointers = new Map();
+        let blockDoubleTapUntil = 0;
 
-        const localPinch = {
+        const touchPinch = {
             active: false,
+            startedAt: 0,
             startDistance: 0,
-            startFov: 0
-        };
-
-        const pointerPinch = {
-            active: false,
-            startDistance: 0,
-            startFov: 0
+            startFov: 0,
+            lastFov: 0
         };
 
         function shouldIgnoreZoomTarget(target) {
@@ -1781,7 +1780,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 target?.closest?.("#previewInfoPanel") ||
                 target?.closest?.("#previewSceneRail") ||
                 target?.closest?.("#previewImageZoomOverlay") ||
-                target?.closest?.(".preview-hotspot") ||
                 target?.closest?.("[data-ui='chrome']")
             );
         }
@@ -1790,97 +1788,117 @@ document.addEventListener("DOMContentLoaded", () => {
             return !!(previewViewer && target && previewViewer.contains(target));
         }
 
+        function lockPinchEvent(event) {
+            // On empêche uniquement le pinch à 2 doigts d'aller jusqu'à Marzipano/le navigateur.
+            // Cela évite le conflit qui faisait re-zoomer automatiquement pendant le dézoom.
+            event.preventDefault();
+            event.stopPropagation();
+            if (typeof event.stopImmediatePropagation === "function") {
+                event.stopImmediatePropagation();
+            }
+        }
+
         function resetTouchPinch() {
-            localPinch.active = false;
-            localPinch.startDistance = 0;
-            localPinch.startFov = 0;
+            if (touchPinch.active) {
+                blockDoubleTapUntil = Date.now() + 420;
+            }
+
+            touchPinch.active = false;
+            touchPinch.startedAt = 0;
+            touchPinch.startDistance = 0;
+            touchPinch.startFov = 0;
+            touchPinch.lastFov = 0;
             syncZoomButtonsState();
         }
 
-        function resetPointerPinch() {
-            pointerPinch.active = false;
-            pointerPinch.startDistance = 0;
-            pointerPinch.startFov = 0;
-            syncZoomButtonsState();
-        }
-
-        function applyPinchZoom(startDistance, currentDistance, startFov, strength = 72) {
+        function applyPinchZoom(startDistance, currentDistance, startFov) {
             const view = getCurrentView();
             if (!view || !startDistance || !currentDistance) return;
 
             // distance augmente => zoom avant => FOV diminue.
-            // distance diminue => zoom arrière => FOV augmente.
-            const ratio = currentDistance / startDistance;
-            const zoomDelta = Math.log2(ratio) * degToRad(strength);
+            // distance diminue => dézoom => FOV augmente.
+            // Important: on part toujours du startFov du début du geste,
+            // pas du FOV courant, pour éviter l'effet ressort / re-zoom.
+            const safeRatio = clamp(currentDistance / startDistance, 0.28, 3.4);
+            const strength = isMobileViewport() ? 66 : 58;
+            const zoomDelta = Math.log2(safeRatio) * degToRad(strength);
             const nextFov = clamp(startFov - zoomDelta, MIN_FOV, MAX_FOV);
 
-            view.setParameters({ fov: nextFov });
-            syncZoomButtonsState();
+            touchPinch.lastFov = nextFov;
+            setZoomInstant(nextFov);
         }
 
         function startTouchPinch(event) {
-            if (!event.touches || event.touches.length !== 2) return;
+            if (!event.touches || event.touches.length < 2) return;
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
 
             const view = getCurrentView();
             if (!view) return;
 
-            event.preventDefault();
+            lockPinchEvent(event);
             stopAutorotate();
 
-            localPinch.active = true;
-            localPinch.startDistance = getTouchDistance(event.touches);
-            localPinch.startFov = view.fov();
+            touchPinch.active = true;
+            touchPinch.startedAt = Date.now();
+            touchPinch.startDistance = getTouchDistance(event.touches);
+            touchPinch.startFov = view.fov();
+            touchPinch.lastFov = view.fov();
         }
 
         function moveTouchPinch(event) {
-            if (!localPinch.active || !event.touches || event.touches.length !== 2) return;
-            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
+            if (!touchPinch.active || !event.touches || event.touches.length < 2) return;
 
-            event.preventDefault();
+            lockPinchEvent(event);
+
             const currentDistance = getTouchDistance(event.touches);
-            applyPinchZoom(localPinch.startDistance, currentDistance, localPinch.startFov, isMobileViewport() ? 78 : 66);
+            applyPinchZoom(touchPinch.startDistance, currentDistance, touchPinch.startFov);
         }
 
         function endTouchPinch(event) {
-            if (!localPinch.active) return;
+            if (!touchPinch.active) return;
+
+            if (event?.cancelable) {
+                event.preventDefault();
+            }
+            event?.stopPropagation?.();
+            event?.stopImmediatePropagation?.();
 
             if (!event.touches || event.touches.length < 2) {
                 resetTouchPinch();
             }
         }
 
-        // Capture = on reçoit le pinch même si le vrai target est le canvas WebGL.
-        // Pas de stopPropagation = Marzipano continue de gérer le drag / inertie.
         previewViewer.addEventListener("touchstart", (event) => {
-            if (event.touches && event.touches.length === 2) {
+            if (event.touches && event.touches.length >= 2) {
                 startTouchPinch(event);
                 return;
             }
 
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-
             stopAutorotate();
         }, { passive: false, capture: true });
 
         previewViewer.addEventListener("touchmove", (event) => {
-            if (event.touches && event.touches.length === 2) {
+            if (event.touches && event.touches.length >= 2) {
                 moveTouchPinch(event);
             }
         }, { passive: false, capture: true });
 
         previewViewer.addEventListener("touchend", (event) => {
-            if (localPinch.active) {
+            if (touchPinch.active) {
                 endTouchPinch(event);
                 return;
             }
 
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
+            if (Date.now() < blockDoubleTapUntil) return;
 
             // Double tap mobile: zoom avant / retour zoom 0.
+            // Il ne se déclenche plus juste après un pinch.
             const now = Date.now();
             if (now - lastTapTs < 300) {
                 event.preventDefault();
+                event.stopPropagation();
                 stopAutorotate();
 
                 const view = getCurrentView();
@@ -1901,9 +1919,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         previewViewer.addEventListener("touchcancel", resetTouchPinch, { passive: false, capture: true });
 
-        // Document fallback: certains navigateurs envoient le move au document pendant le pinch.
+        // Fallback document: si le doigt sort du canvas pendant le pinch,
+        // on garde le même geste sans recalculer un nouveau départ.
         document.addEventListener("touchmove", (event) => {
-            if (localPinch.active && event.touches && event.touches.length === 2) {
+            if (touchPinch.active && event.touches && event.touches.length >= 2) {
                 moveTouchPinch(event);
             }
         }, { passive: false, capture: true });
@@ -1911,92 +1930,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener("touchend", endTouchPinch, { passive: false, capture: true });
         document.addEventListener("touchcancel", resetTouchPinch, { passive: false, capture: true });
 
-        // Pointer Events fallback pour Android/Chrome.
-        function getPointerDistance() {
-            const points = Array.from(activePointers.values());
-            if (points.length < 2) return 0;
-            const dx = points[0].clientX - points[1].clientX;
-            const dy = points[0].clientY - points[1].clientY;
-            return Math.sqrt(dx * dx + dy * dy);
-        }
-
-        previewViewer.addEventListener("pointerdown", (event) => {
-            if (event.pointerType !== "touch") return;
-            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-
-            stopAutorotate();
-            activePointers.set(event.pointerId, {
-                clientX: event.clientX,
-                clientY: event.clientY
-            });
-
-            if (activePointers.size === 2) {
-                const view = getCurrentView();
-                if (!view) return;
-
-                event.preventDefault();
-                pointerPinch.active = true;
-                pointerPinch.startDistance = getPointerDistance();
-                pointerPinch.startFov = view.fov();
-            }
-        }, { passive: false, capture: true });
-
-        previewViewer.addEventListener("pointermove", (event) => {
-            if (event.pointerType !== "touch" || !activePointers.has(event.pointerId)) return;
-            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-
-            activePointers.set(event.pointerId, {
-                clientX: event.clientX,
-                clientY: event.clientY
-            });
-
-            if (!pointerPinch.active || activePointers.size < 2) return;
-
-            event.preventDefault();
-            applyPinchZoom(pointerPinch.startDistance, getPointerDistance(), pointerPinch.startFov, isMobileViewport() ? 78 : 66);
-        }, { passive: false, capture: true });
-
-        function endPointer(event) {
-            if (event.pointerType !== "touch") return;
-            activePointers.delete(event.pointerId);
-            if (activePointers.size < 2) resetPointerPinch();
-        }
-
-        previewViewer.addEventListener("pointerup", endPointer, { passive: false, capture: true });
-        previewViewer.addEventListener("pointercancel", endPointer, { passive: false, capture: true });
-        previewViewer.addEventListener("pointerleave", endPointer, { passive: false, capture: true });
-
-        // iOS Safari native gesture fallback.
-        let gestureStartFov = 0;
-
-        previewViewer.addEventListener("gesturestart", (event) => {
-            const view = getCurrentView();
-            if (!view || shouldIgnoreZoomTarget(event.target)) return;
-
-            event.preventDefault();
-            stopAutorotate();
-            gestureStartFov = view.fov();
-        }, { passive: false, capture: true });
-
-        previewViewer.addEventListener("gesturechange", (event) => {
-            const view = getCurrentView();
-            if (!view || !gestureStartFov || shouldIgnoreZoomTarget(event.target)) return;
-
-            event.preventDefault();
-            const scale = event.scale || 1;
-            const zoomDelta = Math.log2(scale) * degToRad(76);
-            const nextFov = clamp(gestureStartFov - zoomDelta, MIN_FOV, MAX_FOV);
-            view.setParameters({ fov: nextFov });
-            syncZoomButtonsState();
-        }, { passive: false, capture: true });
-
-        previewViewer.addEventListener("gestureend", (event) => {
-            event.preventDefault();
-            gestureStartFov = 0;
-            syncZoomButtonsState();
-        }, { passive: false, capture: true });
-
         // Desktop / trackpad: molette pour zoomer le panorama.
+        // Sur mobile physique, le pinch est géré uniquement par les touch events ci-dessus.
         previewViewer.addEventListener("wheel", (event) => {
             const target = event.target;
             if (shouldIgnoreZoomTarget(target)) return;
