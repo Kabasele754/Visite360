@@ -41,15 +41,82 @@
         };
     </script>
 
-    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=layer-ab-final-20260530">
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=cinematic-layer-ab-20260530">
 
     <style>
+        /* Cache les anciens overlays debug si le navigateur garde un ancien JS en cache. */
         #previewDebugDialog,
         #previewMobileDebug {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
             pointer-events: none !important;
+        }
+
+        /* Sécurité Layer A/B : garde le même comportement que le builder même si le CSS externe est chargé en retard. */
+        html,
+        body,
+        .preview-page-shell,
+        #previewViewer,
+        .preview-viewer {
+            overscroll-behavior: none !important;
+            -webkit-overflow-scrolling: auto !important;
+        }
+
+        #previewViewer,
+        .preview-viewer,
+        #previewLayerA,
+        #previewLayerB,
+        .preview-layer,
+        #previewMountA,
+        #previewMountB,
+        .preview-mount {
+            touch-action: none !important;
+            -ms-touch-action: none !important;
+        }
+
+        #previewLayerA,
+        #previewLayerB,
+        .preview-layer {
+            position: absolute !important;
+            inset: 0 !important;
+            transform-origin: center center !important;
+            backface-visibility: hidden !important;
+            will-change: transform, opacity, filter !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #previewMountA,
+        #previewMountB,
+        .preview-mount {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .preview-layer.active-layer {
+            opacity: 1 !important;
+            z-index: 2 !important;
+            pointer-events: auto !important;
+            transform: scale(1) !important;
+            filter: blur(0) brightness(1) saturate(1) !important;
+        }
+
+        .preview-layer.standby-layer {
+            opacity: 0 !important;
+            z-index: 1 !important;
+            pointer-events: none !important;
+            transform: scale(1.035) !important;
+            filter: blur(0) brightness(1) saturate(1) !important;
+        }
+
+        .preview-viewer.is-cinematic-transition::before,
+        .preview-viewer.transitioning::before,
+        #previewViewer.is-cinematic-transition::before,
+        #previewViewer.transitioning::before {
+            opacity: 1 !important;
         }
     </style>
 </head>
@@ -284,6 +351,6 @@
     {{ scene_list_json|json_script:"preview-scene-list-data" }}
 
     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
-    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=layer-ab-final-20260530"></script>
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=cinematic-layer-ab-20260530"></script>
 </body>
 </html>
