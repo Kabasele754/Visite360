@@ -1,261 +1,112 @@
 document.addEventListener("DOMContentLoaded", () => {
+    function removeLegacyDebugOverlays() {
+        ["previewDebugDialog", "previewMobileDebug"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        });
+    }
+
+    removeLegacyDebugOverlays();
+    window.addEventListener("pageshow", removeLegacyDebugOverlays);
     if (typeof Marzipano === "undefined") {
-        debugLog("Marzipano not loaded");
-        showDebugDialog("MARZIPANO_NOT_LOADED", "Le script Marzipano n'a pas été chargé sur cet appareil.");
         return;
     }
 
     const config = window.PREVIEW_CONFIG || {};
-    const scenesDataEl = document.getElementById("preview-scenes-data");
-    let scenes = scenesDataEl ? JSON.parse(scenesDataEl.textContent) : [];
 
-    if (!Array.isArray(scenes)) scenes = [];
+    function parseJsonScript(id, fallback = []) {
+        const el = document.getElementById(id);
+        if (!el) return fallback;
 
-    scenes = scenes.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-    const DEBUG_PREVIEW = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || window.location.search.includes("debug=1");
-    let debugBox = null;
-
-    function ensureDebugBox() {
-        if (!DEBUG_PREVIEW || debugBox) return debugBox;
-
-        debugBox = document.createElement("pre");
-        debugBox.id = "previewMobileDebug";
-        debugBox.style.position = "fixed";
-        debugBox.style.left = "10px";
-        debugBox.style.right = "10px";
-        debugBox.style.bottom = "10px";
-        debugBox.style.zIndex = "999999";
-        debugBox.style.maxHeight = "38vh";
-        debugBox.style.overflow = "auto";
-        debugBox.style.padding = "10px";
-        debugBox.style.margin = "0";
-        debugBox.style.borderRadius = "12px";
-        debugBox.style.background = "rgba(0,0,0,0.86)";
-        debugBox.style.color = "#4ade80";
-        debugBox.style.font = "12px/1.4 monospace";
-        debugBox.style.whiteSpace = "pre-wrap";
-        debugBox.style.wordBreak = "break-word";
-        debugBox.style.boxShadow = "0 8px 30px rgba(0,0,0,0.35)";
-        debugBox.style.pointerEvents = "none";
-        debugBox.textContent = "PREVIEW DEBUG\n";
-        document.body.appendChild(debugBox);
-        return debugBox;
-    }
-
-    function debugLog(...parts) {
-        const line = parts.map((part) => {
-            if (typeof part === "string") return part;
-            try {
-                return JSON.stringify(part);
-            } catch (_) {
-                return String(part);
-            }
-        }).join(" ");
-
-        console.log("[PREVIEW DEBUG]", ...parts);
-
-        if (DEBUG_PREVIEW) {
-            const box = ensureDebugBox();
-            if (box) {
-                box.textContent += line + "\n";
-                box.scrollTop = box.scrollHeight;
-            }
+        try {
+            const parsed = JSON.parse(el.textContent || "[]");
+            return Array.isArray(parsed) ? parsed : fallback;
+        } catch (_) {
+            return fallback;
         }
     }
 
-    let debugDialogEl = null;
-    let debugDialogBodyEl = null;
+    let scenes = parseJsonScript("preview-scenes-data", []);
+    let sceneList = parseJsonScript("preview-scene-list-data", []);
 
-    function ensureDebugDialog() {
-        if (debugDialogEl) return debugDialogEl;
+    scenes = scenes.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-        debugDialogEl = document.createElement("div");
-        debugDialogEl.id = "previewDebugDialog";
-        debugDialogEl.style.position = "fixed";
-        debugDialogEl.style.inset = "0";
-        debugDialogEl.style.zIndex = "1000000";
-        debugDialogEl.style.display = "none";
-        debugDialogEl.style.alignItems = "center";
-        debugDialogEl.style.justifyContent = "center";
-        debugDialogEl.style.padding = "18px";
-        debugDialogEl.style.background = "rgba(0,0,0,0.72)";
+    // sceneList vient de la view Django: uniquement les scènes publiques.
+    // Fallback de sécurité: si le template n'a pas encore scene_list_json,
+    // on filtre côté JS avec is_public.
+    sceneList = sceneList.length
+        ? sceneList.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        : scenes.filter((scene) => scene?.is_public !== false);
 
-        const card = document.createElement("div");
-        card.style.width = "100%";
-        card.style.maxWidth = "680px";
-        card.style.maxHeight = "82vh";
-        card.style.overflow = "hidden";
-        card.style.borderRadius = "16px";
-        card.style.background = "#08111f";
-        card.style.color = "#e2e8f0";
-        card.style.boxShadow = "0 20px 60px rgba(0,0,0,0.45)";
-        card.style.display = "flex";
-        card.style.flexDirection = "column";
-        card.style.border = "1px solid rgba(255,255,255,0.08)";
+    const sceneLookup = new Map();
+    scenes.forEach((scene) => {
+        [scene?.id, scene?.scene_id, scene?.uuid, scene?.slug]
+            .filter((value) => value !== undefined && value !== null && value !== "")
+            .forEach((value) => sceneLookup.set(String(value), scene));
+    });
 
-        const header = document.createElement("div");
-        header.style.display = "flex";
-        header.style.alignItems = "center";
-        header.style.justifyContent = "space-between";
-        header.style.gap = "12px";
-        header.style.padding = "14px 16px";
-        header.style.borderBottom = "1px solid rgba(255,255,255,0.08)";
-        header.innerHTML = '<strong style="font:600 15px system-ui;">Preview debug</strong>';
+    function getSceneAssets(sceneData) {
+        const assets = sceneData?.assets || {};
 
-        const actions = document.createElement("div");
-        actions.style.display = "flex";
-        actions.style.gap = "8px";
+        const preview =
+            assets.preview ||
+            assets.light ||
+            sceneData?.image_360_preview_url ||
+            sceneData?.thumbnail_url ||
+            sceneData?.thumbnail_image_url ||
+            "";
 
-        const copyBtn = document.createElement("button");
-        copyBtn.type = "button";
-        copyBtn.textContent = "Copy";
-        copyBtn.style.padding = "8px 12px";
-        copyBtn.style.borderRadius = "10px";
-        copyBtn.style.border = "0";
-        copyBtn.style.background = "#16a34a";
-        copyBtn.style.color = "#fff";
-        copyBtn.style.fontWeight = "600";
-        copyBtn.addEventListener("click", async () => {
-            try {
-                await navigator.clipboard.writeText(debugDialogBodyEl?.textContent || "");
-                copyBtn.textContent = "Copied";
-                setTimeout(() => copyBtn.textContent = "Copy", 1200);
-            } catch (_) {
-                copyBtn.textContent = "Failed";
-                setTimeout(() => copyBtn.textContent = "Copy", 1200);
-            }
-        });
+        const thumbnail =
+            assets.thumbnail ||
+            sceneData?.thumbnail_url ||
+            sceneData?.thumbnail_image_url ||
+            preview ||
+            "";
 
-        const closeBtn = document.createElement("button");
-        closeBtn.type = "button";
-        closeBtn.textContent = "Close";
-        closeBtn.style.padding = "8px 12px";
-        closeBtn.style.borderRadius = "10px";
-        closeBtn.style.border = "0";
-        closeBtn.style.background = "#334155";
-        closeBtn.style.color = "#fff";
-        closeBtn.style.fontWeight = "600";
-        closeBtn.addEventListener("click", () => {
-            debugDialogEl.style.display = "none";
-        });
+        const mobile =
+            assets.viewer_mobile ||
+            assets.mobile ||
+            sceneData?.image_360_mobile_url ||
+            sceneData?.mobile_image_url ||
+            sceneData?.image_360_url ||
+            assets.viewer_desktop ||
+            assets.desktop ||
+            preview ||
+            thumbnail ||
+            "";
 
-        actions.appendChild(copyBtn);
-        actions.appendChild(closeBtn);
-        header.appendChild(actions);
+        const desktop =
+            assets.viewer_desktop ||
+            assets.desktop ||
+            sceneData?.image_360_url ||
+            sceneData?.image_360_desktop_url ||
+            assets.original ||
+            sceneData?.image_360_original_url ||
+            mobile ||
+            preview ||
+            thumbnail ||
+            "";
 
-        debugDialogBodyEl = document.createElement("pre");
-        debugDialogBodyEl.style.margin = "0";
-        debugDialogBodyEl.style.padding = "16px";
-        debugDialogBodyEl.style.overflow = "auto";
-        debugDialogBodyEl.style.whiteSpace = "pre-wrap";
-        debugDialogBodyEl.style.wordBreak = "break-word";
-        debugDialogBodyEl.style.font = "12px/1.45 monospace";
-        debugDialogBodyEl.style.color = "#86efac";
+        const original = assets.original || sceneData?.image_360_original_url || "";
+        const fallback = assets.fallback || desktop || mobile || preview || thumbnail || original || "";
 
-        card.appendChild(header);
-        card.appendChild(debugDialogBodyEl);
-        debugDialogEl.appendChild(card);
-        document.body.appendChild(debugDialogEl);
-
-        return debugDialogEl;
-    }
-
-    function showDebugDialog(title, payload) {
-        const dialog = ensureDebugDialog();
-        if (!dialog || !debugDialogBodyEl) return;
-
-        const content = [
-            title,
-            "",
-            typeof payload === "string"
-                ? payload
-                : JSON.stringify(payload, null, 2)
-        ].join("\n");
-
-        debugDialogBodyEl.textContent = content;
-        dialog.style.display = "flex";
+        return { preview, thumbnail, mobile, desktop, original, fallback };
     }
 
     function getPreferredImageUrl(sceneData) {
-        const mobile = isMobileViewport();
-        return (
-            (mobile && sceneData?.image_360_mobile_url) ||
-            sceneData?.image_360_url ||
-            ""
-        );
+        const assets = getSceneAssets(sceneData);
+
+        if (isMobileViewport()) {
+            return assets.mobile || assets.desktop || assets.original || assets.preview || assets.thumbnail || assets.fallback || "";
+        }
+
+        return assets.desktop || assets.original || assets.mobile || assets.preview || assets.thumbnail || assets.fallback || "";
     }
 
-    function testImageUrl(url, label = "image") {
-        return new Promise((resolve) => {
-            if (!url) {
-                resolve({ ok: false, label, reason: "empty-url", url });
-                return;
-            }
-
-            const img = new Image();
-            const startedAt = Date.now();
-            let done = false;
-
-            const finalize = (payload) => {
-                if (done) return;
-                done = true;
-                resolve(payload);
-            };
-
-            const timer = setTimeout(() => {
-                finalize({
-                    ok: false,
-                    label,
-                    reason: "timeout",
-                    url,
-                    elapsedMs: Date.now() - startedAt
-                });
-            }, 8000);
-
-            img.onload = () => {
-                clearTimeout(timer);
-                finalize({
-                    ok: true,
-                    label,
-                    url,
-                    width: img.naturalWidth,
-                    height: img.naturalHeight,
-                    elapsedMs: Date.now() - startedAt
-                });
-            };
-
-            img.onerror = () => {
-                clearTimeout(timer);
-                finalize({
-                    ok: false,
-                    label,
-                    reason: "load-error",
-                    url,
-                    elapsedMs: Date.now() - startedAt
-                });
-            };
-
-            img.src = url + (url.includes("?") ? "&" : "?") + "_debug=" + Date.now();
-        });
+    function getSceneThumbnailUrl(sceneData) {
+        const assets = getSceneAssets(sceneData);
+        return assets.thumbnail || assets.preview || assets.mobile || assets.desktop || assets.fallback || "";
     }
-
-    window.addEventListener("error", (event) => {
-        const payload = {
-            message: event.message,
-            file: event.filename,
-            line: event.lineno,
-            col: event.colno
-        };
-        debugLog("JS_ERROR", payload);
-        showDebugDialog("JS_ERROR", payload);
-    });
-
-    window.addEventListener("unhandledrejection", (event) => {
-        const payload = String(event.reason?.stack || event.reason || "unknown");
-        debugLog("PROMISE_REJECTION", payload);
-        showDebugDialog("PROMISE_REJECTION", payload);
-    });
 
     const $ = (id) => document.getElementById(id);
 
@@ -302,14 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const views = { A: null, B: null };
     const marzipanoScenes = { A: null, B: null };
 
-    debugLog("INIT", {
-        marzipanoLoaded: typeof Marzipano !== "undefined",
-        scenesCount: scenes.length,
-        innerWidth: window.innerWidth,
-        innerHeight: window.innerHeight,
-        devicePixelRatio: window.devicePixelRatio || 1,
-        userAgent: navigator.userAgent
-    });
 
     let activeLayerKey = "A";
     let currentSceneId = null;
@@ -423,12 +266,36 @@ document.addEventListener("DOMContentLoaded", () => {
         ) || null;
     }
 
+    function getSceneKeys(scene) {
+        return [scene?.id, scene?.scene_id, scene?.uuid, scene?.slug]
+            .filter((value) => value !== undefined && value !== null && value !== "")
+            .map((value) => String(value));
+    }
+
+    function sceneMatchesId(scene, sceneId) {
+        if (sceneId === undefined || sceneId === null) return false;
+        return getSceneKeys(scene).includes(String(sceneId));
+    }
+
     function findScene(sceneId) {
-        return scenes.find(scene => String(scene.id) === String(sceneId));
+        if (sceneId === undefined || sceneId === null) return null;
+        return sceneLookup.get(String(sceneId)) || scenes.find(scene => sceneMatchesId(scene, sceneId)) || null;
     }
 
     function findSceneIndex(sceneId) {
-        return scenes.findIndex(scene => String(scene.id) === String(sceneId));
+        return scenes.findIndex(scene => sceneMatchesId(scene, sceneId));
+    }
+
+    function findSceneListIndex(sceneId) {
+        return sceneList.findIndex(scene => sceneMatchesId(scene, sceneId));
+    }
+
+    function getPublicSceneEntry(sceneId) {
+        return sceneList.find(scene => sceneMatchesId(scene, sceneId)) || null;
+    }
+
+    function getNavigationSceneList() {
+        return sceneList.length ? sceneList : scenes;
     }
 
     function resolveIcon(iconName) {
@@ -667,18 +534,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         sceneStackMiniPreview.innerHTML = "";
 
-        const currentIndex = Math.max(findSceneIndex(currentSceneId), 0);
+        const list = getNavigationSceneList();
+        if (!list.length) return;
+
+        let currentIndex = findSceneListIndex(currentSceneId);
+        if (currentIndex < 0) currentIndex = 0;
+
         const miniScenes = [
-            scenes[currentIndex],
-            scenes[currentIndex + 1] || scenes[0],
-            scenes[currentIndex + 2] || scenes[1] || scenes[0]
+            list[currentIndex],
+            list[(currentIndex + 1) % list.length],
+            list[(currentIndex + 2) % list.length]
         ].filter(Boolean);
 
         miniScenes.slice(0, 3).forEach((scene) => {
             const card = document.createElement("div");
             card.className = "scene-stack-mini-card";
-            card.innerHTML = scene.thumbnail_url || scene.image_360_url
-                ? `<img src="${scene.thumbnail_url || scene.image_360_url}" alt="${scene.title || 'Scene'}">`
+            const thumb = getSceneThumbnailUrl(scene);
+            card.innerHTML = thumb
+                ? `<img src="${thumb}" alt="${scene.title || 'Scene'}">`
                 : `<div class="scene-thumb-placeholder">360</div>`;
             sceneStackMiniPreview.appendChild(card);
         });
@@ -688,19 +561,19 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!previewScenesList) return;
         previewScenesList.innerHTML = "";
 
-        scenes.forEach((scene, index) => {
+        const list = getNavigationSceneList();
+
+        list.forEach((scene, index) => {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "scene-card";
             button.dataset.sceneId = scene.id;
 
+            const thumb = getSceneThumbnailUrl(scene);
+
             button.innerHTML = `
                 <div class="scene-thumb">
-                    ${
-                        scene.thumbnail_url || scene.image_360_url
-                            ? `<img src="${scene.thumbnail_url || scene.image_360_url}" alt="${scene.title}">`
-                            : `<div class="scene-thumb-placeholder">360</div>`
-                    }
+                    ${thumb ? `<img src="${thumb}" alt="${scene.title || 'Scene'}">` : `<div class="scene-thumb-placeholder">360</div>`}
                 </div>
                 <div class="scene-body">
                     <strong class="scene-title">${scene.title || "Untitled Scene"}</strong>
@@ -715,7 +588,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 event.stopPropagation();
                 if (isTransitioning) return;
 
-                const targetScene = findScene(scene.id);
+                const targetScene = findScene(scene.id) || findScene(scene.scene_id) || scene;
                 if (!targetScene) return;
 
                 closeInfoPanel();
@@ -736,10 +609,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateSceneMeta(scene) {
-        const index = findSceneIndex(scene?.id);
-
-        if (sceneCountBadge && index >= 0) {
-            sceneCountBadge.textContent = `${index + 1}`;
+        if (sceneCountBadge) {
+            // Affiche le nombre de scènes publiques disponibles dans le stack.
+            sceneCountBadge.textContent = `${getNavigationSceneList().length}`;
         }
 
         markActiveSceneCard(scene?.id);
@@ -813,7 +685,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function ensureViewer(key) {
         const mount = getMountEl(key);
         if (!mount) {
-            debugLog("ensureViewer: missing mount", key);
             return null;
         }
 
@@ -825,9 +696,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     mouseViewMode: "drag"
                 }
             });
-            debugLog("Viewer created", key);
-        } catch (error) {
-            debugLog("Viewer creation failed", key, String(error?.message || error));
+        } catch (_) {
             return null;
         }
 
@@ -838,14 +707,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function getSceneSourceGeometryAndLimiter(sceneData) {
         const mobile = isMobileViewport();
 
-        debugLog("Scene source select", {
-            sceneId: sceneData?.id,
-            title: sceneData?.title,
-            mobile,
-            image_360_url: sceneData?.image_360_url || "",
-            image_360_mobile_url: sceneData?.image_360_mobile_url || "",
-            tiles_url: sceneData?.tiles_url || ""
-        });
 
         if (sceneData?.tiles_url) {
             return {
@@ -889,41 +750,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function buildSceneOnLayer(layerKey, sceneData) {
         const viewer = ensureViewer(layerKey);
-        if (!viewer || (!sceneData?.image_360_url && !sceneData?.tiles_url)) {
-            debugLog("buildSceneOnLayer skipped", {
-                layerKey,
-                hasViewer: !!viewer,
-                hasImage: !!sceneData?.image_360_url,
-                hasTiles: !!sceneData?.tiles_url
-            });
+        const selectedImageUrl = getPreferredImageUrl(sceneData);
+
+        if (!viewer || (!selectedImageUrl && !sceneData?.tiles_url)) {
             return null;
         }
 
-        const selectedImageUrl = getPreferredImageUrl(sceneData);
 
-        debugLog("buildSceneOnLayer start", {
-            layerKey,
-            sceneId: sceneData?.id,
-            title: sceneData?.title,
-            selectedImageUrl,
-            tilesUrl: sceneData?.tiles_url || "",
-            hfov_default: sceneData?.hfov_default
-        });
-
-        if (!sceneData?.tiles_url) {
-            testImageUrl(selectedImageUrl, `scene-${sceneData?.id || "unknown"}`).then((result) => {
-                debugLog("Image probe", result);
-
-                if (!result.ok) {
-                    showDebugDialog("IMAGE_PROBE_FAILED", result);
-                    return;
-                }
-
-                if (isMobileViewport() && (result.width > 5000 || result.height > 2500)) {
-                    showDebugDialog("IMAGE_TOO_LARGE_FOR_MOBILE", result);
-                }
-            });
-        }
 
         const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
 
@@ -942,19 +775,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             marzipanoScenes[layerKey].switchTo();
-            debugLog("Scene switched", {
-                layerKey,
-                sceneId: sceneData?.id,
-                title: sceneData?.title
-            });
-        } catch (error) {
-            const payload = {
-                layerKey,
-                sceneId: sceneData?.id,
-                error: String(error?.message || error)
-            };
-            debugLog("createScene/switchTo failed", payload);
-            showDebugDialog("CREATE_SCENE_FAILED", payload);
+        } catch (_) {
             return null;
         }
 
@@ -1187,14 +1008,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function goToRelativeScene(step) {
-        if (isTransitioning || !scenes.length) return;
+        const list = getNavigationSceneList();
+        if (isTransitioning || !list.length) return;
 
-        const currentIndex = findSceneIndex(currentSceneId);
-        const nextIndex = currentIndex < 0
-            ? 0
-            : (currentIndex + step + scenes.length) % scenes.length;
+        let currentIndex = findSceneListIndex(currentSceneId);
+        if (currentIndex < 0) currentIndex = 0;
 
-        const targetScene = scenes[nextIndex];
+        const nextIndex = (currentIndex + step + list.length) % list.length;
+        const sceneEntry = list[nextIndex];
+        const targetScene = findScene(sceneEntry?.id) || findScene(sceneEntry?.scene_id) || sceneEntry;
         if (!targetScene) return;
 
         closeInfoPanel();
@@ -1404,18 +1226,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    if (sceneCountBadge) {
+        sceneCountBadge.textContent = `${getNavigationSceneList().length}`;
+    }
+
     renderSceneRail();
     setupMobileZoomGestures();
 
     const initialScene = getInitialSceneFromUrl() || scenes[0];
     currentSceneId = initialScene.id;
 
-    debugLog("Initial scene chosen", {
-        id: initialScene?.id,
-        title: initialScene?.title,
-        preferredImageUrl: getPreferredImageUrl(initialScene),
-        tilesUrl: initialScene?.tiles_url || ""
-    });
 
     buildSceneOnLayer(activeLayerKey, initialScene);
     updateSceneMeta(initialScene);
