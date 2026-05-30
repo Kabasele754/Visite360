@@ -177,9 +177,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // Toutes les scènes commencent à zoom 0, surtout sur mobile.
     const EXTRA_WIDE_OFFSET = degToRad(0);
     const INITIAL_OPEN_ZOOM_OFFSET = degToRad(0);
-    const NAVIGATION_ZOOM_IN_OFFSET_1 = degToRad(7);
-    const NAVIGATION_ZOOM_IN_OFFSET_2 = degToRad(13);
-    const SCENE_INCOMING_DEZOOM_OFFSET = degToRad(0);
+    // Effet demandé :
+    // 1) scène actuelle = zoom avant vers le hotspot (comme quelqu'un qui avance)
+    // 2) nouvelle scène = démarre zoomée puis dézoome vers zoom 0
+    const NAVIGATION_ZOOM_IN_OFFSET_1 = degToRad(22);
+    const NAVIGATION_ZOOM_IN_OFFSET_2 = degToRad(48);
+    const SCENE_INCOMING_DEZOOM_OFFSET = degToRad(46);
 
     const MOBILE_EXTRA_WIDE_OFFSET = degToRad(0);
     const MOBILE_PINCH_SENSITIVITY = 2.15;
@@ -295,22 +298,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 z-index: 2;
                 opacity: 0;
                 pointer-events: none;
-                transform: translate3d(0, 0, 0) scale(1.035);
-                filter: blur(8px) brightness(.78) saturate(.94);
+                transform: translate3d(0, 0, 0) scale(1.075) !important;
+                filter: blur(3px) brightness(.90) saturate(.98) !important;
             }
 
             .preview-viewer.is-cinematic-transition .preview-layer.layer-incoming {
                 opacity: 1;
-                transform: translate3d(0, 0, 0) scale(1);
-                filter: blur(0) brightness(1) saturate(1);
+                transform: translate3d(0, 0, 0) scale(1) !important;
+                filter: blur(0) brightness(1) saturate(1) !important;
             }
 
             .preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing {
                 z-index: 1;
-                opacity: 0;
+                opacity: .10 !important;
                 pointer-events: none;
-                transform: translate3d(0, 0, 0) scale(1.075);
-                filter: blur(7px) brightness(.62) saturate(.82);
+                transform: translate3d(0, 0, 0) scale(1.18) !important;
+                filter: blur(1.8px) brightness(.86) saturate(.98) !important;
             }
 
             .preview-viewer::before {
@@ -379,13 +382,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 .preview-layer.layer-incoming {
-                    transform: translate3d(0, 0, 0) scale(1.025);
-                    filter: blur(5px) brightness(.82) saturate(.95);
+                    transform: translate3d(0, 0, 0) scale(1.055) !important;
+                    filter: blur(2.4px) brightness(.90) saturate(.98) !important;
                 }
 
                 .preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing {
-                    transform: translate3d(0, 0, 0) scale(1.045);
-                    filter: blur(5px) brightness(.66) saturate(.86);
+                    transform: translate3d(0, 0, 0) scale(1.12) !important;
+                    filter: blur(1.4px) brightness(.86) saturate(.98) !important;
                 }
 
                 .preview-viewer::after {
@@ -414,11 +417,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getCinematicTransitionMs() {
-        return isMobileViewport() ? 980 : 1180;
+        // Durée du fondu A/B entre les deux layers.
+        // Assez long pour sentir le déplacement, pas trop long pour rester fluide.
+        return isMobileViewport() ? 1020 : 1220;
     }
 
     function getCinematicCameraMs() {
-        return isMobileViewport() ? 620 : 760;
+        // Durée du dézoom réel FOV sur la nouvelle scène.
+        return isMobileViewport() ? 900 : 1040;
+    }
+
+    function getWalkTargetFov(currentFov) {
+        // FOV petit = zoom avant.
+        // On vise un zoom visible, mais sans aller trop proche.
+        const desiredTarget = isMobileViewport() ? degToRad(88) : degToRad(82);
+        const extraIfAlreadyZoomed = isMobileViewport() ? degToRad(12) : degToRad(16);
+
+        if (currentFov > desiredTarget) {
+            return clamp(desiredTarget, MIN_FOV, MAX_FOV);
+        }
+
+        return clamp(currentFov - extraIfAlreadyZoomed, MIN_FOV, MAX_FOV);
+    }
+
+    function getIncomingWalkStartFov(finalFov) {
+        // La nouvelle scène démarre volontairement zoomée, puis elle dézoome vers zoom 0.
+        const offset = isMobileViewport() ? degToRad(38) : SCENE_INCOMING_DEZOOM_OFFSET;
+        return clamp(finalFov - offset, MIN_FOV, MAX_FOV);
     }
 
     function getLayerEl(key) {
@@ -1464,23 +1489,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const outgoingEl = getLayerEl(outgoingKey);
         const incomingEl = getLayerEl(incomingKey);
 
-        const startYaw = options.fromYaw !== undefined
-            ? options.fromYaw
-            : degToRad(targetScene.yaw_default || 0);
-
-        const startPitch = options.fromPitch !== undefined
-            ? options.fromPitch
-            : degToRad(targetScene.pitch_default || 0);
-
         const endYaw = degToRad(targetScene.yaw_default || 0);
         const endPitch = degToRad(targetScene.pitch_default || 0);
 
+        // Important : la deuxième scène commence déjà dans sa propre direction par défaut.
+        // On ne reprend pas le yaw/pitch de l'ancien hotspot, car les coordonnées des scènes
+        // peuvent être différentes. L'effet marche se fait avec le FOV : zoomé -> dézoomé.
+        const startYaw = endYaw;
+        const startPitch = endPitch;
+
         const finalFov = getSceneFinalFov(targetScene);
-        const incomingStartFov = clamp(
-            finalFov - SCENE_INCOMING_DEZOOM_OFFSET,
-            MIN_FOV,
-            MAX_FOV
-        );
+        const incomingStartFov = getIncomingWalkStartFov(finalFov);
 
         if (incomingView) {
             incomingView.setParameters({
@@ -1555,18 +1574,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const currentFov = currentView.fov();
 
-        // Petit zoom cinéma vers le hotspot avant le changement.
-        // On diminue le FOV pour zoomer, puis la nouvelle scène revient à zoom 0.
-        const firstZoomOffset = isMobileViewport() ? degToRad(10) : degToRad(12);
-        const secondZoomOffset = isMobileViewport() ? degToRad(20) : degToRad(24);
-
-        const preSwitchFov = clamp(
-            currentFov - firstZoomOffset,
-            MIN_FOV,
-            MAX_FOV
-        );
-        const preSwitchFov2 = clamp(
-            currentFov - secondZoomOffset,
+        // Effet marche / entrée :
+        // étape 1 : la caméra se tourne vers le hotspot et commence à avancer;
+        // étape 2 : la caméra zoome plus fort vers le hotspot;
+        // étape 3 : la nouvelle scène apparaît zoomée puis dézoome vers zoom 0.
+        const walkTargetFov = getWalkTargetFov(currentFov);
+        const walkMidFov = clamp(
+            currentFov + ((walkTargetFov - currentFov) * 0.55),
             MIN_FOV,
             MAX_FOV
         );
@@ -1575,9 +1589,9 @@ document.addEventListener("DOMContentLoaded", () => {
             {
                 yaw: hotspotYaw,
                 pitch: hotspotPitch,
-                fov: preSwitchFov
+                fov: walkMidFov
             },
-            { transitionDuration: 260 }
+            { transitionDuration: isMobileViewport() ? 260 : 300 }
         );
 
         setTimeout(() => {
@@ -1585,19 +1599,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 {
                     yaw: hotspotYaw,
                     pitch: hotspotPitch,
-                    fov: preSwitchFov2
+                    fov: walkTargetFov
                 },
-                { transitionDuration: 260 }
+                { transitionDuration: isMobileViewport() ? 320 : 360 }
             );
             syncZoomButtonsState();
-        }, 180);
+        }, isMobileViewport() ? 210 : 240);
 
         setTimeout(() => {
-            cinematicSwitchScene(targetScene, {
-                fromYaw: hotspotYaw,
-                fromPitch: hotspotPitch
-            });
-        }, 420);
+            cinematicSwitchScene(targetScene);
+        }, isMobileViewport() ? 540 : 610);
     }
 
     function zoomToFov(nextFov, duration = 220) {
@@ -1658,22 +1669,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const currentView = getCurrentView();
         if (currentView) {
-            const relativeZoomOffset = isMobileViewport() ? degToRad(12) : degToRad(16);
-            const zoomInFov = clamp(
-                currentView.fov() - relativeZoomOffset,
+            const currentFov = currentView.fov();
+            const walkTargetFov = getWalkTargetFov(currentFov);
+            const walkMidFov = clamp(
+                currentFov + ((walkTargetFov - currentFov) * 0.55),
                 MIN_FOV,
                 MAX_FOV
             );
 
             currentView.setParameters(
-                { fov: zoomInFov },
-                { transitionDuration: 260 }
+                { fov: walkMidFov },
+                { transitionDuration: isMobileViewport() ? 240 : 280 }
             );
-            syncZoomButtonsState();
+
+            setTimeout(() => {
+                currentView.setParameters(
+                    { fov: walkTargetFov },
+                    { transitionDuration: isMobileViewport() ? 300 : 340 }
+                );
+                syncZoomButtonsState();
+            }, isMobileViewport() ? 190 : 220);
 
             setTimeout(() => {
                 cinematicSwitchScene(targetScene);
-            }, 300);
+            }, isMobileViewport() ? 500 : 560);
         } else {
             cinematicSwitchScene(targetScene);
         }

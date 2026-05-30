@@ -43,7 +43,7 @@
 
     <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=cinematic-layer-ab-20260530">
 
-    <style>
+    {% comment %} <style>
         /* Cache les anciens overlays debug si le navigateur garde un ancien JS en cache. */
         #previewDebugDialog,
         #previewMobileDebug {
@@ -118,7 +118,7 @@
         #previewViewer.transitioning::before {
             opacity: 1 !important;
         }
-    </style>
+    </style> {% endcomment %}
 </head>
 
 <body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
