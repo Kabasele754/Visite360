@@ -1,3 +1,18 @@
+/* =====================================================================
+   PREVIEW TAILWIND JS — VERSION COMPLETE WALK TRANSITION
+   Remplace entièrement : dashboard/js/preview-tailwind.js
+
+   Fonctionnalités :
+   - Marzipano A/B layers
+   - changement de scène avec effet marche / zoom vers hotspot
+   - scène entrante zoomée puis dézoom vers zoom 0
+   - hotspots navigation + business icons
+   - scene stack, zoom, reset, autorotate, focus, share, fullscreen
+   - panneau info produit/advertising/contact
+   - zoom image dans le panneau info
+   - pinch zoom mobile + molette desktop
+===================================================================== */
+
 document.addEventListener("DOMContentLoaded", () => {
     function removeLegacyDebugOverlays() {
         ["previewDebugDialog", "previewMobileDebug"].forEach((id) => {
@@ -8,14 +23,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     removeLegacyDebugOverlays();
     window.addEventListener("pageshow", removeLegacyDebugOverlays);
+
     if (typeof Marzipano === "undefined") {
+        console.warn("Marzipano is not loaded.");
         return;
     }
 
     const config = window.PREVIEW_CONFIG || {};
+    const $ = (id) => document.getElementById(id);
 
     function parseJsonScript(id, fallback = []) {
-        const el = document.getElementById(id);
+        const el = $(id);
         if (!el) return fallback;
 
         try {
@@ -30,10 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let sceneList = parseJsonScript("preview-scene-list-data", []);
 
     scenes = scenes.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-    // sceneList vient de la view Django: uniquement les scènes publiques.
-    // Fallback de sécurité: si le template n'a pas encore scene_list_json,
-    // on filtre côté JS avec is_public.
     sceneList = sceneList.length
         ? sceneList.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
         : scenes.filter((scene) => scene?.is_public !== false);
@@ -44,6 +58,441 @@ document.addEventListener("DOMContentLoaded", () => {
             .filter((value) => value !== undefined && value !== null && value !== "")
             .forEach((value) => sceneLookup.set(String(value), scene));
     });
+
+    const previewViewer = $("previewViewer");
+    const previewLayerA = $("previewLayerA");
+    const previewLayerB = $("previewLayerB");
+    const previewMountA = $("previewMountA");
+    const previewMountB = $("previewMountB");
+    const previewIntroOverlay = $("previewIntroOverlay");
+
+    const previewScenesList = $("previewScenesList");
+    const sceneCountBadge = $("sceneCountBadge");
+    const sceneStackToggle = $("sceneStackToggle");
+    const previewSceneRail = $("previewSceneRail");
+    const sceneStackMiniPreview = $("sceneStackMiniPreview");
+
+    const prevSceneBtn = $("prevSceneBtn");
+    const nextSceneBtn = $("nextSceneBtn");
+    const zoomOutBtn = $("zoomOutBtn");
+    const zoomInBtn = $("zoomInBtn");
+    const resetViewBtn = $("resetViewBtn");
+    const autorotateBtn = $("autorotateBtn");
+    const focusModeBtn = $("focusModeBtn");
+    const shareBtn = $("shareBtn");
+    const fullscreenBtn = $("fullscreenBtn");
+    const previewToast = $("previewToast");
+
+    const previewInfoBackdrop = $("previewInfoBackdrop");
+    const previewInfoPanel = $("previewInfoPanel");
+    const previewInfoClose = $("previewInfoClose");
+    const previewInfoMedia = $("previewInfoMedia");
+    const previewInfoBadge = $("previewInfoBadge");
+    const previewInfoTitle = $("previewInfoTitle");
+    const previewInfoDescription = $("previewInfoDescription");
+    const previewInfoPrice = $("previewInfoPrice");
+    const previewInfoSite = $("previewInfoSite");
+    const previewInfoAction = $("previewInfoAction");
+    const previewInfoWhatsapp = $("previewInfoWhatsapp");
+    const previewInfoContact = $("previewInfoContact");
+
+    const viewers = { A: null, B: null };
+    const views = { A: null, B: null };
+    const marzipanoScenes = { A: null, B: null };
+
+    let activeLayerKey = "A";
+    let currentSceneId = null;
+    let isTransitioning = false;
+    let autorotateEnabled = false;
+    let autorotateFrame = null;
+    let autorotateLastTs = 0;
+    let focusMode = false;
+    let toastTimer = null;
+
+    const MIN_FOV = degToRad(6);
+    const MAX_FOV = degToRad(132);
+    const ZERO_ZOOM_FOV = MAX_FOV;
+
+    function degToRad(deg) {
+        return Number(deg || 0) * Math.PI / 180;
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    function normalizeAngle(rad) {
+        let value = Number(rad || 0);
+        while (value > Math.PI) value -= 2 * Math.PI;
+        while (value < -Math.PI) value += 2 * Math.PI;
+        return value;
+    }
+
+    function isMobileViewport() {
+        return window.matchMedia("(max-width: 768px)").matches;
+    }
+
+    function setupResponsiveMode() {
+        if (!window.matchMedia) return;
+        const mql = window.matchMedia("(max-width: 768px), (max-height: 700px)");
+
+        function applyMode() {
+            document.body.classList.toggle("mobile", mql.matches);
+            document.body.classList.toggle("desktop", !mql.matches);
+        }
+
+        applyMode();
+        if (mql.addEventListener) mql.addEventListener("change", applyMode);
+        else if (mql.addListener) mql.addListener(applyMode);
+
+        document.body.classList.add("no-touch");
+        window.addEventListener("touchstart", function onFirstTouch() {
+            document.body.classList.remove("no-touch");
+            document.body.classList.add("touch");
+            window.removeEventListener("touchstart", onFirstTouch);
+        }, { passive: true });
+    }
+
+    function injectPreviewCinematicStyles() {
+        if (document.getElementById("preview-cinematic-js-style")) return;
+
+        const style = document.createElement("style");
+        style.id = "preview-cinematic-js-style";
+        style.textContent = `
+            /* =========================================================
+               PREVIEW — TRANSITION CINÉMATIQUE TYPE BUILDER
+               Objectif : effet déplacement propre, sans écran noir,
+               sans sweep, sans overlay qui reste après la transition.
+            ========================================================= */
+            #previewViewer,
+            .preview-viewer {
+                position: relative !important;
+                overflow: hidden !important;
+                isolation: isolate !important;
+                background: #020617 !important;
+            }
+
+            #previewViewer::before,
+            #previewViewer::after,
+            .preview-viewer::before,
+            .preview-viewer::after {
+                pointer-events: none !important;
+            }
+
+            #previewViewer.is-cinematic-transition::before,
+            #previewViewer.transitioning::before,
+            #previewViewer.is-cinematic-transition::after,
+            #previewViewer.transitioning::after,
+            .preview-viewer.is-cinematic-transition::before,
+            .preview-viewer.transitioning::before,
+            .preview-viewer.is-cinematic-transition::after,
+            .preview-viewer.transitioning::after {
+                content: none !important;
+                display: none !important;
+                opacity: 0 !important;
+                background: transparent !important;
+                animation: none !important;
+            }
+
+            #previewViewer canvas,
+            .preview-viewer canvas {
+                width: 100% !important;
+                height: 100% !important;
+                display: block !important;
+            }
+
+            #previewLayerA,
+            #previewLayerB,
+            .preview-layer {
+                position: absolute !important;
+                inset: 0 !important;
+                opacity: 0;
+                z-index: 1;
+                pointer-events: none;
+                transform: translate3d(0, 0, 0) scale(1);
+                transform-origin: center center !important;
+                backface-visibility: hidden !important;
+                -webkit-backface-visibility: hidden !important;
+                will-change: transform, opacity, filter !important;
+                filter: blur(0) brightness(1) saturate(1);
+            }
+
+            #previewMountA,
+            #previewMountB,
+            .preview-mount {
+                position: absolute !important;
+                inset: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                touch-action: none !important;
+                -ms-touch-action: none !important;
+            }
+
+            .preview-layer.active-layer {
+                opacity: 1 !important;
+                z-index: 2 !important;
+                pointer-events: auto !important;
+                transform: translate3d(0, 0, 0) scale(1) !important;
+                filter: blur(0) brightness(1) saturate(1) !important;
+            }
+
+            .preview-layer.standby-layer {
+                opacity: 0 !important;
+                z-index: 1 !important;
+                pointer-events: none !important;
+                transform: translate3d(0, 0, 0) scale(1) !important;
+                filter: blur(0) brightness(1) saturate(1) !important;
+            }
+
+            .preview-viewer.is-cinematic-transition .preview-layer,
+            .preview-viewer.transitioning .preview-layer,
+            #previewViewer.is-cinematic-transition .preview-layer,
+            #previewViewer.transitioning .preview-layer {
+                transition: none !important;
+            }
+
+            .preview-layer.layer-outgoing,
+            .preview-viewer.is-cinematic-transition .layer-outgoing,
+            .preview-viewer.transitioning .layer-outgoing,
+            #previewViewer.is-cinematic-transition .layer-outgoing,
+            #previewViewer.transitioning .layer-outgoing {
+                z-index: 2 !important;
+                pointer-events: none !important;
+                animation: previewBuilderOutgoingClean 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+            }
+
+            .preview-layer.layer-incoming,
+            .preview-viewer.is-cinematic-transition .layer-incoming,
+            .preview-viewer.transitioning .layer-incoming,
+            #previewViewer.is-cinematic-transition .layer-incoming,
+            #previewViewer.transitioning .layer-incoming {
+                z-index: 3 !important;
+                pointer-events: auto !important;
+                animation: previewBuilderIncomingClean 1150ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+            }
+
+            .preview-layer.layer-incoming::after,
+            .preview-viewer.is-cinematic-transition .layer-incoming::after,
+            .preview-viewer.transitioning .layer-incoming::after,
+            #previewViewer.is-cinematic-transition .layer-incoming::after,
+            #previewViewer.transitioning .layer-incoming::after {
+                content: none !important;
+                display: none !important;
+                opacity: 0 !important;
+                background: transparent !important;
+                animation: none !important;
+            }
+
+            @keyframes previewBuilderOutgoingClean {
+                0% {
+                    transform: translate3d(0, 0, 0) scale(1);
+                    opacity: 1;
+                    filter: blur(0px) brightness(1) saturate(1);
+                }
+                32% {
+                    transform: translate3d(0, 0, 0) scale(1.10);
+                    opacity: 1;
+                    filter: blur(0.15px) brightness(1) saturate(1);
+                }
+                52% {
+                    transform: translate3d(0, 0, 0) scale(1.16);
+                    opacity: 0.92;
+                    filter: blur(0.65px) brightness(1) saturate(1);
+                }
+                72% {
+                    transform: translate3d(0, 0, 0) scale(1.20);
+                    opacity: 0.62;
+                    filter: blur(1.4px) brightness(1) saturate(1);
+                }
+                100% {
+                    transform: translate3d(0, 0, 0) scale(1.24);
+                    opacity: 0;
+                    filter: blur(2.4px) brightness(1) saturate(1);
+                }
+            }
+
+            @keyframes previewBuilderIncomingClean {
+                0% {
+                    transform: translate3d(0, 0, 0) scale(1.18);
+                    opacity: 0;
+                    filter: blur(3px) brightness(1) saturate(1);
+                }
+                25% {
+                    transform: translate3d(0, 0, 0) scale(1.15);
+                    opacity: 0.16;
+                    filter: blur(2.5px) brightness(1) saturate(1);
+                }
+                48% {
+                    transform: translate3d(0, 0, 0) scale(1.10);
+                    opacity: 0.48;
+                    filter: blur(1.7px) brightness(1) saturate(1);
+                }
+                68% {
+                    transform: translate3d(0, 0, 0) scale(1.06);
+                    opacity: 0.78;
+                    filter: blur(0.8px) brightness(1) saturate(1);
+                }
+                100% {
+                    transform: translate3d(0, 0, 0) scale(1);
+                    opacity: 1;
+                    filter: blur(0px) brightness(1) saturate(1);
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .preview-layer.layer-outgoing,
+                .preview-layer.layer-incoming {
+                    animation: none !important;
+                    transform: translate3d(0, 0, 0) scale(1) !important;
+                    filter: none !important;
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    function injectWalkTransitionStyles() {
+        if (document.getElementById("preview-walk-transition-style")) return;
+
+        const oldOverlay = document.getElementById("previewWalkOverlay");
+        if (oldOverlay) oldOverlay.remove();
+
+        const style = document.createElement("style");
+        style.id = "preview-walk-transition-style";
+        style.textContent = `
+            /* Ancien overlay tunnel désactivé : il créait l'effet noir/voile après transition. */
+            .preview-walk-overlay,
+            #previewWalkOverlay {
+                display: none !important;
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                animation: none !important;
+            }
+
+            .preview-viewer.is-walk-transition::before,
+            .preview-viewer.is-walk-transition::after,
+            #previewViewer.is-walk-transition::before,
+            #previewViewer.is-walk-transition::after {
+                content: none !important;
+                display: none !important;
+                opacity: 0 !important;
+                background: transparent !important;
+                animation: none !important;
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    function ensureWalkTransitionOverlay() {
+        const oldOverlay = document.getElementById("previewWalkOverlay");
+        if (oldOverlay) oldOverlay.remove();
+        return null;
+    }
+
+    function getCinematicTransitionMs() {
+        // Durée Builder : outgoing 1100ms, incoming 1150ms, finalisation 1180ms.
+        return 1180;
+    }
+
+    function getCinematicCameraMs() {
+        // Gardé pour compatibilité si une ancienne partie du code l'appelle.
+        return 0;
+    }
+
+    function getWalkTargetFov(currentFov) {
+        // FOV plus petit = zoom avant. Valeurs proches de la logique Builder :
+        // on avance vers le hotspot sans zoom trop agressif.
+        const desiredTarget = isMobileViewport() ? degToRad(88) : degToRad(82);
+        const extraIfAlreadyZoomed = isMobileViewport() ? degToRad(12) : degToRad(22);
+
+        if (currentFov > desiredTarget) {
+            return clamp(desiredTarget, MIN_FOV, MAX_FOV);
+        }
+
+        return clamp(currentFov - extraIfAlreadyZoomed, MIN_FOV, MAX_FOV);
+    }
+
+    function getIncomingWalkStartFov(finalFov) {
+        // En mode Builder-like, la scène entrante est déjà à son zoom final.
+        return clamp(finalFov, MIN_FOV, MAX_FOV);
+    }
+
+    function getShortestYawTarget(currentYaw, targetYaw) {
+        return currentYaw + normalizeAngle(targetYaw - currentYaw);
+    }
+
+    function getWalkPitchTarget(currentPitch, targetPitch, extraBob = 0) {
+        const direction = targetPitch >= currentPitch ? 1 : -1;
+        return clamp(targetPitch + direction * extraBob, degToRad(-82), degToRad(82));
+    }
+
+    function getLayerEl(key) {
+        return key === "A" ? previewLayerA : previewLayerB;
+    }
+
+    function getMountEl(key) {
+        return key === "A" ? previewMountA : previewMountB;
+    }
+
+    function standbyLayerKey() {
+        return activeLayerKey === "A" ? "B" : "A";
+    }
+
+    function getSceneKeys(scene) {
+        return [scene?.id, scene?.scene_id, scene?.uuid, scene?.slug]
+            .filter((value) => value !== undefined && value !== null && value !== "")
+            .map((value) => String(value));
+    }
+
+    function sceneMatchesId(scene, sceneId) {
+        if (sceneId === undefined || sceneId === null) return false;
+        return getSceneKeys(scene).includes(String(sceneId));
+    }
+
+    function findScene(sceneId) {
+        if (sceneId === undefined || sceneId === null) return null;
+        return sceneLookup.get(String(sceneId)) || scenes.find(scene => sceneMatchesId(scene, sceneId)) || null;
+    }
+
+    function findSceneListIndex(sceneId) {
+        return sceneList.findIndex(scene => sceneMatchesId(scene, sceneId));
+    }
+
+    function getNavigationSceneList() {
+        return sceneList.length ? sceneList : scenes;
+    }
+
+    function getSceneIdentifier(scene) {
+        return String(scene?.slug || scene?.uuid || scene?.id || "");
+    }
+
+    function getSceneShareUrl(scene) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("s", getSceneIdentifier(scene));
+        return url.toString();
+    }
+
+    function syncSceneInUrl(scene) {
+        if (!scene) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set("s", getSceneIdentifier(scene));
+        window.history.replaceState({}, "", url.toString());
+    }
+
+    function getInitialSceneFromUrl() {
+        const url = new URL(window.location.href);
+        const sceneParam = url.searchParams.get("s");
+        if (!sceneParam) return null;
+
+        return scenes.find(scene =>
+            String(scene.id) === String(sceneParam) ||
+            String(scene.slug) === String(sceneParam) ||
+            String(scene.uuid) === String(sceneParam)
+        ) || null;
+    }
 
     function getSceneAssets(sceneData) {
         const assets = sceneData?.assets || {};
@@ -95,11 +544,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getPreferredImageUrl(sceneData) {
         const assets = getSceneAssets(sceneData);
-
         if (isMobileViewport()) {
             return assets.mobile || assets.desktop || assets.original || assets.preview || assets.thumbnail || assets.fallback || "";
         }
-
         return assets.desktop || assets.original || assets.mobile || assets.preview || assets.thumbnail || assets.fallback || "";
     }
 
@@ -108,433 +555,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return assets.thumbnail || assets.preview || assets.mobile || assets.desktop || assets.fallback || "";
     }
 
-    const $ = (id) => document.getElementById(id);
-
-    const previewViewer = $("previewViewer");
-    const previewLayerA = $("previewLayerA");
-    const previewLayerB = $("previewLayerB");
-    const previewMountA = $("previewMountA");
-    const previewMountB = $("previewMountB");
-
-    const previewIntroOverlay = $("previewIntroOverlay");
-
-    const previewScenesList = $("previewScenesList");
-    const sceneCountBadge = $("sceneCountBadge");
-    const sceneStackToggle = $("sceneStackToggle");
-    const previewSceneRail = $("previewSceneRail");
-    const sceneStackMiniPreview = $("sceneStackMiniPreview");
-
-    const prevSceneBtn = $("prevSceneBtn");
-    const nextSceneBtn = $("nextSceneBtn");
-    const zoomOutBtn = $("zoomOutBtn");
-    const zoomInBtn = $("zoomInBtn");
-    const resetViewBtn = $("resetViewBtn");
-    const autorotateBtn = $("autorotateBtn");
-    const focusModeBtn = $("focusModeBtn");
-    const shareBtn = $("shareBtn");
-    const fullscreenBtn = $("fullscreenBtn");
-
-    const previewToast = $("previewToast");
-
-    const previewInfoBackdrop = $("previewInfoBackdrop");
-    const previewInfoPanel = $("previewInfoPanel");
-    const previewInfoClose = $("previewInfoClose");
-    const previewInfoMedia = $("previewInfoMedia");
-    const previewInfoBadge = $("previewInfoBadge");
-    const previewInfoTitle = $("previewInfoTitle");
-    const previewInfoDescription = $("previewInfoDescription");
-    const previewInfoPrice = $("previewInfoPrice");
-    const previewInfoSite = $("previewInfoSite");
-    const previewInfoAction = $("previewInfoAction");
-    const previewInfoWhatsapp = $("previewInfoWhatsapp");
-    const previewInfoContact = $("previewInfoContact");
-
-    const viewers = { A: null, B: null };
-    const views = { A: null, B: null };
-    const marzipanoScenes = { A: null, B: null };
-
-
-    let activeLayerKey = "A";
-    let currentSceneId = null;
-    let isTransitioning = false;
-
-    let autorotateEnabled = false;
-    let autorotateFrame = null;
-    let autorotateLastTs = 0;
-
-    let focusMode = false;
-    let toastTimer = null;
-
-    // Zoom Marzipano:
-    // - FOV grand  = image dézoomée
-    // - FOV petit  = image zoomée
-    // Donc zoom 0 = FOV maximum.
-    const MIN_FOV = degToRad(6);
-    const MAX_FOV = degToRad(132);
-    const ZERO_ZOOM_FOV = MAX_FOV;
-
-    // On ne laisse plus hfov_default forcer un zoom initial.
-    // Toutes les scènes commencent à zoom 0, surtout sur mobile.
-    const EXTRA_WIDE_OFFSET = degToRad(0);
-    const INITIAL_OPEN_ZOOM_OFFSET = degToRad(0);
-    // Effet demandé :
-    // 1) scène actuelle = zoom avant vers le hotspot (comme quelqu'un qui avance)
-    // 2) nouvelle scène = démarre zoomée puis dézoome vers zoom 0
-    const NAVIGATION_ZOOM_IN_OFFSET_1 = degToRad(22);
-    const NAVIGATION_ZOOM_IN_OFFSET_2 = degToRad(48);
-    const SCENE_INCOMING_DEZOOM_OFFSET = degToRad(46);
-
-    const MOBILE_EXTRA_WIDE_OFFSET = degToRad(0);
-    const MOBILE_PINCH_SENSITIVITY = 2.15;
-
-    const pinchState = {
-        active: false,
-        startDistance: 0,
-        startFov: 0
-    };
-
-    function degToRad(deg) {
-        return deg * Math.PI / 180;
-    }
-
-    function clamp(value, min, max) {
-        return Math.min(Math.max(value, min), max);
-    }
-
-    function normalizeAngle(rad) {
-        while (rad > Math.PI) rad -= 2 * Math.PI;
-        while (rad < -Math.PI) rad += 2 * Math.PI;
-        return rad;
-    }
-
-    function isMobileViewport() {
-        return window.matchMedia("(max-width: 768px)").matches;
-    }
-    function setupResponsiveMode() {
-        if (!window.matchMedia) return;
-
-        const mql = window.matchMedia("(max-width: 768px), (max-height: 700px)");
-
-        function applyMode() {
-            document.body.classList.toggle("mobile", mql.matches);
-            document.body.classList.toggle("desktop", !mql.matches);
-        }
-
-        applyMode();
-
-        if (mql.addEventListener) {
-            mql.addEventListener("change", applyMode);
-        } else if (mql.addListener) {
-            mql.addListener(applyMode);
-        }
-
-        document.body.classList.add("no-touch");
-
-        window.addEventListener("touchstart", function onFirstTouch() {
-            document.body.classList.remove("no-touch");
-            document.body.classList.add("touch");
-            window.removeEventListener("touchstart", onFirstTouch);
-        }, { passive: true });
-    }
-
-
-
-    function injectPreviewCinematicStyles() {
-        if (document.getElementById("preview-cinematic-js-style")) return;
-
-        const style = document.createElement("style");
-        style.id = "preview-cinematic-js-style";
-        style.textContent = `
-            .preview-viewer {
-                position: relative;
-                overflow: hidden;
-                isolation: isolate;
-                perspective: 1200px;
-                transform-style: preserve-3d;
-                background: #020617;
-            }
-
-            .preview-viewer canvas {
-                width: 100% !important;
-                height: 100% !important;
-                display: block;
-            }
-
-            .preview-layer {
-                position: absolute;
-                inset: 0;
-                z-index: 0;
-                opacity: 0;
-                pointer-events: none;
-                transform: translate3d(0, 0, 0) scale(1);
-                transform-origin: center center;
-                filter: none;
-                will-change: opacity, transform, filter;
-                backface-visibility: hidden;
-                transition:
-                    opacity var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1),
-                    transform var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1),
-                    filter var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1);
-            }
-
-            .preview-layer.active-layer {
-                z-index: 1;
-                opacity: 1;
-                pointer-events: auto;
-            }
-
-            .preview-layer.standby-layer {
-                z-index: 0;
-                opacity: 0;
-                pointer-events: none;
-            }
-
-            .preview-mount {
-                width: 100%;
-                height: 100%;
-            }
-
-            .preview-layer.layer-incoming {
-                z-index: 2;
-                opacity: 0;
-                pointer-events: none;
-                transform: translate3d(0, 0, 0) scale(1.075) !important;
-                filter: blur(3px) brightness(.90) saturate(.98) !important;
-            }
-
-            .preview-viewer.is-cinematic-transition .preview-layer.layer-incoming {
-                opacity: 1;
-                transform: translate3d(0, 0, 0) scale(1) !important;
-                filter: blur(0) brightness(1) saturate(1) !important;
-            }
-
-            .preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing {
-                z-index: 1;
-                opacity: .10 !important;
-                pointer-events: none;
-                transform: translate3d(0, 0, 0) scale(1.18) !important;
-                filter: blur(1.8px) brightness(.86) saturate(.98) !important;
-            }
-
-            .preview-viewer::before {
-                content: "";
-                position: absolute;
-                inset: 0;
-                z-index: 8;
-                pointer-events: none;
-                opacity: 0;
-                background:
-                    radial-gradient(circle at 50% 48%, rgba(255,255,255,.18), transparent 18%),
-                    radial-gradient(circle at center, transparent 32%, rgba(2,6,23,.48) 72%, rgba(2,6,23,.72) 100%),
-                    linear-gradient(90deg, rgba(2,6,23,.36), transparent 24%, transparent 76%, rgba(2,6,23,.36));
-            }
-
-            .preview-viewer::after {
-                content: "";
-                position: absolute;
-                inset: 0;
-                z-index: 9;
-                pointer-events: none;
-                opacity: 0;
-                box-shadow:
-                    inset 0 10vh 0 rgba(2, 6, 23, .46),
-                    inset 0 -10vh 0 rgba(2, 6, 23, .46);
-            }
-
-            .preview-viewer.is-cinematic-transition::before {
-                animation: previewCinematicFlash var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1) both;
-            }
-
-            .preview-viewer.is-cinematic-transition::after {
-                animation: previewCinematicBars var(--preview-cinematic-ms, 1180ms) cubic-bezier(.22,.9,.25,1) both;
-            }
-
-            .preview-viewer.is-opening::before {
-                animation: previewOpeningVignette 520ms ease both;
-            }
-
-            @keyframes previewCinematicFlash {
-                0% { opacity: 0; }
-                14% { opacity: .50; }
-                42% { opacity: .28; }
-                72% { opacity: .18; }
-                100% { opacity: 0; }
-            }
-
-            @keyframes previewCinematicBars {
-                0% { opacity: 0; }
-                16% { opacity: .95; }
-                58% { opacity: .78; }
-                100% { opacity: 0; }
-            }
-
-            @keyframes previewOpeningVignette {
-                0% { opacity: .72; }
-                100% { opacity: 0; }
-            }
-
-            @media (max-width: 768px) {
-                .preview-layer {
-                    transition:
-                        opacity var(--preview-cinematic-ms, 980ms) cubic-bezier(.22,.9,.25,1),
-                        transform var(--preview-cinematic-ms, 980ms) cubic-bezier(.22,.9,.25,1),
-                        filter var(--preview-cinematic-ms, 980ms) cubic-bezier(.22,.9,.25,1);
-                }
-
-                .preview-layer.layer-incoming {
-                    transform: translate3d(0, 0, 0) scale(1.055) !important;
-                    filter: blur(2.4px) brightness(.90) saturate(.98) !important;
-                }
-
-                .preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing {
-                    transform: translate3d(0, 0, 0) scale(1.12) !important;
-                    filter: blur(1.4px) brightness(.86) saturate(.98) !important;
-                }
-
-                .preview-viewer::after {
-                    box-shadow:
-                        inset 0 7vh 0 rgba(2, 6, 23, .42),
-                        inset 0 -7vh 0 rgba(2, 6, 23, .42);
-                }
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-                .preview-layer {
-                    transition: opacity 180ms ease !important;
-                    transform: none !important;
-                    filter: none !important;
-                }
-
-                .preview-viewer::before,
-                .preview-viewer::after {
-                    animation: none !important;
-                    opacity: 0 !important;
-                }
-            }
-        `;
-
-        document.head.appendChild(style);
-    }
-
-    function getCinematicTransitionMs() {
-        // Durée du fondu A/B entre les deux layers.
-        // Assez long pour sentir le déplacement, pas trop long pour rester fluide.
-        return isMobileViewport() ? 1020 : 1220;
-    }
-
-    function getCinematicCameraMs() {
-        // Durée du dézoom réel FOV sur la nouvelle scène.
-        return isMobileViewport() ? 900 : 1040;
-    }
-
-    function getWalkTargetFov(currentFov) {
-        // FOV petit = zoom avant.
-        // On vise un zoom visible, mais sans aller trop proche.
-        const desiredTarget = isMobileViewport() ? degToRad(88) : degToRad(82);
-        const extraIfAlreadyZoomed = isMobileViewport() ? degToRad(12) : degToRad(16);
-
-        if (currentFov > desiredTarget) {
-            return clamp(desiredTarget, MIN_FOV, MAX_FOV);
-        }
-
-        return clamp(currentFov - extraIfAlreadyZoomed, MIN_FOV, MAX_FOV);
-    }
-
-    function getIncomingWalkStartFov(finalFov) {
-        // La nouvelle scène démarre volontairement zoomée, puis elle dézoome vers zoom 0.
-        const offset = isMobileViewport() ? degToRad(38) : SCENE_INCOMING_DEZOOM_OFFSET;
-        return clamp(finalFov - offset, MIN_FOV, MAX_FOV);
-    }
-
-    function getLayerEl(key) {
-        return key === "A" ? previewLayerA : previewLayerB;
-    }
-
-    function getMountEl(key) {
-        return key === "A" ? previewMountA : previewMountB;
-    }
-
-    function standbyLayerKey() {
-        return activeLayerKey === "A" ? "B" : "A";
-    }
-
-    function getSceneIdentifier(scene) {
-        return String(scene.slug || scene.uuid || scene.id);
-    }
-
-    function getSceneShareUrl(scene) {
-        const url = new URL(window.location.href);
-        url.searchParams.set("s", getSceneIdentifier(scene));
-        return url.toString();
-    }
-
-    function syncSceneInUrl(scene) {
-        const url = new URL(window.location.href);
-        url.searchParams.set("s", getSceneIdentifier(scene));
-        window.history.replaceState({}, "", url.toString());
-    }
-
-    function getInitialSceneFromUrl() {
-        const url = new URL(window.location.href);
-        const sceneParam = url.searchParams.get("s");
-        if (!sceneParam) return null;
-
-        return scenes.find(scene =>
-            String(scene.id) === String(sceneParam) ||
-            String(scene.slug) === String(sceneParam) ||
-            String(scene.uuid) === String(sceneParam)
-        ) || null;
-    }
-
-    function getSceneKeys(scene) {
-        return [scene?.id, scene?.scene_id, scene?.uuid, scene?.slug]
-            .filter((value) => value !== undefined && value !== null && value !== "")
-            .map((value) => String(value));
-    }
-
-    function sceneMatchesId(scene, sceneId) {
-        if (sceneId === undefined || sceneId === null) return false;
-        return getSceneKeys(scene).includes(String(sceneId));
-    }
-
-    function findScene(sceneId) {
-        if (sceneId === undefined || sceneId === null) return null;
-        return sceneLookup.get(String(sceneId)) || scenes.find(scene => sceneMatchesId(scene, sceneId)) || null;
-    }
-
-    function findSceneIndex(sceneId) {
-        return scenes.findIndex(scene => sceneMatchesId(scene, sceneId));
-    }
-
-    function findSceneListIndex(sceneId) {
-        return sceneList.findIndex(scene => sceneMatchesId(scene, sceneId));
-    }
-
-    function getPublicSceneEntry(sceneId) {
-        return sceneList.find(scene => sceneMatchesId(scene, sceneId)) || null;
-    }
-
-    function getNavigationSceneList() {
-        return sceneList.length ? sceneList : scenes;
-    }
-
     function resolveIcon(iconName) {
-        if (config.businessIconMap && config.businessIconMap[iconName]) {
-            return config.businessIconMap[iconName];
-        }
-        if (config.iconMap && config.iconMap[iconName]) {
-            return config.iconMap[iconName];
-        }
+        if (config.businessIconMap && config.businessIconMap[iconName]) return config.businessIconMap[iconName];
+        if (config.iconMap && config.iconMap[iconName]) return config.iconMap[iconName];
         return config.iconMap?.default || "";
     }
 
-    function getSceneBaseFov(scene) {
-        // Zoom 0: on ignore hfov_default pour ne pas commencer déjà zoomé.
-        return ZERO_ZOOM_FOV;
-    }
-
-    function getSceneFinalFov(scene) {
-        // Vue maximale au chargement et après chaque changement de scène.
+    function getSceneFinalFov() {
         return clamp(ZERO_ZOOM_FOV, MIN_FOV, MAX_FOV);
     }
 
@@ -545,9 +572,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateAllViewerSizes() {
         try {
             Object.values(viewers).forEach((viewer) => {
-                if (viewer && typeof viewer.updateSize === "function") {
-                    viewer.updateSize();
-                }
+                if (viewer && typeof viewer.updateSize === "function") viewer.updateSize();
             });
         } catch (_) {}
     }
@@ -557,9 +582,14 @@ document.addEventListener("DOMContentLoaded", () => {
         previewToast.textContent = message;
         clearTimeout(toastTimer);
         previewToast.classList.add("toast-show");
-        toastTimer = setTimeout(() => {
-            previewToast.classList.remove("toast-show");
-        }, 1700);
+        toastTimer = setTimeout(() => previewToast.classList.remove("toast-show"), 1700);
+    }
+
+    function stopTouchAndScrollEventPropagation(element) {
+        if (!element) return;
+        ["touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointermove", "pointerup", "pointercancel", "wheel"].forEach((eventName) => {
+            element.addEventListener(eventName, (event) => event.stopPropagation(), { passive: true });
+        });
     }
 
     const imageZoomState = {
@@ -580,150 +610,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function injectImageZoomStyles() {
         if (document.getElementById("previewImageZoomStyles")) return;
-
         const style = document.createElement("style");
         style.id = "previewImageZoomStyles";
         style.textContent = `
-            .info-media-image-zoomable {
-                cursor: zoom-in;
-                transition: transform .22s ease, filter .22s ease;
-            }
-
-            .info-media-image-zoomable:hover {
-                transform: scale(1.018);
-                filter: saturate(1.06) contrast(1.03);
-            }
-
+            .info-media-image-zoomable { cursor: zoom-in; transition: transform .22s ease, filter .22s ease; }
+            .info-media-image-zoomable:hover { transform: scale(1.018); filter: saturate(1.06) contrast(1.03); }
             .preview-image-zoom-overlay {
-                position: fixed;
-                inset: 0;
-                z-index: 99999;
-                display: none;
-                align-items: center;
-                justify-content: center;
-                background: rgba(2, 6, 23, .88);
-                backdrop-filter: blur(14px);
-                -webkit-backdrop-filter: blur(14px);
-                opacity: 0;
-                transition: opacity .18s ease;
-                touch-action: none;
+                position: fixed; inset: 0; z-index: 99999; display: none; align-items: center; justify-content: center;
+                background: rgba(2, 6, 23, .88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+                opacity: 0; transition: opacity .18s ease; touch-action: none;
             }
-
-            .preview-image-zoom-overlay.open {
-                display: flex;
-                opacity: 1;
-            }
-
-            .preview-image-zoom-stage {
-                position: absolute;
-                inset: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                overflow: hidden;
-                touch-action: none;
-                user-select: none;
-                -webkit-user-select: none;
-            }
-
+            .preview-image-zoom-overlay.open { display: flex; opacity: 1; }
+            .preview-image-zoom-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
             .preview-image-zoom-img {
-                max-width: 94vw;
-                max-height: 86vh;
-                object-fit: contain;
-                border-radius: 22px;
-                box-shadow: 0 30px 90px rgba(0,0,0,.55);
-                transform-origin: center center;
-                will-change: transform;
-                transition: transform .12s ease;
-                cursor: zoom-in;
-                user-select: none;
-                -webkit-user-drag: none;
+                max-width: 94vw; max-height: 86vh; object-fit: contain; border-radius: 22px; box-shadow: 0 30px 90px rgba(0,0,0,.55);
+                transform-origin: center center; will-change: transform; transition: transform .12s ease; cursor: zoom-in; user-select: none; -webkit-user-drag: none;
             }
-
-            .preview-image-zoom-overlay.zoomed .preview-image-zoom-img {
-                cursor: grab;
-            }
-
-            .preview-image-zoom-overlay.dragging .preview-image-zoom-img {
-                cursor: grabbing;
-                transition: none;
-            }
-
+            .preview-image-zoom-overlay.zoomed .preview-image-zoom-img { cursor: grab; }
+            .preview-image-zoom-overlay.dragging .preview-image-zoom-img { cursor: grabbing; transition: none; }
             .preview-image-zoom-toolbar {
-                position: absolute;
-                top: max(18px, env(safe-area-inset-top));
-                right: max(18px, env(safe-area-inset-right));
-                z-index: 2;
-                display: flex;
-                gap: 10px;
-                padding: 8px;
-                border: 1px solid rgba(255,255,255,.16);
-                border-radius: 999px;
-                background: rgba(15, 23, 42, .68);
-                box-shadow: 0 18px 50px rgba(0,0,0,.3);
+                position: absolute; top: max(18px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); z-index: 2;
+                display: flex; gap: 10px; padding: 8px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px;
+                background: rgba(15, 23, 42, .68); box-shadow: 0 18px 50px rgba(0,0,0,.3);
             }
-
             .preview-image-zoom-btn {
-                width: 42px;
-                height: 42px;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                border: 0;
-                border-radius: 999px;
-                color: #fff;
-                background: rgba(255,255,255,.14);
-                font-size: 19px;
-                font-weight: 900;
-                line-height: 1;
-                cursor: pointer;
+                width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px;
+                color: #fff; background: rgba(255,255,255,.14); font-size: 19px; font-weight: 900; line-height: 1; cursor: pointer;
                 transition: transform .18s ease, background .18s ease;
             }
-
-            .preview-image-zoom-btn:hover {
-                transform: translateY(-1px);
-                background: rgba(255,255,255,.24);
-            }
-
+            .preview-image-zoom-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,.24); }
             .preview-image-zoom-hint {
-                position: absolute;
-                left: 50%;
-                bottom: max(20px, env(safe-area-inset-bottom));
-                transform: translateX(-50%);
-                z-index: 2;
-                max-width: calc(100vw - 36px);
-                padding: 9px 14px;
-                border-radius: 999px;
-                color: rgba(255,255,255,.86);
-                background: rgba(15, 23, 42, .64);
-                font-size: 12px;
-                font-weight: 700;
-                text-align: center;
-                pointer-events: none;
+                position: absolute; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2;
+                max-width: calc(100vw - 36px); padding: 9px 14px; border-radius: 999px; color: rgba(255,255,255,.86);
+                background: rgba(15, 23, 42, .64); font-size: 12px; font-weight: 700; text-align: center; pointer-events: none;
             }
-
             @media (max-width: 768px) {
-                .preview-image-zoom-img {
-                    max-width: 96vw;
-                    max-height: 78vh;
-                    border-radius: 18px;
-                }
-
-                .preview-image-zoom-toolbar {
-                    top: max(12px, env(safe-area-inset-top));
-                    right: max(12px, env(safe-area-inset-right));
-                    gap: 7px;
-                    padding: 6px;
-                }
-
-                .preview-image-zoom-btn {
-                    width: 38px;
-                    height: 38px;
-                    font-size: 17px;
-                }
+                .preview-image-zoom-img { max-width: 96vw; max-height: 78vh; border-radius: 18px; }
+                .preview-image-zoom-toolbar { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); gap: 7px; padding: 6px; }
+                .preview-image-zoom-btn { width: 38px; height: 38px; font-size: 17px; }
             }
         `;
-
         document.head.appendChild(style);
     }
 
@@ -733,19 +659,15 @@ document.addEventListener("DOMContentLoaded", () => {
             imageZoomState.translateY = 0;
             return;
         }
-
         const maxX = Math.min(window.innerWidth * 0.55 * imageZoomState.scale, window.innerWidth * 1.2);
         const maxY = Math.min(window.innerHeight * 0.55 * imageZoomState.scale, window.innerHeight * 1.2);
-
         imageZoomState.translateX = clamp(imageZoomState.translateX, -maxX, maxX);
         imageZoomState.translateY = clamp(imageZoomState.translateY, -maxY, maxY);
     }
 
     function applyImageZoomTransform() {
         if (!imageZoomState.image || !imageZoomState.overlay) return;
-
         clampImageTranslate();
-
         imageZoomState.image.style.transform = `translate3d(${imageZoomState.translateX}px, ${imageZoomState.translateY}px, 0) scale(${imageZoomState.scale})`;
         imageZoomState.overlay.classList.toggle("zoomed", imageZoomState.scale > 1.02);
     }
@@ -768,7 +690,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function getImagePointerDistance() {
         const points = Array.from(imageZoomState.pointers.values());
         if (points.length < 2) return 0;
-
         const dx = points[0].clientX - points[1].clientX;
         const dy = points[0].clientY - points[1].clientY;
         return Math.sqrt(dx * dx + dy * dy);
@@ -776,7 +697,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function closeImageZoomViewer() {
         if (!imageZoomState.overlay) return;
-
         imageZoomState.overlay.classList.remove("open", "dragging", "zoomed");
         document.body.classList.remove("image-zoom-open");
         imageZoomState.pointers.clear();
@@ -785,10 +705,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function ensureImageZoomViewer() {
         injectImageZoomStyles();
-
-        if (imageZoomState.overlay && imageZoomState.image) {
-            return imageZoomState.overlay;
-        }
+        if (imageZoomState.overlay && imageZoomState.image) return imageZoomState.overlay;
 
         const overlay = document.createElement("div");
         overlay.id = "previewImageZoomOverlay";
@@ -805,26 +722,21 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
             <div class="preview-image-zoom-hint">Scroll / pinch to zoom • drag to move • double click to reset</div>
         `;
-
         document.body.appendChild(overlay);
 
         const stage = overlay.querySelector("[data-image-zoom-stage]");
         const image = overlay.querySelector(".preview-image-zoom-img");
-
         imageZoomState.overlay = overlay;
         imageZoomState.image = image;
 
         overlay.addEventListener("click", (event) => {
-            if (event.target === overlay || event.target === stage) {
-                closeImageZoomViewer();
-            }
+            if (event.target === overlay || event.target === stage) closeImageZoomViewer();
         });
 
         overlay.querySelectorAll("[data-image-zoom]").forEach((button) => {
             button.addEventListener("click", (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-
                 const action = button.dataset.imageZoom;
                 if (action === "close") closeImageZoomViewer();
                 if (action === "reset") resetImageZoom();
@@ -836,7 +748,6 @@ document.addEventListener("DOMContentLoaded", () => {
         overlay.addEventListener("wheel", (event) => {
             event.preventDefault();
             event.stopPropagation();
-
             const direction = event.deltaY > 0 ? -1 : 1;
             setImageZoomScale(imageZoomState.scale + direction * 0.25);
         }, { passive: false });
@@ -844,22 +755,14 @@ document.addEventListener("DOMContentLoaded", () => {
         image.addEventListener("dblclick", (event) => {
             event.preventDefault();
             event.stopPropagation();
-
-            if (imageZoomState.scale > 1.02) {
-                resetImageZoom();
-            } else {
-                setImageZoomScale(2.2);
-            }
+            if (imageZoomState.scale > 1.02) resetImageZoom();
+            else setImageZoomScale(2.2);
         });
 
         stage.addEventListener("pointerdown", (event) => {
             event.preventDefault();
             event.stopPropagation();
-
-            imageZoomState.pointers.set(event.pointerId, {
-                clientX: event.clientX,
-                clientY: event.clientY
-            });
+            imageZoomState.pointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY });
 
             if (imageZoomState.pointers.size === 2) {
                 imageZoomState.pinchStartDistance = getImagePointerDistance();
@@ -868,27 +771,20 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (imageZoomState.scale <= 1.02) return;
-
             imageZoomState.isDragging = true;
             imageZoomState.dragStartX = event.clientX;
             imageZoomState.dragStartY = event.clientY;
             imageZoomState.startTranslateX = imageZoomState.translateX;
             imageZoomState.startTranslateY = imageZoomState.translateY;
             overlay.classList.add("dragging");
-
             try { stage.setPointerCapture?.(event.pointerId); } catch (_) {}
         }, { passive: false });
 
         stage.addEventListener("pointermove", (event) => {
             if (!imageZoomState.pointers.has(event.pointerId)) return;
-
             event.preventDefault();
             event.stopPropagation();
-
-            imageZoomState.pointers.set(event.pointerId, {
-                clientX: event.clientX,
-                clientY: event.clientY
-            });
+            imageZoomState.pointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY });
 
             if (imageZoomState.pointers.size >= 2 && imageZoomState.pinchStartDistance) {
                 const currentDistance = getImagePointerDistance();
@@ -900,7 +796,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (!imageZoomState.isDragging) return;
-
             imageZoomState.translateX = imageZoomState.startTranslateX + (event.clientX - imageZoomState.dragStartX);
             imageZoomState.translateY = imageZoomState.startTranslateY + (event.clientY - imageZoomState.dragStartY);
             applyImageZoomTransform();
@@ -908,12 +803,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         function endImagePointer(event) {
             imageZoomState.pointers.delete(event.pointerId);
-
             if (imageZoomState.pointers.size < 2) {
                 imageZoomState.pinchStartDistance = 0;
                 imageZoomState.pinchStartScale = imageZoomState.scale;
             }
-
             if (imageZoomState.pointers.size === 0) {
                 imageZoomState.isDragging = false;
                 overlay.classList.remove("dragging");
@@ -923,19 +816,15 @@ document.addEventListener("DOMContentLoaded", () => {
         stage.addEventListener("pointerup", endImagePointer);
         stage.addEventListener("pointercancel", endImagePointer);
         stage.addEventListener("pointerleave", endImagePointer);
-
         return overlay;
     }
 
     function openImageZoomViewer(imageUrl, imageAlt = "Image") {
         if (!imageUrl) return;
-
         const overlay = ensureImageZoomViewer();
         const image = imageZoomState.image;
-
         image.src = imageUrl;
         image.alt = imageAlt || "Image";
-
         resetImageZoom();
         overlay.classList.add("open");
         document.body.classList.add("image-zoom-open");
@@ -944,14 +833,12 @@ document.addEventListener("DOMContentLoaded", () => {
     function syncZoomButtonsState() {
         const view = getCurrentView();
         if (!view) return;
-
         const currentFov = view.fov();
 
         if (zoomInBtn) {
             zoomInBtn.disabled = currentFov <= MIN_FOV + 0.01;
             zoomInBtn.classList.toggle("opacity-40", zoomInBtn.disabled);
         }
-
         if (zoomOutBtn) {
             zoomOutBtn.disabled = currentFov >= MAX_FOV - 0.01;
             zoomOutBtn.classList.toggle("opacity-40", zoomOutBtn.disabled);
@@ -972,11 +859,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function toggleSceneStack(event) {
         event?.stopPropagation();
-        if (previewSceneRail?.classList.contains("open")) {
-            closeSceneStack();
-        } else {
-            openSceneStack();
-        }
+        if (previewSceneRail?.classList.contains("open")) closeSceneStack();
+        else openSceneStack();
     }
 
     function closeInfoPanel() {
@@ -987,7 +871,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function openInfoPanel(hotspot) {
         if (!previewInfoPanel) return;
-
         const content = hotspot.payload?.content || {};
         const imageUrl =
             content.image_url ||
@@ -996,108 +879,101 @@ document.addEventListener("DOMContentLoaded", () => {
             hotspot.image_url ||
             hotspot.ad_image_url ||
             "";
-        const ctaUrl = content.cta_url || "";
-        const buttonText = content.button_text || "Open";
-        const badge = content.badge || "";
-        const price = content.price || "";
-        const siteName = content.site_name || "";
-        const phone = content.phone || "";
-        const email = content.email || "";
-        const whatsappNumber = content.whatsapp_number || "";
-        const whatsappMessage = content.whatsapp_message || "Hello";
 
-        previewInfoMedia.innerHTML = "";
+        const ctaUrl = content.cta_url || hotspot.cta_url || "";
+        const buttonText = content.button_text || hotspot.button_text || "Open";
+        const badge = content.badge || hotspot.badge || "";
+        const price = content.price || hotspot.price || "";
+        const siteName = content.site_name || hotspot.site_name || "";
+        const phone = content.phone || hotspot.phone || "";
+        const email = content.email || hotspot.email || "";
+        const whatsappNumber = content.whatsapp_number || hotspot.whatsapp_number || "";
+        const whatsappMessage = content.whatsapp_message || hotspot.whatsapp_message || "Hello";
 
-        if (imageUrl) {
-            const infoImage = document.createElement("img");
-            infoImage.src = imageUrl;
-            infoImage.alt = hotspot.title || hotspot.label || "Hotspot";
-            infoImage.className = "info-media-image info-media-image-zoomable";
-            infoImage.loading = "lazy";
-            infoImage.decoding = "async";
-            infoImage.title = "Click to zoom";
-            infoImage.setAttribute("role", "button");
-            infoImage.setAttribute("tabindex", "0");
-
-            infoImage.addEventListener("click", (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                openImageZoomViewer(imageUrl, infoImage.alt);
-            });
-
-            infoImage.addEventListener("keydown", (event) => {
-                if (event.key === "Enter" || event.key === " ") {
+        if (previewInfoMedia) {
+            previewInfoMedia.innerHTML = "";
+            if (imageUrl) {
+                const infoImage = document.createElement("img");
+                infoImage.src = imageUrl;
+                infoImage.alt = hotspot.title || hotspot.label || "Hotspot";
+                infoImage.className = "info-media-image info-media-image-zoomable";
+                infoImage.loading = "lazy";
+                infoImage.decoding = "async";
+                infoImage.title = "Click to zoom";
+                infoImage.setAttribute("role", "button");
+                infoImage.setAttribute("tabindex", "0");
+                infoImage.addEventListener("click", (event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     openImageZoomViewer(imageUrl, infoImage.alt);
-                }
-            });
-
-            infoImage.onerror = () => {
-                previewInfoMedia.innerHTML = `<div class="info-media-empty">Image unavailable</div>`;
-            };
-
-            previewInfoMedia.appendChild(infoImage);
-        } else {
-            previewInfoMedia.innerHTML = `<div class="info-media-empty">Preview unavailable</div>`;
+                });
+                infoImage.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        openImageZoomViewer(imageUrl, infoImage.alt);
+                    }
+                });
+                infoImage.onerror = () => { previewInfoMedia.innerHTML = `<div class="info-media-empty">Image unavailable</div>`; };
+                previewInfoMedia.appendChild(infoImage);
+            } else {
+                previewInfoMedia.innerHTML = `<div class="info-media-empty">Preview unavailable</div>`;
+            }
         }
 
-        previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
-        previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
+        if (previewInfoTitle) previewInfoTitle.textContent = hotspot.title || hotspot.label || "Hotspot";
+        if (previewInfoDescription) previewInfoDescription.textContent = hotspot.description || hotspot.tooltip_text || "";
 
-        if (badge) {
-            previewInfoBadge.textContent = badge;
-            previewInfoBadge.classList.remove("hidden");
-        } else {
-            previewInfoBadge.classList.add("hidden");
-            previewInfoBadge.textContent = "";
+        function setOptionalText(el, value) {
+            if (!el) return;
+            if (value) {
+                el.textContent = value;
+                el.classList.remove("hidden");
+            } else {
+                el.textContent = "";
+                el.classList.add("hidden");
+            }
         }
 
-        if (price) {
-            previewInfoPrice.textContent = price;
-            previewInfoPrice.classList.remove("hidden");
-        } else {
-            previewInfoPrice.classList.add("hidden");
-            previewInfoPrice.textContent = "";
+        setOptionalText(previewInfoBadge, badge);
+        setOptionalText(previewInfoPrice, price);
+        setOptionalText(previewInfoSite, siteName);
+
+        if (previewInfoAction) {
+            if (ctaUrl) {
+                previewInfoAction.href = ctaUrl;
+                previewInfoAction.textContent = buttonText;
+                previewInfoAction.classList.remove("hidden");
+            } else {
+                previewInfoAction.classList.add("hidden");
+                previewInfoAction.removeAttribute("href");
+            }
         }
 
-        if (siteName) {
-            previewInfoSite.textContent = siteName;
-            previewInfoSite.classList.remove("hidden");
-        } else {
-            previewInfoSite.classList.add("hidden");
-            previewInfoSite.textContent = "";
+        if (previewInfoWhatsapp) {
+            if (whatsappNumber) {
+                const cleanNumber = String(whatsappNumber).replace(/[^\d]/g, "");
+                previewInfoWhatsapp.href = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+                previewInfoWhatsapp.classList.remove("hidden");
+            } else {
+                previewInfoWhatsapp.classList.add("hidden");
+                previewInfoWhatsapp.removeAttribute("href");
+            }
         }
 
-        if (ctaUrl) {
-            previewInfoAction.href = ctaUrl;
-            previewInfoAction.textContent = buttonText;
-            previewInfoAction.classList.remove("hidden");
-        } else {
-            previewInfoAction.classList.add("hidden");
-            previewInfoAction.removeAttribute("href");
-        }
-
-        if (whatsappNumber) {
-            const cleanNumber = String(whatsappNumber).replace(/[^\d]/g, "");
-            previewInfoWhatsapp.href = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(whatsappMessage)}`;
-            previewInfoWhatsapp.classList.remove("hidden");
-        } else {
-            previewInfoWhatsapp.classList.add("hidden");
-            previewInfoWhatsapp.removeAttribute("href");
-        }
-
-        if (phone) {
-            previewInfoContact.href = `tel:${phone}`;
-            previewInfoContact.textContent = "Call";
-            previewInfoContact.classList.remove("hidden");
-        } else if (email) {
-            previewInfoContact.href = `mailto:${email}`;
-            previewInfoContact.textContent = "Email";
-            previewInfoContact.classList.remove("hidden");
-        } else {
-            previewInfoContact.classList.add("hidden");
-            previewInfoContact.removeAttribute("href");
+        if (previewInfoContact) {
+            if (phone) {
+                previewInfoContact.href = `tel:${phone}`;
+                previewInfoContact.textContent = "Call";
+                previewInfoContact.classList.remove("hidden");
+            } else if (email) {
+                previewInfoContact.href = `mailto:${email}`;
+                previewInfoContact.textContent = "Email";
+                previewInfoContact.classList.remove("hidden");
+            } else {
+                previewInfoContact.classList.add("hidden");
+                previewInfoContact.removeAttribute("href");
+            }
         }
 
         previewInfoPanel.classList.add("open");
@@ -1108,12 +984,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function stopAutorotate() {
         autorotateEnabled = false;
         autorotateLastTs = 0;
-
         if (autorotateFrame) {
             cancelAnimationFrame(autorotateFrame);
             autorotateFrame = null;
         }
-
         autorotateBtn?.classList.remove("active");
     }
 
@@ -1123,17 +997,14 @@ document.addEventListener("DOMContentLoaded", () => {
             autorotateLastTs = 0;
             return;
         }
-
         const view = getCurrentView();
         if (view) {
             if (!autorotateLastTs) autorotateLastTs = ts;
             const delta = (ts - autorotateLastTs) / 1000;
             autorotateLastTs = ts;
-
             const nextYaw = normalizeAngle(view.yaw() + degToRad(8) * delta);
             view.setParameters({ yaw: nextYaw });
         }
-
         autorotateFrame = requestAnimationFrame(autorotateLoop);
     }
 
@@ -1145,11 +1016,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function toggleAutorotate() {
-        if (autorotateEnabled) {
-            stopAutorotate();
-        } else {
-            startAutorotate();
-        }
+        if (autorotateEnabled) stopAutorotate();
+        else startAutorotate();
     }
 
     function setFocusMode(enabled) {
@@ -1165,9 +1033,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderSceneStackMini() {
         if (!sceneStackMiniPreview) return;
-
         sceneStackMiniPreview.innerHTML = "";
-
         const list = getNavigationSceneList();
         if (!list.length) return;
 
@@ -1194,7 +1060,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderSceneRail() {
         if (!previewScenesList) return;
         previewScenesList.innerHTML = "";
-
         const list = getNavigationSceneList();
 
         list.forEach((scene, index) => {
@@ -1202,33 +1067,27 @@ document.addEventListener("DOMContentLoaded", () => {
             button.type = "button";
             button.className = "scene-card";
             button.dataset.sceneId = scene.id;
+            button.style.setProperty("--stagger", String(index));
 
             const thumb = getSceneThumbnailUrl(scene);
-
             button.innerHTML = `
                 <div class="scene-thumb">
                     ${thumb ? `<img src="${thumb}" alt="${scene.title || 'Scene'}">` : `<div class="scene-thumb-placeholder">360</div>`}
                 </div>
                 <div class="scene-body">
                     <strong class="scene-title">${scene.title || "Untitled Scene"}</strong>
-                    <span class="scene-subtitle">
-                        <span class="scene-dot"></span>
-                        Scene ${index + 1}
-                    </span>
+                    <span class="scene-subtitle"><span class="scene-dot"></span>Scene ${index + 1}</span>
                 </div>
             `;
 
             button.addEventListener("click", (event) => {
                 event.stopPropagation();
                 if (isTransitioning) return;
-
                 const targetScene = findScene(scene.id) || findScene(scene.scene_id) || scene;
                 if (!targetScene) return;
-
                 closeInfoPanel();
-                isTransitioning = true;
-                cinematicSwitchScene(targetScene);
                 closeSceneStack();
+                goToSceneWithWalk(targetScene);
             });
 
             previewScenesList.appendChild(button);
@@ -1243,187 +1102,125 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateSceneMeta(scene) {
-        if (sceneCountBadge) {
-            // Affiche le nombre de scènes publiques disponibles dans le stack.
-            sceneCountBadge.textContent = `${getNavigationSceneList().length}`;
-        }
-
+        if (sceneCountBadge) sceneCountBadge.textContent = `${getNavigationSceneList().length}`;
         markActiveSceneCard(scene?.id);
     }
 
+    function buildHotspotNode(hotspot) {
+        const display = hotspot.payload?.display || {};
+        const variant = display.variant || "pin";
+        const size = Number(display.size || 58);
+        const rotation = Number(display.rotation || 0);
+        const offsetX = Number(display.offset_x || 0);
+        const offsetY = Number(display.offset_y || 0);
+        const anchor = display.anchor || "bottom";
 
-    function stopTouchAndScrollEventPropagation(element) {
-        if (!element) return;
+        const businessIconKeys = new Set(Object.keys(config.businessIconMap || {}).map((key) => String(key).toLowerCase()));
 
-        [
-            "touchstart",
-            "touchmove",
-            "touchend",
-            "touchcancel",
-            "pointerdown",
-            "pointermove",
-            "pointerup",
-            "pointercancel",
-            "wheel"
-        ].forEach((eventName) => {
-            element.addEventListener(eventName, (event) => {
-                event.stopPropagation();
-            }, { passive: true });
-        });
-    }
-
-   function buildHotspotNode(hotspot) {
-    const display = hotspot.payload?.display || {};
-
-    const variant = display.variant || "pin";
-    const size = Number(display.size || 58);
-    const rotation = Number(display.rotation || 0);
-    const offsetX = Number(display.offset_x || 0);
-    const offsetY = Number(display.offset_y || 0);
-    const anchor = display.anchor || "bottom";
-
-    const businessIconKeys = new Set(
-        Object.keys(config.businessIconMap || {}).map((key) => String(key).toLowerCase())
-    );
-
-    function normalizeHotspotKey(value) {
-        return String(value || "")
-            .trim()
-            .toLowerCase()
-            .replace(/^business[-_/]/, "")
-            .replace(/\.(png|jpg|jpeg|svg|webp)$/i, "")
-            .replace(/[^a-z0-9_-]/g, "");
-    }
-
-    const rawIconKey =
-        hotspot.selected_icon ||
-        hotspot.icon ||
-        hotspot.type ||
-        "default";
-
-    const iconKey = normalizeHotspotKey(rawIconKey);
-    const typeKey = normalizeHotspotKey(hotspot.type);
-
-    const isNavigate = hotspot.type === "navigate";
-    const isBusinessIcon =
-        !isNavigate &&
-        (
-            businessIconKeys.has(iconKey) ||
-            businessIconKeys.has(typeKey)
-        );
-
-    const hotspotKind = isNavigate
-        ? "navigate"
-        : businessIconKeys.has(iconKey)
-            ? iconKey
-            : businessIconKeys.has(typeKey)
-                ? typeKey
-                : typeKey || iconKey || "custom";
-
-    const iconUrl =
-        resolveIcon(iconKey) ||
-        resolveIcon(typeKey) ||
-        resolveIcon("default");
-
-    const node = document.createElement("div");
-
-    node.className = [
-        "preview-hotspot",
-        `variant-${variant}`,
-        `anchor-${anchor}`,
-        `hotspot-kind-${hotspotKind}`,
-        isNavigate ? "hotspot-kind-navigate" : "",
-        isBusinessIcon ? "hotspot-business-premium" : "hotspot-standard-premium"
-    ].filter(Boolean).join(" ");
-
-    node.dataset.hotspotType = hotspot.type || "";
-    node.dataset.hotspotIcon = iconKey || "";
-    node.dataset.hotspotKind = hotspotKind || "";
-
-    node.style.width = `${size}px`;
-
-    // Important : les hotspots business doivent rester carrés pour que le loader tourne bien.
-    node.style.height = isBusinessIcon || variant !== "label" ? `${size}px` : "auto";
-
-    // On garde uniquement le déplacement/rotation sur le parent.
-    // Ne jamais mettre d'animation sur ce parent, sinon Marzipano peut bouger le hotspot.
-    node.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`;
-
-    // Délai léger différent pour éviter que tous les loaders tournent exactement pareil.
-    const delay = Math.abs(Number(hotspot.id || hotspot.pk || 0)) % 7;
-    node.style.setProperty("--hotspot-loader-delay", `${delay * 110}ms`);
-
-    const wrap = document.createElement("span");
-    wrap.className = "hotspot-grow-wrap";
-    wrap.setAttribute("aria-hidden", "true");
-
-    const img = document.createElement("img");
-    img.src = iconUrl;
-    img.alt = hotspot.label || hotspot.title || "Hotspot";
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.draggable = false;
-
-    wrap.appendChild(img);
-    node.appendChild(wrap);
-
-    // On garde le texte dans le DOM pour l'accessibilité, mais il sera caché en CSS.
-    if (variant === "label") {
-        const label = document.createElement("span");
-        label.className = "hotspot-label-text";
-        label.textContent = hotspot.label || hotspot.title || "Hotspot";
-        node.appendChild(label);
-    }
-
-    stopTouchAndScrollEventPropagation(node);
-
-    node.addEventListener("click", async (event) => {
-        event.stopPropagation();
-
-        if (hotspot.type === "navigate" && hotspot.target_scene) {
-            await navigateToScene(hotspot.target_scene, hotspot);
-            return;
+        function normalizeHotspotKey(value) {
+            return String(value || "")
+                .trim()
+                .toLowerCase()
+                .replace(/^business[-_/]/, "")
+                .replace(/\.(png|jpg|jpeg|svg|webp)$/i, "")
+                .replace(/[^a-z0-9_-]/g, "");
         }
 
-        openInfoPanel(hotspot);
-    });
+        const rawIconKey = hotspot.selected_icon || hotspot.icon || hotspot.type || "default";
+        const iconKey = normalizeHotspotKey(rawIconKey);
+        const typeKey = normalizeHotspotKey(hotspot.type);
 
-    return node;
-}
+        const isNavigate = hotspot.type === "navigate";
+        const isBusinessIcon = !isNavigate && (businessIconKeys.has(iconKey) || businessIconKeys.has(typeKey));
+        const hotspotKind = isNavigate
+            ? "navigate"
+            : businessIconKeys.has(iconKey)
+                ? iconKey
+                : businessIconKeys.has(typeKey)
+                    ? typeKey
+                    : typeKey || iconKey || "custom";
+
+        const iconUrl = resolveIcon(iconKey) || resolveIcon(typeKey) || resolveIcon("default");
+        const node = document.createElement("div");
+        node.className = [
+            "preview-hotspot",
+            `variant-${variant}`,
+            `anchor-${anchor}`,
+            `hotspot-kind-${hotspotKind}`,
+            isNavigate ? "hotspot-kind-navigate" : "",
+            isBusinessIcon ? "hotspot-business-premium" : "hotspot-standard-premium"
+        ].filter(Boolean).join(" ");
+
+        node.dataset.hotspotType = hotspot.type || "";
+        node.dataset.hotspotIcon = iconKey || "";
+        node.dataset.hotspotKind = hotspotKind || "";
+        node.style.width = `${size}px`;
+        node.style.height = isBusinessIcon || variant !== "label" ? `${size}px` : "auto";
+        node.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`;
+
+        const delay = Math.abs(Number(hotspot.id || hotspot.pk || 0)) % 7;
+        node.style.setProperty("--hotspot-loader-delay", `${delay * 110}ms`);
+
+        const wrap = document.createElement("span");
+        wrap.className = "hotspot-grow-wrap";
+        wrap.setAttribute("aria-hidden", "true");
+
+        const img = document.createElement("img");
+        img.src = iconUrl;
+        img.alt = hotspot.label || hotspot.title || "Hotspot";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.draggable = false;
+
+        wrap.appendChild(img);
+        node.appendChild(wrap);
+
+        if (variant === "label") {
+            const label = document.createElement("span");
+            label.className = "hotspot-label-text";
+            label.textContent = hotspot.label || hotspot.title || "Hotspot";
+            node.appendChild(label);
+        }
+
+        stopTouchAndScrollEventPropagation(node);
+
+        node.addEventListener("click", async (event) => {
+            event.stopPropagation();
+            if (hotspot.type === "navigate" && hotspot.target_scene) {
+                await navigateToScene(hotspot.target_scene, hotspot);
+                return;
+            }
+            openInfoPanel(hotspot);
+        });
+
+        return node;
+    }
 
     function ensureViewer(key) {
         const mount = getMountEl(key);
-        if (!mount) {
-            return null;
-        }
-
+        if (!mount) return null;
         mount.innerHTML = "";
 
         try {
             viewers[key] = new Marzipano.Viewer(mount, {
-                controls: {
-                    mouseViewMode: "drag"
-                }
+                controls: { mouseViewMode: "drag" }
             });
-        } catch (_) {
+        } catch (error) {
+            console.warn("VIEWER_CREATE_FAILED", error);
             return null;
         }
 
         return viewers[key];
     }
 
-
     function getSceneSourceGeometryAndLimiter(sceneData) {
         const mobile = isMobileViewport();
-
 
         if (sceneData?.tiles_url) {
             return {
                 source: Marzipano.ImageUrlSource.fromString(
                     `${sceneData.tiles_url}/{z}/{f}/{y}/{x}.jpg`,
-                    {
-                        cubeMapPreviewUrl: `${sceneData.tiles_url}/preview.jpg`
-                    }
+                    { cubeMapPreviewUrl: `${sceneData.tiles_url}/preview.jpg` }
                 ),
                 geometry: new Marzipano.CubeGeometry(
                     sceneData.levels || [
@@ -1434,52 +1231,32 @@ document.addEventListener("DOMContentLoaded", () => {
                     ]
                 ),
                 limiter: Marzipano.RectilinearView.limit.traditional(
-                    Math.max(
-                        Number(sceneData.face_size || 0),
-                        Number(sceneData.max_resolution || 0),
-                        mobile ? 2048 : 4096
-                    ),
+                    Math.max(Number(sceneData.face_size || 0), Number(sceneData.max_resolution || 0), mobile ? 2048 : 4096),
                     MAX_FOV
                 )
             };
         }
 
-        // Résolution logique plus élevée pour permettre un vrai zoom avant,
-        // surtout sur mobile où Marzipano bride vite le zoom si la largeur est trop basse.
         const logicalResolution = Math.max(
             Number(sceneData?.face_size || 0),
             Number(sceneData?.max_resolution || 0),
             mobile ? 3072 : 4096
         );
-        const textureWidth = logicalResolution;
-        const faceSize = logicalResolution;
-
-        const preferredImageUrl = getPreferredImageUrl(sceneData);
+        const selectedImageUrl = getPreferredImageUrl(sceneData);
 
         return {
-            source: Marzipano.ImageUrlSource.fromString(preferredImageUrl),
-            geometry: new Marzipano.EquirectGeometry([
-                { width: textureWidth }
-            ]),
-            limiter: Marzipano.RectilinearView.limit.traditional(
-                faceSize,
-                MAX_FOV
-            )
+            source: Marzipano.ImageUrlSource.fromString(selectedImageUrl),
+            geometry: new Marzipano.EquirectGeometry([{ width: logicalResolution }]),
+            limiter: Marzipano.RectilinearView.limit.traditional(logicalResolution, MAX_FOV)
         };
     }
 
     function buildSceneOnLayer(layerKey, sceneData) {
         const viewer = ensureViewer(layerKey);
         const selectedImageUrl = getPreferredImageUrl(sceneData);
-
-        if (!viewer || (!selectedImageUrl && !sceneData?.tiles_url)) {
-            return null;
-        }
-
-
+        if (!viewer || (!selectedImageUrl && !sceneData?.tiles_url)) return null;
 
         const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
-
         const yaw = degToRad(sceneData.yaw_default || 0);
         const pitch = degToRad(sceneData.pitch_default || 0);
         const fov = getSceneFinalFov(sceneData);
@@ -1493,17 +1270,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 view: views[layerKey],
                 pinFirstLevel: true
             });
-
             marzipanoScenes[layerKey].switchTo();
-        } catch (_) {
+        } catch (error) {
+            console.warn("SCENE_CREATE_FAILED", error);
             return null;
         }
 
         (sceneData.hotspots || []).forEach((hotspot) => {
             const node = buildHotspotNode(hotspot);
             marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
-                yaw: hotspot.yaw,
-                pitch: hotspot.pitch
+                yaw: Number(hotspot.yaw || 0),
+                pitch: Number(hotspot.pitch || 0)
             });
         });
 
@@ -1519,18 +1296,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const view = getCurrentView();
         if (!view || !scene) return;
 
-        const finalFov = getSceneFinalFov(scene);
-        const finalYaw = degToRad(scene.yaw_default || 0);
-        const finalPitch = degToRad(scene.pitch_default || 0);
-
-        // Démarrage direct à zoom 0, même sur mobile.
-        // Pas de zoom automatique au chargement: l'utilisateur contrôle le zoom lui-même.
-        previewViewer.classList.add("is-opening");
-
+        previewViewer?.classList.add("is-opening");
         view.setParameters({
-            yaw: finalYaw,
-            pitch: finalPitch,
-            fov: clamp(finalFov - INITIAL_OPEN_ZOOM_OFFSET, MIN_FOV, MAX_FOV)
+            yaw: degToRad(scene.yaw_default || 0),
+            pitch: degToRad(scene.pitch_default || 0),
+            fov: getSceneFinalFov(scene)
         });
 
         setTimeout(() => {
@@ -1540,12 +1310,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 220);
 
         setTimeout(() => {
-            previewViewer.classList.remove("is-cinematic-transition", "transitioning", "is-opening");
+            previewViewer?.classList.remove("is-cinematic-transition", "transitioning", "is-opening", "is-walk-transition");
             syncZoomButtonsState();
-        }, 520);
+        }, 540);
     }
 
-    function cinematicSwitchScene(targetScene, options = {}) {
+    function cinematicSwitchScene(targetScene) {
         if (!targetScene) {
             isTransitioning = false;
             return;
@@ -1554,77 +1324,68 @@ document.addEventListener("DOMContentLoaded", () => {
         const outgoingKey = activeLayerKey;
         const incomingKey = standbyLayerKey();
         const cinematicMs = getCinematicTransitionMs();
-        const cameraMs = getCinematicCameraMs();
 
         previewViewer?.style?.setProperty("--preview-cinematic-ms", `${cinematicMs}ms`);
-
         buildSceneOnLayer(incomingKey, targetScene);
 
         const incomingView = views[incomingKey];
         const outgoingEl = getLayerEl(outgoingKey);
         const incomingEl = getLayerEl(incomingKey);
 
+        if (!outgoingEl || !incomingEl) {
+            activeLayerKey = incomingKey;
+            currentSceneId = targetScene.id;
+            isTransitioning = false;
+            return;
+        }
+
         const endYaw = degToRad(targetScene.yaw_default || 0);
         const endPitch = degToRad(targetScene.pitch_default || 0);
-
-        // Important : la deuxième scène commence déjà dans sa propre direction par défaut.
-        // On ne reprend pas le yaw/pitch de l'ancien hotspot, car les coordonnées des scènes
-        // peuvent être différentes. L'effet marche se fait avec le FOV : zoomé -> dézoomé.
-        const startYaw = endYaw;
-        const startPitch = endPitch;
-
         const finalFov = getSceneFinalFov(targetScene);
-        const incomingStartFov = getIncomingWalkStartFov(finalFov);
 
+        // Même principe que le Builder : la nouvelle scène démarre directement
+        // dans sa direction par défaut. Le mouvement est porté par l'animation A/B,
+        // pas par un voile noir ni un écran de loading.
         if (incomingView) {
             incomingView.setParameters({
-                yaw: startYaw,
-                pitch: startPitch,
-                fov: incomingStartFov
+                yaw: endYaw,
+                pitch: endPitch,
+                fov: finalFov
             });
         }
 
         outgoingEl.classList.remove("standby-layer", "layer-incoming", "layer-outgoing");
-        incomingEl.classList.remove("standby-layer", "layer-incoming", "layer-outgoing");
+        incomingEl.classList.remove("active-layer", "standby-layer", "layer-incoming", "layer-outgoing");
 
         outgoingEl.classList.add("active-layer");
         incomingEl.classList.add("layer-incoming");
-        incomingEl.style.opacity = "0";
 
-        previewViewer.classList.add("is-cinematic-transition", "transitioning");
+        outgoingEl.style.opacity = "1";
+        incomingEl.style.opacity = "1";
+
+        previewViewer?.classList.remove("is-walk-transition");
+        previewViewer?.classList.add("is-cinematic-transition", "transitioning");
 
         currentSceneId = targetScene.id;
         updateSceneMeta(targetScene);
         syncSceneInUrl(targetScene);
 
         requestAnimationFrame(() => {
-            incomingEl.style.opacity = "1";
+            // Force la même sensation que crossfadeToScene() du Builder.
             outgoingEl.classList.add("layer-outgoing");
+            incomingEl.classList.add("layer-incoming");
         });
 
         setTimeout(() => {
-            if (incomingView) {
-                incomingView.setParameters(
-                    {
-                        yaw: endYaw,
-                        pitch: endPitch,
-                        fov: finalFov
-                    },
-                    { transitionDuration: cameraMs }
-                );
-            }
-        }, 70);
-
-        setTimeout(() => {
-            outgoingEl.classList.remove("active-layer", "layer-outgoing");
+            outgoingEl.classList.remove("active-layer", "layer-outgoing", "layer-incoming");
             outgoingEl.classList.add("standby-layer");
             outgoingEl.style.opacity = "0";
 
-            incomingEl.classList.remove("layer-incoming", "standby-layer");
+            incomingEl.classList.remove("layer-incoming", "layer-outgoing", "standby-layer");
             incomingEl.classList.add("active-layer");
             incomingEl.style.opacity = "1";
 
-            previewViewer.classList.remove("is-cinematic-transition", "transitioning");
+            previewViewer?.classList.remove("is-cinematic-transition", "transitioning", "is-walk-transition");
             activeLayerKey = incomingKey;
             isTransitioning = false;
             updateAllViewerSizes();
@@ -1644,151 +1405,127 @@ document.addEventListener("DOMContentLoaded", () => {
         closeSceneStack();
         stopAutorotate();
 
-        const hotspotYaw = normalizeAngle(Number(hotspot.yaw ?? currentView.yaw()));
-        const hotspotPitch = Number(hotspot.pitch ?? currentView.pitch());
+        previewViewer?.classList.remove("is-walk-transition");
+        previewViewer?.style?.setProperty("--preview-cinematic-ms", `${getCinematicTransitionMs()}ms`);
 
+        const rawHotspotYaw = normalizeAngle(Number(hotspot.yaw ?? currentView.yaw()));
+        const targetYaw = getShortestYawTarget(currentView.yaw(), rawHotspotYaw);
+        const currentPitch = currentView.pitch();
         const currentFov = currentView.fov();
 
-        // Effet marche / entrée :
-        // étape 1 : la caméra se tourne vers le hotspot et commence à avancer;
-        // étape 2 : la caméra zoome plus fort vers le hotspot;
-        // étape 3 : la nouvelle scène apparaît zoomée puis dézoome vers zoom 0.
-        const walkTargetFov = getWalkTargetFov(currentFov);
-        const walkMidFov = clamp(
-            currentFov + ((walkTargetFov - currentFov) * 0.55),
-            MIN_FOV,
-            MAX_FOV
-        );
-
+        // Même logique que navigateThroughHotspot() du Builder :
+        // 1) la caméra regarde vers le hotspot,
+        // 2) petit zoom avant pour donner l'impression de marcher,
+        // 3) crossfade A/B propre vers la scène cible.
         currentView.setParameters(
             {
-                yaw: hotspotYaw,
-                pitch: hotspotPitch,
-                fov: walkMidFov
+                yaw: targetYaw,
+                pitch: currentPitch,
+                fov: currentFov
             },
-            { transitionDuration: isMobileViewport() ? 260 : 300 }
+            { transitionDuration: isMobileViewport() ? 240 : 260 }
         );
 
         setTimeout(() => {
+            const tighterFov = getWalkTargetFov(currentFov);
             currentView.setParameters(
                 {
-                    yaw: hotspotYaw,
-                    pitch: hotspotPitch,
-                    fov: walkTargetFov
+                    yaw: targetYaw,
+                    pitch: currentPitch,
+                    fov: tighterFov
                 },
-                { transitionDuration: isMobileViewport() ? 320 : 360 }
+                { transitionDuration: isMobileViewport() ? 250 : 260 }
             );
             syncZoomButtonsState();
-        }, isMobileViewport() ? 210 : 240);
+        }, isMobileViewport() ? 160 : 180);
 
         setTimeout(() => {
             cinematicSwitchScene(targetScene);
-        }, isMobileViewport() ? 540 : 610);
+        }, isMobileViewport() ? 380 : 420);
+    }
+
+    function goToSceneWithWalk(targetScene) {
+        if (!targetScene || isTransitioning) return;
+        isTransitioning = true;
+        closeInfoPanel();
+        closeSceneStack();
+        stopAutorotate();
+
+        previewViewer?.classList.remove("is-walk-transition");
+        previewViewer?.style?.setProperty("--preview-cinematic-ms", `${getCinematicTransitionMs()}ms`);
+
+        const currentView = getCurrentView();
+        if (!currentView) {
+            cinematicSwitchScene(targetScene);
+            return;
+        }
+
+        const currentFov = currentView.fov();
+        const walkTargetFov = getWalkTargetFov(currentFov);
+
+        currentView.setParameters(
+            { fov: walkTargetFov },
+            { transitionDuration: isMobileViewport() ? 260 : 300 }
+        );
+        syncZoomButtonsState();
+
+        setTimeout(() => cinematicSwitchScene(targetScene), isMobileViewport() ? 380 : 420);
     }
 
     function zoomToFov(nextFov, duration = 220) {
         const view = getCurrentView();
         if (!view) return;
-
-        view.setParameters(
-            { fov: clamp(nextFov, MIN_FOV, MAX_FOV) },
-            { transitionDuration: duration }
-        );
-
+        view.setParameters({ fov: clamp(nextFov, MIN_FOV, MAX_FOV) }, { transitionDuration: duration });
         syncZoomButtonsState();
     }
 
     function zoomBy(deltaDeg, duration = 220) {
         const view = getCurrentView();
         if (!view) return;
+        zoomToFov(view.fov() + degToRad(deltaDeg), duration);
+    }
 
-        const nextFov = clamp(view.fov() + degToRad(deltaDeg), MIN_FOV, MAX_FOV);
-        zoomToFov(nextFov, duration);
+    function setZoomInstant(nextFov) {
+        const view = getCurrentView();
+        if (!view) return;
+        view.setParameters({ fov: clamp(nextFov, MIN_FOV, MAX_FOV) });
+        syncZoomButtonsState();
     }
 
     function resetCurrentView() {
         const scene = findScene(currentSceneId);
         const view = getCurrentView();
         if (!scene || !view) return;
-
         stopAutorotate();
-
-        view.setParameters(
-            {
-                yaw: degToRad(scene.yaw_default || 0),
-                pitch: degToRad(scene.pitch_default || 0),
-                fov: getSceneFinalFov(scene)
-            },
-            { transitionDuration: 480 }
-        );
-
+        view.setParameters({
+            yaw: degToRad(scene.yaw_default || 0),
+            pitch: degToRad(scene.pitch_default || 0),
+            fov: getSceneFinalFov(scene)
+        }, { transitionDuration: 480 });
         syncZoomButtonsState();
     }
 
     function goToRelativeScene(step) {
         const list = getNavigationSceneList();
         if (isTransitioning || !list.length) return;
-
         let currentIndex = findSceneListIndex(currentSceneId);
         if (currentIndex < 0) currentIndex = 0;
-
         const nextIndex = (currentIndex + step + list.length) % list.length;
         const sceneEntry = list[nextIndex];
         const targetScene = findScene(sceneEntry?.id) || findScene(sceneEntry?.scene_id) || sceneEntry;
-        if (!targetScene) return;
-
-        closeInfoPanel();
-        closeSceneStack();
-        isTransitioning = true;
-        stopAutorotate();
-
-        const currentView = getCurrentView();
-        if (currentView) {
-            const currentFov = currentView.fov();
-            const walkTargetFov = getWalkTargetFov(currentFov);
-            const walkMidFov = clamp(
-                currentFov + ((walkTargetFov - currentFov) * 0.55),
-                MIN_FOV,
-                MAX_FOV
-            );
-
-            currentView.setParameters(
-                { fov: walkMidFov },
-                { transitionDuration: isMobileViewport() ? 240 : 280 }
-            );
-
-            setTimeout(() => {
-                currentView.setParameters(
-                    { fov: walkTargetFov },
-                    { transitionDuration: isMobileViewport() ? 300 : 340 }
-                );
-                syncZoomButtonsState();
-            }, isMobileViewport() ? 190 : 220);
-
-            setTimeout(() => {
-                cinematicSwitchScene(targetScene);
-            }, isMobileViewport() ? 500 : 560);
-        } else {
-            cinematicSwitchScene(targetScene);
-        }
+        goToSceneWithWalk(targetScene);
     }
 
     async function shareCurrentScene() {
         const scene = findScene(currentSceneId) || scenes[0];
         if (!scene) return;
-
         const shareUrl = getSceneShareUrl(scene);
 
         try {
             if (navigator.share) {
-                await navigator.share({
-                    title: document.title,
-                    text: "Virtual Tour",
-                    url: shareUrl
-                });
+                await navigator.share({ title: document.title, text: "Virtual Tour", url: shareUrl });
                 return;
             }
-
             await navigator.clipboard.writeText(shareUrl);
             showToast("Link copied");
         } catch (_) {
@@ -1798,36 +1535,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function enterFullscreen() {
         try {
-            if (previewViewer.requestFullscreen) {
-                await previewViewer.requestFullscreen();
-            }
+            if (!document.fullscreenElement && previewViewer?.requestFullscreen) await previewViewer.requestFullscreen();
+            else if (document.exitFullscreen) await document.exitFullscreen();
         } catch (_) {}
     }
 
     function getTouchDistance(touches) {
         if (!touches || touches.length < 2) return 0;
-
         const dx = touches[0].clientX - touches[1].clientX;
         const dy = touches[0].clientY - touches[1].clientY;
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    function setZoomInstant(nextFov) {
-        const view = getCurrentView();
-        if (!view) return;
-
-        view.setParameters({ fov: clamp(nextFov, MIN_FOV, MAX_FOV) });
-        syncZoomButtonsState();
-    }
-
     function setupMobileZoomGestures() {
         if (!previewViewer) return;
 
-        // MOBILE ZOOM FIX:
-        // - 1 doigt: Marzipano garde le drag normal.
-        // - 2 doigts: on force nous-mêmes le zoom en changeant le FOV.
-        // - Pas de stopPropagation: Marzipano continue de recevoir les events.
-        // - preventDefault seulement pendant le pinch pour empêcher le navigateur de zoomer la page.
         [previewViewer, previewLayerA, previewLayerB, previewMountA, previewMountB].forEach((el) => {
             if (!el) return;
             el.style.touchAction = "none";
@@ -1837,18 +1559,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let lastTapTs = 0;
         const activePointers = new Map();
-
-        const localPinch = {
-            active: false,
-            startDistance: 0,
-            startFov: 0
-        };
-
-        const pointerPinch = {
-            active: false,
-            startDistance: 0,
-            startFov: 0
-        };
+        const localPinch = { active: false, startDistance: 0, startFov: 0 };
+        const pointerPinch = { active: false, startDistance: 0, startFov: 0 };
 
         function shouldIgnoreZoomTarget(target) {
             return !!(
@@ -1865,6 +1577,16 @@ document.addEventListener("DOMContentLoaded", () => {
             return !!(previewViewer && target && previewViewer.contains(target));
         }
 
+        function applyPinchZoom(startDistance, currentDistance, startFov, strength = 72) {
+            const view = getCurrentView();
+            if (!view || !startDistance || !currentDistance) return;
+            const ratio = currentDistance / startDistance;
+            const zoomDelta = Math.log2(ratio) * degToRad(strength);
+            const nextFov = clamp(startFov - zoomDelta, MIN_FOV, MAX_FOV);
+            view.setParameters({ fov: nextFov });
+            syncZoomButtonsState();
+        }
+
         function resetTouchPinch() {
             localPinch.active = false;
             localPinch.startDistance = 0;
@@ -1879,85 +1601,41 @@ document.addEventListener("DOMContentLoaded", () => {
             syncZoomButtonsState();
         }
 
-        function applyPinchZoom(startDistance, currentDistance, startFov, strength = 72) {
-            const view = getCurrentView();
-            if (!view || !startDistance || !currentDistance) return;
-
-            // distance augmente => zoom avant => FOV diminue.
-            // distance diminue => zoom arrière => FOV augmente.
-            const ratio = currentDistance / startDistance;
-            const zoomDelta = Math.log2(ratio) * degToRad(strength);
-            const nextFov = clamp(startFov - zoomDelta, MIN_FOV, MAX_FOV);
-
-            view.setParameters({ fov: nextFov });
-            syncZoomButtonsState();
-        }
-
-        function startTouchPinch(event) {
-            if (!event.touches || event.touches.length !== 2) return;
-            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-
-            const view = getCurrentView();
-            if (!view) return;
-
-            event.preventDefault();
-            stopAutorotate();
-
-            localPinch.active = true;
-            localPinch.startDistance = getTouchDistance(event.touches);
-            localPinch.startFov = view.fov();
-        }
-
-        function moveTouchPinch(event) {
-            if (!localPinch.active || !event.touches || event.touches.length !== 2) return;
-            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-
-            event.preventDefault();
-            const currentDistance = getTouchDistance(event.touches);
-            applyPinchZoom(localPinch.startDistance, currentDistance, localPinch.startFov, isMobileViewport() ? 78 : 66);
-        }
-
-        function endTouchPinch(event) {
-            if (!localPinch.active) return;
-
-            if (!event.touches || event.touches.length < 2) {
-                resetTouchPinch();
-            }
-        }
-
-        // Capture = on reçoit le pinch même si le vrai target est le canvas WebGL.
-        // Pas de stopPropagation = Marzipano continue de gérer le drag / inertie.
         previewViewer.addEventListener("touchstart", (event) => {
             if (event.touches && event.touches.length === 2) {
-                startTouchPinch(event);
+                if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
+                const view = getCurrentView();
+                if (!view) return;
+                event.preventDefault();
+                stopAutorotate();
+                localPinch.active = true;
+                localPinch.startDistance = getTouchDistance(event.touches);
+                localPinch.startFov = view.fov();
                 return;
             }
 
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-
             stopAutorotate();
         }, { passive: false, capture: true });
 
         previewViewer.addEventListener("touchmove", (event) => {
-            if (event.touches && event.touches.length === 2) {
-                moveTouchPinch(event);
-            }
+            if (!localPinch.active || !event.touches || event.touches.length !== 2) return;
+            if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
+            event.preventDefault();
+            applyPinchZoom(localPinch.startDistance, getTouchDistance(event.touches), localPinch.startFov, isMobileViewport() ? 78 : 66);
         }, { passive: false, capture: true });
 
         previewViewer.addEventListener("touchend", (event) => {
             if (localPinch.active) {
-                endTouchPinch(event);
+                if (!event.touches || event.touches.length < 2) resetTouchPinch();
                 return;
             }
 
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-
-            // Double tap mobile: zoom avant / retour zoom 0.
             const now = Date.now();
             if (now - lastTapTs < 300) {
                 event.preventDefault();
                 stopAutorotate();
-
                 const view = getCurrentView();
                 if (view) {
                     const currentFov = view.fov();
@@ -1965,28 +1643,26 @@ document.addEventListener("DOMContentLoaded", () => {
                     const targetFov = currentFov > degToRad(58)
                         ? clamp(currentFov - degToRad(34), MIN_FOV, MAX_FOV)
                         : zeroZoomFov;
-
                     view.setParameters({ fov: targetFov }, { transitionDuration: 160 });
                     setTimeout(syncZoomButtonsState, 180);
                 }
             }
-
             lastTapTs = now;
         }, { passive: false, capture: true });
 
         previewViewer.addEventListener("touchcancel", resetTouchPinch, { passive: false, capture: true });
 
-        // Document fallback: certains navigateurs envoient le move au document pendant le pinch.
         document.addEventListener("touchmove", (event) => {
             if (localPinch.active && event.touches && event.touches.length === 2) {
-                moveTouchPinch(event);
+                event.preventDefault();
+                applyPinchZoom(localPinch.startDistance, getTouchDistance(event.touches), localPinch.startFov, isMobileViewport() ? 78 : 66);
             }
         }, { passive: false, capture: true });
-
-        document.addEventListener("touchend", endTouchPinch, { passive: false, capture: true });
+        document.addEventListener("touchend", (event) => {
+            if (localPinch.active && (!event.touches || event.touches.length < 2)) resetTouchPinch();
+        }, { passive: false, capture: true });
         document.addEventListener("touchcancel", resetTouchPinch, { passive: false, capture: true });
 
-        // Pointer Events fallback pour Android/Chrome.
         function getPointerDistance() {
             const points = Array.from(activePointers.values());
             if (points.length < 2) return 0;
@@ -1998,17 +1674,11 @@ document.addEventListener("DOMContentLoaded", () => {
         previewViewer.addEventListener("pointerdown", (event) => {
             if (event.pointerType !== "touch") return;
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-
             stopAutorotate();
-            activePointers.set(event.pointerId, {
-                clientX: event.clientX,
-                clientY: event.clientY
-            });
-
+            activePointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY });
             if (activePointers.size === 2) {
                 const view = getCurrentView();
                 if (!view) return;
-
                 event.preventDefault();
                 pointerPinch.active = true;
                 pointerPinch.startDistance = getPointerDistance();
@@ -2019,14 +1689,8 @@ document.addEventListener("DOMContentLoaded", () => {
         previewViewer.addEventListener("pointermove", (event) => {
             if (event.pointerType !== "touch" || !activePointers.has(event.pointerId)) return;
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-
-            activePointers.set(event.pointerId, {
-                clientX: event.clientX,
-                clientY: event.clientY
-            });
-
+            activePointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY });
             if (!pointerPinch.active || activePointers.size < 2) return;
-
             event.preventDefault();
             applyPinchZoom(pointerPinch.startDistance, getPointerDistance(), pointerPinch.startFov, isMobileViewport() ? 78 : 66);
         }, { passive: false, capture: true });
@@ -2041,13 +1705,10 @@ document.addEventListener("DOMContentLoaded", () => {
         previewViewer.addEventListener("pointercancel", endPointer, { passive: false, capture: true });
         previewViewer.addEventListener("pointerleave", endPointer, { passive: false, capture: true });
 
-        // iOS Safari native gesture fallback.
         let gestureStartFov = 0;
-
         previewViewer.addEventListener("gesturestart", (event) => {
             const view = getCurrentView();
             if (!view || shouldIgnoreZoomTarget(event.target)) return;
-
             event.preventDefault();
             stopAutorotate();
             gestureStartFov = view.fov();
@@ -2056,12 +1717,10 @@ document.addEventListener("DOMContentLoaded", () => {
         previewViewer.addEventListener("gesturechange", (event) => {
             const view = getCurrentView();
             if (!view || !gestureStartFov || shouldIgnoreZoomTarget(event.target)) return;
-
             event.preventDefault();
             const scale = event.scale || 1;
             const zoomDelta = Math.log2(scale) * degToRad(76);
-            const nextFov = clamp(gestureStartFov - zoomDelta, MIN_FOV, MAX_FOV);
-            view.setParameters({ fov: nextFov });
+            view.setParameters({ fov: clamp(gestureStartFov - zoomDelta, MIN_FOV, MAX_FOV) });
             syncZoomButtonsState();
         }, { passive: false, capture: true });
 
@@ -2071,38 +1730,29 @@ document.addEventListener("DOMContentLoaded", () => {
             syncZoomButtonsState();
         }, { passive: false, capture: true });
 
-        // Desktop / trackpad: molette pour zoomer le panorama.
         previewViewer.addEventListener("wheel", (event) => {
-            const target = event.target;
-            if (shouldIgnoreZoomTarget(target)) return;
-
+            if (shouldIgnoreZoomTarget(event.target)) return;
             const view = getCurrentView();
             if (!view) return;
-
             event.preventDefault();
             stopAutorotate();
-
             const direction = event.deltaY > 0 ? 1 : -1;
-            const nextFov = clamp(view.fov() + degToRad(direction * 7), MIN_FOV, MAX_FOV);
-            setZoomInstant(nextFov);
+            setZoomInstant(view.fov() + degToRad(direction * 7));
         }, { passive: false, capture: true });
     }
 
-
-    sceneStackToggle?.addEventListener("click", toggleSceneStack);
-
-    prevSceneBtn?.addEventListener("click", () => goToRelativeScene(-1));
-    nextSceneBtn?.addEventListener("click", () => goToRelativeScene(1));
-
     function bindZoomButton(button, handler) {
         if (!button) return;
-
         button.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
             handler();
         }, { passive: false });
     }
+
+    sceneStackToggle?.addEventListener("click", toggleSceneStack);
+    prevSceneBtn?.addEventListener("click", () => goToRelativeScene(-1));
+    nextSceneBtn?.addEventListener("click", () => goToRelativeScene(1));
 
     bindZoomButton(zoomOutBtn, () => {
         stopAutorotate();
@@ -2124,16 +1774,9 @@ document.addEventListener("DOMContentLoaded", () => {
         event.stopPropagation();
         closeInfoPanel();
     });
-
     previewInfoBackdrop?.addEventListener("click", closeInfoPanel);
-
-    previewViewer?.addEventListener("click", () => {
-        closeInfoPanel();
-    });
-
-    previewViewer?.addEventListener("pointerdown", () => {
-        stopAutorotate();
-    });
+    previewViewer?.addEventListener("click", () => closeInfoPanel());
+    previewViewer?.addEventListener("pointerdown", () => stopAutorotate());
 
     window.addEventListener("resize", () => {
         updateAllViewerSizes();
@@ -2167,42 +1810,29 @@ document.addEventListener("DOMContentLoaded", () => {
             closeInfoPanel();
             closeSceneStack();
         }
-
-        if (event.key === "ArrowLeft") {
-            goToRelativeScene(-1);
-        }
-
-        if (event.key === "ArrowRight") {
-            goToRelativeScene(1);
-        }
-
-        if (event.key === "+") {
-            zoomBy(-8);
-        }
-
-        if (event.key === "-") {
-            zoomBy(8);
-        }
+        if (event.key === "ArrowLeft") goToRelativeScene(-1);
+        if (event.key === "ArrowRight") goToRelativeScene(1);
+        if (event.key === "+") zoomBy(-8);
+        if (event.key === "-") zoomBy(8);
     });
 
     setupResponsiveMode();
     injectPreviewCinematicStyles();
+    injectWalkTransitionStyles();
+    ensureWalkTransitionOverlay();
 
     if (!scenes.length) {
         if (sceneCountBadge) sceneCountBadge.textContent = "0";
         return;
     }
 
-    if (sceneCountBadge) {
-        sceneCountBadge.textContent = `${getNavigationSceneList().length}`;
-    }
+    if (sceneCountBadge) sceneCountBadge.textContent = `${getNavigationSceneList().length}`;
 
     renderSceneRail();
     setupMobileZoomGestures();
 
     const initialScene = getInitialSceneFromUrl() || scenes[0];
     currentSceneId = initialScene.id;
-
 
     buildSceneOnLayer(activeLayerKey, initialScene);
     updateSceneMeta(initialScene);

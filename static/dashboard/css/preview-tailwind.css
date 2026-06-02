@@ -1696,3 +1696,191 @@ body {
         animation: none !important;
     }
 }
+
+/* =====================================================================
+   FINAL OVERRIDE — PREVIEW BUILDER-LIKE CINEMATIC CLEAN
+   À garder tout à la fin de preview-tailwind.css
+   Objectif : même déplacement que le Builder, sans barre/voile noir
+   après la transition et sans overlay tunnel.
+===================================================================== */
+#previewViewer,
+.preview-viewer {
+    position: relative !important;
+    overflow: hidden !important;
+    isolation: isolate !important;
+    background: #020617 !important;
+}
+
+#previewViewer.is-cinematic-transition::before,
+#previewViewer.transitioning::before,
+#previewViewer.is-walk-transition::before,
+#previewViewer.is-cinematic-transition::after,
+#previewViewer.transitioning::after,
+#previewViewer.is-walk-transition::after,
+.preview-viewer.is-cinematic-transition::before,
+.preview-viewer.transitioning::before,
+.preview-viewer.is-walk-transition::before,
+.preview-viewer.is-cinematic-transition::after,
+.preview-viewer.transitioning::after,
+.preview-viewer.is-walk-transition::after {
+    content: none !important;
+    display: none !important;
+    opacity: 0 !important;
+    background: transparent !important;
+    animation: none !important;
+}
+
+.preview-walk-overlay,
+#previewWalkOverlay {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    animation: none !important;
+}
+
+#previewLayerA,
+#previewLayerB,
+.preview-layer {
+    position: absolute !important;
+    inset: 0 !important;
+    transform-origin: center center !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    will-change: transform, opacity, filter !important;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0) brightness(1) saturate(1);
+}
+
+#previewMountA,
+#previewMountB,
+.preview-mount {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+}
+
+.preview-layer.active-layer {
+    opacity: 1 !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
+    transform: translate3d(0, 0, 0) scale(1) !important;
+    filter: blur(0) brightness(1) saturate(1) !important;
+}
+
+.preview-layer.standby-layer {
+    opacity: 0 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+    transform: translate3d(0, 0, 0) scale(1) !important;
+    filter: blur(0) brightness(1) saturate(1) !important;
+}
+
+.preview-viewer.is-cinematic-transition .preview-layer,
+.preview-viewer.transitioning .preview-layer,
+#previewViewer.is-cinematic-transition .preview-layer,
+#previewViewer.transitioning .preview-layer {
+    transition: none !important;
+}
+
+.preview-layer.layer-outgoing,
+.preview-viewer.is-cinematic-transition .layer-outgoing,
+.preview-viewer.transitioning .layer-outgoing,
+#previewViewer.is-cinematic-transition .layer-outgoing,
+#previewViewer.transitioning .layer-outgoing {
+    z-index: 2 !important;
+    pointer-events: none !important;
+    animation: previewBuilderOutgoingClean 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+.preview-layer.layer-incoming,
+.preview-viewer.is-cinematic-transition .layer-incoming,
+.preview-viewer.transitioning .layer-incoming,
+#previewViewer.is-cinematic-transition .layer-incoming,
+#previewViewer.transitioning .layer-incoming {
+    z-index: 3 !important;
+    pointer-events: auto !important;
+    animation: previewBuilderIncomingClean 1150ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+.preview-layer.layer-incoming::after,
+.preview-viewer.is-cinematic-transition .layer-incoming::after,
+.preview-viewer.transitioning .layer-incoming::after,
+#previewViewer.is-cinematic-transition .layer-incoming::after,
+#previewViewer.transitioning .layer-incoming::after {
+    content: none !important;
+    display: none !important;
+    opacity: 0 !important;
+    background: transparent !important;
+    animation: none !important;
+}
+
+@keyframes previewBuilderOutgoingClean {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+    32% {
+        transform: translate3d(0, 0, 0) scale(1.10);
+        opacity: 1;
+        filter: blur(0.15px) brightness(1) saturate(1);
+    }
+    52% {
+        transform: translate3d(0, 0, 0) scale(1.16);
+        opacity: 0.92;
+        filter: blur(0.65px) brightness(1) saturate(1);
+    }
+    72% {
+        transform: translate3d(0, 0, 0) scale(1.20);
+        opacity: 0.62;
+        filter: blur(1.4px) brightness(1) saturate(1);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) scale(1.24);
+        opacity: 0;
+        filter: blur(2.4px) brightness(1) saturate(1);
+    }
+}
+
+@keyframes previewBuilderIncomingClean {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1.18);
+        opacity: 0;
+        filter: blur(3px) brightness(1) saturate(1);
+    }
+    25% {
+        transform: translate3d(0, 0, 0) scale(1.15);
+        opacity: 0.16;
+        filter: blur(2.5px) brightness(1) saturate(1);
+    }
+    48% {
+        transform: translate3d(0, 0, 0) scale(1.10);
+        opacity: 0.48;
+        filter: blur(1.7px) brightness(1) saturate(1);
+    }
+    68% {
+        transform: translate3d(0, 0, 0) scale(1.06);
+        opacity: 0.78;
+        filter: blur(0.8px) brightness(1) saturate(1);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .preview-layer.layer-outgoing,
+    .preview-layer.layer-incoming {
+        animation: none !important;
+        transform: translate3d(0, 0, 0) scale(1) !important;
+        filter: none !important;
+    }
+}
