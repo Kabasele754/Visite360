@@ -5308,25 +5308,20 @@ body,
     }
 }
 
-/* =====================================================================
-   FINAL FIX — HOTSPOTS MARZIPANO STABLES + NAVIGATION CLEAN
-   À garder tout à la fin du fichier preview-tailwind.css.
 
+/* =====================================================================
+   PREMIUM BUSINESS HOTSPOT LOADER
+   Loader blanc tournant autour des PNG businessIconMap.
    Important:
-   - Marzipano positionne .preview-hotspot avec un transform inline.
-   - Donc on ne met jamais transform: none sur .preview-hotspot.
-   - On supprime seulement la transition transform du parent.
-   - Les effets visuels restent uniquement sur .hotspot-grow-wrap.
+   - Le parent .preview-hotspot reste stable pour Marzipano.
+   - L'animation se fait uniquement sur .hotspot-grow-wrap et ses pseudo-elements.
 ===================================================================== */
 
+/* Parent Marzipano: stable, jamais animé */
 .preview-hotspot,
 .preview-hotspot:hover,
 .preview-hotspot:active,
 .preview-hotspot:focus {
-    position: relative !important;
-    display: grid !important;
-    place-items: center !important;
-    cursor: pointer !important;
     background: transparent !important;
     border: 0 !important;
     outline: 0 !important;
@@ -5334,46 +5329,36 @@ body,
     padding: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
-    color: transparent !important;
-    text-shadow: none !important;
     filter: none !important;
-    contain: layout style !important;
     will-change: auto !important;
     touch-action: none !important;
-    -ms-touch-action: none !important;
-
-    /* Correction principale: pas de transition sur transform du parent Marzipano. */
-    transition: opacity 0.18s ease, filter 0.18s ease !important;
 }
 
+/* On désactive les anciens pseudo-elements du parent */
 .preview-hotspot::before,
 .preview-hotspot::after,
 .preview-hotspot:hover::before,
-.preview-hotspot:hover::after,
-.preview-hotspot:active::before,
-.preview-hotspot:active::after,
-.preview-hotspot:focus::before,
-.preview-hotspot:focus::after {
+.preview-hotspot:hover::after {
     content: none !important;
     display: none !important;
 }
 
+/* Wrapper interne: seul lui reçoit le design */
 .preview-hotspot .hotspot-grow-wrap {
     position: relative !important;
-    display: grid !important;
-    place-items: center !important;
     width: 100% !important;
     height: 100% !important;
     min-width: 100% !important;
     min-height: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: visible !important;
-    transform: var(--hotspot-base-transform, none) !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 999px !important;
     transform-origin: center center !important;
-    will-change: transform, opacity !important;
+    overflow: visible !important;
+    pointer-events: none !important;
 }
 
+/* Texte caché: l'icône PNG reste seule */
 .preview-hotspot .hotspot-label-text,
 .preview-hotspot .hotspot-title,
 .preview-hotspot .hotspot-name,
@@ -5396,133 +5381,386 @@ body,
     font-size: 0 !important;
     line-height: 0 !important;
     color: transparent !important;
-    text-shadow: none !important;
     pointer-events: none !important;
 }
 
-/* Navigation: PNG simple, aucun pulse, aucune boîte glass. */
+/* Business hotspots: glass très léger + bordure blanche premium */
+.preview-hotspot.hotspot-business-premium .hotspot-grow-wrap {
+    background:
+        radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.045) 46%, rgba(255, 255, 255, 0.012) 100%) !important;
+    border: 1.35px solid rgba(255, 255, 255, 0.94) !important;
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, 0.28),
+        0 0 0 4px rgba(255, 255, 255, 0.045),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: premiumHotspotSoftPulse 2.75s ease-in-out infinite !important;
+    animation-delay: var(--hotspot-loader-delay, 0ms) !important;
+}
+
+/* Anneau blanc fixe très propre */
+.preview-hotspot.hotspot-business-premium .hotspot-grow-wrap::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: -5px !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    background: transparent !important;
+    box-shadow:
+        0 0 18px rgba(255, 255, 255, 0.10),
+        inset 0 0 10px rgba(255, 255, 255, 0.08) !important;
+    pointer-events: none !important;
+}
+
+/* Loader blanc qui tourne autour du PNG */
+.preview-hotspot.hotspot-business-premium .hotspot-grow-wrap::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: -8px !important;
+    border-radius: 999px !important;
+    padding: 2px !important;
+    background:
+        conic-gradient(
+            from 0deg,
+            rgba(255, 255, 255, 0) 0deg,
+            rgba(255, 255, 255, 0) 92deg,
+            rgba(255, 255, 255, 0.30) 138deg,
+            rgba(255, 255, 255, 1) 178deg,
+            rgba(255, 255, 255, 0.34) 218deg,
+            rgba(255, 255, 255, 0) 278deg,
+            rgba(255, 255, 255, 0) 360deg
+        ) !important;
+
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0) !important;
+    -webkit-mask-composite: xor !important;
+
+    mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0) !important;
+    mask-composite: exclude !important;
+
+    filter:
+        drop-shadow(0 0 6px rgba(255, 255, 255, 0.55))
+        drop-shadow(0 0 14px rgba(255, 255, 255, 0.22)) !important;
+
+    opacity: 0.96 !important;
+    pointer-events: none !important;
+    animation: premiumHotspotWhiteLoaderSpin 1.05s linear infinite !important;
+    animation-delay: var(--hotspot-loader-delay, 0ms) !important;
+}
+
+/* PNG business grand, net, centré */
+.preview-hotspot.hotspot-business-premium img,
+.preview-hotspot.hotspot-business-premium .hotspot-grow-wrap img {
+    position: relative !important;
+    z-index: 2 !important;
+    display: block !important;
+    width: 76% !important;
+    height: 76% !important;
+    max-width: 76% !important;
+    max-height: 76% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
+    opacity: 1 !important;
+    image-rendering: auto !important;
+    transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    filter:
+        drop-shadow(0 4px 8px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.20)) !important;
+}
+
+/* Effet hover/tap premium sans déplacer le point Marzipano */
+.preview-hotspot.hotspot-business-premium:hover .hotspot-grow-wrap,
+.preview-hotspot.hotspot-business-premium:active .hotspot-grow-wrap {
+    background:
+        radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.070) 48%, rgba(255, 255, 255, 0.018) 100%) !important;
+    border-color: rgba(255, 255, 255, 1) !important;
+    box-shadow:
+        0 14px 30px rgba(0, 0, 0, 0.34),
+        0 0 0 5px rgba(255, 255, 255, 0.070),
+        0 0 26px rgba(255, 255, 255, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
+}
+
+.preview-hotspot.hotspot-business-premium:hover img,
+.preview-hotspot.hotspot-business-premium:active img {
+    transform: translateZ(0) scale(1.035) !important;
+}
+
+/* Navigation: PNG simple, sans loader */
 .preview-hotspot.hotspot-kind-navigate,
 .preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap,
-.preview-hotspot.hotspot-kind-navigate:hover .hotspot-grow-wrap,
-.preview-hotspot.hotspot-kind-navigate:active .hotspot-grow-wrap,
-.preview-hotspot.hotspot-kind-navigate.variant-label,
-.preview-hotspot.hotspot-kind-navigate.variant-label .hotspot-grow-wrap,
-.preview-hotspot.hotspot-kind-navigate.variant-floor .hotspot-grow-wrap {
+.preview-hotspot.hotspot-kind-navigate:hover .hotspot-grow-wrap {
     background: transparent !important;
-    border: none !important;
-    outline: none !important;
+    border: 0 !important;
+    outline: 0 !important;
     box-shadow: none !important;
     animation: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    filter: none !important;
 }
 
 .preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::before,
-.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::after,
-.preview-hotspot.hotspot-kind-navigate.variant-label .hotspot-grow-wrap::before,
-.preview-hotspot.hotspot-kind-navigate.variant-label .hotspot-grow-wrap::after,
-.preview-hotspot.hotspot-kind-navigate.variant-floor .hotspot-grow-wrap::before,
-.preview-hotspot.hotspot-kind-navigate.variant-floor .hotspot-grow-wrap::after {
-    display: none !important;
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::after {
     content: none !important;
+    display: none !important;
 }
 
 .preview-hotspot.hotspot-kind-navigate img,
-.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img,
-.preview-hotspot.hotspot-kind-navigate.variant-label img,
-.preview-hotspot.hotspot-kind-navigate.variant-floor img {
-    display: block !important;
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img {
     width: 100% !important;
     height: 100% !important;
     max-width: 100% !important;
     max-height: 100% !important;
     object-fit: contain !important;
-    object-position: center center !important;
     padding: 0 !important;
     margin: 0 !important;
-    background: transparent !important;
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
     opacity: 0.98 !important;
     filter:
         drop-shadow(0 3px 5px rgba(0, 0, 0, 0.34))
         drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22)) !important;
 }
 
-/* Product/info/business: effet stable, seulement scale/opacity, pas de translateY. */
-.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap {
-    border-radius: 999px !important;
-    background: rgba(255, 255, 255, 0.024) !important;
-    border: 1.45px solid rgba(255, 255, 255, 0.90) !important;
-    box-shadow:
-        0 10px 22px rgba(0, 0, 0, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    animation: hotspotMarzipanoStablePulse 2.85s ease-in-out infinite !important;
-    animation-delay: var(--hotspot-grow-delay, 0ms) !important;
+/* Animations */
+@keyframes premiumHotspotWhiteLoaderSpin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
-.preview-hotspot:not(.hotspot-kind-navigate):hover .hotspot-grow-wrap,
-.preview-hotspot:not(.hotspot-kind-navigate):active .hotspot-grow-wrap {
-    background: rgba(255, 255, 255, 0.032) !important;
-    border-color: rgba(255, 255, 255, 1) !important;
-    box-shadow:
-        0 12px 28px rgba(0, 0, 0, 0.30),
-        0 0 0 5px rgba(255, 255, 255, 0.075),
-        0 0 22px rgba(255, 255, 255, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
-}
-
-.preview-hotspot:not(.hotspot-kind-navigate) img,
-.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap img,
-.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap img,
-.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap img,
-.preview-hotspot.hotspot-kind-cta .hotspot-grow-wrap img,
-.preview-hotspot.hotspot-kind-whatsapp .hotspot-grow-wrap img,
-.preview-hotspot.hotspot-kind-phone .hotspot-grow-wrap img,
-.preview-hotspot.hotspot-kind-email .hotspot-grow-wrap img,
-.preview-hotspot.hotspot-kind-custom .hotspot-grow-wrap img {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
-    object-fit: contain !important;
-    object-position: center center !important;
-    padding: 9px !important;
-    margin: 0 !important;
-    border: none !important;
-    outline: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    opacity: 1 !important;
-    filter:
-        drop-shadow(0 4px 7px rgba(0, 0, 0, 0.32))
-        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.20)) !important;
-}
-
-@keyframes hotspotMarzipanoStablePulse {
+@keyframes premiumHotspotSoftPulse {
     0%, 100% {
-        transform: var(--hotspot-base-transform, none) scale(1);
+        transform: scale(1);
         opacity: 1;
     }
-
     50% {
-        transform: var(--hotspot-base-transform, none) scale(1.035);
+        transform: scale(1.035);
         opacity: 0.97;
     }
 }
 
+/* Mobile: plus léger et plus lisible */
 @media (max-width: 768px) {
-    .preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap {
-        animation-duration: 3s !important;
+    .preview-hotspot.hotspot-business-premium .hotspot-grow-wrap {
+        border-width: 1.2px !important;
+        box-shadow:
+            0 8px 18px rgba(0, 0, 0, 0.26),
+            0 0 0 3px rgba(255, 255, 255, 0.040),
+            inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
     }
 
-    .preview-hotspot:not(.hotspot-kind-navigate) img,
-    .preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap img {
-        padding: 7px !important;
+    .preview-hotspot.hotspot-business-premium .hotspot-grow-wrap::before {
+        inset: -4px !important;
+    }
+
+    .preview-hotspot.hotspot-business-premium .hotspot-grow-wrap::after {
+        inset: -7px !important;
+        padding: 1.8px !important;
+        animation-duration: 1.15s !important;
+    }
+
+    .preview-hotspot.hotspot-business-premium img,
+    .preview-hotspot.hotspot-business-premium .hotspot-grow-wrap img {
+        width: 78% !important;
+        height: 78% !important;
+        max-width: 78% !important;
+        max-height: 78% !important;
+    }
+}
+
+/* Accessibilité: réduire les animations si demandé par le système */
+@media (prefers-reduced-motion: reduce) {
+    .preview-hotspot.hotspot-business-premium .hotspot-grow-wrap,
+    .preview-hotspot.hotspot-business-premium .hotspot-grow-wrap::after {
+        animation: none !important;
+    }
+}
+
+
+/* =====================================================================
+   FINAL PATCH — REMOVE BLACK HEADER/FOOTER BARS ONLY
+   À coller TOUT EN BAS de dashboard/css/preview-tailwind.css
+
+   Objectif :
+   - enlever uniquement la barre noire/transparente en haut
+   - enlever uniquement la barre noire/transparente en bas
+   - garder le logo/header visible
+   - garder le dock/footer visible
+   - ne pas casser Marzipano ni les hotspots
+===================================================================== */
+
+
+/* =========================================================
+   1) Enlever la barre noire du haut
+   Cible le bloc :
+   <div class="pointer-events-none absolute inset-x-0 top-0 ... bg-gradient-to-b ...">
+========================================================= */
+
+#previewViewer > .pointer-events-none.absolute.inset-x-0.top-0,
+.preview-viewer > .pointer-events-none.absolute.inset-x-0.top-0 {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    background: transparent !important;
+    pointer-events: none !important;
+}
+
+
+/* =========================================================
+   2) Enlever la barre noire du bas
+   Cible le bloc :
+   <div class="pointer-events-none absolute inset-x-0 bottom-0 ... bg-gradient-to-t ...">
+========================================================= */
+
+#previewViewer > .pointer-events-none.absolute.inset-x-0.bottom-0,
+.preview-viewer > .pointer-events-none.absolute.inset-x-0.bottom-0 {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    background: transparent !important;
+    pointer-events: none !important;
+}
+
+
+/* =========================================================
+   3) Neutraliser le voile permanent du viewer
+   Certains anciens patchs CSS ajoutent encore un ::after sombre
+   qui peut donner une impression de barre noire.
+========================================================= */
+
+#previewViewer::after,
+.preview-viewer::after {
+    opacity: 0 !important;
+    background: transparent !important;
+}
+
+
+/* =========================================================
+   4) Header : garder seulement le composant, sans bande derrière
+========================================================= */
+
+#brandOverlay,
+.brand-overlay-wrap {
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+.brand-overlay-chip,
+.brand-overlay-chip-centered,
+.brand-header-chip {
+    background: rgba(0, 0, 0, 0.035) !important;
+    border: 1.25px solid rgba(255, 255, 255, 0.88) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.brand-overlay-chip::before,
+.brand-overlay-chip::after,
+.brand-header-chip::before,
+.brand-header-chip::after {
+    content: none !important;
+    display: none !important;
+}
+
+
+/* =========================================================
+   5) Footer/Dock : garder seulement les boutons, sans bande derrière
+========================================================= */
+
+#previewControlDock {
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+#previewControlDock .dock-scroll {
+    background: rgba(0, 0, 0, 0.035) !important;
+    border: 1.25px solid rgba(255, 255, 255, 0.78) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+
+/* =========================================================
+   6) Boutons du footer sans effet de barre noire
+========================================================= */
+
+#previewControlDock .control-btn,
+#previewControlDock .scene-stack-toggle-inline {
+    background: rgba(255, 255, 255, 0.055) !important;
+    border: 1px solid rgba(255, 255, 255, 0.65) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+#previewControlDock .control-btn:hover,
+#previewControlDock .scene-stack-toggle-inline:hover,
+#previewControlDock .control-btn.active,
+#previewControlDock .scene-stack-toggle-inline.open {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: none !important;
+}
+
+
+/* =========================================================
+   7) Nettoyage des shadows Tailwind qui peuvent rester
+========================================================= */
+
+#previewControlDock .shadow-premium,
+#previewControlDock .shadow-glow,
+#previewControlDock .shadow-soft,
+#brandOverlay .shadow-premium,
+#brandOverlay .shadow-glow,
+#brandOverlay .shadow-soft {
+    box-shadow: none !important;
+}
+
+
+/* =========================================================
+   8) Mobile : même rendu sans barre noire
+========================================================= */
+
+@media (max-width: 768px) {
+    #previewViewer > .pointer-events-none.absolute.inset-x-0.top-0,
+    #previewViewer > .pointer-events-none.absolute.inset-x-0.bottom-0,
+    .preview-viewer > .pointer-events-none.absolute.inset-x-0.top-0,
+    .preview-viewer > .pointer-events-none.absolute.inset-x-0.bottom-0 {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        background: transparent !important;
+    }
+
+    #previewViewer::after,
+    .preview-viewer::after {
+        opacity: 0 !important;
+        background: transparent !important;
+    }
+
+    .brand-overlay-chip,
+    .brand-overlay-chip-centered,
+    .brand-header-chip,
+    #previewControlDock .dock-scroll {
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
 }

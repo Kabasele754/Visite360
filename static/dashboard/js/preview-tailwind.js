@@ -1272,49 +1272,124 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    function buildHotspotNode(hotspot) {
-        const display = hotspot.payload?.display || {};
-        const variant = display.variant || "pin";
-        const size = Number(display.size || 58);
-        const rotation = Number(display.rotation || 0);
-        const offsetX = Number(display.offset_x || 0);
-        const offsetY = Number(display.offset_y || 0);
-        const anchor = display.anchor || "bottom";
+   function buildHotspotNode(hotspot) {
+    const display = hotspot.payload?.display || {};
 
-        const node = document.createElement("div");
-        node.className = `preview-hotspot variant-${variant} anchor-${anchor}`;
-        node.style.width = `${size}px`;
-        node.style.height = variant === "label" ? "auto" : `${size}px`;
-        node.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`;
+    const variant = display.variant || "pin";
+    const size = Number(display.size || 58);
+    const rotation = Number(display.rotation || 0);
+    const offsetX = Number(display.offset_x || 0);
+    const offsetY = Number(display.offset_y || 0);
+    const anchor = display.anchor || "bottom";
 
-        const img = document.createElement("img");
-        img.src = resolveIcon(hotspot.selected_icon || hotspot.icon || "default");
-        img.alt = hotspot.label || hotspot.title || "Hotspot";
+    const businessIconKeys = new Set(
+        Object.keys(config.businessIconMap || {}).map((key) => String(key).toLowerCase())
+    );
 
-        if (variant === "label") {
-            const span = document.createElement("span");
-            span.textContent = hotspot.label || hotspot.title || "Hotspot";
-            node.appendChild(img);
-            node.appendChild(span);
-        } else {
-            node.appendChild(img);
+    function normalizeHotspotKey(value) {
+        return String(value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/^business[-_/]/, "")
+            .replace(/\.(png|jpg|jpeg|svg|webp)$/i, "")
+            .replace(/[^a-z0-9_-]/g, "");
+    }
+
+    const rawIconKey =
+        hotspot.selected_icon ||
+        hotspot.icon ||
+        hotspot.type ||
+        "default";
+
+    const iconKey = normalizeHotspotKey(rawIconKey);
+    const typeKey = normalizeHotspotKey(hotspot.type);
+
+    const isNavigate = hotspot.type === "navigate";
+    const isBusinessIcon =
+        !isNavigate &&
+        (
+            businessIconKeys.has(iconKey) ||
+            businessIconKeys.has(typeKey)
+        );
+
+    const hotspotKind = isNavigate
+        ? "navigate"
+        : businessIconKeys.has(iconKey)
+            ? iconKey
+            : businessIconKeys.has(typeKey)
+                ? typeKey
+                : typeKey || iconKey || "custom";
+
+    const iconUrl =
+        resolveIcon(iconKey) ||
+        resolveIcon(typeKey) ||
+        resolveIcon("default");
+
+    const node = document.createElement("div");
+
+    node.className = [
+        "preview-hotspot",
+        `variant-${variant}`,
+        `anchor-${anchor}`,
+        `hotspot-kind-${hotspotKind}`,
+        isNavigate ? "hotspot-kind-navigate" : "",
+        isBusinessIcon ? "hotspot-business-premium" : "hotspot-standard-premium"
+    ].filter(Boolean).join(" ");
+
+    node.dataset.hotspotType = hotspot.type || "";
+    node.dataset.hotspotIcon = iconKey || "";
+    node.dataset.hotspotKind = hotspotKind || "";
+
+    node.style.width = `${size}px`;
+
+    // Important : les hotspots business doivent rester carrés pour que le loader tourne bien.
+    node.style.height = isBusinessIcon || variant !== "label" ? `${size}px` : "auto";
+
+    // On garde uniquement le déplacement/rotation sur le parent.
+    // Ne jamais mettre d'animation sur ce parent, sinon Marzipano peut bouger le hotspot.
+    node.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`;
+
+    // Délai léger différent pour éviter que tous les loaders tournent exactement pareil.
+    const delay = Math.abs(Number(hotspot.id || hotspot.pk || 0)) % 7;
+    node.style.setProperty("--hotspot-loader-delay", `${delay * 110}ms`);
+
+    const wrap = document.createElement("span");
+    wrap.className = "hotspot-grow-wrap";
+    wrap.setAttribute("aria-hidden", "true");
+
+    const img = document.createElement("img");
+    img.src = iconUrl;
+    img.alt = hotspot.label || hotspot.title || "Hotspot";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.draggable = false;
+
+    wrap.appendChild(img);
+    node.appendChild(wrap);
+
+    // On garde le texte dans le DOM pour l'accessibilité, mais il sera caché en CSS.
+    if (variant === "label") {
+        const label = document.createElement("span");
+        label.className = "hotspot-label-text";
+        label.textContent = hotspot.label || hotspot.title || "Hotspot";
+        node.appendChild(label);
+    }
+
+    stopTouchAndScrollEventPropagation(node);
+
+    node.addEventListener("click", async (event) => {
+        event.stopPropagation();
+
+        if (hotspot.type === "navigate" && hotspot.target_scene) {
+            await navigateToScene(hotspot.target_scene, hotspot);
+            return;
         }
 
-        stopTouchAndScrollEventPropagation(node);
+        openInfoPanel(hotspot);
+    });
 
-        node.addEventListener("click", async (event) => {
-            event.stopPropagation();
-
-            if (hotspot.type === "navigate" && hotspot.target_scene) {
-                await navigateToScene(hotspot.target_scene, hotspot);
-                return;
-            }
-
-            openInfoPanel(hotspot);
-        });
-
-        return node;
-    }
+    return node;
+}
 
     function ensureViewer(key) {
         const mount = getMountEl(key);
