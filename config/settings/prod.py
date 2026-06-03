@@ -2,7 +2,7 @@ from .base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['62.171.163.171','www.twinscopes.com','twinscopes.com','api.twinscopes.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['158.220.108.251','www.twinscopes.com','twinscopes.com','api.twinscopes.com', 'localhost', '127.0.0.1']
 # Liste des domaines autorisés pour les connexions
 CSRF_TRUSTED_ORIGINS = [
     "https://twinscopes.com",
