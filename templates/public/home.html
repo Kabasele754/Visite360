@@ -3214,7 +3214,91 @@
             }
         }
 
-    </style>
+    
+
+        /* =====================================================================
+           FINAL FIX — CARD IMAGES SHARP + TOUR IMAGE ONLY
+           Les images des cards doivent être des images de Tour, pas des panoramas 360.
+           Ces règles suppriment les transforms/filters qui rasterisent et rendent flou
+           sur mobile ET desktop.
+        ===================================================================== */
+
+        .tour-card-image {
+            transform: none !important;
+            filter: none !important;
+            will-change: auto !important;
+            background: #e2e8f0 !important;
+        }
+
+        .tour-card-image img,
+        .pin-card:hover .tour-card-image img,
+        .featured-tour-rail .pin-card:hover .tour-card-image img,
+        .pin-card.is-flipped .tour-card-image img {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 100% !important;
+            object-fit: cover !important;
+            object-position: center center !important;
+            display: block !important;
+            transform: none !important;
+            -webkit-transform: none !important;
+            filter: none !important;
+            opacity: 1 !important;
+            image-rendering: auto !important;
+            backface-visibility: hidden !important;
+            -webkit-backface-visibility: hidden !important;
+            will-change: auto !important;
+        }
+
+        .tour-card-front::before {
+            background:
+                linear-gradient(to top, rgba(2,6,23,0.82), rgba(2,6,23,0.32) 45%, rgba(2,6,23,0.02)),
+                radial-gradient(circle at 52% 10%, rgba(255,255,255,0.10), transparent 30%) !important;
+        }
+
+        .pin-card,
+        .tour-card-3d,
+        .tour-card-face {
+            filter: none !important;
+        }
+
+        .tour-card-3d::before {
+            filter: none !important;
+        }
+
+        /* Le flip reste actif, mais on évite le tilt desktop et les micro-transforms. */
+        .tour-card-3d {
+            --rx: 0deg !important;
+            --ry: 0deg !important;
+        }
+
+        @media (min-width: 641px) {
+            .tour-card-3d {
+                transform: rotateY(var(--flip)) !important;
+                -webkit-transform: rotateY(var(--flip)) !important;
+            }
+
+            .tour-card-front {
+                transform: translateZ(0) !important;
+                -webkit-transform: translateZ(0) !important;
+            }
+
+            .tour-card-back {
+                transform: rotateY(180deg) translateZ(0) !important;
+                -webkit-transform: rotateY(180deg) translateZ(0) !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .tour-card-image img,
+            .pin-card:hover .tour-card-image img,
+            .featured-tour-rail .pin-card:hover .tour-card-image img {
+                transform: none !important;
+                -webkit-transform: none !important;
+                filter: none !important;
+            }
+        }
+</style>
 
     
 </head>
@@ -3510,14 +3594,18 @@
                             <div class="tour-card-3d">
                                 <div class="tour-card-face tour-card-front">
                                     <div class="tour-card-image">
-                                        {% if tour.ordered_scenes and tour.ordered_scenes.0.safe_image_360_preview_url %}
-                                            <img src="{{ tour.ordered_scenes.0.safe_image_360_preview_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
-                                        {% elif tour.ordered_scenes and tour.ordered_scenes.0.safe_thumbnail_url %}
-                                            <img src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                        {% if tour.safe_thumbnail_source_url %}
+                                            <img src="{{ tour.safe_thumbnail_source_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
                                         {% elif tour.safe_thumbnail_image_url %}
                                             <img src="{{ tour.safe_thumbnail_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                        {% elif tour.safe_thumbnail_image_mobile_url %}
+                                            <img src="{{ tour.safe_thumbnail_image_mobile_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
                                         {% elif tour.safe_place_cover_image_url %}
                                             <img src="{{ tour.safe_place_cover_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                        {% elif tour.ordered_scenes and tour.ordered_scenes.0.safe_thumbnail_url %}
+                                            <img src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                        {% elif tour.ordered_scenes and tour.ordered_scenes.0.safe_image_360_preview_url %}
+                                            <img src="{{ tour.ordered_scenes.0.safe_image_360_preview_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
                                         {% else %}
                                             <div class="tour-card-placeholder">No Preview</div>
                                         {% endif %}
@@ -4232,12 +4320,15 @@
         }
 
         function getTourImage(item) {
+            // HOME CARD : priorité à l'image du Tour.
+            // On évite les viewer_* 360 car ce sont des panoramas, souvent flous/déformés dans une card.
             return (
+                item.tour_card_image_url ||
                 item.image_url ||
-                item.image_mobile_url ||
                 item.thumbnail_url ||
-                item.viewer_desktop_url ||
-                item.viewer_mobile_url ||
+                item.tour_card_image_mobile_url ||
+                item.image_mobile_url ||
+                item.placeholder_url ||
                 ""
             );
         }
@@ -4245,7 +4336,8 @@
 
         function setup3DFlipCards(scope = document) {
             const scenes = Array.from(scope.querySelectorAll("[data-card-scene]:not([data-card-ready='true'])"));
-            const canTiltCard = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+            // Désactivé volontairement : le tilt 3D rasterise les images et les rend floues en production.
+            const canTiltCard = false;
 
             function isRealOpenLink(target) {
                 return target?.closest?.("a[data-card-open], .tour-card-primary, .tour-card-action");
@@ -4579,18 +4671,20 @@
                         <div class="tour-card-face tour-card-back">
                             <div class="tour-back-header">
                                 <div>
-                                 
+                                    <span class="tour-back-label">Virtual tour</span>
 
                                     <h3 class="tour-back-title line-clamp-2">
                                         ${escapeHtml(title)}
                                     </h3>
                                 </div>
 
-                                
+                                <button type="button" class="tour-card-close" data-card-close aria-label="Retour">
+                                    ↩
+                                </button>
                             </div>
 
                             <p class="tour-back-text line-clamp-3">
-                                ${escapeHtml(truncateText(description, 740))}
+                                ${escapeHtml(truncateText(description, 640))}
                             </p>
 
                             <ul class="tour-card-features">
