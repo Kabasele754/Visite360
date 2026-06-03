@@ -192,12 +192,12 @@ class PublicHomeView(TemplateView):
 
     def _get_tour_preview_images(self, tour):
         """
-        Séparation importante :
+        Séparation stricte :
         - HERO / VIEWER : utilise les images 360 de la première scène pour Marzipano.
-        - CARD HOME / EXPLORE ALL : utilise d'abord l'image du Tour.
+        - EXPLORE ALL / JSON : utilise UNIQUEMENT les images du Tour ou du Place.
 
-        Les panoramas 360 sont excellents dans Marzipano, mais dans une card HTML
-        ils peuvent paraître flous parce qu'ils sont compressés, très larges ou recadrés.
+        Important : les images Scene360 ne doivent plus être utilisées dans Explore all,
+        sinon les cards reprennent des panoramas/preview 360 et deviennent floues ou mal cadrées.
         """
         empty = {
             "hero": "",
@@ -208,6 +208,7 @@ class PublicHomeView(TemplateView):
             "viewer_mobile": "",
             "thumbnail": "",
             "placeholder": "",
+            "card_source": "none",
         }
 
         if not tour:
@@ -227,21 +228,30 @@ class PublicHomeView(TemplateView):
             scene_preview = getattr(first_scene, "safe_image_360_preview_url", "") or ""
             scene_thumb = getattr(first_scene, "safe_thumbnail_url", "") or ""
 
-        # Images marketing du Tour : priorité pour les cards.
+        # Images marketing du Tour : utilisées par Explore all.
         tour_source = getattr(tour, "safe_thumbnail_source_url", "") or ""
         tour_thumb = getattr(tour, "safe_thumbnail_image_url", "") or ""
         tour_thumb_mobile = getattr(tour, "safe_thumbnail_image_mobile_url", "") or ""
         place_cover = getattr(tour, "safe_place_cover_image_url", "") or ""
 
+        if tour_source:
+            card_source = "tour.thumbnail_source"
+        elif tour_thumb:
+            card_source = "tour.thumbnail_image"
+        elif tour_thumb_mobile:
+            card_source = "tour.thumbnail_image_mobile"
+        elif place_cover:
+            card_source = "place.cover_image"
+        else:
+            card_source = "none"
+
+        # STRICT : pas de scene_thumb / scene_preview ici.
         card_desktop = (
             tour_source
             or tour_thumb
             or tour_thumb_mobile
             or place_cover
-            or scene_thumb
-            or scene_preview
-            or scene_mobile
-            or scene_full
+            or ""
         )
 
         card_mobile = (
@@ -249,10 +259,7 @@ class PublicHomeView(TemplateView):
             or tour_thumb_mobile
             or tour_thumb
             or place_cover
-            or scene_thumb
-            or scene_preview
-            or scene_mobile
-            or scene_full
+            or ""
         )
 
         # Hero garde la logique panorama/360.
@@ -278,7 +285,7 @@ class PublicHomeView(TemplateView):
             or scene_mobile
             or scene_preview
             or scene_thumb
-            or card_desktop
+            or ""
         )
 
         viewer_mobile = (
@@ -286,16 +293,10 @@ class PublicHomeView(TemplateView):
             or scene_full
             or scene_preview
             or scene_thumb
-            or card_mobile
+            or ""
         )
 
-        thumbnail = (
-            card_desktop
-            or card_mobile
-            or scene_thumb
-            or scene_preview
-            or viewer_desktop
-        )
+        thumbnail = card_desktop or card_mobile
 
         return {
             "hero": self._normalize_media_url(hero_desktop),
@@ -306,6 +307,7 @@ class PublicHomeView(TemplateView):
             "viewer_mobile": self._normalize_media_url(viewer_mobile),
             "thumbnail": self._normalize_media_url(thumbnail),
             "placeholder": self._normalize_media_url(thumbnail),
+            "card_source": card_source,
         }
 
     def _build_catalog_item(self, tour):
@@ -340,13 +342,18 @@ class PublicHomeView(TemplateView):
             "price": str(tour.display_price) if getattr(tour, "display_price", None) is not None else "",
             "is_featured": bool(tour.is_featured),
 
-            # Images pour la home : d'abord les images du Tour, pas les panoramas 360.
-            "image_url": preview_images["card"],
-            "image_mobile_url": preview_images["card_mobile"],
+            # Images Explore all : STRICTEMENT image du Tour / Place.
+            # Pas de fallback Scene360 ici, pour éviter les panoramas flous dans les cards.
+            "tour_image_url": preview_images["card"],
+            "tour_image_mobile_url": preview_images["card_mobile"],
             "tour_card_image_url": preview_images["card"],
             "tour_card_image_mobile_url": preview_images["card_mobile"],
+            "image_url": preview_images["card"],
+            "image_mobile_url": preview_images["card_mobile"],
             "thumbnail_url": preview_images["thumbnail"],
             "placeholder_url": preview_images["placeholder"],
+            "card_image_source": preview_images.get("card_source", "none"),
+            "has_tour_card_image": bool(preview_images["card"] or preview_images["card_mobile"]),
 
             # Images 360 complètes : à utiliser seulement au clic.
             "viewer_desktop_url": preview_images["viewer_desktop"],
@@ -354,6 +361,7 @@ class PublicHomeView(TemplateView):
 
             "preview_url": preview_url,
             "created_at": tour.created_at.isoformat() if tour.created_at else "",
+            "updated_at": tour.updated_at.isoformat() if getattr(tour, "updated_at", None) else "",
             "search_blob": " ".join(
                 filter(
                     None,

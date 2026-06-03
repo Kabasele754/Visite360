@@ -3298,6 +3298,28 @@
                 filter: none !important;
             }
         }
+
+
+        /* =====================================================================
+           FINAL EXPLORE ALL FIX — FORCE TOUR IMAGE ONLY
+           Featured reste comme il est. Cette règle concerne surtout les cards
+           générées par JS dans #catalogToursGrid.
+        ===================================================================== */
+        #catalogToursGrid .tour-card-image img[data-tour-card-img="true"] {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            object-position: center center !important;
+            transform: none !important;
+            -webkit-transform: none !important;
+            filter: none !important;
+            image-rendering: auto !important;
+        }
+
+        #catalogToursGrid .pin-card[data-card-image-source="none"] .tour-card-placeholder {
+            display: grid !important;
+        }
+
 </style>
 
     
@@ -4320,17 +4342,23 @@
         }
 
         function getTourImage(item) {
-            // HOME CARD : priorité à l'image du Tour.
-            // On évite les viewer_* 360 car ce sont des panoramas, souvent flous/déformés dans une card.
-            return (
+            // EXPLORE ALL : on force l'image du Tour / Place uniquement.
+            // On ne prend jamais viewer_desktop_url/viewer_mobile_url ni les panoramas 360.
+            const mobile = isMobileViewport();
+
+            const url = (
+                item.tour_image_url ||
                 item.tour_card_image_url ||
                 item.image_url ||
                 item.thumbnail_url ||
-                item.tour_card_image_mobile_url ||
-                item.image_mobile_url ||
+                (mobile && item.tour_image_mobile_url) ||
+                (mobile && item.tour_card_image_mobile_url) ||
+                (mobile && item.image_mobile_url) ||
                 item.placeholder_url ||
                 ""
             );
+
+            return url || "";
         }
 
 
@@ -4616,6 +4644,7 @@
                 <article
                     class="pin-card"
                     data-card-scene
+                    data-card-image-source="${escapeHtml(item.card_image_source || 'none')}"
                     role="button"
                     tabindex="0"
                     aria-label="${escapeHtml(title)}. Toucher pour voir les détails."
@@ -4626,7 +4655,7 @@
                             <div class="tour-card-image">
                                 ${
                                     image
-                                        ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async">`
+                                        ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async" data-tour-card-img="true" data-source="${escapeHtml(item.card_image_source || 'tour')}">`
                                         : `<div class="tour-card-placeholder">No Preview</div>`
                                 }
                             </div>
