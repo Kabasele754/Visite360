@@ -1884,3 +1884,467 @@ body {
         filter: none !important;
     }
 }
+/* =====================================================================
+   HOTSPOT INFO PANEL — MODAL 3D FLIP PREMIUM
+   À ajouter À LA FIN de dashboard/css/preview-tailwind.css
+   Devant : image seulement. Derrière : description hotspot.
+===================================================================== */
+
+#previewInfoBackdrop.info-backdrop {
+    z-index: 93 !important;
+    background:
+        radial-gradient(circle at 50% 45%, rgba(103, 232, 249, 0.10), transparent 30%),
+        rgba(2, 6, 23, 0.28) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+}
+
+#previewInfoBackdrop.info-backdrop.open {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+#previewInfoPanel.hotspot-info-panel-3d,
+.info-panel.hotspot-info-panel-3d {
+    z-index: 98 !important;
+    width: min(430px, calc(100vw - 28px)) !important;
+    height: min(640px, calc(100dvh - 142px)) !important;
+    max-height: calc(100dvh - 142px) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    perspective: 1500px !important;
+    transform: translateX(118%) scale(0.96) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition:
+        transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.26s ease !important;
+    touch-action: manipulation !important;
+}
+
+#previewInfoPanel.hotspot-info-panel-3d.open,
+.info-panel.hotspot-info-panel-3d.open {
+    transform: translateX(0) scale(1) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+.hotspot-info-3d-shell {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    perspective: 1500px;
+    -webkit-perspective: 1500px;
+}
+
+.hotspot-info-3d-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    transform: rotateY(0deg) translateZ(0);
+    transition: transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+}
+
+#previewInfoPanel.is-flipped .hotspot-info-3d-card {
+    transform: rotateY(180deg) translateZ(0);
+}
+
+.hotspot-info-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 30px;
+    border: 1.25px solid rgba(255, 255, 255, 0.22);
+    background: rgba(2, 6, 23, 0.88);
+    color: #ffffff;
+    box-shadow:
+        0 32px 90px rgba(0, 0, 0, 0.48),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+.hotspot-info-front {
+    justify-content: flex-end;
+    background:
+        radial-gradient(circle at 50% 20%, rgba(103, 232, 249, 0.18), transparent 32%),
+        #020617;
+}
+
+.hotspot-info-back {
+    transform: rotateY(180deg) translateZ(0);
+    background:
+        radial-gradient(circle at 16% 8%, rgba(103, 232, 249, 0.18), transparent 34%),
+        radial-gradient(circle at 95% 88%, rgba(96, 165, 250, 0.16), transparent 30%),
+        linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
+}
+
+.hotspot-info-front-media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at center, rgba(103, 232, 249, 0.16), transparent 34%),
+        linear-gradient(135deg, #020617, #0f172a);
+}
+
+.hotspot-info-front-media img,
+.hotspot-info-front-media .info-media-image {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    transform: scale(1.012) translateZ(0) !important;
+    filter: saturate(1.08) contrast(1.04) brightness(0.96) !important;
+    cursor: zoom-in;
+}
+
+.hotspot-info-front-media .info-media-empty {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.hotspot-info-front-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(2, 6, 23, 0.10) 0%, transparent 32%, rgba(2, 6, 23, 0.72) 100%),
+        radial-gradient(circle at center, transparent 45%, rgba(2, 6, 23, 0.35) 100%);
+}
+
+.hotspot-info-front-glow {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 999px;
+    filter: blur(30px);
+    opacity: 0.8;
+}
+
+.hotspot-info-front-glow-a {
+    width: 150px;
+    height: 150px;
+    top: 18px;
+    left: 22px;
+    background: rgba(103, 232, 249, 0.16);
+}
+
+.hotspot-info-front-glow-b {
+    width: 160px;
+    height: 160px;
+    right: -32px;
+    bottom: 16px;
+    background: rgba(96, 165, 250, 0.16);
+}
+
+.hotspot-info-close,
+.hotspot-info-back-btn,
+.hotspot-info-flip-btn {
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    background: rgba(2, 6, 23, 0.48);
+    color: #ffffff;
+    backdrop-filter: blur(12px) saturate(145%);
+    -webkit-backdrop-filter: blur(12px) saturate(145%);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.hotspot-info-close {
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    z-index: 6;
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 950;
+}
+
+.hotspot-info-front-bottom {
+    position: relative;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px;
+}
+
+.hotspot-info-badge {
+    min-width: 0;
+    max-width: 58%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 9px 12px;
+    color: #dffbff;
+    background: rgba(2, 6, 23, 0.52);
+    border: 1px solid rgba(103, 232, 249, 0.22);
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.hotspot-info-flip-btn {
+    flex: 0 0 auto;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border-radius: 999px;
+    padding: 0 15px;
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+.hotspot-info-flip-btn strong {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.hotspot-info-back-top {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px;
+}
+
+.hotspot-info-back-btn {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 950;
+}
+
+.hotspot-info-back-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    padding: 0 18px 18px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+    touch-action: pan-y !important;
+}
+
+.hotspot-info-back-content::-webkit-scrollbar {
+    width: 7px;
+}
+
+.hotspot-info-back-content::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.hotspot-info-kicker {
+    margin: 4px 0 10px;
+    color: #67e8f9;
+    font-size: 10px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+}
+
+.hotspot-info-title {
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(24px, 4vw, 34px);
+    line-height: 0.98;
+    font-weight: 950;
+    letter-spacing: -0.055em;
+}
+
+.hotspot-info-description {
+    margin: 14px 0 0;
+    color: rgba(226, 232, 240, 0.86);
+    font-size: 14px;
+    line-height: 1.72;
+    font-weight: 680;
+}
+
+.hotspot-info-meta-row {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.hotspot-info-meta-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 8px 11px;
+    color: rgba(255, 255, 255, 0.88);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.hotspot-info-actions {
+    margin-top: auto;
+    padding-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.hotspot-info-action {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    padding: 0 15px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 950;
+    transition: transform 160ms ease, filter 160ms ease, background 160ms ease;
+}
+
+.hotspot-info-action:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+}
+
+.hotspot-info-action-primary {
+    color: #06111f;
+    background: linear-gradient(135deg, #67e8f9, #38bdf8);
+    box-shadow: 0 16px 34px rgba(34, 211, 238, 0.16);
+}
+
+.hotspot-info-action-whatsapp {
+    color: #052e16;
+    background: linear-gradient(135deg, #4ade80, #10b981);
+    box-shadow: 0 16px 34px rgba(16, 185, 129, 0.16);
+}
+
+.hotspot-info-action-secondary {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+#previewInfoPanel .hidden {
+    display: none !important;
+}
+
+/* Mobile: garde l'animation 3D, puis stabilise la face visible pour éviter le flou GPU. */
+@media (max-width: 768px) {
+    #previewInfoPanel.hotspot-info-panel-3d,
+    .info-panel.hotspot-info-panel-3d {
+        left: 10px !important;
+        right: 10px !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 74px) !important;
+        width: auto !important;
+        height: min(560px, calc(100dvh - 120px)) !important;
+        max-height: calc(100dvh - 120px) !important;
+        transform: translateY(116%) scale(0.98) !important;
+    }
+
+    #previewInfoPanel.hotspot-info-panel-3d.open,
+    .info-panel.hotspot-info-panel-3d.open {
+        transform: translateY(0) scale(1) !important;
+    }
+
+    .hotspot-info-face {
+        border-radius: 25px;
+    }
+
+    .hotspot-info-title {
+        font-size: clamp(22px, 7vw, 30px);
+    }
+
+    .hotspot-info-description {
+        font-size: 13.5px;
+        line-height: 1.62;
+    }
+
+    .hotspot-info-actions {
+        gap: 8px;
+    }
+
+    .hotspot-info-action {
+        flex: 1 1 auto;
+        min-height: 42px;
+        padding: 0 12px;
+        font-size: 12px;
+    }
+
+    #previewInfoPanel.flip-settled.is-flipped .hotspot-info-3d-card {
+        transform: none !important;
+    }
+
+    #previewInfoPanel.flip-settled.is-flipped .hotspot-info-front {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transform: none !important;
+    }
+
+    #previewInfoPanel.flip-settled.is-flipped .hotspot-info-back {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: none !important;
+    }
+
+    #previewInfoPanel.flip-settled:not(.is-flipped) .hotspot-info-3d-card {
+        transform: none !important;
+    }
+
+    #previewInfoPanel.flip-settled:not(.is-flipped) .hotspot-info-front {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: none !important;
+    }
+
+    #previewInfoPanel.flip-settled:not(.is-flipped) .hotspot-info-back {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transform: none !important;
+    }
+}

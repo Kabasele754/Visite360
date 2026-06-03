@@ -1,0 +1,21 @@
+<!doctype html>
+{% load static %}
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>3D Cards — Taiwand</title>
+   <link rel="stylesheet" href="{% static 'public/css/styles.css' %}">
+</head>
+<body>
+  <main class="wrap">
+    <section class="grid" id="cardGrid">
+      <!-- Cards will be injected by script.js -->
+    </section>
+  </main>
+
+      <script src="{% static 'public/js/script.js' %}"></script>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>

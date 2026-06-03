@@ -3,6 +3,7 @@ from urllib.parse import unquote
 from django.conf import settings
 from django.contrib import messages
 from django.db.models import Count, Q, Prefetch
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, FormView
@@ -19,10 +20,15 @@ from django.utils.text import Truncator
 
 
 
+def test_view(request):
+    return render(request, "public/3dcards/index.html")
+
+
+
 class PublicHomeView(TemplateView):
     template_name = "public/home.html"
 
-    HOME_CATALOG_LIMIT = 30
+    HOME_CATALOG_PAGE_SIZE = 15
     FEATURED_LIMIT = 6
     LATEST_LIMIT = 12
     CACHE_TIMEOUT = 60 * 5  # 5 minutes
@@ -59,6 +65,26 @@ class PublicHomeView(TemplateView):
         except Exception:
             return str(file_field)
 
+    def _get_organization_logo_url(self, organization):
+        if not organization or not getattr(organization, "logo", None):
+            return ""
+
+        return self._normalize_media_url(self._get_file_url(organization.logo))
+
+    def _parse_positive_int(self, value, default, maximum=None):
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            number = default
+
+        if number < 1:
+            number = default
+
+        if maximum is not None:
+            number = min(number, maximum)
+
+        return number
+
     def _get_scene_queryset(self):
         """
         Important pour la rapidité :
@@ -84,8 +110,7 @@ class PublicHomeView(TemplateView):
     def _get_base_tours_queryset(self):
         """
         Base propre et optimisée.
-        On ne met pas encore Prefetch ici pour éviter de charger les scènes
-        de toutes les visites avant la limitation.
+        Le select_related charge aussi organization.logo via l'objet organization.
         """
         return (
             Tour.objects
@@ -138,6 +163,9 @@ class PublicHomeView(TemplateView):
             place_cover = self._get_file_url(tour.place.cover_image)
 
         tour.safe_place_cover_image_url = self._normalize_media_url(place_cover)
+        tour.safe_organization_logo_url = self._get_organization_logo_url(
+            getattr(tour, "organization", None)
+        )
 
         for scene in getattr(tour, "ordered_scenes", []):
             scene.safe_image_360_url = self._normalize_media_url(
@@ -267,8 +295,7 @@ class PublicHomeView(TemplateView):
         )
 
         preview_images = self._get_tour_preview_images(tour)
-
-        short_description = Truncator(tour.description or "").chars(140)
+        short_description = Truncator(tour.description or "").chars(840)
 
         return {
             "id": tour.id,
@@ -276,6 +303,8 @@ class PublicHomeView(TemplateView):
             "description": short_description,
             "organization": tour.organization.name if tour.organization else "",
             "organization_slug": tour.organization.slug if tour.organization else "",
+            "organization_logo_url": getattr(tour, "safe_organization_logo_url", "")
+            or self._get_organization_logo_url(getattr(tour, "organization", None)),
             "place_name": tour.place.name if tour.place else "",
             "category": tour.place.category if tour.place else "",
             "category_label": tour.place.get_category_display() if tour.place else "",
@@ -315,6 +344,99 @@ class PublicHomeView(TemplateView):
                 )
             ).lower(),
         }
+
+    def _get_catalog_page_data(self, q="", category="", city="", page=1, page_size=None):
+        page_size = self._parse_positive_int(
+            page_size,
+            self.HOME_CATALOG_PAGE_SIZE,
+            maximum=48,
+        )
+        page = self._parse_positive_int(page, 1)
+
+        filtered_qs = self._apply_filters(
+            self._get_base_tours_queryset(),
+            q=q,
+            category=category,
+            city=city,
+        )
+
+        total_filtered_tours = filtered_qs.count()
+        total_pages = max(1, (total_filtered_tours + page_size - 1) // page_size)
+        page = min(page, total_pages)
+
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        display_qs = (
+            filtered_qs
+            .prefetch_related(
+                Prefetch(
+                    "scenes",
+                    queryset=self._get_scene_queryset(),
+                    to_attr="ordered_scenes",
+                )
+            )
+            .order_by("-is_featured", "-created_at")[start:end]
+        )
+
+        published_tours = list(display_qs)
+
+        for tour in published_tours:
+            self._decorate_tour_media(tour)
+
+        return {
+            "results": [self._build_catalog_item(tour) for tour in published_tours],
+            "total_count": total_filtered_tours,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "loaded_count": min(end, total_filtered_tours),
+            "has_more": page < total_pages,
+        }
+
+    def _get_decorated_tours(self, queryset, limit):
+        display_qs = (
+            queryset
+            .prefetch_related(
+                Prefetch(
+                    "scenes",
+                    queryset=self._get_scene_queryset(),
+                    to_attr="ordered_scenes",
+                )
+            )[:limit]
+        )
+
+        tours = list(display_qs)
+
+        for tour in tours:
+            self._decorate_tour_media(tour)
+
+        return tours
+
+    def get(self, request, *args, **kwargs):
+        wants_json = (
+            request.GET.get("format") == "json"
+            or request.headers.get("x-requested-with") == "XMLHttpRequest"
+        )
+
+        if wants_json:
+            q = request.GET.get("q", "").strip()
+            category = request.GET.get("category", "").strip()
+            city = request.GET.get("city", "").strip()
+            page = request.GET.get("page", "1")
+            page_size = request.GET.get("page_size", self.HOME_CATALOG_PAGE_SIZE)
+
+            return JsonResponse(
+                self._get_catalog_page_data(
+                    q=q,
+                    category=category,
+                    city=city,
+                    page=page,
+                    page_size=page_size,
+                )
+            )
+
+        return super().get(request, *args, **kwargs)
 
     def _get_top_places(self):
         cache_key = "public_home_top_places_v1"
@@ -424,36 +546,33 @@ class PublicHomeView(TemplateView):
         category = self.request.GET.get("category", "").strip()
         city = self.request.GET.get("city", "").strip()
 
-        base_qs = self._get_base_tours_queryset()
-        filtered_qs = self._apply_filters(base_qs, q=q, category=category, city=city)
-
-        total_filtered_tours = filtered_qs.count()
-
-        display_qs = (
-            filtered_qs
-            .prefetch_related(
-                Prefetch(
-                    "scenes",
-                    queryset=self._get_scene_queryset(),
-                    to_attr="ordered_scenes",
-                )
-            )
-            .order_by("-is_featured", "-created_at")[:self.HOME_CATALOG_LIMIT]
+        catalog_page_data = self._get_catalog_page_data(
+            q=q,
+            category=category,
+            city=city,
+            page=1,
+            page_size=self.HOME_CATALOG_PAGE_SIZE,
         )
 
-        published_tours = list(display_qs)
+        filtered_base_qs = self._apply_filters(
+            self._get_base_tours_queryset(),
+            q=q,
+            category=category,
+            city=city,
+        )
 
-        for tour in published_tours:
-            self._decorate_tour_media(tour)
+        featured_tours = self._get_decorated_tours(
+            filtered_base_qs.filter(is_featured=True).order_by("-created_at"),
+            self.FEATURED_LIMIT,
+        )
 
-        featured_tours = [tour for tour in published_tours if tour.is_featured][:self.FEATURED_LIMIT]
-        latest_tours = published_tours[:self.LATEST_LIMIT]
+        latest_tours = self._get_decorated_tours(
+            filtered_base_qs.order_by("-created_at"),
+            self.LATEST_LIMIT,
+        )
 
         hero_tour = featured_tours[0] if featured_tours else (latest_tours[0] if latest_tours else None)
         hero_preview_images = self._get_tour_preview_images(hero_tour)
-
-        catalog_tours = [self._build_catalog_item(tour) for tour in published_tours]
-
         global_stats = self._get_global_stats()
 
         context.update(
@@ -478,14 +597,14 @@ class PublicHomeView(TemplateView):
                 "selected_category": category,
                 "selected_city": city,
 
-                # Important : seulement 30 visites maximum dans le HTML.
-                "catalog_tours": catalog_tours,
-                "catalog_total_count": total_filtered_tours,
-                "catalog_loaded_count": len(catalog_tours),
-                "catalog_has_more": total_filtered_tours > len(catalog_tours),
+                # Première page seulement. Les suivantes arrivent par infinite scroll JSON.
+                "catalog_tours": catalog_page_data["results"],
+                "catalog_total_count": catalog_page_data["total_count"],
+                "catalog_loaded_count": len(catalog_page_data["results"]),
+                "catalog_has_more": catalog_page_data["has_more"],
 
                 "stats": {
-                    "tour_count": total_filtered_tours,
+                    "tour_count": catalog_page_data["total_count"],
                     "place_count": global_stats["place_count"],
                     "organization_count": global_stats["organization_count"],
                 },
@@ -493,7 +612,6 @@ class PublicHomeView(TemplateView):
         )
 
         return context
-
 
 
 

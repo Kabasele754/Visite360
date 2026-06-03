@@ -41,10 +41,9 @@
         };
     </script>
 
-    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=premium-hotspot-loader-20260687">
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=hotspot-3d-modal-20260603">
 
     <style>
-        /* Cache les anciens overlays debug si le navigateur garde un ancien JS en cache. */
         #previewDebugDialog,
         #previewMobileDebug {
             display: none !important;
@@ -53,7 +52,6 @@
             pointer-events: none !important;
         }
 
-        /* Sécurité Layer A/B : garde le même comportement que le builder même si le CSS externe est chargé en retard. */
         html,
         body,
         .preview-page-shell,
@@ -124,19 +122,16 @@
 </head>
 
 <body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
-     {% include 'public/partials/loader_3d_global.html' %}
+    {% include 'public/partials/loader_3d_global.html' %}
     <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
 
-
     <div class="preview-page-shell relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_45%,#01040d_100%)]">
-
         <div class="pointer-events-none absolute inset-0 overflow-hidden">
             <div class="absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl"></div>
             <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl"></div>
             <div class="absolute left-0 top-1/3 h-64 w-64 rounded-full bg-sky-400/5 blur-3xl"></div>
         </div>
 
-        <!-- intro overlay -->
         <div id="previewIntroOverlay" class="preview-intro-overlay">
             <div class="preview-intro-glow preview-intro-glow-a"></div>
             <div class="preview-intro-glow preview-intro-glow-b"></div>
@@ -167,8 +162,6 @@
         <main class="relative h-full w-full">
             <section class="relative h-full w-full">
                 <div id="previewViewer" class="preview-viewer">
-
-                    <!-- centered brand -->
                     <div id="brandOverlay"
                          data-ui="chrome"
                          class="absolute left-1/2 top-4 z-50 -translate-x-1/2 md:top-5">
@@ -192,7 +185,6 @@
 
                     <div class="pointer-events-none absolute inset-x-0 top-0 z-[6] h-32 bg-gradient-to-b from-slate-950/40 to-transparent"></div>
 
-                    <!-- Layer A/B utilisé par preview-tailwind.js pour la transition cinéma -->
                     <div id="previewLayerA" class="preview-layer active-layer" aria-hidden="false">
                         <div id="previewMountA" class="preview-mount"></div>
                     </div>
@@ -201,7 +193,6 @@
                         <div id="previewMountB" class="preview-mount"></div>
                     </div>
 
-                    <!-- loading preview pendant le changement de scène -->
                     <div id="previewSceneLoadingOverlay" class="preview-scene-loading-overlay" aria-hidden="true">
                         <img id="previewSceneLoadingImage" class="preview-scene-loading-image hidden" alt="Preview scene">
                         <div class="preview-scene-loading-shade"></div>
@@ -211,61 +202,102 @@
                         </div>
                     </div>
 
-                    <!-- info panel -->
+                    <!-- HOTSPOT INFO PANEL 3D -->
                     <div id="previewInfoBackdrop"
                          class="info-backdrop pointer-events-none absolute inset-0 z-30 opacity-0"></div>
 
                     <aside id="previewInfoPanel"
-                           class="info-panel absolute bottom-6 right-6 z-40 w-[420px] max-w-[calc(100%-2rem)] overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/78 shadow-premium backdrop-blur-2xl">
-                        <button id="previewInfoClose"
-                                type="button"
-                                class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white transition hover:bg-black/60"
-                                aria-label="Fermer">
-                            ✕
-                        </button>
+                           class="info-panel hotspot-info-panel-3d absolute bottom-6 right-6 z-40"
+                           aria-hidden="true">
+                        <div class="hotspot-info-3d-shell">
+                            <div id="previewInfoCard3D" class="hotspot-info-3d-card">
+                                <section class="hotspot-info-face hotspot-info-front" aria-label="Hotspot image preview">
+                                    <button id="previewInfoClose"
+                                            type="button"
+                                            class="hotspot-info-close"
+                                            aria-label="Fermer">
+                                        ✕
+                                    </button>
 
-                        <div id="previewInfoMedia" class="h-56 w-full overflow-hidden bg-white/5"></div>
+                                    <div id="previewInfoMedia" class="hotspot-info-front-media"></div>
 
-                        <div class="p-5">
-                            <span id="previewInfoBadge"
-                                  class="hidden mb-3 inline-flex rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-200">
-                            </span>
+                                    <div class="hotspot-info-front-vignette"></div>
+                                    <div class="hotspot-info-front-glow hotspot-info-front-glow-a"></div>
+                                    <div class="hotspot-info-front-glow hotspot-info-front-glow-b"></div>
 
-                            <h3 id="previewInfoTitle" class="text-2xl font-black tracking-tight text-white">
-                                Hotspot
-                            </h3>
+                                    <div class="hotspot-info-front-bottom">
+                                        <span id="previewInfoBadge" class="hidden hotspot-info-badge"></span>
 
-                            <p id="previewInfoDescription" class="mt-2 text-sm leading-6 text-slate-300"></p>
+                                        <button type="button"
+                                                class="hotspot-info-flip-btn"
+                                                data-preview-info-flip
+                                                aria-label="Voir la description">
+                                            <span>Details</span>
+                                            <strong>↻</strong>
+                                        </button>
+                                    </div>
+                                </section>
 
-                            <div class="mt-4 flex flex-wrap gap-2">
-                                <span id="previewInfoPrice" class="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white"></span>
-                                <span id="previewInfoSite" class="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white"></span>
-                            </div>
+                                <section class="hotspot-info-face hotspot-info-back" aria-label="Hotspot details">
+                                    <div class="hotspot-info-back-bg"></div>
 
-                            <div class="mt-5 flex flex-wrap gap-3">
-                                <a id="previewInfoAction"
-                                   class="hidden inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
-                                   href="#"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    Open
-                                </a>
+                                    <div class="hotspot-info-back-top">
+                                        <button type="button"
+                                                class="hotspot-info-back-btn"
+                                                data-preview-info-flip
+                                                aria-label="Retour à l'image">
+                                            ↩
+                                        </button>
 
-                                <a id="previewInfoWhatsapp"
-                                   class="hidden inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-green-400 to-emerald-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
-                                   href="#"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    WhatsApp
-                                </a>
+                                        <button type="button"
+                                                class="hotspot-info-back-btn"
+                                                data-preview-info-close
+                                                aria-label="Fermer">
+                                            ✕
+                                        </button>
+                                    </div>
 
-                                <a id="previewInfoContact"
-                                   class="hidden inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/10"
-                                   href="#"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    Contact
-                                </a>
+                                    <div class="hotspot-info-back-content">
+                                        <p class="hotspot-info-kicker">Hotspot information</p>
+
+                                        <h3 id="previewInfoTitle" class="hotspot-info-title">
+                                            Hotspot
+                                        </h3>
+
+                                        <p id="previewInfoDescription" class="hotspot-info-description"></p>
+
+                                        <div class="hotspot-info-meta-row">
+                                            <span id="previewInfoPrice" class="hidden hotspot-info-meta-pill"></span>
+                                            <span id="previewInfoSite" class="hidden hotspot-info-meta-pill"></span>
+                                        </div>
+
+                                        <div class="hotspot-info-actions">
+                                            <a id="previewInfoAction"
+                                               class="hidden hotspot-info-action hotspot-info-action-primary"
+                                               href="#"
+                                               target="_blank"
+                                               rel="noopener noreferrer">
+                                                Open
+                                            </a>
+
+                                            <a id="previewInfoWhatsapp"
+                                               class="hidden hotspot-info-action hotspot-info-action-whatsapp"
+                                               href="#"
+                                               target="_blank"
+                                               rel="noopener noreferrer">
+                                                WhatsApp
+                                            </a>
+
+                                            <a id="previewInfoContact"
+                                               class="hidden hotspot-info-action hotspot-info-action-secondary"
+                                               href="#"
+                                               target="_blank"
+                                               rel="noopener noreferrer">
+                                                Contact
+                                            </a>
+                                        </div>
+                                    </div>
+                                </section>
                             </div>
                         </div>
                     </aside>
@@ -275,12 +307,10 @@
             </section>
         </main>
 
-        <!-- bottom dock -->
         <div id="previewControlDock"
              data-ui="chrome"
              class="absolute bottom-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 md:bottom-5 md:w-auto">
 
-            <!-- scene panel opens upward -->
             <div id="previewSceneRail" class="scene-stack-panel scene-stack-panel-up">
                 <div class="scene-stack-panel-inner">
                     <div id="previewScenesList" class="scene-stack-list"></div>
@@ -319,7 +349,6 @@
             </div>
         </div>
 
-        <!-- toast -->
         <div id="previewToast"
              class="pointer-events-none absolute bottom-24 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-sm font-bold text-white opacity-0 shadow-glow backdrop-blur-xl transition duration-300">
             Copied
@@ -358,5 +387,6 @@
 
     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
     <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=mobile-pinch-stable-20260530"></script>
+    <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-20260603"></script>
 </body>
 </html>

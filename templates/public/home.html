@@ -1352,6 +1352,194 @@
 
         /* ========================= RESPONSIVE ========================= */
 
+
+
+        /* ========================= ORGANIZATION LOGO ON BACK CARD ========================= */
+
+        .tour-card-back {
+            position: relative;
+            isolation: isolate;
+        }
+
+        .tour-back-brand-watermark {
+            position: absolute;
+            right: -22px;
+            bottom: -26px;
+            z-index: 0;
+            width: clamp(92px, 34%, 150px);
+            aspect-ratio: 1;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: .13;
+            filter: blur(.1px) saturate(1.08);
+            pointer-events: none;
+            background: rgba(255,255,255,0.26);
+            border: 1px solid rgba(255,255,255,0.36);
+            overflow: hidden;
+        }
+
+        body.theme-dark .tour-back-brand-watermark {
+            opacity: .15;
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .tour-back-brand-watermark img {
+            width: 78%;
+            height: 78%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .tour-back-brand-watermark span {
+            color: #0f172a;
+            font-size: clamp(42px, 10vw, 70px);
+            font-weight: 950;
+            line-height: 1;
+        }
+
+        body.theme-dark .tour-back-brand-watermark span {
+            color: white;
+        }
+
+        .tour-back-brand-chip {
+            position: relative;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            max-width: 100%;
+            min-height: 36px;
+            margin-bottom: 10px;
+            border-radius: 999px;
+            padding: 6px 10px 6px 6px;
+            color: #0f172a;
+            background: rgba(255,255,255,0.72);
+            border: 1px solid rgba(226,232,240,0.84);
+            box-shadow: 0 12px 26px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.70);
+            backdrop-filter: blur(14px) saturate(1.12);
+            -webkit-backdrop-filter: blur(14px) saturate(1.12);
+        }
+
+        body.theme-dark .tour-back-brand-chip {
+            color: white;
+            background: rgba(255,255,255,0.075);
+            border-color: rgba(255,255,255,0.12);
+            box-shadow: 0 12px 26px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        .tour-back-brand-logo {
+            width: 25px;
+            height: 25px;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: rgba(15,23,42,0.07);
+            border: 1px solid rgba(15,23,42,0.06);
+        }
+
+        body.theme-dark .tour-back-brand-logo {
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        .tour-back-brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .tour-back-brand-logo span {
+            font-size: 11px;
+            font-weight: 950;
+            line-height: 1;
+        }
+
+        .tour-back-brand-name {
+            min-width: 0;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 10px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .10em;
+        }
+
+        .tour-card-back > *:not(.tour-back-brand-watermark) {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ========================= INFINITE SCROLL CATALOG ========================= */
+
+        .infinite-status {
+            min-height: 44px;
+            margin-top: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        body.theme-dark .infinite-status {
+            color: rgba(255,255,255,0.58);
+        }
+
+        .infinite-status-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 999px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.70);
+            border: 1px solid rgba(226,232,240,0.82);
+            box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        body.theme-dark .infinite-status-card {
+            background: rgba(15,23,42,0.62);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 14px 30px rgba(0,0,0,0.28);
+        }
+
+        .infinite-spinner {
+            width: 15px;
+            height: 15px;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            border: 2px solid rgba(100,116,139,0.22);
+            border-top-color: #06b6d4;
+            animation: infiniteSpin .8s linear infinite;
+        }
+
+        body.theme-dark .infinite-spinner {
+            border-color: rgba(255,255,255,0.18);
+            border-top-color: #67e8f9;
+        }
+
+        @keyframes infiniteSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        .catalog-infinite-sentinel {
+            width: 100%;
+            height: 1px;
+        }
+
         @media (min-width: 640px) {
             .pin-masonry {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1509,6 +1697,1523 @@
                 transform: translateY(-3px);
             }
         }
+
+        /* ========================= PREMIUM 3D FLIP TOUR CARDS - REPLACEMENT ========================= */
+
+        .pin-masonry {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 14px 12px !important;
+            align-items: start !important;
+        }
+
+        .pin-masonry .pin-card:nth-child(even) {
+            margin-top: 22px;
+        }
+
+        .pin-masonry .pin-card:nth-child(odd) {
+            margin-top: 0;
+        }
+
+        .pin-card {
+            position: relative !important;
+            width: 100% !important;
+            aspect-ratio: 3 / 4.78 !important;
+            overflow: visible !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            perspective: 1400px;
+            -webkit-perspective: 1400px;
+            isolation: isolate;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+
+        .pin-card:hover {
+            transform: none !important;
+            box-shadow: none !important;
+            border-color: transparent !important;
+        }
+
+        .pin-card.is-card-active {
+            z-index: 30;
+        }
+
+        .tour-card-3d {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 24px;
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+            transition:
+                transform 680ms cubic-bezier(.22,.9,.35,1),
+                filter .25s ease;
+            --flip: 0deg;
+            --rx: 0deg;
+            --ry: 0deg;
+            transform:
+                rotateX(var(--rx))
+                rotateY(calc(var(--flip) + var(--ry)))
+                translateZ(0);
+        }
+
+        .pin-card.is-flipped .tour-card-3d {
+            --flip: 180deg;
+        }
+
+        .tour-card-3d::before {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            z-index: -1;
+            border-radius: 26px;
+            background:
+                linear-gradient(135deg, rgba(255,255,255,0.80), rgba(103,232,249,0.22) 34%, transparent 62%),
+                linear-gradient(315deg, rgba(14,165,233,0.26), rgba(59,130,246,0.12));
+            opacity: .9;
+            filter: blur(.15px);
+        }
+
+        body.theme-dark .tour-card-3d::before {
+            background:
+                linear-gradient(135deg, rgba(103,232,249,0.30), rgba(37,99,235,0.16) 42%, transparent 72%),
+                linear-gradient(315deg, rgba(255,255,255,0.12), rgba(103,232,249,0.10));
+            opacity: .72;
+        }
+
+        .tour-card-face {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-radius: 24px;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            box-shadow:
+                0 22px 56px rgba(15,23,42,0.16),
+                inset 0 1px 0 rgba(255,255,255,0.26);
+            border: 1px solid rgba(255,255,255,0.72);
+            background: rgba(255,255,255,0.96);
+        }
+
+        body.theme-dark .tour-card-face {
+            border-color: rgba(255,255,255,0.10);
+            background: rgba(15,23,42,0.94);
+            box-shadow:
+                0 24px 58px rgba(0,0,0,0.38),
+                inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        .tour-card-front {
+            justify-content: flex-end;
+            color: white;
+            background: #0f172a;
+        }
+
+        .tour-card-back {
+            transform: rotateY(180deg);
+            padding: clamp(10px, 2.5vw, 18px);
+            color: #0f172a;
+            background:
+                radial-gradient(circle at 18% 10%, rgba(103,232,249,0.18), transparent 32%),
+                linear-gradient(145deg, rgba(255,255,255,0.98), rgba(241,245,249,0.96));
+        }
+
+        body.theme-dark .tour-card-back {
+            color: white;
+            background:
+                radial-gradient(circle at 18% 10%, rgba(103,232,249,0.16), transparent 34%),
+                linear-gradient(145deg, rgba(15,23,42,0.98), rgba(2,6,23,0.98));
+        }
+
+        .tour-card-image {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(103,232,249,0.22), transparent 30%),
+                linear-gradient(135deg, #dbeafe, #f8fafc);
+        }
+
+        body.theme-dark .tour-card-image {
+            background:
+                radial-gradient(circle at 20% 20%, rgba(103,232,249,0.12), transparent 30%),
+                linear-gradient(135deg, #020617, #0f172a);
+        }
+
+        .tour-card-image img {
+            width: 100%;
+            height: 100%;
+            min-height: 100% !important;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+            transform: translateZ(38px) scale(1.035);
+            filter: saturate(1.08) contrast(1.04) brightness(.95);
+            transition: transform .75s ease, filter .3s ease;
+        }
+
+        .pin-card:hover .tour-card-image img {
+            transform: translateZ(38px) scale(1.075);
+            filter: saturate(1.14) contrast(1.06) brightness(.98);
+        }
+
+        .tour-card-placeholder {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .18em;
+        }
+
+        body.theme-dark .tour-card-placeholder {
+            color: rgba(255,255,255,0.56);
+        }
+
+        .tour-card-front::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                linear-gradient(to top, rgba(2,6,23,0.90), rgba(2,6,23,0.42) 45%, rgba(2,6,23,0.05)),
+                radial-gradient(circle at 52% 10%, rgba(255,255,255,0.18), transparent 30%);
+        }
+
+        .tour-card-topbar {
+            position: absolute;
+            z-index: 3;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .tour-card-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            max-width: 72%;
+            min-height: 32px;
+            border-radius: 999px;
+            padding: 7px 10px;
+            color: white;
+            background: rgba(15,23,42,0.36);
+            border: 1px solid rgba(255,255,255,0.22);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            font-size: 9px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            box-shadow: 0 14px 30px rgba(0,0,0,0.16);
+        }
+
+        .tour-card-badge-dot {
+            width: 8px;
+            height: 8px;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            background: #67e8f9;
+            box-shadow: 0 0 14px rgba(103,232,249,.95);
+        }
+
+        .tour-card-flip-btn,
+        .tour-card-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            cursor: pointer;
+            color: white;
+            background: rgba(255,255,255,0.16);
+            border: 1px solid rgba(255,255,255,0.20);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.14);
+            transition: transform .18s ease, background .18s ease;
+        }
+
+        .tour-card-flip-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            font-size: 15px;
+            font-weight: 950;
+        }
+
+        .tour-card-close {
+            width: 34px;
+            height: 34px;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            color: #0f172a;
+            background: rgba(15,23,42,0.06);
+            border-color: rgba(15,23,42,0.08);
+        }
+
+        body.theme-dark .tour-card-close {
+            color: white;
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .tour-card-flip-btn:active,
+        .tour-card-close:active {
+            transform: scale(.94);
+        }
+
+        .tour-card-front-content {
+            position: relative;
+            z-index: 2;
+            padding: clamp(10px, 2.5vw, 16px);
+        }
+
+        .tour-card-kicker {
+            display: inline-flex;
+            width: fit-content;
+            max-width: 100%;
+            border-radius: 999px;
+            padding: 6px 9px;
+            color: #06111f;
+            background: linear-gradient(135deg, #67e8f9, #dffbff);
+            box-shadow: 0 12px 28px rgba(34,211,238,0.24);
+            font-size: 9px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .13em;
+            white-space: nowrap;
+        }
+
+        .tour-card-title {
+            margin-top: 9px;
+            color: white;
+            font-size: clamp(14px, 3.7vw, 21px);
+            line-height: 1.05;
+            font-weight: 950;
+            letter-spacing: -0.045em;
+            text-shadow: 0 10px 26px rgba(0,0,0,0.58);
+        }
+
+        .tour-card-description {
+            margin-top: 7px;
+            color: rgba(255,255,255,0.78);
+            font-size: clamp(10px, 2.6vw, 13px);
+            line-height: 1.45;
+            font-weight: 750;
+            text-shadow: 0 8px 20px rgba(0,0,0,0.40);
+        }
+
+        .tour-card-bottomline {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            color: rgba(255,255,255,.88);
+            font-size: clamp(10px, 2.4vw, 12px);
+            font-weight: 900;
+        }
+
+        .tour-card-bottomline span:last-child {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 0 9px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.14);
+            border: 1px solid rgba(255,255,255,.16);
+        }
+
+        .tour-card-front-actions {
+            position: relative;
+            z-index: 4;
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tour-card-primary,
+        .tour-card-secondary {
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border-radius: 15px;
+            text-decoration: none;
+            font-size: clamp(10px, 2.45vw, 13px);
+            font-weight: 950;
+            cursor: pointer;
+            transition:
+                transform .18s ease,
+                filter .18s ease,
+                background .18s ease,
+                border-color .18s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Bouton principal DEVANT : transparent + bordure blanche */
+        .tour-card-primary {
+            color: #ffffff;
+            background: rgba(255,255,255,0.10);
+            border: 1.4px solid rgba(255,255,255,0.88);
+            box-shadow:
+                0 14px 32px rgba(0,0,0,0.18),
+                inset 0 1px 0 rgba(255,255,255,0.18);
+            backdrop-filter: blur(14px) saturate(1.15);
+            -webkit-backdrop-filter: blur(14px) saturate(1.15);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.32);
+        }
+
+        .tour-card-primary:hover {
+            background: rgba(255,255,255,0.18);
+            border-color: rgba(255,255,255,1);
+        }
+
+        .tour-card-secondary {
+            width: 40px;
+            padding: 0;
+            border: 1px solid rgba(255,255,255,0.22);
+            color: white;
+            background: rgba(255,255,255,0.13);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .tour-card-primary:hover,
+        .tour-card-secondary:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .tour-card-primary:active,
+        .tour-card-secondary:active {
+            transform: scale(.97);
+        }
+
+        .tour-back-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .tour-back-label {
+            display: inline-flex;
+            width: fit-content;
+            border-radius: 999px;
+            padding: 6px 9px;
+            color: #0369a1;
+            background: rgba(14,165,233,0.10);
+            border: 1px solid rgba(14,165,233,0.14);
+            font-size: 9px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .13em;
+        }
+
+        body.theme-dark .tour-back-label {
+            color: #67e8f9;
+            background: rgba(103,232,249,0.10);
+            border-color: rgba(103,232,249,0.16);
+        }
+
+        .tour-back-title {
+            color: #0f172a;
+            font-size: clamp(14px, 3.4vw, 20px);
+            line-height: 1.08;
+            font-weight: 950;
+            letter-spacing: -0.045em;
+        }
+
+        body.theme-dark .tour-back-title {
+            color: white;
+        }
+
+        .tour-back-text {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: clamp(10px, 2.55vw, 13px);
+            line-height: 1.48;
+            font-weight: 760;
+        }
+
+        body.theme-dark .tour-back-text {
+            color: rgba(255,255,255,0.62);
+        }
+
+        /* Features en scroll horizontal gauche/droite */
+        .tour-card-features {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 2px 2px 7px;
+            list-style: none;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x proximity;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tour-card-features::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tour-card-features {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .tour-card-features li {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 34px;
+            max-width: 210px;
+            scroll-snap-align: start;
+            border-radius: 999px;
+            padding: 8px 11px;
+            color: #334155;
+            background: rgba(15,23,42,0.055);
+            border: 1px solid rgba(15,23,42,0.07);
+            font-size: clamp(10px, 2.45vw, 12px);
+            font-weight: 900;
+            white-space: nowrap;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.60);
+        }
+
+        body.theme-dark .tour-card-features li {
+            color: rgba(255,255,255,0.82);
+            background: rgba(255,255,255,0.075);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        .tour-card-features li::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #22d3ee, #3b82f6);
+            box-shadow: 0 0 16px rgba(34,211,238,.65);
+        }
+
+        .tour-card-actions {
+            margin-top: auto;
+            padding-top: 12px;
+            display: flex;
+            gap: 9px;
+            align-items: center;
+        }
+
+        .tour-card-mini {
+            width: clamp(34px, 8vw, 52px);
+            height: clamp(34px, 8vw, 52px);
+            flex: 0 0 auto;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(15,23,42,0.06);
+            border: 1px solid rgba(15,23,42,0.08);
+            box-shadow: 0 12px 26px rgba(15,23,42,0.12);
+        }
+
+        body.theme-dark .tour-card-mini {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 12px 26px rgba(0,0,0,0.25);
+        }
+
+        .tour-card-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .tour-card-mini.is-org-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            background: rgba(255,255,255,0.92);
+            border-color: rgba(255,255,255,0.86);
+        }
+
+        body.theme-dark .tour-card-mini.is-org-logo {
+            background: rgba(255,255,255,0.92);
+            border-color: rgba(255,255,255,0.42);
+        }
+
+        .tour-card-mini.is-org-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .tour-card-mini.is-org-logo span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            color: #06111f;
+            background: linear-gradient(135deg, #67e8f9, #dffbff);
+            font-size: clamp(14px, 3.6vw, 22px);
+            font-weight: 950;
+            line-height: 1;
+        }
+
+        .tour-card-action {
+            flex: 1;
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border-radius: 15px;
+            color: #06111f;
+            background: linear-gradient(135deg, #67e8f9, #38bdf8);
+            box-shadow: 0 16px 30px rgba(34,211,238,0.18);
+            text-decoration: none;
+            font-size: clamp(11px, 2.6vw, 13px);
+            font-weight: 950;
+            transition: transform .18s ease, filter .18s ease;
+        }
+
+        .tour-card-action:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .tour-card-action:active {
+            transform: scale(.97);
+        }
+
+
+
+        /* ========================= ORGANIZATION LOGO ON BACK CARD ========================= */
+
+        .tour-card-back {
+            position: relative;
+            isolation: isolate;
+        }
+
+        .tour-back-brand-watermark {
+            position: absolute;
+            right: -22px;
+            bottom: -26px;
+            z-index: 0;
+            width: clamp(92px, 34%, 150px);
+            aspect-ratio: 1;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: .13;
+            filter: blur(.1px) saturate(1.08);
+            pointer-events: none;
+            background: rgba(255,255,255,0.26);
+            border: 1px solid rgba(255,255,255,0.36);
+            overflow: hidden;
+        }
+
+        body.theme-dark .tour-back-brand-watermark {
+            opacity: .15;
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .tour-back-brand-watermark img {
+            width: 78%;
+            height: 78%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .tour-back-brand-watermark span {
+            color: #0f172a;
+            font-size: clamp(42px, 10vw, 70px);
+            font-weight: 950;
+            line-height: 1;
+        }
+
+        body.theme-dark .tour-back-brand-watermark span {
+            color: white;
+        }
+
+        .tour-back-brand-chip {
+            position: relative;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            max-width: 100%;
+            min-height: 36px;
+            margin-bottom: 10px;
+            border-radius: 999px;
+            padding: 6px 10px 6px 6px;
+            color: #0f172a;
+            background: rgba(255,255,255,0.72);
+            border: 1px solid rgba(226,232,240,0.84);
+            box-shadow: 0 12px 26px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.70);
+            backdrop-filter: blur(14px) saturate(1.12);
+            -webkit-backdrop-filter: blur(14px) saturate(1.12);
+        }
+
+        body.theme-dark .tour-back-brand-chip {
+            color: white;
+            background: rgba(255,255,255,0.075);
+            border-color: rgba(255,255,255,0.12);
+            box-shadow: 0 12px 26px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        .tour-back-brand-logo {
+            width: 25px;
+            height: 25px;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: rgba(15,23,42,0.07);
+            border: 1px solid rgba(15,23,42,0.06);
+        }
+
+        body.theme-dark .tour-back-brand-logo {
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        .tour-back-brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .tour-back-brand-logo span {
+            font-size: 11px;
+            font-weight: 950;
+            line-height: 1;
+        }
+
+        .tour-back-brand-name {
+            min-width: 0;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 10px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .10em;
+        }
+
+        .tour-card-back > *:not(.tour-back-brand-watermark) {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ========================= INFINITE SCROLL CATALOG ========================= */
+
+        .infinite-status {
+            min-height: 44px;
+            margin-top: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        body.theme-dark .infinite-status {
+            color: rgba(255,255,255,0.58);
+        }
+
+        .infinite-status-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 999px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.70);
+            border: 1px solid rgba(226,232,240,0.82);
+            box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        body.theme-dark .infinite-status-card {
+            background: rgba(15,23,42,0.62);
+            border-color: rgba(255,255,255,0.10);
+            box-shadow: 0 14px 30px rgba(0,0,0,0.28);
+        }
+
+        .infinite-spinner {
+            width: 15px;
+            height: 15px;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            border: 2px solid rgba(100,116,139,0.22);
+            border-top-color: #06b6d4;
+            animation: infiniteSpin .8s linear infinite;
+        }
+
+        body.theme-dark .infinite-spinner {
+            border-color: rgba(255,255,255,0.18);
+            border-top-color: #67e8f9;
+        }
+
+        @keyframes infiniteSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        .catalog-infinite-sentinel {
+            width: 100%;
+            height: 1px;
+        }
+
+        @media (min-width: 640px) {
+            .pin-masonry {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 20px !important;
+            }
+
+            .pin-masonry .pin-card:nth-child(even),
+            .pin-masonry .pin-card:nth-child(odd) {
+                margin-top: 0;
+            }
+
+            .pin-masonry .pin-card:nth-child(2n) {
+                margin-top: 26px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .pin-masonry {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                gap: 24px !important;
+            }
+
+            .pin-masonry .pin-card:nth-child(2n) {
+                margin-top: 0;
+            }
+
+            .pin-masonry .pin-card:nth-child(3n + 2) {
+                margin-top: 34px;
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .pin-masonry {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .pin-masonry {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 12px 10px !important;
+            }
+
+            .pin-card {
+                aspect-ratio: 3 / 4.95 !important;
+            }
+
+            .tour-card-3d,
+            .tour-card-face {
+                border-radius: 21px;
+            }
+
+            .tour-card-3d::before {
+                border-radius: 23px;
+            }
+
+            .tour-card-topbar {
+                top: 8px;
+                left: 8px;
+                right: 8px;
+            }
+
+            .tour-card-badge {
+                min-height: 28px;
+                padding: 6px 8px;
+                font-size: 8px;
+                letter-spacing: .10em;
+            }
+
+            .tour-card-flip-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 13px;
+            }
+
+            .tour-card-front-content,
+            .tour-card-back {
+                padding: 10px;
+            }
+
+            .tour-card-description {
+                display: none;
+            }
+
+            .tour-card-bottomline span:first-child {
+                display: none;
+            }
+
+            .tour-card-features {
+                gap: 5px;
+                margin-top: 9px;
+            }
+
+            .tour-card-action {
+                min-height: 36px;
+                border-radius: 12px;
+            }
+
+
+            .tour-card-front-actions {
+                margin-top: 9px;
+                gap: 6px;
+            }
+
+            .tour-card-primary {
+                min-height: 35px;
+                border-radius: 12px;
+                font-size: 10.5px;
+            }
+
+            .tour-card-secondary {
+                width: 35px;
+                min-height: 35px;
+                border-radius: 12px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .pin-masonry {
+                gap: 10px 8px !important;
+            }
+
+            .tour-card-title,
+            .tour-back-title {
+                font-size: 13px;
+            }
+
+            .tour-card-kicker,
+            .tour-back-label,
+            .tour-card-badge {
+                font-size: 7.5px;
+            }
+
+            .tour-back-text {
+                display: -webkit-box;
+                -webkit-line-clamp: 4;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+        }
+
+
+
+        /* ========================= FIX CLICK START VISIT / 3D FACE HITBOX ========================= */
+
+        .pin-card a[data-card-open],
+        .tour-card-primary,
+        .tour-card-action,
+        .tour-card-front-actions,
+        .tour-card-actions,
+        [data-no-card-flip] {
+            position: relative;
+            z-index: 60;
+            pointer-events: auto !important;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tour-card-image,
+        .tour-card-image img,
+        .tour-card-front::before {
+            pointer-events: none !important;
+        }
+
+        .pin-card:not(.is-flipped) .tour-card-front {
+            pointer-events: auto;
+        }
+
+        .pin-card:not(.is-flipped) .tour-card-back {
+            pointer-events: none;
+        }
+
+        .pin-card.is-flipped .tour-card-front {
+            pointer-events: none;
+        }
+
+        .pin-card.is-flipped .tour-card-back {
+            pointer-events: auto;
+        }
+
+        .tour-card-primary {
+            min-width: 0;
+            isolation: isolate;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .tour-card-3d,
+            .tour-card-image img {
+                transition: none !important;
+            }
+        }
+
+
+        /* ========================= FEATURED HORIZONTAL RAIL + MOBILE SHARPNESS FIX ========================= */
+
+        .featured-head-actions {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex: 0 0 auto;
+        }
+
+        .featured-rail-btn {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            border: 1px solid rgba(226,232,240,0.92);
+            color: #0f172a;
+            background: rgba(255,255,255,0.78);
+            box-shadow: 0 12px 28px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.70);
+            backdrop-filter: blur(14px) saturate(1.12);
+            -webkit-backdrop-filter: blur(14px) saturate(1.12);
+            font-size: 17px;
+            font-weight: 950;
+            line-height: 1;
+            cursor: pointer;
+            transition: transform .18s ease, background .18s ease, border-color .18s ease;
+        }
+
+        .featured-rail-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,0.96);
+            border-color: rgba(34,211,238,0.34);
+        }
+
+        .featured-rail-btn:active {
+            transform: scale(.96);
+        }
+
+        body.theme-dark .featured-rail-btn {
+            color: #e0fbff;
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.11);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+
+        body.theme-dark .featured-rail-btn:hover {
+            background: rgba(103,232,249,0.13);
+            border-color: rgba(103,232,249,0.26);
+        }
+
+        .featured-tour-rail {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            overflow-y: visible;
+            scroll-snap-type: x proximity;
+            -webkit-overflow-scrolling: touch;
+            padding: 4px 4px 28px;
+            margin: 0 -4px 4px;
+            overscroll-behavior-x: contain;
+        }
+
+        .featured-tour-rail .pin-card {
+            flex: 0 0 clamp(235px, 31vw, 365px) !important;
+            width: clamp(235px, 31vw, 365px) !important;
+            max-width: none !important;
+            scroll-snap-align: start;
+            margin-top: 0 !important;
+        }
+
+        .featured-tour-rail .pin-card:nth-child(even),
+        .featured-tour-rail .pin-card:nth-child(odd) {
+            margin-top: 0 !important;
+        }
+
+        .featured-tour-rail::after {
+            content: "";
+            flex: 0 0 2px;
+        }
+
+        @media (min-width: 1024px) {
+            .featured-tour-rail {
+                gap: 20px;
+                padding-bottom: 32px;
+            }
+
+            .featured-tour-rail .pin-card {
+                flex-basis: clamp(285px, 27vw, 370px) !important;
+                width: clamp(285px, 27vw, 370px) !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .section-head {
+                align-items: center;
+            }
+
+            .featured-head-actions {
+                gap: 6px;
+            }
+
+            .featured-rail-btn {
+                display: none;
+            }
+
+            .featured-tour-rail {
+                gap: 10px;
+                padding: 2px 2px 22px;
+                margin-left: -2px;
+                margin-right: -2px;
+                scroll-snap-type: x mandatory;
+            }
+
+            .featured-tour-rail .pin-card {
+                flex: 0 0 min(74vw, 270px) !important;
+                width: min(74vw, 270px) !important;
+                aspect-ratio: 3 / 4.72 !important;
+            }
+
+            /* Mobile sharpness: avoid GPU raster blur from translateZ + scaled 3D image layers. */
+            .pin-card {
+                perspective: 900px !important;
+                -webkit-perspective: 900px !important;
+            }
+
+            .tour-card-3d {
+                transform-style: preserve-3d;
+                -webkit-transform-style: preserve-3d;
+                transform: rotateY(var(--flip)) translate3d(0,0,0) !important;
+                -webkit-transform: rotateY(var(--flip)) translate3d(0,0,0) !important;
+                will-change: transform;
+            }
+
+            .tour-card-face {
+                transform: translate3d(0,0,0);
+                -webkit-transform: translate3d(0,0,0);
+                -webkit-font-smoothing: antialiased;
+                text-rendering: geometricPrecision;
+            }
+
+            .tour-card-back {
+                transform: rotateY(180deg) translate3d(0,0,1px) !important;
+                -webkit-transform: rotateY(180deg) translate3d(0,0,1px) !important;
+            }
+
+            .tour-card-image img,
+            .pin-card:hover .tour-card-image img {
+                transform: translate3d(0,0,0) scale(1.006) !important;
+                -webkit-transform: translate3d(0,0,0) scale(1.006) !important;
+                filter: saturate(1.035) contrast(1.015) brightness(.965) !important;
+                image-rendering: auto;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+                will-change: auto;
+            }
+
+            .tour-card-front::before {
+                background:
+                    linear-gradient(to top, rgba(2,6,23,0.88), rgba(2,6,23,0.38) 46%, rgba(2,6,23,0.04)),
+                    radial-gradient(circle at 52% 10%, rgba(255,255,255,0.12), transparent 30%);
+            }
+
+            .tour-card-title,
+            .tour-back-title,
+            .tour-card-kicker,
+            .tour-card-badge,
+            .tour-card-primary,
+            .tour-card-action,
+            .tour-card-features li,
+            .tour-back-text {
+                text-shadow: none !important;
+                -webkit-font-smoothing: antialiased;
+            }
+        }
+
+        /* ========================= MOBILE REAL 3D FLIP + SHARP TEXT FIX =========================
+           On garde le vrai mouvement qui tourne. Pour limiter le flou mobile :
+           - pas de switch plat ;
+           - pas de tilt souris sur mobile ;
+           - moins de filters/backdrop sur les textes/boutons ;
+           - images sans translateZ agressif.
+        ================================================================================ */
+
+        @media (max-width: 640px) {
+            .pin-card,
+            .featured-tour-rail .pin-card {
+                perspective: 1150px !important;
+                -webkit-perspective: 1150px !important;
+                transform: translateZ(0) !important;
+                -webkit-transform: translateZ(0) !important;
+                contain: layout paint;
+            }
+
+            .tour-card-3d,
+            .pin-card.is-flipped .tour-card-3d {
+                transform-style: preserve-3d !important;
+                -webkit-transform-style: preserve-3d !important;
+                transform: rotateY(var(--flip)) translate3d(0,0,0) !important;
+                -webkit-transform: rotateY(var(--flip)) translate3d(0,0,0) !important;
+                transition: transform 680ms cubic-bezier(.22,.9,.35,1) !important;
+                will-change: transform;
+                filter: none !important;
+            }
+
+            .tour-card-face {
+                backface-visibility: hidden !important;
+                -webkit-backface-visibility: hidden !important;
+                transform-style: preserve-3d !important;
+                -webkit-transform-style: preserve-3d !important;
+                -webkit-font-smoothing: antialiased;
+                text-rendering: optimizeLegibility;
+                will-change: auto !important;
+                filter: none !important;
+            }
+
+            .tour-card-front {
+                transform: translate3d(0,0,0.01px) !important;
+                -webkit-transform: translate3d(0,0,0.01px) !important;
+            }
+
+            .tour-card-back {
+                transform: rotateY(180deg) translate3d(0,0,0.01px) !important;
+                -webkit-transform: rotateY(180deg) translate3d(0,0,0.01px) !important;
+            }
+
+            .pin-card:not(.is-flipped) .tour-card-front {
+                pointer-events: auto !important;
+            }
+
+            .pin-card:not(.is-flipped) .tour-card-back {
+                pointer-events: none !important;
+            }
+
+            .pin-card.is-flipped .tour-card-front {
+                pointer-events: none !important;
+            }
+
+            .pin-card.is-flipped .tour-card-back {
+                pointer-events: auto !important;
+            }
+
+            .tour-card-image img,
+            .pin-card:hover .tour-card-image img,
+            .featured-tour-rail .pin-card:hover .tour-card-image img {
+                transform: translate3d(0,0,0) scale(1.004) !important;
+                -webkit-transform: translate3d(0,0,0) scale(1.004) !important;
+                filter: saturate(1.025) contrast(1.01) brightness(.97) !important;
+                image-rendering: auto !important;
+                will-change: auto !important;
+                backface-visibility: hidden !important;
+                -webkit-backface-visibility: hidden !important;
+            }
+
+            .tour-card-front::before {
+                background:
+                    linear-gradient(to top, rgba(2,6,23,0.88), rgba(2,6,23,0.38) 46%, rgba(2,6,23,0.04)),
+                    radial-gradient(circle at 52% 10%, rgba(255,255,255,0.12), transparent 30%);
+            }
+
+            .tour-card-badge,
+            .tour-card-flip-btn,
+            .tour-card-close,
+            .tour-card-primary,
+            .tour-card-secondary,
+            .tour-card-action,
+            .tour-card-features li,
+            .tour-back-brand-chip {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                text-shadow: none !important;
+                filter: none !important;
+                -webkit-font-smoothing: antialiased;
+                text-rendering: optimizeLegibility;
+            }
+
+            .tour-card-title,
+            .tour-back-title,
+            .tour-card-kicker,
+            .tour-back-label,
+            .tour-back-text,
+            .tour-card-bottomline,
+            .tour-card-features,
+            .tour-card-features li,
+            .tour-back-brand-name {
+                text-shadow: none !important;
+                filter: none !important;
+                -webkit-font-smoothing: antialiased;
+                text-rendering: optimizeLegibility;
+            }
+        }
+
+        /* ========================= HERO PANORAMA SAFETY FIX =========================
+           Le vrai 360 doit être rendu par Marzipano. Le poster reste seulement une couverture.
+        ============================================================================ */
+
+        .hero-panorama-viewer {
+            opacity: 1;
+            background: #06111f;
+        }
+
+        .hero-panorama-viewer canvas {
+            display: block !important;
+        }
+
+        .hero-panorama-wrap.is-panorama-ready .hero-poster-layer {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .hero-poster-layer img,
+        .hero-fallback-image img {
+            transform: none !important;
+            image-rendering: auto;
+        }
+
+
+
+        /* ========================= MOBILE HYBRID REAL FLIP SHARPNESS FIX =========================
+           Sur mobile, le texte devient flou quand il reste en permanence dans un parent rotateY().
+           Ici la card tourne vraiment pendant l'animation, puis la face visible est remise à plat
+           pour garder les informations, boutons et logo parfaitement nets.
+        ================================================================================ */
+
+        @media (max-width: 640px) {
+            .pin-card.mobile-flip-animating {
+                perspective: 1150px !important;
+                -webkit-perspective: 1150px !important;
+            }
+
+            .pin-card.mobile-flip-animating .tour-card-3d {
+                transform-style: preserve-3d !important;
+                -webkit-transform-style: preserve-3d !important;
+                transition: transform 680ms cubic-bezier(.22,.9,.35,1) !important;
+                will-change: transform !important;
+            }
+
+            .pin-card.mobile-flip-animating .tour-card-front {
+                opacity: 1 !important;
+                visibility: visible !important;
+                transform: translate3d(0,0,0.01px) !important;
+                -webkit-transform: translate3d(0,0,0.01px) !important;
+                backface-visibility: hidden !important;
+                -webkit-backface-visibility: hidden !important;
+            }
+
+            .pin-card.mobile-flip-animating .tour-card-back {
+                opacity: 1 !important;
+                visibility: visible !important;
+                transform: rotateY(180deg) translate3d(0,0,0.01px) !important;
+                -webkit-transform: rotateY(180deg) translate3d(0,0,0.01px) !important;
+                backface-visibility: hidden !important;
+                -webkit-backface-visibility: hidden !important;
+            }
+
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-3d,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-card-3d {
+                transform: none !important;
+                -webkit-transform: none !important;
+                transform-style: flat !important;
+                -webkit-transform-style: flat !important;
+                transition: none !important;
+                will-change: auto !important;
+                filter: none !important;
+            }
+
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-front,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-card-back {
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+                transform: none !important;
+                -webkit-transform: none !important;
+                backface-visibility: visible !important;
+                -webkit-backface-visibility: visible !important;
+                filter: none !important;
+                will-change: auto !important;
+            }
+
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-back,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-card-front {
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                transform: none !important;
+                -webkit-transform: none !important;
+            }
+
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-face,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-card-face {
+                -webkit-font-smoothing: antialiased !important;
+                text-rendering: optimizeLegibility !important;
+            }
+
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-title,
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-description,
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-kicker,
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-badge,
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-primary,
+            .pin-card.mobile-flip-stable-front:not(.mobile-flip-animating) .tour-card-secondary,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-back-title,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-back-text,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-back-label,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-card-close,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-card-features li,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-card-action,
+            .pin-card.mobile-flip-stable-back:not(.mobile-flip-animating) .tour-back-brand-chip {
+                transform: none !important;
+                -webkit-transform: none !important;
+                filter: none !important;
+                text-shadow: none !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                -webkit-font-smoothing: antialiased !important;
+                text-rendering: optimizeLegibility !important;
+            }
+        }
+
+
+
+        /* ========================= DESCRIPTION LENGTH FIX =========================
+           Important: le backend peut envoyer 540+ caractères, mais l'ancien CSS/JS
+           limitait encore l'affichage. Ces règles forcent l'affichage réel. */
+        .tour-card-description.line-clamp-2 {
+            -webkit-line-clamp: 3 !important;
+        }
+
+        .tour-back-text.line-clamp-3 {
+            -webkit-line-clamp: 8 !important;
+        }
+
+        .tour-card-back {
+            min-height: 100%;
+        }
+
+        .tour-back-text {
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+
+        @media (max-width: 640px) {
+            .tour-card-description {
+                display: -webkit-box !important;
+                -webkit-box-orient: vertical !important;
+                -webkit-line-clamp: 2 !important;
+                overflow: hidden !important;
+                margin-top: 6px !important;
+                font-size: 9.5px !important;
+                line-height: 1.35 !important;
+                font-weight: 760 !important;
+                color: rgba(255,255,255,0.86) !important;
+                text-shadow: none !important;
+            }
+
+            .tour-back-text {
+                display: -webkit-box !important;
+                -webkit-box-orient: vertical !important;
+                -webkit-line-clamp: 8 !important;
+                overflow: hidden !important;
+                font-size: 10px !important;
+                line-height: 1.38 !important;
+                text-shadow: none !important;
+            }
+
+            .tour-card-back {
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tour-card-actions {
+                position: sticky;
+                bottom: 0;
+                margin-top: 10px !important;
+                padding-top: 8px !important;
+                background: linear-gradient(to top, rgba(255,255,255,0.96), rgba(255,255,255,0.72), transparent);
+            }
+
+            body.theme-dark .tour-card-actions {
+                background: linear-gradient(to top, rgba(15,23,42,0.98), rgba(15,23,42,0.72), transparent);
+            }
+        }
+
+        @media (max-width: 390px) {
+            .tour-card-description {
+                -webkit-line-clamp: 2 !important;
+                font-size: 9px !important;
+            }
+
+            .tour-back-text {
+                -webkit-line-clamp: 7 !important;
+                font-size: 9.5px !important;
+            }
+        }
+
+
+        /* ========================= DESCRIPTION ONLY ON BACK ========================= */
+        .tour-card-front .tour-card-description {
+            display: none !important;
+        }
+
+        .tour-card-front .tour-card-bottomline {
+            margin-top: 12px;
+        }
+
+        .tour-card-back .tour-back-text {
+            display: -webkit-box !important;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        @media (max-width: 640px) {
+            .tour-card-front-content {
+                padding-bottom: 10px;
+            }
+
+            .tour-card-back .tour-back-text {
+                -webkit-line-clamp: 8 !important;
+            }
+        }
+
     </style>
 
     
@@ -1778,67 +3483,139 @@
                     <p class="section-subtitle">Premium spaces to explore now</p>
                 </div>
 
-                <a href="#allTours" class="view-link">View all</a>
+                <div class="featured-head-actions">
+                    <button type="button" class="featured-rail-btn" data-featured-scroll="left" aria-label="Scroll featured visits left">
+                        ←
+                    </button>
+                    <button type="button" class="featured-rail-btn" data-featured-scroll="right" aria-label="Scroll featured visits right">
+                        →
+                    </button>
+                    <a href="#allTours" class="view-link">View all</a>
+                </div>
             </div>
 
             {% if featured_tours %}
-                <div class="pin-masonry">
+                <div id="featuredTourRail" class="featured-tour-rail no-scrollbar" aria-label="Featured visits carousel">
                     {% for tour in featured_tours %}
                         {% url 'tour-preview-public' organization_slug=tour.organization.slug tour_id=tour.id as preview_url %}
 
-                        <article class="pin-card">
-                            <a href="{{ preview_url }}" class="pin-link">
-                                <div class="pin-media">
-                                    {% if tour.ordered_scenes and tour.ordered_scenes.0.safe_thumbnail_url %}
-                                        <img src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
-                                    {% elif tour.safe_thumbnail_image_url %}
-                                        <img src="{{ tour.safe_thumbnail_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
-                                    {% elif tour.safe_place_cover_image_url %}
-                                        <img src="{{ tour.safe_place_cover_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
-                                    {% else %}
-                                        <div class="pin-media-placeholder">No Preview</div>
-                                    {% endif %}
+                        <article
+                            class="pin-card"
+                            data-card-scene
+                            role="button"
+                            tabindex="0"
+                            aria-label="{{ tour.title }}. Toucher pour voir les détails."
+                            aria-pressed="false"
+                        >
+                            <div class="tour-card-3d">
+                                <div class="tour-card-face tour-card-front">
+                                    <div class="tour-card-image">
+                                        {% if tour.ordered_scenes and tour.ordered_scenes.0.safe_image_360_preview_url %}
+                                            <img src="{{ tour.ordered_scenes.0.safe_image_360_preview_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                        {% elif tour.ordered_scenes and tour.ordered_scenes.0.safe_thumbnail_url %}
+                                            <img src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                        {% elif tour.safe_thumbnail_image_url %}
+                                            <img src="{{ tour.safe_thumbnail_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                        {% elif tour.safe_place_cover_image_url %}
+                                            <img src="{{ tour.safe_place_cover_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                        {% else %}
+                                            <div class="tour-card-placeholder">No Preview</div>
+                                        {% endif %}
+                                    </div>
 
-                                    <div class="pin-badge-row">
-                                        <span class="pin-badge">
-                                            <span class="h-2 w-2 rounded-full bg-cyan-300"></span>
+                                    <div class="tour-card-topbar">
+                                        <span class="tour-card-badge">
+                                            <span class="tour-card-badge-dot"></span>
                                             360°
                                         </span>
 
-                                        <span class="pin-play">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M6.5 5.5v9l7-4.5-7-4.5z" />
-                                            </svg>
+                                        <button type="button" class="tour-card-flip-btn" data-card-flip aria-label="Voir les détails">
+                                            ↻
+                                        </button>
+                                    </div>
+
+                                    <div class="tour-card-front-content">
+                                        <span class="tour-card-kicker">
+                                            {% if tour.place %}{{ tour.place.get_category_display }}{% else %}Premium Visit{% endif %}
                                         </span>
+
+                                        <h3 class="tour-card-title line-clamp-2">{{ tour.title }}</h3>
+
+
+                                        <div class="tour-card-bottomline">
+                                            <span>{{ tour.scene_count|default:0 }} scenes</span>
+                                            <span>360° Ready</span>
+                                        </div>
+
+                                        <div class="tour-card-front-actions">
+                                            <a href="{{ preview_url }}" class="tour-card-primary" data-card-open aria-label="Start {{ tour.title }}">
+                                                Start visit
+                                                <span>→</span>
+                                            </a>
+
+                                            <button type="button" class="tour-card-secondary" data-card-flip aria-label="Voir les détails">
+                                                ↻
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="pin-body">
-                                    <h3 class="pin-title line-clamp-2">{{ tour.title }}</h3>
+                                <div class="tour-card-face tour-card-back">
+                                    <div class="tour-back-header">
+                                        <div>
+                                            <span class="tour-back-label">Virtual tour</span>
+                                            <h3 class="tour-back-title line-clamp-2">{{ tour.title }}</h3>
+                                        </div>
 
-                                    <p class="pin-description line-clamp-3">
+                                        <button type="button" class="tour-card-close" data-card-close aria-label="Retour">
+                                            ↩
+                                        </button>
+                                    </div>
+
+                                    <p class="tour-back-text line-clamp-3">
                                         {% if tour.description %}
-                                            {{ tour.description|striptags|truncatechars:130 }}
+                                            {{ tour.description|striptags|truncatechars:640 }}
                                         {% elif tour.place and tour.place.description %}
-                                            {{ tour.place.description|striptags|truncatechars:130 }}
+                                            {{ tour.place.description|striptags|truncatechars:640 }}
                                         {% else %}
                                             Explore this immersive 360° visit and discover the space before going there.
                                         {% endif %}
                                     </p>
 
-                                    <div class="pin-meta">
-                                        <span>{{ tour.scene_count|default:0 }} scenes</span>
+                                    <ul class="tour-card-features">
+                                        <li>{{ tour.scene_count|default:0 }} scene{% if tour.scene_count|default:0 > 1 %}s{% endif %} immersive{% if tour.scene_count|default:0 > 1 %}s{% endif %}</li>
 
                                         {% if tour.place %}
-                                            <span>{{ tour.place.city }}{% if tour.place.city and tour.place.country %}, {% endif %}{{ tour.place.country }}</span>
+                                            <li>{{ tour.place.city }}{% if tour.place.city and tour.place.country %}, {% endif %}{{ tour.place.country }}</li>
+                                            <li>{{ tour.place.get_category_display }}</li>
+                                        {% else %}
+                                            <li>Premium 360° experience</li>
+                                            <li>Mobile friendly</li>
                                         {% endif %}
 
-                                        {% if tour.place %}
-                                            <span>{{ tour.place.get_category_display }}</span>
-                                        {% endif %}
+                                        <li>Start instantly</li>
+                                        <li>Mobile friendly</li>
+                                        <li>Smooth 3D preview</li>
+                                    </ul>
+
+                                    <div class="tour-card-actions">
+                                        <div class="tour-card-mini is-org-logo" aria-hidden="true">
+                                            {% if tour.safe_organization_logo_url %}
+                                                <img src="{{ tour.safe_organization_logo_url }}" alt="" loading="lazy" decoding="async">
+                                            {% elif tour.organization %}
+                                                <span>{{ tour.organization.name|first|upper }}</span>
+                                            {% else %}
+                                                <span>V</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <a href="{{ preview_url }}" class="tour-card-action" data-card-open aria-label="Start {{ tour.title }}">
+                                            Start visit
+                                            <span>→</span>
+                                        </a>
                                     </div>
                                 </div>
-                            </a>
+                            </div>
                         </article>
                     {% endfor %}
                 </div>
@@ -1866,7 +3643,8 @@
                 <p class="mt-2 text-sm font-semibold text-slate-500">Try another search, category or city.</p>
             </div>
 
-            <div id="catalogPagination" class="mt-8 flex flex-wrap items-center justify-center gap-2"></div>
+            <div id="catalogInfiniteStatus" class="infinite-status" aria-live="polite"></div>
+            <div id="catalogInfiniteSentinel" class="catalog-infinite-sentinel" aria-hidden="true"></div>
         </section>
     </main>
 
@@ -1987,18 +3765,28 @@
 
         const catalogDataNode = document.getElementById("catalogToursData");
         const catalogGrid = document.getElementById("catalogToursGrid");
-        const catalogPagination = document.getElementById("catalogPagination");
         const catalogEmptyState = document.getElementById("catalogEmptyState");
         const catalogResultsMeta = document.getElementById("catalogResultsMeta");
+        const catalogInfiniteStatus = document.getElementById("catalogInfiniteStatus");
+        const catalogInfiniteSentinel = document.getElementById("catalogInfiniteSentinel");
+        const featuredTourRail = document.getElementById("featuredTourRail");
+        const featuredScrollButtons = Array.from(document.querySelectorAll("[data-featured-scroll]"));
 
         const catalogTours = catalogDataNode ? JSON.parse(catalogDataNode.textContent) : [];
         const pageSize = 15;
+        let catalogItems = Array.isArray(catalogTours) ? catalogTours.slice() : [];
+        let infiniteObserver = null;
+        let fallbackScrollBound = false;
 
         const catalogState = {
             q: (catalogFilterForm?.querySelector('[name="q"]')?.value || "").trim(),
             category: (catalogFilterForm?.querySelector('[name="category"]')?.value || "").trim(),
             city: (catalogFilterForm?.querySelector('[name="city"]')?.value || "").trim(),
             page: 1,
+            totalCount: Number("{{ catalog_total_count|default:0 }}") || catalogItems.length,
+            loadedCount: catalogItems.length,
+            hasMore: "{{ catalog_has_more|yesno:'true,false' }}" === "true",
+            isLoading: false,
         };
 
         function isMobileViewport() {
@@ -2050,6 +3838,22 @@
         } else {
             setTimeout(hideHeroLoader, 500);
         }
+
+        /* ========================= FEATURED HORIZONTAL SCROLL ========================= */
+
+        featuredScrollButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                if (!featuredTourRail) return;
+
+                const direction = button.dataset.featuredScroll === "left" ? -1 : 1;
+                const distance = Math.max(240, Math.round(featuredTourRail.clientWidth * 0.82));
+
+                featuredTourRail.scrollBy({
+                    left: direction * distance,
+                    behavior: "smooth",
+                });
+            });
+        });
 
         /* ========================= SETTINGS ========================= */
 
@@ -2428,16 +4232,269 @@
         }
 
         function getTourImage(item) {
-            const mobile = isMobileViewport();
-
             return (
-                (mobile && item.image_mobile_url) ||
                 item.image_url ||
+                item.image_mobile_url ||
                 item.thumbnail_url ||
-                (mobile && item.viewer_mobile_url) ||
                 item.viewer_desktop_url ||
+                item.viewer_mobile_url ||
                 ""
             );
+        }
+
+
+        function setup3DFlipCards(scope = document) {
+            const scenes = Array.from(scope.querySelectorAll("[data-card-scene]:not([data-card-ready='true'])"));
+            const canTiltCard = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+            function isRealOpenLink(target) {
+                return target?.closest?.("a[data-card-open], .tour-card-primary, .tour-card-action");
+            }
+
+            function isActionTarget(target) {
+                return target?.closest?.(
+                    "a, button, input, select, textarea, label, [data-card-open], [data-card-flip], [data-card-close], [data-no-card-flip]"
+                );
+            }
+
+            function isModifiedClick(event) {
+                return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1;
+            }
+
+            function openVisit(link, event) {
+                const href = link?.getAttribute("href") || "";
+
+                // Si le lien est vide, on bloque seulement l'action.
+                if (!href || href === "#") {
+                    event?.preventDefault?.();
+                    return;
+                }
+
+                // Sur desktop, on respecte Ctrl/Cmd/Shift + click et target="_blank".
+                if (event && isModifiedClick(event)) {
+                    return;
+                }
+
+                event?.preventDefault?.();
+
+                const target = link.getAttribute("target");
+                if (target === "_blank") {
+                    window.open(link.href, "_blank", "noopener,noreferrer");
+                    return;
+                }
+
+                window.location.assign(link.href);
+            }
+
+            scenes.forEach((scene) => {
+                scene.dataset.cardReady = "true";
+
+                const card = scene.querySelector(".tour-card-3d");
+                const flipButtons = Array.from(scene.querySelectorAll("[data-card-flip]"));
+                const closeButtons = Array.from(scene.querySelectorAll("[data-card-close]"));
+                const openLinks = Array.from(scene.querySelectorAll("a[data-card-open], .tour-card-primary, .tour-card-action"));
+
+                if (!card) return;
+
+                function isFlipped() {
+                    return scene.classList.contains("is-flipped");
+                }
+
+                function resetTilt() {
+                    card.style.setProperty("--rx", "0deg");
+                    card.style.setProperty("--ry", "0deg");
+                }
+
+                function isMobileSharpFlip() {
+                    return window.matchMedia("(max-width: 640px)").matches;
+                }
+
+                function setMobileStableState(value) {
+                    scene.classList.remove("mobile-flip-animating", "mobile-flip-stable-front", "mobile-flip-stable-back");
+                    scene.classList.add(value ? "mobile-flip-stable-back" : "mobile-flip-stable-front");
+                    scene.classList.toggle("is-flipped", value);
+                    scene.classList.toggle("is-card-active", value);
+                    scene.setAttribute("aria-pressed", String(value));
+
+                    if (!value) {
+                        resetTilt();
+                    }
+                }
+
+                function setFlipped(value) {
+                    const nextValue = Boolean(value);
+
+                    if (!isMobileSharpFlip()) {
+                        scene.classList.remove("mobile-flip-animating", "mobile-flip-stable-front", "mobile-flip-stable-back");
+                        scene.classList.toggle("is-flipped", nextValue);
+                        scene.classList.toggle("is-card-active", nextValue);
+                        scene.setAttribute("aria-pressed", String(nextValue));
+
+                        if (!nextValue) {
+                            resetTilt();
+                        }
+                        return;
+                    }
+
+                    window.clearTimeout(scene._mobileFlipTimer);
+
+                    const currentValue = isFlipped();
+                    if (currentValue === nextValue && !scene.classList.contains("mobile-flip-animating")) {
+                        setMobileStableState(nextValue);
+                        return;
+                    }
+
+                    scene.classList.remove("mobile-flip-stable-front", "mobile-flip-stable-back");
+                    scene.classList.add("mobile-flip-animating");
+                    scene.classList.toggle("is-card-active", nextValue);
+                    scene.setAttribute("aria-pressed", String(nextValue));
+                    resetTilt();
+
+                    // On prépare l'état de départ de la rotation, puis on déclenche la rotation au frame suivant.
+                    if (nextValue) {
+                        scene.classList.remove("is-flipped");
+                    } else {
+                        scene.classList.add("is-flipped");
+                    }
+
+                    // Force le navigateur à appliquer l'état de départ avant l'animation.
+                    void card.offsetWidth;
+
+                    window.requestAnimationFrame(() => {
+                        scene.classList.toggle("is-flipped", nextValue);
+                    });
+
+                    scene._mobileFlipTimer = window.setTimeout(() => {
+                        setMobileStableState(nextValue);
+                    }, 720);
+                }
+
+                // Sur mobile on démarre en rendu plat/net, puis on anime seulement au moment du flip.
+                if (isMobileSharpFlip()) {
+                    setMobileStableState(isFlipped());
+                }
+
+                function toggleFlip() {
+                    setFlipped(!isFlipped());
+                }
+
+                /*
+                   FIX IMPORTANT : Start visit doit ouvrir la visite, jamais retourner la card.
+                   On bloque la propagation très tôt et on force la navigation du lien.
+                */
+                openLinks.forEach((link) => {
+                    link.setAttribute("data-no-card-flip", "true");
+
+                    ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend"].forEach((eventName) => {
+                        link.addEventListener(eventName, (event) => {
+                            event.stopPropagation();
+                        }, { capture: true, passive: true });
+                    });
+
+                    link.addEventListener("click", (event) => {
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+                        openVisit(link, event);
+                    }, { capture: true });
+                });
+
+                flipButtons.forEach((button) => {
+                    button.setAttribute("data-no-card-flip", "true");
+
+                    button.addEventListener("click", (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+                        toggleFlip();
+                    });
+                });
+
+                closeButtons.forEach((button) => {
+                    button.setAttribute("data-no-card-flip", "true");
+
+                    button.addEventListener("click", (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+                        setFlipped(false);
+                    });
+                });
+
+                scene.addEventListener("click", (event) => {
+                    if (event.defaultPrevented) return;
+
+                    const openLink = isRealOpenLink(event.target);
+                    if (openLink) {
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+                        openVisit(openLink, event);
+                        return;
+                    }
+
+                    if (isActionTarget(event.target)) {
+                        return;
+                    }
+
+                    toggleFlip();
+                });
+
+                scene.addEventListener("keydown", (event) => {
+                    const activeIsAction = isActionTarget(event.target);
+
+                    if ((event.key === "Enter" || event.key === " ") && !activeIsAction) {
+                        event.preventDefault();
+                        toggleFlip();
+                    }
+
+                    if (event.key === "Escape") {
+                        setFlipped(false);
+                    }
+                });
+
+                scene.addEventListener("pointermove", (event) => {
+                    if (!canTiltCard || isFlipped() || isActionTarget(event.target)) return;
+
+                    const rect = scene.getBoundingClientRect();
+                    if (!rect.width || !rect.height) return;
+
+                    const x = (event.clientX - rect.left) / rect.width;
+                    const y = (event.clientY - rect.top) / rect.height;
+
+                    const maxTilt = 7;
+                    const ry = (x - 0.5) * maxTilt;
+                    const rx = (0.5 - y) * maxTilt;
+
+                    card.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
+                    card.style.setProperty("--ry", `${ry.toFixed(2)}deg`);
+                }, { passive: true });
+
+                scene.addEventListener("pointerleave", () => {
+                    resetTilt();
+                });
+            });
+        }
+
+        function buildFeatureList(features) {
+            return features
+                .filter(Boolean)
+                .slice(0, 8)
+                .map((feature) => `<li>${escapeHtml(feature)}</li>`)
+                .join("");
+        }
+
+        function getOrganizationInitial(name) {
+            const clean = String(name || "").trim();
+            return clean ? clean.charAt(0).toUpperCase() : "V";
+        }
+
+        function buildOrganizationMiniLogo(item) {
+            const orgName = item.organization || "Virtual Tour";
+            const orgLogo = item.organization_logo_url || "";
+            const orgInitial = getOrganizationInitial(orgName);
+
+            return orgLogo
+                ? `<img src="${escapeHtml(orgLogo)}" alt="" loading="lazy" decoding="async">`
+                : `<span>${escapeHtml(orgInitial)}</span>`;
         }
 
         function buildTourCard(item) {
@@ -2453,133 +4510,297 @@
                 item.place_description ||
                 "Explore this immersive 360° visit and discover the space before going there.";
 
-            return `
-                <article class="pin-card">
-                    <a href="${escapeHtml(previewUrl)}" class="pin-link" aria-label="${escapeHtml(title)}">
-                        <div class="pin-media">
-                            ${
-                                image
-                                    ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async">`
-                                    : `<div class="pin-media-placeholder">No Preview</div>`
-                            }
+            const categoryLabel = item.category_label || "Premium Visit";
+            const features = [
+                `${scenes} scene${scenes > 1 ? "s" : ""} immersive${scenes > 1 ? "s" : ""}`,
+                cityText || "Premium 360° experience",
+                categoryLabel || "Mobile friendly",
+                "Start instantly",
+                "Mobile friendly",
+                "Smooth 3D preview",
+            ];
 
-                            <div class="pin-badge-row">
-                                <span class="pin-badge">
-                                    <span class="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.9)]"></span>
+            return `
+                <article
+                    class="pin-card"
+                    data-card-scene
+                    role="button"
+                    tabindex="0"
+                    aria-label="${escapeHtml(title)}. Toucher pour voir les détails."
+                    aria-pressed="false"
+                >
+                    <div class="tour-card-3d">
+                        <div class="tour-card-face tour-card-front">
+                            <div class="tour-card-image">
+                                ${
+                                    image
+                                        ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async">`
+                                        : `<div class="tour-card-placeholder">No Preview</div>`
+                                }
+                            </div>
+
+                            <div class="tour-card-topbar">
+                                <span class="tour-card-badge">
+                                    <span class="tour-card-badge-dot"></span>
                                     360°
                                 </span>
 
-                                <span class="pin-play">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M6.5 5.5v9l7-4.5-7-4.5z" />
-                                    </svg>
-                                </span>
+                                <button type="button" class="tour-card-flip-btn" data-card-flip aria-label="Voir les détails">
+                                    ↻
+                                </button>
+                            </div>
+
+                            <div class="tour-card-front-content">
+                                <span class="tour-card-kicker">${escapeHtml(categoryLabel)}</span>
+
+                                <h3 class="tour-card-title line-clamp-2">
+                                    ${escapeHtml(title)}
+                                </h3>
+
+
+                                <div class="tour-card-bottomline">
+                                    <span>${scenes} scene${scenes > 1 ? "s" : ""}</span>
+                                    <span>360° Ready</span>
+                                </div>
+
+                                <div class="tour-card-front-actions">
+                                    <a href="${escapeHtml(previewUrl)}" class="tour-card-primary" data-card-open aria-label="Start ${escapeHtml(title)}">
+                                        Start visit
+                                        <span>→</span>
+                                    </a>
+
+                                    <button type="button" class="tour-card-secondary" data-card-flip aria-label="Voir les détails">
+                                        ↻
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="pin-body">
-                            <h3 class="pin-title line-clamp-2">
-                                ${escapeHtml(title)}
-                            </h3>
+                        <div class="tour-card-face tour-card-back">
+                            <div class="tour-back-header">
+                                <div>
+                                 
 
-                            <p class="pin-description line-clamp-3">
-                                ${escapeHtml(truncateText(description, 135))}
+                                    <h3 class="tour-back-title line-clamp-2">
+                                        ${escapeHtml(title)}
+                                    </h3>
+                                </div>
+
+                                
+                            </div>
+
+                            <p class="tour-back-text line-clamp-3">
+                                ${escapeHtml(truncateText(description, 740))}
                             </p>
 
-                            <div class="pin-meta">
-                                <span>${scenes} scene${scenes > 1 ? "s" : ""}</span>
-                                ${cityText ? `<span>${escapeHtml(cityText)}</span>` : ""}
-                                ${item.category_label ? `<span>${escapeHtml(item.category_label)}</span>` : ""}
+                            <ul class="tour-card-features">
+                                ${buildFeatureList(features)}
+                            </ul>
+
+                            <div class="tour-card-actions">
+                                <div class="tour-card-mini is-org-logo" aria-hidden="true">
+                                    ${buildOrganizationMiniLogo(item)}
+                                </div>
+
+                                <a href="${escapeHtml(previewUrl)}" class="tour-card-action" data-card-open aria-label="Start ${escapeHtml(title)}">
+                                    Start visit
+                                    <span>→</span>
+                                </a>
                             </div>
                         </div>
-                    </a>
+                    </div>
                 </article>
             `;
         }
 
-        function getFilteredTours() {
-            const q = catalogState.q.toLowerCase();
+        function buildCatalogQuery(page = 1) {
+            const params = new URLSearchParams();
+            params.set("format", "json");
+            params.set("page", String(page));
+            params.set("page_size", String(pageSize));
 
-            return catalogTours.filter((item) => {
-                const searchBlob = String(item.search_blob || "").toLowerCase();
-                const title = String(item.title || "").toLowerCase();
-                const org = String(item.organization || "").toLowerCase();
-                const city = String(item.city || "").toLowerCase();
-                const country = String(item.country || "").toLowerCase();
+            if (catalogState.q) params.set("q", catalogState.q);
+            if (catalogState.category) params.set("category", catalogState.category);
+            if (catalogState.city) params.set("city", catalogState.city);
 
-                const matchesQ =
-                    !q ||
-                    searchBlob.includes(q) ||
-                    title.includes(q) ||
-                    org.includes(q) ||
-                    city.includes(q) ||
-                    country.includes(q);
-
-                const matchesCategory =
-                    !catalogState.category ||
-                    String(item.category || "") === catalogState.category;
-
-                const matchesCity =
-                    !catalogState.city ||
-                    city === catalogState.city.toLowerCase();
-
-                return matchesQ && matchesCategory && matchesCity;
-            });
+            return params;
         }
 
-        function renderPagination(totalPages) {
-            if (!catalogPagination) return;
-
-            catalogPagination.innerHTML = "";
-
-            if (totalPages <= 1) return;
-
-            for (let page = 1; page <= totalPages; page++) {
-                const btn = document.createElement("button");
-                btn.type = "button";
-                btn.textContent = page;
-                btn.className = page === catalogState.page
-                    ? "pagination-btn active"
-                    : "pagination-btn";
-
-                btn.addEventListener("click", () => {
-                    catalogState.page = page;
-                    renderCatalog();
-                    document.getElementById("allTours")?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start",
-                    });
-                });
-
-                catalogPagination.appendChild(btn);
-            }
+        function setCatalogLoading(value) {
+            catalogState.isLoading = value;
+            updateInfiniteStatus();
         }
 
-        function renderCatalog() {
-            if (!catalogGrid) return;
+        function updateInfiniteStatus() {
+            if (!catalogInfiniteStatus) return;
 
-            const filtered = getFilteredTours();
-            const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-
-            if (catalogState.page > totalPages) {
-                catalogState.page = totalPages;
+            if (catalogState.isLoading) {
+                catalogInfiniteStatus.innerHTML = `
+                    <span class="infinite-status-card">
+                        <span class="infinite-spinner" aria-hidden="true"></span>
+                        Loading more visits...
+                    </span>
+                `;
+                return;
             }
 
-            const start = (catalogState.page - 1) * pageSize;
-            const pageItems = filtered.slice(start, start + pageSize);
+            if (!catalogItems.length) {
+                catalogInfiniteStatus.innerHTML = "";
+                return;
+            }
 
-            catalogGrid.innerHTML = pageItems.map(buildTourCard).join("");
+            if (catalogState.hasMore) {
+                catalogInfiniteStatus.innerHTML = `
+                    <span class="infinite-status-card">
+                        ${catalogState.loadedCount} of ${catalogState.totalCount} visits loaded · keep scrolling
+                    </span>
+                `;
+                return;
+            }
 
-            catalogEmptyState?.classList.toggle("show", filtered.length === 0);
+            catalogInfiniteStatus.innerHTML = `
+                <span class="infinite-status-card">
+                    All ${catalogState.totalCount} visit${catalogState.totalCount > 1 ? "s" : ""} loaded
+                </span>
+            `;
+        }
+
+        function updateCatalogMeta() {
+            catalogEmptyState?.classList.toggle("show", !catalogState.isLoading && catalogItems.length === 0);
 
             if (catalogResultsMeta) {
-                catalogResultsMeta.textContent = `${filtered.length} visit${filtered.length > 1 ? "s" : ""} found`;
+                const total = catalogState.totalCount || 0;
+                const loaded = catalogState.loadedCount || catalogItems.length;
+                catalogResultsMeta.textContent = total
+                    ? `${loaded} of ${total} visit${total > 1 ? "s" : ""} loaded`
+                    : "No visit found";
             }
 
-            renderPagination(totalPages);
+            updateInfiniteStatus();
             syncForm();
             syncCategoryPills();
             updateUrl();
+        }
+
+        function appendCatalogItems(items, reset = false) {
+            if (!catalogGrid) return;
+
+            if (reset) {
+                catalogGrid.innerHTML = "";
+            }
+
+            if (items.length) {
+                catalogGrid.insertAdjacentHTML("beforeend", items.map(buildTourCard).join(""));
+                setup3DFlipCards(catalogGrid);
+            }
+
+            updateCatalogMeta();
+            setupInfiniteScroll();
+        }
+
+        async function loadCatalogPage(page = 1, options = {}) {
+            const reset = !!options.reset;
+
+            if (catalogState.isLoading) return;
+            if (!reset && !catalogState.hasMore) return;
+
+            setCatalogLoading(true);
+
+            try {
+                const params = buildCatalogQuery(page);
+                const response = await fetch(`${window.location.pathname}?${params.toString()}`, {
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Accept": "application/json",
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                const results = Array.isArray(data.results) ? data.results : [];
+
+                if (reset) {
+                    catalogItems = [];
+                }
+
+                catalogItems = reset ? results.slice() : catalogItems.concat(results);
+
+                catalogState.page = Number(data.page || page);
+                catalogState.totalCount = Number(data.total_count ?? data.total ?? catalogItems.length);
+                catalogState.loadedCount = catalogItems.length;
+                catalogState.hasMore = Boolean(data.has_more);
+
+                appendCatalogItems(results, reset);
+            } catch (error) {
+                console.error("Catalog infinite scroll error:", error);
+
+                if (catalogInfiniteStatus) {
+                    catalogInfiniteStatus.innerHTML = `
+                        <span class="infinite-status-card">
+                            Unable to load more visits. Please refresh the page.
+                        </span>
+                    `;
+                }
+            } finally {
+                setCatalogLoading(false);
+            }
+        }
+
+        function loadNextCatalogPage() {
+            if (catalogState.isLoading || !catalogState.hasMore) return;
+            loadCatalogPage(catalogState.page + 1);
+        }
+
+        function nearBottomFallback() {
+            if (!catalogState.hasMore || catalogState.isLoading) return;
+
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const bottomPosition = document.documentElement.scrollHeight - 720;
+
+            if (scrollPosition >= bottomPosition) {
+                loadNextCatalogPage();
+            }
+        }
+
+        function setupInfiniteScroll() {
+            if (!catalogInfiniteSentinel) return;
+
+            if (infiniteObserver) {
+                infiniteObserver.disconnect();
+            }
+
+            if (!catalogState.hasMore) return;
+
+            if ("IntersectionObserver" in window) {
+                infiniteObserver = new IntersectionObserver((entries) => {
+                    const entry = entries[0];
+                    if (entry?.isIntersecting) {
+                        loadNextCatalogPage();
+                    }
+                }, {
+                    root: null,
+                    rootMargin: "760px 0px",
+                    threshold: 0.01,
+                });
+
+                infiniteObserver.observe(catalogInfiniteSentinel);
+                return;
+            }
+
+            if (!fallbackScrollBound) {
+                window.addEventListener("scroll", nearBottomFallback, { passive: true });
+                fallbackScrollBound = true;
+            }
+        }
+
+        function renderInitialCatalog() {
+            if (!catalogGrid) return;
+
+            catalogGrid.innerHTML = "";
+            appendCatalogItems(catalogItems, true);
         }
 
         catalogFilterForm?.addEventListener("submit", (event) => {
@@ -2592,7 +4813,7 @@
             catalogState.city = String(data.get("city") || "").trim();
             catalogState.page = 1;
 
-            renderCatalog();
+            loadCatalogPage(1, { reset: true });
             closeSheet();
 
             document.getElementById("allTours")?.scrollIntoView({
@@ -2606,7 +4827,7 @@
                 catalogState.category = pill.dataset.categoryPill || "";
                 catalogState.page = 1;
 
-                renderCatalog();
+                loadCatalogPage(1, { reset: true });
 
                 document.getElementById("allTours")?.scrollIntoView({
                     behavior: "smooth",
@@ -2621,7 +4842,7 @@
             catalogState.city = "";
             catalogState.page = 1;
 
-            renderCatalog();
+            loadCatalogPage(1, { reset: true });
             closeSheet();
         });
 
@@ -2660,8 +4881,9 @@
             }
         }, { passive: true });
 
-        renderCatalog();
+        renderInitialCatalog();
+        setup3DFlipCards(document);
     });
 </script>
 </body>
-</html>
+</html> 
