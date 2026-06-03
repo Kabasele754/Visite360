@@ -151,6 +151,13 @@ class PublicHomeView(TemplateView):
         return queryset
 
     def _decorate_tour_media(self, tour):
+        tour_source = ""
+        if getattr(tour, "thumbnail_source", None):
+            tour_source = self._get_file_url(tour.thumbnail_source)
+
+        # Image originale du Tour : meilleure qualité pour les cards de la home.
+        tour.safe_thumbnail_source_url = self._normalize_media_url(tour_source)
+
         tour.safe_thumbnail_image_url = self._normalize_media_url(
             getattr(tour, "thumbnail_image_url", "") or ""
         )
@@ -184,6 +191,14 @@ class PublicHomeView(TemplateView):
         return tour
 
     def _get_tour_preview_images(self, tour):
+        """
+        Séparation importante :
+        - HERO / VIEWER : utilise les images 360 de la première scène pour Marzipano.
+        - CARD HOME / EXPLORE ALL : utilise d'abord l'image du Tour.
+
+        Les panoramas 360 sont excellents dans Marzipano, mais dans une card HTML
+        ils peuvent paraître flous parce qu'ils sont compressés, très larges ou recadrés.
+        """
         empty = {
             "hero": "",
             "hero_mobile": "",
@@ -212,46 +227,58 @@ class PublicHomeView(TemplateView):
             scene_preview = getattr(first_scene, "safe_image_360_preview_url", "") or ""
             scene_thumb = getattr(first_scene, "safe_thumbnail_url", "") or ""
 
+        # Images marketing du Tour : priorité pour les cards.
+        tour_source = getattr(tour, "safe_thumbnail_source_url", "") or ""
         tour_thumb = getattr(tour, "safe_thumbnail_image_url", "") or ""
         tour_thumb_mobile = getattr(tour, "safe_thumbnail_image_mobile_url", "") or ""
         place_cover = getattr(tour, "safe_place_cover_image_url", "") or ""
 
-        placeholder = (
-            scene_thumb
-            or tour_thumb_mobile
+        card_desktop = (
+            tour_source
             or tour_thumb
+            or tour_thumb_mobile
             or place_cover
+            or scene_thumb
             or scene_preview
             or scene_mobile
             or scene_full
         )
 
-        lightweight_desktop = (
+        card_mobile = (
+            tour_source
+            or tour_thumb_mobile
+            or tour_thumb
+            or place_cover
+            or scene_thumb
+            or scene_preview
+            or scene_mobile
+            or scene_full
+        )
+
+        # Hero garde la logique panorama/360.
+        hero_desktop = (
             scene_preview
             or scene_thumb
-            or tour_thumb
-            or place_cover
             or scene_mobile
             or scene_full
+            or card_desktop
         )
 
-        lightweight_mobile = (
-            scene_thumb
-            or scene_preview
-            or tour_thumb_mobile
-            or tour_thumb
-            or place_cover
+        hero_mobile = (
+            scene_preview
+            or scene_thumb
             or scene_mobile
             or scene_full
+            or card_mobile
         )
 
+        # Viewer reste destiné au vrai 360.
         viewer_desktop = (
             scene_full
             or scene_mobile
             or scene_preview
             or scene_thumb
-            or tour_thumb
-            or place_cover
+            or card_desktop
         )
 
         viewer_mobile = (
@@ -259,30 +286,26 @@ class PublicHomeView(TemplateView):
             or scene_full
             or scene_preview
             or scene_thumb
-            or tour_thumb_mobile
-            or tour_thumb
-            or place_cover
+            or card_mobile
         )
 
         thumbnail = (
-            scene_thumb
+            card_desktop
+            or card_mobile
+            or scene_thumb
             or scene_preview
-            or tour_thumb_mobile
-            or tour_thumb
-            or place_cover
-            or lightweight_mobile
             or viewer_desktop
         )
 
         return {
-            "hero": self._normalize_media_url(lightweight_desktop),
-            "hero_mobile": self._normalize_media_url(lightweight_mobile),
-            "card": self._normalize_media_url(lightweight_desktop),
-            "card_mobile": self._normalize_media_url(lightweight_mobile),
+            "hero": self._normalize_media_url(hero_desktop),
+            "hero_mobile": self._normalize_media_url(hero_mobile),
+            "card": self._normalize_media_url(card_desktop),
+            "card_mobile": self._normalize_media_url(card_mobile),
             "viewer_desktop": self._normalize_media_url(viewer_desktop),
             "viewer_mobile": self._normalize_media_url(viewer_mobile),
             "thumbnail": self._normalize_media_url(thumbnail),
-            "placeholder": self._normalize_media_url(placeholder),
+            "placeholder": self._normalize_media_url(thumbnail),
         }
 
     def _build_catalog_item(self, tour):
@@ -317,9 +340,11 @@ class PublicHomeView(TemplateView):
             "price": str(tour.display_price) if getattr(tour, "display_price", None) is not None else "",
             "is_featured": bool(tour.is_featured),
 
-            # Images légères pour la home.
+            # Images pour la home : d'abord les images du Tour, pas les panoramas 360.
             "image_url": preview_images["card"],
             "image_mobile_url": preview_images["card_mobile"],
+            "tour_card_image_url": preview_images["card"],
+            "tour_card_image_mobile_url": preview_images["card_mobile"],
             "thumbnail_url": preview_images["thumbnail"],
             "placeholder_url": preview_images["placeholder"],
 
@@ -612,6 +637,7 @@ class PublicHomeView(TemplateView):
         )
 
         return context
+
 
 
 
