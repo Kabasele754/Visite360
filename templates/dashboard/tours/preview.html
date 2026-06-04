@@ -116,6 +116,86 @@
         #previewViewer.transitioning::before {
             opacity: 1 !important;
         }
+
+        /* ========================= PREVIEW TOP RIGHT VIEWS BADGE ========================= */
+        .preview-tour-views-badge {
+            position: fixed !important;
+            top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
+            right: calc(env(safe-area-inset-right, 0px) + 14px) !important;
+            z-index: 91 !important;
+            min-height: 42px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            border-radius: 999px !important;
+            padding: 0 14px !important;
+            color: #ffffff !important;
+            background: rgba(2, 6, 23, 0.26) !important;
+            border: 1.25px solid rgba(255, 255, 255, 0.74) !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            pointer-events: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+        }
+
+        .preview-tour-views-badge-icon {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 22px !important;
+            height: 22px !important;
+            border-radius: 999px !important;
+            color: #06111f !important;
+            background: linear-gradient(135deg, #67e8f9, #e0fbff) !important;
+            font-size: 12px !important;
+            font-weight: 950 !important;
+            line-height: 1 !important;
+        }
+
+        .preview-tour-views-badge-number {
+            font-size: 13px !important;
+            font-weight: 950 !important;
+            letter-spacing: -0.02em !important;
+            line-height: 1 !important;
+            text-shadow: none !important;
+        }
+
+        .preview-tour-views-badge-label {
+            font-size: 9px !important;
+            font-weight: 950 !important;
+            letter-spacing: 0.14em !important;
+            text-transform: uppercase !important;
+            color: rgba(255,255,255,0.72) !important;
+            line-height: 1 !important;
+        }
+
+        @media (max-width: 768px) {
+            .preview-tour-views-badge {
+                top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+                right: calc(env(safe-area-inset-right, 0px) + 10px) !important;
+                min-height: 38px !important;
+                padding: 0 11px !important;
+                gap: 6px !important;
+            }
+
+            .preview-tour-views-badge-icon {
+                width: 19px !important;
+                height: 19px !important;
+                font-size: 11px !important;
+            }
+
+            .preview-tour-views-badge-number {
+                font-size: 12px !important;
+            }
+
+            .preview-tour-views-badge-label {
+                display: none !important;
+            }
+        }
+
     </style>
 
     <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
@@ -181,6 +261,18 @@
                                 <h1 class="brand-company-name">{{ current_organization.name }}</h1>
                             </div>
                         </div>
+                    </div>
+
+                    <div id="previewTourViewsBadge"
+                         data-ui="chrome"
+                         class="preview-tour-views-badge"
+                         data-initial-views="{{ tour.unique_views_count|default:tour.view_count|default:0 }}"
+                         aria-label="Nombre de vues">
+                        <span class="preview-tour-views-badge-icon">👁</span>
+                        <span id="previewTourViewsCount" class="preview-tour-views-badge-number">
+                            {{ tour.unique_views_count|default:tour.view_count|default:0 }}
+                        </span>
+                        <span class="preview-tour-views-badge-label">views</span>
                     </div>
 
                     <div class="pointer-events-none absolute inset-x-0 top-0 z-[6] h-32 bg-gradient-to-b from-slate-950/40 to-transparent"></div>
@@ -378,8 +470,7 @@
                 whatsapp: "{% static 'dashboard/icons/business/whatsapp.png' %}",
                 phone: "{% static 'dashboard/icons/business/phone.png' %}",
                 website: "{% static 'dashboard/icons/business/website.png' %}"
-            },
-            engagementUrl: "/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/"
+            }
         };
     </script>
 
@@ -387,34 +478,96 @@
     {{ scene_list_json|json_script:"preview-scene-list-data" }}
 
     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
-    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=share-backend-20260604"></script>
-    <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-sharp-20260604"></script>
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=mobile-pinch-stable-20260530"></script>
+    <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-20260603"></script>
 
 
 
     <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const engagementUrl = "/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/";
+    const engagementUrl =
+        (window.PREVIEW_CONFIG && window.PREVIEW_CONFIG.engagementUrl) ||
+        "/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/";
 
-    try {
-        const payload = JSON.stringify({ action: "view" });
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon(engagementUrl, new Blob([payload], { type: "application/json" }));
-            return;
+    const viewsCountEl = document.getElementById("previewTourViewsCount");
+    const viewsBadgeEl = document.getElementById("previewTourViewsBadge");
+
+    function formatCompactNumber(value) {
+        const number = Number(value || 0);
+
+        if (!Number.isFinite(number)) return "0";
+        if (number >= 1000000) return `${(number / 1000000).toFixed(number >= 10000000 ? 0 : 1).replace(".0", "")}M`;
+        if (number >= 1000) return `${(number / 1000).toFixed(number >= 10000 ? 0 : 1).replace(".0", "")}K`;
+
+        return String(number);
+    }
+
+    function readViewsFromPayload(data) {
+        if (!data || typeof data !== "object") return null;
+
+        return (
+            data.unique_views_count ??
+            data.unique_view_count ??
+            data.views_count ??
+            data.view_count ??
+            data.views ??
+            data.total_views ??
+            null
+        );
+    }
+
+    function updateViewsCounter(value) {
+        const nextValue = Number(value || 0);
+
+        if (!Number.isFinite(nextValue) || !viewsCountEl) return;
+
+        viewsCountEl.textContent = formatCompactNumber(nextValue);
+
+        if (viewsBadgeEl) {
+            viewsBadgeEl.dataset.views = String(nextValue);
         }
+    }
 
-        fetch(engagementUrl, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-            },
-            credentials: "same-origin",
-            keepalive: true,
-            body: payload,
-        });
-    } catch (_) {}
+    const initialViews = viewsBadgeEl?.dataset.initialViews || viewsCountEl?.textContent || "0";
+    updateViewsCounter(initialViews);
+
+    async function trackPreviewView() {
+        if (!engagementUrl) return;
+
+        try {
+            const response = await fetch(engagementUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                credentials: "same-origin",
+                keepalive: true,
+                body: JSON.stringify({ action: "view" }),
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json().catch(() => null);
+            const backendViews = readViewsFromPayload(data);
+
+            if (backendViews !== null && backendViews !== undefined) {
+                updateViewsCounter(backendViews);
+            }
+        } catch (_) {
+            try {
+                if (navigator.sendBeacon && engagementUrl) {
+                    navigator.sendBeacon(
+                        engagementUrl,
+                        new Blob([JSON.stringify({ action: "view" })], { type: "application/json" })
+                    );
+                }
+            } catch (_) {}
+        }
+    }
+
+    trackPreviewView();
 });
 </script>
 </body>
