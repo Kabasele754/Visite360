@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.public.views import PublicAboutView, PublicContactView, PublicHomeView, PublicServicesView, public_tours_map_view, test_view
+from apps.public.views import PublicAboutView, PublicContactView, PublicHomeView, PublicServicesView, PublicTourEngagementView, public_tours_map_view, test_view
 
 urlpatterns = [
     path("", PublicHomeView.as_view(), name="public_home"),
@@ -8,6 +8,12 @@ urlpatterns = [
         "explorer/",
         public_tours_map_view,
         name="public-tours-map",
+    ),
+     
+     path(
+        "api/public/tours/<slug:organization_slug>/<int:tour_id>/engagement/",
+        PublicTourEngagementView.as_view(),
+        name="tour-public-engagement",
     ),
      
      path("about/", PublicAboutView.as_view(), name="public_about"),

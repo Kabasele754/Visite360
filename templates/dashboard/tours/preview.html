@@ -378,7 +378,8 @@
                 whatsapp: "{% static 'dashboard/icons/business/whatsapp.png' %}",
                 phone: "{% static 'dashboard/icons/business/phone.png' %}",
                 website: "{% static 'dashboard/icons/business/website.png' %}"
-            }
+            },
+            engagementUrl: "/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/"
         };
     </script>
 
@@ -386,7 +387,35 @@
     {{ scene_list_json|json_script:"preview-scene-list-data" }}
 
     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
-    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=mobile-pinch-stable-20260530"></script>
-    <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-20260603"></script>
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=share-backend-20260604"></script>
+    <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-sharp-20260604"></script>
+
+
+
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const engagementUrl = "/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/";
+
+    try {
+        const payload = JSON.stringify({ action: "view" });
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(engagementUrl, new Blob([payload], { type: "application/json" }));
+            return;
+        }
+
+        fetch(engagementUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            credentials: "same-origin",
+            keepalive: true,
+            body: payload,
+        });
+    } catch (_) {}
+});
+</script>
 </body>
 </html>

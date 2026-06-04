@@ -313,6 +313,88 @@ class Tour(TimeStampedModel):
                 self.publish_email_status = DeliveryStatus.PENDING
                 super().save(update_fields=["publish_email_status", "updated_at"])
                 self.queue_publish_email()
+                
+
+
+class TourUniqueView(TimeStampedModel):
+    """
+    Une vue unique par tour et par visiteur.
+    - Si l'utilisateur est connecté : visitor_key = user:<id>
+    - Sinon : visitor_key = cookie anonyme vtour_visitor_id
+    """
+    tour = models.ForeignKey(
+        Tour,
+        on_delete=models.CASCADE,
+        related_name="unique_views",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="tour_unique_views",
+    )
+    visitor_key = models.CharField(max_length=120, db_index=True)
+    ip_hash = models.CharField(max_length=64, blank=True, default="")
+    user_agent_hash = models.CharField(max_length=64, blank=True, default="")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["tour", "visitor_key"]),
+            models.Index(fields=["tour", "created_at"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tour", "visitor_key"],
+                name="unique_tour_view_per_visitor",
+            )
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Unique view {self.tour_id} - {self.visitor_key}"
+
+
+class TourShare(TimeStampedModel):
+    class Channel(models.TextChoices):
+        WEB_SHARE = "web_share", "Web Share"
+        COPY_LINK = "copy_link", "Copy Link"
+        WHATSAPP = "whatsapp", "WhatsApp"
+        FACEBOOK = "facebook", "Facebook"
+        OTHER = "other", "Other"
+
+    tour = models.ForeignKey(
+        Tour,
+        on_delete=models.CASCADE,
+        related_name="shares",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="tour_shares",
+    )
+    visitor_key = models.CharField(max_length=120, db_index=True)
+    channel = models.CharField(
+        max_length=30,
+        choices=Channel.choices,
+        default=Channel.OTHER,
+    )
+    ip_hash = models.CharField(max_length=64, blank=True, default="")
+    user_agent_hash = models.CharField(max_length=64, blank=True, default="")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["tour", "created_at"]),
+            models.Index(fields=["tour", "channel"]),
+            models.Index(fields=["visitor_key"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Share {self.tour_id} - {self.channel}"
+
 
 
 # -----------------------------------------------------------------------------

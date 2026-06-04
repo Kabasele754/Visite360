@@ -3320,6 +3320,366 @@
             display: grid !important;
         }
 
+
+
+        /* =====================================================================
+           FINAL PROGRESSIVE IMAGE LOADING + ENGAGEMENT UI
+           Mobile charge d'abord l'image légère, puis améliore en haute qualité
+           quand la card devient visible et quand le navigateur est prêt.
+        ===================================================================== */
+        .progressive-tour-img,
+        #catalogToursGrid .tour-card-image img[data-progressive-tour-img="true"] {
+            opacity: 1;
+            transition: opacity .28s ease;
+        }
+
+        .progressive-tour-img.is-upgrading,
+        #catalogToursGrid .tour-card-image img[data-progressive-tour-img="true"].is-upgrading {
+            opacity: .92;
+        }
+
+        .progressive-tour-img.is-high-loaded,
+        #catalogToursGrid .tour-card-image img[data-progressive-tour-img="true"].is-high-loaded {
+            opacity: 1;
+        }
+
+        .tour-card-engagement {
+            position: relative;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            color: rgba(255,255,255,.88);
+            font-size: clamp(9px, 2.2vw, 11px);
+            font-weight: 900;
+        }
+
+        .tour-card-engagement-pill,
+        .tour-card-share {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-height: 26px;
+            border-radius: 999px;
+            padding: 0 8px;
+            color: rgba(255,255,255,.92);
+            background: rgba(255,255,255,.13);
+            border: 1px solid rgba(255,255,255,.16);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .tour-card-share {
+            border: 0;
+            cursor: pointer;
+            font: inherit;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tour-card-share:active {
+            transform: scale(.96);
+        }
+
+        .tour-card-back .tour-card-engagement {
+            color: #475569;
+        }
+
+        .tour-card-back .tour-card-engagement-pill,
+        .tour-card-back .tour-card-share {
+            color: #334155;
+            background: rgba(15,23,42,.055);
+            border: 1px solid rgba(15,23,42,.07);
+        }
+
+        body.theme-dark .tour-card-back .tour-card-engagement {
+            color: rgba(255,255,255,.76);
+        }
+
+        body.theme-dark .tour-card-back .tour-card-engagement-pill,
+        body.theme-dark .tour-card-back .tour-card-share {
+            color: rgba(255,255,255,.82);
+            background: rgba(255,255,255,.075);
+            border-color: rgba(255,255,255,.10);
+        }
+
+        @media (max-width: 640px) {
+            #catalogToursGrid .tour-card-engagement {
+                margin-top: 7px !important;
+                gap: 4px !important;
+                font-size: 8.2px !important;
+            }
+
+            #catalogToursGrid .tour-card-engagement-pill,
+            #catalogToursGrid .tour-card-share {
+                min-height: 22px !important;
+                padding: 0 6px !important;
+                gap: 3px !important;
+            }
+
+            #catalogToursGrid .tour-card-share .share-label {
+                display: none !important;
+            }
+        }
+
+
+
+         /* =====================================================================
+   FINAL FIX — EXPLORE ALL PINTEREST / MASONRY COMPACT
+   Garde l'effet Pinterest sans grands espaces.
+   Featured reste inchangé.
+===================================================================== */
+
+/* Explore all seulement */
+#catalogToursGrid.pin-masonry {
+    display: block !important;
+    column-count: 2 !important;
+    column-gap: 9px !important;
+    width: 100% !important;
+}
+
+/* Chaque card devient un bloc masonry */
+#catalogToursGrid.pin-masonry .pin-card {
+    display: inline-block !important;
+    width: 100% !important;
+    margin: 0 0 10px 0 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    vertical-align: top !important;
+}
+
+/* On neutralise les anciens décalages qui créaient les grands trous */
+#catalogToursGrid.pin-masonry .pin-card:nth-child(odd),
+#catalogToursGrid.pin-masonry .pin-card:nth-child(even),
+#catalogToursGrid.pin-masonry .pin-card:nth-child(2n),
+#catalogToursGrid.pin-masonry .pin-card:nth-child(3n + 2) {
+    margin-top: 0 !important;
+}
+
+/* Variations de hauteur pour garder le style Pinterest */
+#catalogToursGrid.pin-masonry .pin-card {
+    aspect-ratio: 3 / 4.55 !important;
+}
+
+#catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 1) {
+    aspect-ratio: 3 / 4.25 !important;
+}
+
+#catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 2) {
+    aspect-ratio: 3 / 4.85 !important;
+}
+
+#catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 3) {
+    aspect-ratio: 3 / 4.45 !important;
+}
+
+#catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 4) {
+    aspect-ratio: 3 / 5.05 !important;
+}
+
+/* Desktop : plus de colonnes, toujours Pinterest */
+@media (min-width: 1024px) {
+    #catalogToursGrid.pin-masonry {
+        column-count: 4 !important;
+        column-gap: 18px !important;
+    }
+
+    #catalogToursGrid.pin-masonry .pin-card {
+        margin-bottom: 18px !important;
+    }
+}
+
+/* Tablette */
+@media (min-width: 641px) and (max-width: 1023px) {
+    #catalogToursGrid.pin-masonry {
+        column-count: 3 !important;
+        column-gap: 14px !important;
+    }
+
+    #catalogToursGrid.pin-masonry .pin-card {
+        margin-bottom: 14px !important;
+    }
+}
+
+/* Mobile compact */
+@media (max-width: 640px) {
+    .feed-shell {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    #allTours .section-head {
+        margin-bottom: 12px !important;
+        padding: 12px !important;
+        border-radius: 22px !important;
+    }
+
+    #catalogToursGrid.pin-masonry {
+        column-count: 2 !important;
+        column-gap: 8px !important;
+    }
+
+    #catalogToursGrid.pin-masonry .pin-card {
+        margin-bottom: 9px !important;
+    }
+
+    #catalogToursGrid .tour-card-3d,
+    #catalogToursGrid .tour-card-face {
+        border-radius: 18px !important;
+    }
+
+    #catalogToursGrid .tour-card-3d::before {
+        border-radius: 20px !important;
+    }
+
+    #catalogToursGrid .tour-card-topbar {
+        top: 7px !important;
+        left: 7px !important;
+        right: 7px !important;
+    }
+
+    #catalogToursGrid .tour-card-badge {
+        min-height: 24px !important;
+        padding: 5px 7px !important;
+        font-size: 7.5px !important;
+        letter-spacing: .08em !important;
+    }
+
+    #catalogToursGrid .tour-card-badge-dot {
+        width: 6px !important;
+        height: 6px !important;
+    }
+
+    #catalogToursGrid .tour-card-flip-btn {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 12px !important;
+    }
+
+    #catalogToursGrid .tour-card-front-content {
+        padding: 9px !important;
+    }
+
+    #catalogToursGrid .tour-card-kicker {
+        padding: 5px 7px !important;
+        font-size: 7.5px !important;
+        letter-spacing: .08em !important;
+    }
+
+    #catalogToursGrid .tour-card-title {
+        margin-top: 7px !important;
+        font-size: 13px !important;
+        line-height: 1.04 !important;
+        letter-spacing: -0.035em !important;
+    }
+
+    #catalogToursGrid .tour-card-bottomline {
+        margin-top: 8px !important;
+        font-size: 9px !important;
+    }
+
+    #catalogToursGrid .tour-card-bottomline span:first-child {
+        display: none !important;
+    }
+
+    #catalogToursGrid .tour-card-bottomline span:last-child {
+        min-height: 23px !important;
+        padding: 0 7px !important;
+        font-size: 8px !important;
+    }
+
+    #catalogToursGrid .tour-card-front-actions {
+        margin-top: 8px !important;
+        gap: 6px !important;
+    }
+
+    #catalogToursGrid .tour-card-primary {
+        min-height: 32px !important;
+        border-radius: 11px !important;
+        font-size: 9.2px !important;
+    }
+
+    #catalogToursGrid .tour-card-secondary {
+        width: 32px !important;
+        min-height: 32px !important;
+        border-radius: 11px !important;
+        font-size: 11px !important;
+    }
+
+    #catalogToursGrid .tour-card-back {
+        padding: 9px !important;
+    }
+
+    #catalogToursGrid .tour-back-label {
+        padding: 5px 7px !important;
+        font-size: 7.5px !important;
+        letter-spacing: .08em !important;
+    }
+
+    #catalogToursGrid .tour-back-title {
+        font-size: 13px !important;
+        line-height: 1.06 !important;
+    }
+
+    #catalogToursGrid .tour-back-text {
+        margin-top: 7px !important;
+        font-size: 9.3px !important;
+        line-height: 1.34 !important;
+        -webkit-line-clamp: 7 !important;
+    }
+
+    #catalogToursGrid .tour-card-features {
+        margin-top: 8px !important;
+        gap: 5px !important;
+        padding-bottom: 5px !important;
+    }
+
+    #catalogToursGrid .tour-card-features li {
+        min-height: 27px !important;
+        padding: 6px 8px !important;
+        font-size: 8.2px !important;
+    }
+
+    #catalogToursGrid .tour-card-actions {
+        gap: 6px !important;
+        padding-top: 7px !important;
+    }
+
+    #catalogToursGrid .tour-card-mini {
+        width: 33px !important;
+        height: 33px !important;
+        border-radius: 11px !important;
+    }
+
+    #catalogToursGrid .tour-card-action {
+        min-height: 33px !important;
+        border-radius: 11px !important;
+        font-size: 9.2px !important;
+    }
+}
+
+/* Très petits écrans */
+@media (max-width: 380px) {
+    #catalogToursGrid.pin-masonry {
+        column-gap: 7px !important;
+    }
+
+    #catalogToursGrid.pin-masonry .pin-card {
+        margin-bottom: 8px !important;
+    }
+
+    #catalogToursGrid .tour-card-title {
+        font-size: 12.2px !important;
+    }
+
+    #catalogToursGrid .tour-card-primary,
+    #catalogToursGrid .tour-card-action {
+        font-size: 8.7px !important;
+    }
+}
+
 </style>
 
     
@@ -3616,18 +3976,18 @@
                             <div class="tour-card-3d">
                                 <div class="tour-card-face tour-card-front">
                                     <div class="tour-card-image">
-                                        {% if tour.safe_thumbnail_source_url %}
-                                            <img src="{{ tour.safe_thumbnail_source_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                        {% if tour.safe_thumbnail_image_mobile_url %}
+                                            <img class="progressive-tour-img" src="{{ tour.safe_thumbnail_image_mobile_url }}" data-full-src="{{ tour.safe_thumbnail_source_url|default:tour.safe_thumbnail_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async" data-progressive-tour-img="true">
                                         {% elif tour.safe_thumbnail_image_url %}
-                                            <img src="{{ tour.safe_thumbnail_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
-                                        {% elif tour.safe_thumbnail_image_mobile_url %}
-                                            <img src="{{ tour.safe_thumbnail_image_mobile_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                            <img class="progressive-tour-img" src="{{ tour.safe_thumbnail_image_url }}" data-full-src="{{ tour.safe_thumbnail_source_url|default:tour.safe_thumbnail_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async" data-progressive-tour-img="true">
                                         {% elif tour.safe_place_cover_image_url %}
-                                            <img src="{{ tour.safe_place_cover_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                            <img class="progressive-tour-img" src="{{ tour.safe_place_cover_image_url }}" data-full-src="{{ tour.safe_thumbnail_source_url|default:tour.safe_place_cover_image_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async" data-progressive-tour-img="true">
+                                        {% elif tour.safe_thumbnail_source_url %}
+                                            <img class="progressive-tour-img" src="{{ tour.safe_thumbnail_source_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async" data-progressive-tour-img="true">
                                         {% elif tour.ordered_scenes and tour.ordered_scenes.0.safe_thumbnail_url %}
-                                            <img src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                            <img class="progressive-tour-img" src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async" data-progressive-tour-img="true">
                                         {% elif tour.ordered_scenes and tour.ordered_scenes.0.safe_image_360_preview_url %}
-                                            <img src="{{ tour.ordered_scenes.0.safe_image_360_preview_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async">
+                                            <img class="progressive-tour-img" src="{{ tour.ordered_scenes.0.safe_image_360_preview_url }}" alt="{{ tour.title }}" loading="lazy" decoding="async" data-progressive-tour-img="true">
                                         {% else %}
                                             <div class="tour-card-placeholder">No Preview</div>
                                         {% endif %}
@@ -3655,6 +4015,11 @@
                                         <div class="tour-card-bottomline">
                                             <span>{{ tour.scene_count|default:0 }} scenes</span>
                                             <span>360° Ready</span>
+                                        </div>
+
+                                        <div class="tour-card-engagement">
+                                            <span class="tour-card-engagement-pill">👁 {{ tour.unique_view_count|default:tour.view_count|default:0 }}</span>
+                                            <span class="tour-card-engagement-pill">↗ {{ tour.share_count|default:0 }}</span>
                                         </div>
 
                                         <div class="tour-card-front-actions">
@@ -3718,6 +4083,10 @@
                                                 <span>V</span>
                                             {% endif %}
                                         </div>
+
+                                        <button type="button" class="tour-card-share" data-share-tour data-share-url="{{ preview_url }}" data-share-title="{{ tour.title|escapejs }}" data-share-track-url="/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/" data-no-card-flip aria-label="Share {{ tour.title }}">
+                                            ↗ <span class="share-label">Share</span>
+                                        </button>
 
                                         <a href="{{ preview_url }}" class="tour-card-action" data-card-open aria-label="Start {{ tour.title }}">
                                             Start visit
@@ -4342,23 +4711,112 @@
         }
 
         function getTourImage(item) {
-            // EXPLORE ALL : on force l'image du Tour / Place uniquement.
-            // On ne prend jamais viewer_desktop_url/viewer_mobile_url ni les panoramas 360.
+            // EXPLORE ALL : charger d'abord la version légère.
+            // Mobile => thumbnail_image_mobile avant thumbnail_source.
             const mobile = isMobileViewport();
 
             const url = (
+                (mobile && item.tour_image_mobile_url) ||
+                (mobile && item.tour_card_image_mobile_url) ||
+                (mobile && item.image_mobile_url) ||
                 item.tour_image_url ||
                 item.tour_card_image_url ||
                 item.image_url ||
                 item.thumbnail_url ||
-                (mobile && item.tour_image_mobile_url) ||
-                (mobile && item.tour_card_image_mobile_url) ||
-                (mobile && item.image_mobile_url) ||
                 item.placeholder_url ||
                 ""
             );
 
             return url || "";
+        }
+
+        function getTourHighImage(item) {
+            // Version grande/originale, chargée après coup.
+            return (
+                item.tour_card_image_high_url ||
+                item.tour_image_high_url ||
+                ""
+            );
+        }
+
+        function canUpgradeHeavyImages() {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (!connection) return true;
+            if (connection.saveData) return false;
+            if (["slow-2g", "2g"].includes(connection.effectiveType)) return false;
+            return true;
+        }
+
+        function scheduleIdle(callback, timeout = 1400) {
+            if ("requestIdleCallback" in window) {
+                window.requestIdleCallback(callback, { timeout });
+                return;
+            }
+
+            window.setTimeout(callback, timeout);
+        }
+
+        function upgradeProgressiveImage(img) {
+            if (!img || img.dataset.progressiveUpgraded === "true") return;
+
+            const fullSrc = img.dataset.fullSrc || "";
+            if (!fullSrc || fullSrc === img.getAttribute("src")) return;
+            if (!canUpgradeHeavyImages()) return;
+
+            img.dataset.progressiveUpgraded = "true";
+            img.classList.add("is-upgrading");
+
+            const high = new Image();
+            high.decoding = "async";
+            high.src = fullSrc;
+
+            const swap = () => {
+                img.src = fullSrc;
+                img.classList.remove("is-upgrading");
+                img.classList.add("is-high-loaded");
+            };
+
+            if (high.decode) {
+                high.decode().then(swap).catch(() => {
+                    img.classList.remove("is-upgrading");
+                });
+            } else {
+                high.onload = swap;
+                high.onerror = () => img.classList.remove("is-upgrading");
+            }
+        }
+
+        function setupProgressiveTourImages(scope = document) {
+            const images = Array.from(scope.querySelectorAll("img[data-progressive-tour-img='true']:not([data-progressive-ready='true'])"));
+            if (!images.length) return;
+
+            images.forEach((img) => {
+                img.dataset.progressiveReady = "true";
+            });
+
+            if (!("IntersectionObserver" in window)) {
+                images.forEach((img) => {
+                    scheduleIdle(() => upgradeProgressiveImage(img), isMobileViewport() ? 1800 : 900);
+                });
+                return;
+            }
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+
+                    const img = entry.target;
+                    observer.unobserve(img);
+
+                    scheduleIdle(() => upgradeProgressiveImage(img), isMobileViewport() ? 1800 : 800);
+                });
+            }, {
+                root: null,
+                rootMargin: "420px 0px",
+                threshold: 0.01,
+            });
+
+            images.forEach((img) => observer.observe(img));
         }
 
 
@@ -4594,6 +5052,82 @@
             });
         }
 
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(";").shift();
+            return "";
+        }
+
+        async function trackTourEngagement(url, action) {
+            if (!url) return null;
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken"),
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    credentials: "same-origin",
+                    body: JSON.stringify({ action }),
+                });
+
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function setupShareButtons(scope = document) {
+            const buttons = Array.from(scope.querySelectorAll("[data-share-tour]:not([data-share-ready='true'])"));
+
+            buttons.forEach((button) => {
+                button.dataset.shareReady = "true";
+                button.setAttribute("data-no-card-flip", "true");
+
+                ["pointerdown", "pointerup", "mousedown", "mouseup", "touchstart", "touchend"].forEach((eventName) => {
+                    button.addEventListener(eventName, (event) => {
+                        event.stopPropagation();
+                    }, { capture: true, passive: true });
+                });
+
+                button.addEventListener("click", async (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+
+                    const shareUrl = button.dataset.shareUrl || window.location.href;
+                    const shareTitle = button.dataset.shareTitle || "Virtual tour";
+                    const trackUrl = button.dataset.shareTrackUrl || "";
+
+                    if (navigator.share) {
+                        try {
+                            await navigator.share({ title: shareTitle, url: shareUrl });
+                            await trackTourEngagement(trackUrl, "share");
+                            return;
+                        } catch (_) {
+                            return;
+                        }
+                    }
+
+                    try {
+                        await navigator.clipboard.writeText(new URL(shareUrl, window.location.origin).href);
+                        const oldText = button.innerHTML;
+                        button.innerHTML = "✓ <span class=\"share-label\">Copied</span>";
+                        window.setTimeout(() => { button.innerHTML = oldText; }, 1400);
+                        await trackTourEngagement(trackUrl, "share");
+                    } catch (_) {
+                        window.prompt("Copy this link", new URL(shareUrl, window.location.origin).href);
+                        await trackTourEngagement(trackUrl, "share");
+                    }
+                }, { capture: true });
+            });
+        }
+
         function buildFeatureList(features) {
             return features
                 .filter(Boolean)
@@ -4619,7 +5153,11 @@
 
         function buildTourCard(item) {
             const image = getTourImage(item);
+            const highImage = getTourHighImage(item);
             const previewUrl = item.preview_url || "#";
+            const engagementUrl = item.engagement_url || "";
+            const uniqueViews = Number(item.unique_view_count || item.view_count || 0);
+            const shares = Number(item.share_count || 0);
             const cityText = [item.city, item.country].filter(Boolean).join(", ");
             const title = item.title || "Virtual tour";
             const scenes = Number(item.scene_count || 0);
@@ -4655,7 +5193,7 @@
                             <div class="tour-card-image">
                                 ${
                                     image
-                                        ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async" data-tour-card-img="true" data-source="${escapeHtml(item.card_image_source || 'tour')}">`
+                                        ? `<img src="${escapeHtml(image)}" data-full-src="${escapeHtml(highImage)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async" data-tour-card-img="true" data-progressive-tour-img="true" data-source="${escapeHtml(item.card_image_source || 'tour')}">`
                                         : `<div class="tour-card-placeholder">No Preview</div>`
                                 }
                             </div>
@@ -4682,6 +5220,11 @@
                                 <div class="tour-card-bottomline">
                                     <span>${scenes} scene${scenes > 1 ? "s" : ""}</span>
                                     <span>360° Ready</span>
+                                </div>
+
+                                <div class="tour-card-engagement">
+                                    <span class="tour-card-engagement-pill">👁 ${uniqueViews}</span>
+                                    <span class="tour-card-engagement-pill">↗ ${shares}</span>
                                 </div>
 
                                 <div class="tour-card-front-actions">
@@ -4724,6 +5267,10 @@
                                 <div class="tour-card-mini is-org-logo" aria-hidden="true">
                                     ${buildOrganizationMiniLogo(item)}
                                 </div>
+
+                                <button type="button" class="tour-card-share" data-share-tour data-share-url="${escapeHtml(previewUrl)}" data-share-title="${escapeHtml(title)}" data-share-track-url="${escapeHtml(engagementUrl)}" data-no-card-flip aria-label="Share ${escapeHtml(title)}">
+                                    ↗ <span class="share-label">Share</span>
+                                </button>
 
                                 <a href="${escapeHtml(previewUrl)}" class="tour-card-action" data-card-open aria-label="Start ${escapeHtml(title)}">
                                     Start visit
@@ -4814,6 +5361,8 @@
 
             if (items.length) {
                 catalogGrid.insertAdjacentHTML("beforeend", items.map(buildTourCard).join(""));
+                setupProgressiveTourImages(catalogGrid);
+                setupShareButtons(catalogGrid);
                 setup3DFlipCards(catalogGrid);
             }
 
@@ -5005,6 +5554,8 @@
         }, { passive: true });
 
         renderInitialCatalog();
+        setupProgressiveTourImages(document);
+        setupShareButtons(document);
         setup3DFlipCards(document);
     });
 </script>

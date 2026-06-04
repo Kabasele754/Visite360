@@ -1,6 +1,18 @@
 from urllib.parse import unquote
 
 from django.conf import settings
+from django.core.cache import cache
+from django.utils.text import Truncator
+
+import hashlib
+import json
+import uuid
+
+from django.db.models import F
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+
 from django.contrib import messages
 from django.db.models import Count, Q, Prefetch
 from django.http import JsonResponse
@@ -8,15 +20,15 @@ from django.shortcuts import render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, FormView
 
-from apps.tours.models import Hotspot, Tour, Scene360
+from apps.tours.models import Hotspot, Tour, Scene360, TourUniqueView, TourShare
 from apps.places.models import Place
 from apps.organizations.models import Organization
 from .forms import ContactLeadForm
 
 
 
-from django.core.cache import cache
-from django.utils.text import Truncator
+
+
 
 
 
@@ -127,6 +139,8 @@ class PublicHomeView(TemplateView):
                     distinct=True,
                 ),
                 photo_count=Count("photos", distinct=True),
+                unique_view_count=Count("unique_views", distinct=True),
+                share_count=Count("shares", distinct=True),
             )
         )
 
@@ -192,23 +206,25 @@ class PublicHomeView(TemplateView):
 
     def _get_tour_preview_images(self, tour):
         """
-        Séparation stricte :
-        - HERO / VIEWER : utilise les images 360 de la première scène pour Marzipano.
-        - EXPLORE ALL / JSON : utilise UNIQUEMENT les images du Tour ou du Place.
+        Gestion progressive des images :
+        - CARD LIGHT : image légère optimisée pour l'affichage immédiat.
+        - CARD HIGH : image source plus grande, chargée après coup seulement si nécessaire.
+        - HERO / VIEWER : garde les images 360 pour Marzipano.
 
-        Important : les images Scene360 ne doivent plus être utilisées dans Explore all,
-        sinon les cards reprennent des panoramas/preview 360 et deviennent floues ou mal cadrées.
+        Important : Explore all ne doit pas utiliser les panoramas 360 comme images de card.
         """
         empty = {
             "hero": "",
             "hero_mobile": "",
             "card": "",
             "card_mobile": "",
+            "card_high": "",
             "viewer_desktop": "",
             "viewer_mobile": "",
             "thumbnail": "",
             "placeholder": "",
             "card_source": "none",
+            "card_high_source": "none",
         }
 
         if not tour:
@@ -228,39 +244,60 @@ class PublicHomeView(TemplateView):
             scene_preview = getattr(first_scene, "safe_image_360_preview_url", "") or ""
             scene_thumb = getattr(first_scene, "safe_thumbnail_url", "") or ""
 
-        # Images marketing du Tour : utilisées par Explore all.
+        # Images marketing du Tour / Place.
+        # thumbnail_source = originale/grande, donc on l'utilise comme image HIGH, pas comme premier chargement.
         tour_source = getattr(tour, "safe_thumbnail_source_url", "") or ""
         tour_thumb = getattr(tour, "safe_thumbnail_image_url", "") or ""
         tour_thumb_mobile = getattr(tour, "safe_thumbnail_image_mobile_url", "") or ""
         place_cover = getattr(tour, "safe_place_cover_image_url", "") or ""
 
-        if tour_source:
-            card_source = "tour.thumbnail_source"
+        # LIGHT : charger vite, surtout sur mobile.
+        card_mobile = (
+            tour_thumb_mobile
+            or tour_thumb
+            or place_cover
+            or tour_source
+            or ""
+        )
+
+        card_desktop = (
+            tour_thumb
+            or tour_thumb_mobile
+            or place_cover
+            or tour_source
+            or ""
+        )
+
+        # HIGH : qualité max, chargée progressivement après affichage.
+        card_high = (
+            tour_source
+            or tour_thumb
+            or tour_thumb_mobile
+            or place_cover
+            or ""
+        )
+
+        if tour_thumb_mobile:
+            card_source = "tour.thumbnail_image_mobile"
         elif tour_thumb:
             card_source = "tour.thumbnail_image"
-        elif tour_thumb_mobile:
-            card_source = "tour.thumbnail_image_mobile"
         elif place_cover:
             card_source = "place.cover_image"
+        elif tour_source:
+            card_source = "tour.thumbnail_source_only"
         else:
             card_source = "none"
 
-        # STRICT : pas de scene_thumb / scene_preview ici.
-        card_desktop = (
-            tour_source
-            or tour_thumb
-            or tour_thumb_mobile
-            or place_cover
-            or ""
-        )
-
-        card_mobile = (
-            tour_source
-            or tour_thumb_mobile
-            or tour_thumb
-            or place_cover
-            or ""
-        )
+        if tour_source:
+            card_high_source = "tour.thumbnail_source"
+        elif tour_thumb:
+            card_high_source = "tour.thumbnail_image"
+        elif tour_thumb_mobile:
+            card_high_source = "tour.thumbnail_image_mobile"
+        elif place_cover:
+            card_high_source = "place.cover_image"
+        else:
+            card_high_source = "none"
 
         # Hero garde la logique panorama/360.
         hero_desktop = (
@@ -279,7 +316,6 @@ class PublicHomeView(TemplateView):
             or card_mobile
         )
 
-        # Viewer reste destiné au vrai 360.
         viewer_desktop = (
             scene_full
             or scene_mobile
@@ -296,18 +332,20 @@ class PublicHomeView(TemplateView):
             or ""
         )
 
-        thumbnail = card_desktop or card_mobile
+        thumbnail = card_mobile or card_desktop or card_high
 
         return {
             "hero": self._normalize_media_url(hero_desktop),
             "hero_mobile": self._normalize_media_url(hero_mobile),
             "card": self._normalize_media_url(card_desktop),
             "card_mobile": self._normalize_media_url(card_mobile),
+            "card_high": self._normalize_media_url(card_high),
             "viewer_desktop": self._normalize_media_url(viewer_desktop),
             "viewer_mobile": self._normalize_media_url(viewer_mobile),
             "thumbnail": self._normalize_media_url(thumbnail),
             "placeholder": self._normalize_media_url(thumbnail),
             "card_source": card_source,
+            "card_high_source": card_high_source,
         }
 
     def _build_catalog_item(self, tour):
@@ -338,6 +376,8 @@ class PublicHomeView(TemplateView):
             "scene_count": tour.scene_count or 0,
             "photo_count": tour.photo_count or 0,
             "view_count": tour.view_count or 0,
+            "unique_view_count": getattr(tour, "unique_view_count", None) or tour.view_count or 0,
+            "share_count": getattr(tour, "share_count", None) or 0,
             "rating": float(tour.rating) if getattr(tour, "rating", None) is not None else None,
             "price": str(tour.display_price) if getattr(tour, "display_price", None) is not None else "",
             "is_featured": bool(tour.is_featured),
@@ -348,6 +388,8 @@ class PublicHomeView(TemplateView):
             "tour_image_mobile_url": preview_images["card_mobile"],
             "tour_card_image_url": preview_images["card"],
             "tour_card_image_mobile_url": preview_images["card_mobile"],
+            "tour_card_image_high_url": preview_images["card_high"],
+            "tour_card_image_high_source": preview_images.get("card_high_source", "none"),
             "image_url": preview_images["card"],
             "image_mobile_url": preview_images["card_mobile"],
             "thumbnail_url": preview_images["thumbnail"],
@@ -360,6 +402,7 @@ class PublicHomeView(TemplateView):
             "viewer_mobile_url": preview_images["viewer_mobile"],
 
             "preview_url": preview_url,
+            "engagement_url": f"/api/public/tours/{tour.organization.slug}/{tour.id}/engagement/",
             "created_at": tour.created_at.isoformat() if tour.created_at else "",
             "updated_at": tour.updated_at.isoformat() if getattr(tour, "updated_at", None) else "",
             "search_blob": " ".join(
@@ -393,6 +436,11 @@ class PublicHomeView(TemplateView):
             city=city,
         )
 
+        # Explore all : par défaut on évite de répéter les Featured.
+        # Si l'utilisateur recherche/filtre, on garde tout pour ne pas cacher des résultats utiles.
+        if not q and not category and not city:
+            filtered_qs = filtered_qs.exclude(is_featured=True)
+
         total_filtered_tours = filtered_qs.count()
         total_pages = max(1, (total_filtered_tours + page_size - 1) // page_size)
         page = min(page, total_pages)
@@ -409,7 +457,7 @@ class PublicHomeView(TemplateView):
                     to_attr="ordered_scenes",
                 )
             )
-            .order_by("-is_featured", "-created_at")[start:end]
+            .order_by("-created_at", "-id")[start:end]
         )
 
         published_tours = list(display_qs)
@@ -646,6 +694,140 @@ class PublicHomeView(TemplateView):
 
         return context
 
+
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class PublicTourEngagementView(View):
+    """
+    Endpoint public pour compter :
+    - les vues uniques du tour ;
+    - les partages du tour.
+
+    POST JSON:
+    {"action": "view"}
+    {"action": "share", "channel": "web_share"}
+    """
+
+    COOKIE_NAME = "vtour_visitor_id"
+    COOKIE_MAX_AGE = 60 * 60 * 24 * 365  # 1 an
+
+    def _hash(self, value):
+        value = str(value or "").strip()
+        if not value:
+            return ""
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    def _client_ip(self, request):
+        forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR", "")
+
+    def _visitor_key(self, request):
+        if request.user.is_authenticated:
+            return f"user:{request.user.pk}", None
+
+        visitor_id = request.COOKIES.get(self.COOKIE_NAME)
+        created_cookie = None
+
+        if not visitor_id:
+            visitor_id = uuid.uuid4().hex
+            created_cookie = visitor_id
+
+        return f"anon:{visitor_id}", created_cookie
+
+    def _payload(self, request):
+        try:
+            raw = request.body.decode("utf-8") if request.body else "{}"
+            return json.loads(raw or "{}")
+        except Exception:
+            return {}
+
+    def post(self, request, organization_slug, tour_id):
+        tour = (
+            Tour.objects
+            .select_related("organization")
+            .filter(
+                id=tour_id,
+                organization__slug=organization_slug,
+                organization__status=Organization.Status.ACTIVE,
+                status=Tour.Status.PUBLISHED,
+            )
+            .first()
+        )
+
+        if not tour:
+            return JsonResponse({"ok": False, "error": "Tour not found"}, status=404)
+
+        payload = self._payload(request)
+        action = str(payload.get("action") or "view").strip().lower()
+        visitor_key, new_cookie = self._visitor_key(request)
+
+        user = request.user if request.user.is_authenticated else None
+        ip_hash = self._hash(self._client_ip(request))
+        user_agent_hash = self._hash(request.META.get("HTTP_USER_AGENT", ""))
+
+        created_view = False
+        created_share = False
+
+        if action == "view":
+            _, created_view = TourUniqueView.objects.get_or_create(
+                tour=tour,
+                visitor_key=visitor_key,
+                defaults={
+                    "user": user,
+                    "ip_hash": ip_hash,
+                    "user_agent_hash": user_agent_hash,
+                },
+            )
+
+            # Ancien compteur view_count : on l'incrémente seulement si la vue est unique.
+            if created_view:
+                Tour.objects.filter(pk=tour.pk).update(view_count=F("view_count") + 1)
+
+        elif action == "share":
+            channel = str(payload.get("channel") or "web_share").strip().lower()
+            valid_channels = {choice[0] for choice in TourShare.Channel.choices}
+            if channel not in valid_channels:
+                channel = TourShare.Channel.OTHER
+
+            TourShare.objects.create(
+                tour=tour,
+                user=user,
+                visitor_key=visitor_key,
+                channel=channel,
+                ip_hash=ip_hash,
+                user_agent_hash=user_agent_hash,
+            )
+            created_share = True
+
+        else:
+            return JsonResponse({"ok": False, "error": "Invalid action"}, status=400)
+
+        tour.refresh_from_db(fields=["view_count"])
+
+        response = JsonResponse({
+            "ok": True,
+            "action": action,
+            "created_view": created_view,
+            "created_share": created_share,
+            "view_count": tour.view_count,
+            "unique_view_count": tour.unique_views.count(),
+            "share_count": tour.shares.count(),
+        })
+
+        if new_cookie:
+            response.set_cookie(
+                self.COOKIE_NAME,
+                new_cookie,
+                max_age=self.COOKIE_MAX_AGE,
+                httponly=True,
+                secure=request.is_secure(),
+                samesite="Lax",
+            )
+
+        return response
 
 
 

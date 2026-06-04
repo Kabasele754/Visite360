@@ -1516,6 +1516,30 @@ document.addEventListener("DOMContentLoaded", () => {
         goToSceneWithWalk(targetScene);
     }
 
+    async function trackTourShare(channel = "web_share") {
+        const engagementUrl = config.engagementUrl || window.PREVIEW_TOUR_ENGAGEMENT_URL || "";
+        if (!engagementUrl) return null;
+
+        try {
+            const response = await fetch(engagementUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                credentials: "same-origin",
+                keepalive: true,
+                body: JSON.stringify({ action: "share", channel }),
+            });
+
+            if (!response.ok) return null;
+            return await response.json();
+        } catch (_) {
+            return null;
+        }
+    }
+
     async function shareCurrentScene() {
         const scene = findScene(currentSceneId) || scenes[0];
         if (!scene) return;
@@ -1524,11 +1548,19 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             if (navigator.share) {
                 await navigator.share({ title: document.title, text: "Virtual Tour", url: shareUrl });
+                await trackTourShare("web_share");
+                showToast("Shared");
                 return;
             }
+
             await navigator.clipboard.writeText(shareUrl);
+            await trackTourShare("copy_link");
             showToast("Link copied");
         } catch (_) {
+            try {
+                window.prompt("Copy this link", shareUrl);
+                await trackTourShare("other");
+            } catch (_) {}
             showToast("Share unavailable");
         }
     }

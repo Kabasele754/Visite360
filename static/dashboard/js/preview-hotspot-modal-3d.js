@@ -1,8 +1,6 @@
 /* =====================================================================
-   PREVIEW HOTSPOT 3D MODAL ADDON
+   PREVIEW HOTSPOT 3D MODAL ADDON — SHARP IMAGE + MOBILE FLIP FIX
    À charger APRÈS dashboard/js/preview-tailwind.js
-   Exemple :
-   <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-20260603"></script>
 ===================================================================== */
 (function () {
     document.addEventListener("DOMContentLoaded", () => {
@@ -14,10 +12,31 @@
 
         let flipTimer = null;
         let wasOpen = panel.classList.contains("open");
+        let isAnimating = false;
+        let lastFlipAt = 0;
+        let targetFlipped = panel.classList.contains("is-flipped");
+
+        function isMobile() {
+            return window.matchMedia("(max-width: 768px)").matches;
+        }
+
+        function settleFace(flipped) {
+            window.clearTimeout(flipTimer);
+            targetFlipped = Boolean(flipped);
+            isAnimating = false;
+            panel.classList.remove("flip-animating");
+            panel.classList.toggle("is-flipped", targetFlipped);
+            panel.classList.add("flip-settled");
+            panel.setAttribute("data-flip-state", targetFlipped ? "back" : "front");
+        }
 
         function resetToFront() {
             window.clearTimeout(flipTimer);
-            panel.classList.remove("is-flipped", "flip-settled");
+            targetFlipped = false;
+            isAnimating = false;
+            panel.classList.remove("is-flipped", "flip-animating");
+            panel.classList.add("flip-settled");
+            panel.setAttribute("data-flip-state", "front");
         }
 
         function closePanel3D() {
@@ -28,21 +47,55 @@
             document.body.classList.remove("info-panel-open");
         }
 
-        function flipPanel() {
+        function setFlipped(nextValue) {
+            const next = Boolean(nextValue);
+            const now = Date.now();
+
+            // Protection mobile contre le double tap / ghost click qui relance la rotation.
+            if (isAnimating || now - lastFlipAt < 520) return;
+            if (targetFlipped === next && panel.classList.contains("flip-settled")) return;
+
+            lastFlipAt = now;
+            targetFlipped = next;
+            isAnimating = true;
+
             window.clearTimeout(flipTimer);
             panel.classList.remove("flip-settled");
-            panel.classList.toggle("is-flipped");
+            panel.classList.add("flip-animating");
 
-            flipTimer = window.setTimeout(() => {
-                panel.classList.add("flip-settled");
-            }, 720);
+            // Prépare l'état de départ, puis déclenche la rotation au frame suivant.
+            if (next) {
+                panel.classList.remove("is-flipped");
+            } else {
+                panel.classList.add("is-flipped");
+            }
+
+            const card = document.getElementById("previewInfoCard3D") || panel.querySelector(".hotspot-info-3d-card");
+            if (card) void card.offsetWidth;
+
+            window.requestAnimationFrame(() => {
+                panel.classList.toggle("is-flipped", next);
+            });
+
+            flipTimer = window.setTimeout(() => settleFace(next), isMobile() ? 760 : 720);
         }
+
+        function flipPanel() {
+            setFlipped(!targetFlipped);
+        }
+
+        panel.addEventListener("pointerdown", (event) => {
+            if (event.target.closest("[data-preview-info-flip], [data-preview-info-close]")) {
+                event.stopPropagation();
+            }
+        }, { capture: true });
 
         panel.addEventListener("click", (event) => {
             const flipButton = event.target.closest("[data-preview-info-flip]");
             if (flipButton) {
                 event.preventDefault();
                 event.stopPropagation();
+                event.stopImmediatePropagation();
                 flipPanel();
                 return;
             }
@@ -51,12 +104,11 @@
             if (closeButton) {
                 event.preventDefault();
                 event.stopPropagation();
+                event.stopImmediatePropagation();
                 closePanel3D();
             }
-        });
+        }, { capture: true });
 
-        // Le bouton close de la face avant est déjà géré par preview-tailwind.js.
-        // Ici on ajoute seulement le reset du flip pour éviter de rouvrir le modal au dos.
         frontClose?.addEventListener("click", () => {
             resetToFront();
             panel.setAttribute("aria-hidden", "true");
@@ -67,8 +119,6 @@
             panel.setAttribute("aria-hidden", "true");
         }, true);
 
-        // Quand preview-tailwind.js ouvre le panneau avec .open,
-        // on force toujours le démarrage sur la face image.
         const observer = new MutationObserver(() => {
             const isOpen = panel.classList.contains("open");
 
