@@ -1,5 +1,5 @@
 /* =====================================================================
-   PREVIEW HOTSPOT 3D MODAL ADDON — SHARP IMAGE + MOBILE FLIP FIX
+   PREVIEW HOTSPOT 3D MODAL ADDON — IMAGE-ONLY FRONT + STABLE MOBILE FLIP
    À charger APRÈS dashboard/js/preview-tailwind.js
 ===================================================================== */
 (function () {
@@ -7,23 +7,31 @@
         const panel = document.getElementById("previewInfoPanel");
         const backdrop = document.getElementById("previewInfoBackdrop");
         const frontClose = document.getElementById("previewInfoClose");
+        const card = document.getElementById("previewInfoCard3D");
 
         if (!panel) return;
 
         let flipTimer = null;
         let wasOpen = panel.classList.contains("open");
         let isAnimating = false;
-        let lastFlipAt = 0;
         let targetFlipped = panel.classList.contains("is-flipped");
+        let lastFlipAt = 0;
+        let lastPointerAt = 0;
 
         function isMobile() {
             return window.matchMedia("(max-width: 768px)").matches;
         }
 
-        function settleFace(flipped) {
+        function clearFlipTimer() {
             window.clearTimeout(flipTimer);
-            targetFlipped = Boolean(flipped);
+            flipTimer = null;
+        }
+
+        function settleFace(flipped) {
+            clearFlipTimer();
             isAnimating = false;
+            targetFlipped = Boolean(flipped);
+
             panel.classList.remove("flip-animating");
             panel.classList.toggle("is-flipped", targetFlipped);
             panel.classList.add("flip-settled");
@@ -31,9 +39,12 @@
         }
 
         function resetToFront() {
-            window.clearTimeout(flipTimer);
-            targetFlipped = false;
+            clearFlipTimer();
             isAnimating = false;
+            targetFlipped = false;
+            lastFlipAt = 0;
+            lastPointerAt = 0;
+
             panel.classList.remove("is-flipped", "flip-animating");
             panel.classList.add("flip-settled");
             panel.setAttribute("data-flip-state", "front");
@@ -51,33 +62,36 @@
             const next = Boolean(nextValue);
             const now = Date.now();
 
-            // Protection mobile contre le double tap / ghost click qui relance la rotation.
-            if (isAnimating || now - lastFlipAt < 520) return;
+            // Évite double tap, ghost click mobile, ou deuxième rotation pendant la stabilisation.
+            if (isAnimating) return;
+            if (now - lastFlipAt < 650) return;
+            if (now - lastPointerAt < 80 && isMobile()) return;
             if (targetFlipped === next && panel.classList.contains("flip-settled")) return;
 
             lastFlipAt = now;
-            targetFlipped = next;
             isAnimating = true;
+            targetFlipped = next;
+            clearFlipTimer();
 
-            window.clearTimeout(flipTimer);
             panel.classList.remove("flip-settled");
             panel.classList.add("flip-animating");
 
-            // Prépare l'état de départ, puis déclenche la rotation au frame suivant.
+            // Préparer état de départ : indispensable pour une vraie rotation visible.
             if (next) {
                 panel.classList.remove("is-flipped");
             } else {
                 panel.classList.add("is-flipped");
             }
 
-            const card = document.getElementById("previewInfoCard3D") || panel.querySelector(".hotspot-info-3d-card");
             if (card) void card.offsetWidth;
 
             window.requestAnimationFrame(() => {
                 panel.classList.toggle("is-flipped", next);
             });
 
-            flipTimer = window.setTimeout(() => settleFace(next), isMobile() ? 760 : 720);
+            flipTimer = window.setTimeout(() => {
+                settleFace(next);
+            }, isMobile() ? 740 : 720);
         }
 
         function flipPanel() {
@@ -85,7 +99,8 @@
         }
 
         panel.addEventListener("pointerdown", (event) => {
-            if (event.target.closest("[data-preview-info-flip], [data-preview-info-close]")) {
+            if (event.target.closest("[data-preview-info-flip], [data-preview-info-close], #previewInfoClose")) {
+                lastPointerAt = Date.now();
                 event.stopPropagation();
             }
         }, { capture: true });
@@ -100,23 +115,35 @@
                 return;
             }
 
-            const closeButton = event.target.closest("[data-preview-info-close]");
+            const closeButton = event.target.closest("[data-preview-info-close], #previewInfoClose");
             if (closeButton) {
                 event.preventDefault();
                 event.stopPropagation();
                 event.stopImmediatePropagation();
                 closePanel3D();
+                return;
+            }
+
+            // Face avant = image uniquement. On tape n'importe où sur l'image
+            // pour lancer le flip vers la description, sans bouton visible.
+            const frontFace = event.target.closest(".hotspot-info-front");
+            if (frontFace && !targetFlipped) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                setFlipped(true);
+                return;
             }
         }, { capture: true });
 
-        frontClose?.addEventListener("click", () => {
-            resetToFront();
-            panel.setAttribute("aria-hidden", "true");
+        frontClose?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            closePanel3D();
         }, true);
 
         backdrop?.addEventListener("click", () => {
-            resetToFront();
-            panel.setAttribute("aria-hidden", "true");
+            closePanel3D();
         }, true);
 
         const observer = new MutationObserver(() => {
@@ -142,8 +169,7 @@
 
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
-                resetToFront();
-                panel.setAttribute("aria-hidden", "true");
+                closePanel3D();
             }
         });
     });

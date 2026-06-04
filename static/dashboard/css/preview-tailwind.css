@@ -2477,3 +2477,350 @@ body {
         -webkit-transform: none !important;
     }
 }
+
+
+/* =====================================================================
+   FINAL OVERRIDE — HOTSPOT MODAL IMAGE-ONLY FRONT + CLEAN JUSTIFIED BACK
+   Objectif :
+   - Face avant = image claire, sans voile, sans glow, sans filtre.
+   - Face arrière = texte lisible, justifié, avec bon interligne.
+   - Mobile = vraie rotation 3D puis stabilisation nette, sans double rotation.
+===================================================================== */
+
+#previewInfoPanel.hotspot-info-panel-3d,
+.info-panel.hotspot-info-panel-3d {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    perspective: 1600px !important;
+    -webkit-perspective: 1600px !important;
+}
+
+#previewInfoPanel .hotspot-info-3d-shell {
+    overflow: visible !important;
+    perspective: 1600px !important;
+    -webkit-perspective: 1600px !important;
+}
+
+#previewInfoPanel .hotspot-info-3d-card {
+    transform-style: preserve-3d !important;
+    -webkit-transform-style: preserve-3d !important;
+    transition: transform 720ms cubic-bezier(.22, 1, .36, 1) !important;
+    will-change: transform;
+}
+
+#previewInfoPanel.flip-animating .hotspot-info-3d-card {
+    transform-style: preserve-3d !important;
+    -webkit-transform-style: preserve-3d !important;
+    will-change: transform !important;
+}
+
+#previewInfoPanel.is-flipped.flip-animating .hotspot-info-3d-card,
+#previewInfoPanel.is-flipped:not(.flip-settled) .hotspot-info-3d-card {
+    transform: rotateY(180deg) translate3d(0,0,0) !important;
+    -webkit-transform: rotateY(180deg) translate3d(0,0,0) !important;
+}
+
+#previewInfoPanel:not(.is-flipped).flip-animating .hotspot-info-3d-card,
+#previewInfoPanel:not(.is-flipped):not(.flip-settled) .hotspot-info-3d-card {
+    transform: rotateY(0deg) translate3d(0,0,0) !important;
+    -webkit-transform: rotateY(0deg) translate3d(0,0,0) !important;
+}
+
+#previewInfoPanel .hotspot-info-face {
+    border-radius: 30px !important;
+    overflow: hidden !important;
+    border: 1.15px solid rgba(255,255,255,.18) !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    box-shadow: 0 28px 80px rgba(0,0,0,.46) !important;
+}
+
+/* Face avant : seulement image claire dans un vrai cadre modal. */
+#previewInfoPanel .hotspot-info-front {
+    background: #020617 !important;
+    justify-content: flex-end !important;
+}
+
+#previewInfoPanel .hotspot-info-front-vignette,
+#previewInfoPanel .hotspot-info-front-glow,
+#previewInfoPanel .hotspot-info-front-glow-a,
+#previewInfoPanel .hotspot-info-front-glow-b,
+#previewInfoPanel .hotspot-info-back-bg {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+#previewInfoPanel .hotspot-info-front-media {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    background: #020617 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#previewInfoPanel .hotspot-info-front-media img,
+#previewInfoPanel .hotspot-info-front-media .info-media-image,
+#previewInfoPanel .hotspot-info-front-media .info-media-image-zoomable {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    image-rendering: auto !important;
+    background: #020617 !important;
+    cursor: zoom-in !important;
+}
+
+#previewInfoPanel .hotspot-info-front-media .info-media-empty {
+    width: 100% !important;
+    height: 100% !important;
+    display: grid !important;
+    place-items: center !important;
+    color: rgba(255,255,255,.72) !important;
+    background: linear-gradient(145deg, #020617, #0f172a) !important;
+}
+
+/* Badge masqué : la face avant doit rester visuellement image-only. */
+#previewInfoPanel #previewInfoBadge,
+#previewInfoPanel .hotspot-info-badge {
+    display: none !important;
+}
+
+#previewInfoPanel .hotspot-info-front-bottom {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 6 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    padding: 14px !important;
+    pointer-events: none !important;
+    background: linear-gradient(to top, rgba(2,6,23,.30), rgba(2,6,23,0)) !important;
+}
+
+#previewInfoPanel .hotspot-info-flip-btn,
+#previewInfoPanel .hotspot-info-close,
+#previewInfoPanel .hotspot-info-back-btn {
+    pointer-events: auto !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(2,6,23,.48) !important;
+    border: 1px solid rgba(255,255,255,.32) !important;
+    box-shadow: 0 10px 28px rgba(0,0,0,.26) !important;
+    color: #fff !important;
+}
+
+#previewInfoPanel .hotspot-info-flip-btn {
+    min-height: 42px !important;
+    padding: 0 14px !important;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+    letter-spacing: .14em !important;
+}
+
+#previewInfoPanel .hotspot-info-close {
+    width: 40px !important;
+    height: 40px !important;
+    right: 12px !important;
+    top: 12px !important;
+}
+
+/* Face arrière : texte propre, lisible, justifié. */
+#previewInfoPanel .hotspot-info-back {
+    background:
+        radial-gradient(circle at 16% 10%, rgba(103,232,249,.14), transparent 32%),
+        radial-gradient(circle at 92% 92%, rgba(96,165,250,.12), transparent 28%),
+        linear-gradient(145deg, rgba(15,23,42,.98), rgba(2,6,23,.99)) !important;
+}
+
+#previewInfoPanel .hotspot-info-back-content {
+    padding: 0 22px 22px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-padding-bottom: 24px !important;
+}
+
+#previewInfoPanel .hotspot-info-kicker {
+    margin: 4px 0 12px !important;
+    color: #67e8f9 !important;
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+    font-weight: 950 !important;
+    letter-spacing: .22em !important;
+}
+
+#previewInfoPanel .hotspot-info-title {
+    margin: 0 !important;
+    font-size: clamp(24px, 4vw, 34px) !important;
+    line-height: 1.06 !important;
+    letter-spacing: -.045em !important;
+    color: #fff !important;
+}
+
+#previewInfoPanel .hotspot-info-description {
+    margin: 18px 0 0 !important;
+    color: rgba(226,232,240,.90) !important;
+    font-size: 14.5px !important;
+    line-height: 1.86 !important;
+    font-weight: 620 !important;
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    letter-spacing: .006em !important;
+    word-spacing: .05em !important;
+    white-space: pre-line !important;
+    overflow-wrap: anywhere !important;
+    hyphens: auto !important;
+}
+
+#previewInfoPanel .hotspot-info-meta-row {
+    margin-top: 18px !important;
+    gap: 9px !important;
+}
+
+#previewInfoPanel .hotspot-info-actions {
+    margin-top: auto !important;
+    padding-top: 20px !important;
+    gap: 10px !important;
+}
+
+#previewInfoPanel .hotspot-info-action {
+    min-height: 44px !important;
+    border-radius: 15px !important;
+}
+
+@media (max-width: 768px) {
+    #previewInfoPanel.hotspot-info-panel-3d,
+    .info-panel.hotspot-info-panel-3d {
+        left: 10px !important;
+        right: 10px !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 74px) !important;
+        width: auto !important;
+        height: min(580px, calc(100dvh - 118px)) !important;
+        max-height: calc(100dvh - 118px) !important;
+        transform: translateY(116%) scale(.985) !important;
+        perspective: 1250px !important;
+        -webkit-perspective: 1250px !important;
+    }
+
+    #previewInfoPanel.hotspot-info-panel-3d.open,
+    .info-panel.hotspot-info-panel-3d.open {
+        transform: translateY(0) scale(1) !important;
+    }
+
+    #previewInfoPanel .hotspot-info-face {
+        border-radius: 24px !important;
+    }
+
+    #previewInfoPanel .hotspot-info-3d-card {
+        transition: transform 680ms cubic-bezier(.22, 1, .36, 1) !important;
+    }
+
+    /* Pendant l'animation mobile : vraie rotation 3D. */
+    #previewInfoPanel.flip-animating .hotspot-info-front {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: translate3d(0,0,.01px) !important;
+        -webkit-transform: translate3d(0,0,.01px) !important;
+        backface-visibility: hidden !important;
+        -webkit-backface-visibility: hidden !important;
+    }
+
+    #previewInfoPanel.flip-animating .hotspot-info-back {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: rotateY(180deg) translate3d(0,0,.01px) !important;
+        -webkit-transform: rotateY(180deg) translate3d(0,0,.01px) !important;
+        backface-visibility: hidden !important;
+        -webkit-backface-visibility: hidden !important;
+    }
+
+    /* Après l'animation : face visible remise à plat pour éviter le flou et la deuxième rotation. */
+    #previewInfoPanel.flip-settled.is-flipped .hotspot-info-3d-card,
+    #previewInfoPanel.flip-settled:not(.is-flipped) .hotspot-info-3d-card {
+        transform: none !important;
+        -webkit-transform: none !important;
+        transition: none !important;
+        will-change: auto !important;
+    }
+
+    #previewInfoPanel.flip-settled.is-flipped .hotspot-info-front {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+    }
+
+    #previewInfoPanel.flip-settled.is-flipped .hotspot-info-back {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        backface-visibility: visible !important;
+        -webkit-backface-visibility: visible !important;
+    }
+
+    #previewInfoPanel.flip-settled:not(.is-flipped) .hotspot-info-front {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        backface-visibility: visible !important;
+        -webkit-backface-visibility: visible !important;
+    }
+
+    #previewInfoPanel.flip-settled:not(.is-flipped) .hotspot-info-back {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+    }
+
+    #previewInfoPanel .hotspot-info-back-content {
+        padding: 0 18px 18px !important;
+    }
+
+    #previewInfoPanel .hotspot-info-title {
+        font-size: clamp(22px, 7vw, 30px) !important;
+        line-height: 1.08 !important;
+    }
+
+    #previewInfoPanel .hotspot-info-description {
+        margin-top: 16px !important;
+        font-size: 13.6px !important;
+        line-height: 1.78 !important;
+        text-align: justify !important;
+        word-spacing: .045em !important;
+    }
+
+    #previewInfoPanel .hotspot-info-actions {
+        gap: 8px !important;
+        padding-top: 18px !important;
+    }
+
+    #previewInfoPanel .hotspot-info-action {
+        flex: 1 1 auto !important;
+        min-height: 42px !important;
+        padding: 0 12px !important;
+        font-size: 12px !important;
+    }
+}
