@@ -3680,6 +3680,108 @@
     }
 }
 
+
+        /* =====================================================================
+           FINAL FIX — JUSTIFIED TEXT + BETTER LINE SPACING IN TOUR CARDS
+           Objectif :
+           - Justifier la description au dos des cards
+           - Donner plus d'espace entre les lignes
+           - Garder les titres propres et lisibles
+           - Appliquer Featured + Explore all
+        ===================================================================== */
+
+        .tour-card-back .tour-back-text,
+        #featured .tour-card-back .tour-back-text,
+        #catalogToursGrid .tour-card-back .tour-back-text {
+            text-align: justify !important;
+            text-justify: inter-word !important;
+            line-height: 1.72 !important;
+            letter-spacing: 0.002em !important;
+            word-spacing: 0.035em !important;
+            hyphens: auto !important;
+            -webkit-hyphens: auto !important;
+            overflow-wrap: break-word !important;
+            word-break: normal !important;
+        }
+
+        .tour-card-back .tour-back-title,
+        #featured .tour-card-back .tour-back-title,
+        #catalogToursGrid .tour-card-back .tour-back-title {
+            line-height: 1.14 !important;
+            letter-spacing: -0.035em !important;
+        }
+
+        .tour-card-back .tour-back-label,
+        #featured .tour-card-back .tour-back-label,
+        #catalogToursGrid .tour-card-back .tour-back-label {
+            margin-bottom: 6px !important;
+        }
+
+        .tour-card-back .tour-card-features,
+        #featured .tour-card-back .tour-card-features,
+        #catalogToursGrid .tour-card-back .tour-card-features {
+            margin-top: 14px !important;
+        }
+
+        /* Description longue : plus confortable sur desktop/tablette */
+        @media (min-width: 641px) {
+            .tour-card-back .tour-back-text,
+            #featured .tour-card-back .tour-back-text,
+            #catalogToursGrid .tour-card-back .tour-back-text {
+                font-size: clamp(11.5px, 1.05vw, 13.5px) !important;
+                line-height: 1.76 !important;
+                -webkit-line-clamp: 7 !important;
+            }
+        }
+
+        /* Mobile : justifié aussi, mais un peu plus compact pour garder la beauté de la card */
+        @media (max-width: 640px) {
+            .tour-card-back .tour-back-text,
+            #featured .tour-card-back .tour-back-text,
+            #catalogToursGrid .tour-card-back .tour-back-text {
+                text-align: justify !important;
+                text-justify: inter-word !important;
+                font-size: 9.8px !important;
+                line-height: 1.58 !important;
+                letter-spacing: 0.001em !important;
+                word-spacing: 0.025em !important;
+                -webkit-line-clamp: 7 !important;
+            }
+
+            .featured-tour-rail .tour-card-back .tour-back-text {
+                font-size: 10.2px !important;
+                line-height: 1.62 !important;
+                -webkit-line-clamp: 8 !important;
+            }
+
+            #catalogToursGrid .tour-card-back .tour-back-text {
+                font-size: 9.2px !important;
+                line-height: 1.50 !important;
+                -webkit-line-clamp: 6 !important;
+            }
+
+            .tour-card-back .tour-back-title,
+            #featured .tour-card-back .tour-back-title,
+            #catalogToursGrid .tour-card-back .tour-back-title {
+                line-height: 1.12 !important;
+            }
+        }
+
+        /* Très petits écrans : éviter que le texte pousse les boutons hors de la card */
+        @media (max-width: 380px) {
+            #catalogToursGrid .tour-card-back .tour-back-text {
+                font-size: 8.9px !important;
+                line-height: 1.46 !important;
+                -webkit-line-clamp: 5 !important;
+            }
+
+            .featured-tour-rail .tour-card-back .tour-back-text {
+                font-size: 9.6px !important;
+                line-height: 1.56 !important;
+                -webkit-line-clamp: 7 !important;
+            }
+        }
+
 </style>
 
     

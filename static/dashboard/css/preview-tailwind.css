@@ -2824,3 +2824,374 @@ body {
         font-size: 12px !important;
     }
 }
+
+/* =====================================================================
+   FINAL OVERRIDE — HOTSPOT MODAL FRONT = IMAGE ONLY FULL 3D
+   Objectif : aucune barre en haut/bas, aucun bouton sur la face image.
+   L'utilisateur tape l'image pour tourner vers les détails.
+===================================================================== */
+#previewInfoPanel.hotspot-info-panel-3d,
+.info-panel.hotspot-info-panel-3d {
+    overflow: visible !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+#previewInfoPanel .hotspot-info-3d-shell {
+    overflow: visible !important;
+    perspective: 1500px !important;
+    -webkit-perspective: 1500px !important;
+}
+
+#previewInfoPanel .hotspot-info-3d-card {
+    transform-style: preserve-3d !important;
+    -webkit-transform-style: preserve-3d !important;
+}
+
+/* La face image devient une vraie carte 3D propre, remplie uniquement par l'image. */
+#previewInfoPanel .hotspot-info-front {
+    padding: 0 !important;
+    background: #020617 !important;
+    border-radius: 30px !important;
+    overflow: hidden !important;
+    cursor: pointer !important;
+    box-shadow:
+        0 34px 95px rgba(0,0,0,.54),
+        0 0 0 1px rgba(255,255,255,.18),
+        inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+
+/* Image full modal : pas de marge top/bottom, pas de voile, pas de filtre. */
+#previewInfoPanel .hotspot-info-front-media {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    border-radius: inherit !important;
+    background: #020617 !important;
+}
+
+#previewInfoPanel .hotspot-info-front-media img,
+#previewInfoPanel .hotspot-info-front-media .info-media-image,
+#previewInfoPanel .hotspot-info-front-media .info-media-image-zoomable {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: inherit !important;
+    opacity: 1 !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    filter: none !important;
+    image-rendering: auto !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    pointer-events: none !important;
+    cursor: pointer !important;
+}
+
+/* On enlève totalement les éléments au-dessus de l'image sur la face avant. */
+#previewInfoPanel .hotspot-info-front-vignette,
+#previewInfoPanel .hotspot-info-front-glow,
+#previewInfoPanel .hotspot-info-front-glow-a,
+#previewInfoPanel .hotspot-info-front-glow-b,
+#previewInfoPanel .hotspot-info-front-bottom,
+#previewInfoPanel .hotspot-info-front .hotspot-info-close,
+#previewInfoPanel .hotspot-info-front .hotspot-info-badge,
+#previewInfoPanel .hotspot-info-front .hotspot-info-flip-btn {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Si aucune image n'est disponible, on garde un placeholder plein écran propre. */
+#previewInfoPanel .hotspot-info-front-media .info-media-empty {
+    position: absolute !important;
+    inset: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    background:
+        radial-gradient(circle at 50% 24%, rgba(103,232,249,.14), transparent 34%),
+        linear-gradient(145deg, #020617, #0f172a) !important;
+    color: rgba(255,255,255,.74) !important;
+    font-size: 12px !important;
+    font-weight: 950 !important;
+    letter-spacing: .16em !important;
+    text-transform: uppercase !important;
+}
+
+/* Face arrière : texte confortable, justifié, lisible. */
+#previewInfoPanel .hotspot-info-back-content {
+    padding: 2px 24px 24px !important;
+}
+
+#previewInfoPanel .hotspot-info-description {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.92 !important;
+    letter-spacing: .007em !important;
+    word-spacing: .06em !important;
+    white-space: pre-line !important;
+    color: rgba(226,232,240,.92) !important;
+}
+
+/* Mobile : l'image reste pleine carte et la face visible est stabilisée nette. */
+@media (max-width: 768px) {
+    #previewInfoPanel.hotspot-info-panel-3d,
+    .info-panel.hotspot-info-panel-3d {
+        left: 8px !important;
+        right: 8px !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 74px) !important;
+        width: auto !important;
+        height: min(560px, calc(100dvh - 118px)) !important;
+        max-height: calc(100dvh - 118px) !important;
+    }
+
+    #previewInfoPanel .hotspot-info-front,
+    #previewInfoPanel .hotspot-info-face {
+        border-radius: 24px !important;
+    }
+
+    #previewInfoPanel .hotspot-info-front-media img,
+    #previewInfoPanel .hotspot-info-front-media .info-media-image {
+        object-fit: cover !important;
+        object-position: center center !important;
+    }
+
+    #previewInfoPanel .hotspot-info-back-content {
+        padding: 0 18px 18px !important;
+    }
+
+    #previewInfoPanel .hotspot-info-description {
+        line-height: 1.82 !important;
+        font-size: 13.6px !important;
+        word-spacing: .045em !important;
+    }
+}
+
+
+/* =====================================================================
+   FINAL OVERRIDE — PREVIEW HOTSPOT MODAL IMAGE FULL PORTRAIT COVER
+   Objectif :
+   - Forcer l'image à prendre toute la taille portrait du modal.
+   - Si l'image est paysage : elle remplit le modal et se recadre proprement.
+   - Supprimer les bandes/fonds noirs visibles autour de l'image.
+   - Garder le dos du modal lisible et justifié.
+   À garder tout à la fin de dashboard/css/preview-tailwind.css
+===================================================================== */
+
+/* Le modal garde une taille portrait stable */
+#previewInfoPanel.hotspot-info-panel-3d,
+.info-panel.hotspot-info-panel-3d {
+    width: min(430px, calc(100vw - 22px)) !important;
+    height: min(660px, calc(100dvh - 126px)) !important;
+    max-height: calc(100dvh - 126px) !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+}
+
+/* Toute la structure 3D doit occuper 100% du modal */
+#previewInfoPanel .hotspot-info-3d-shell,
+#previewInfoPanel .hotspot-info-3d-card,
+#previewInfoPanel .hotspot-info-face,
+#previewInfoPanel .hotspot-info-front,
+#previewInfoPanel .hotspot-info-front-media,
+#previewInfoPanel #previewInfoMedia {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Face avant = cadre portrait image-only */
+#previewInfoPanel .hotspot-info-front {
+    position: absolute !important;
+    inset: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 30px !important;
+    overflow: hidden !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    box-shadow:
+        0 34px 95px rgba(0,0,0,.54),
+        0 0 0 1px rgba(255,255,255,.18),
+        inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+
+/* Conteneur image sans fond noir */
+#previewInfoPanel .hotspot-info-front-media,
+#previewInfoPanel #previewInfoMedia {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: inherit !important;
+    overflow: hidden !important;
+    background: transparent !important;
+}
+
+/* Si le JS injecte un wrapper/picture autour de l'image, il doit remplir aussi */
+#previewInfoPanel .hotspot-info-front-media > *,
+#previewInfoPanel #previewInfoMedia > *,
+#previewInfoPanel .hotspot-info-front-media picture,
+#previewInfoPanel #previewInfoMedia picture,
+#previewInfoPanel .hotspot-info-front-media figure,
+#previewInfoPanel #previewInfoMedia figure,
+#previewInfoPanel .hotspot-info-front-media div:not(.info-media-empty),
+#previewInfoPanel #previewInfoMedia div:not(.info-media-empty) {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: inherit !important;
+    overflow: hidden !important;
+    background: transparent !important;
+}
+
+/* Image paysage ou portrait : toujours cover, donc aucune bande noire */
+#previewInfoPanel .hotspot-info-front-media img,
+#previewInfoPanel #previewInfoMedia img,
+#previewInfoPanel .hotspot-info-front-media .info-media-image,
+#previewInfoPanel #previewInfoMedia .info-media-image,
+#previewInfoPanel .hotspot-info-front-media .info-media-image-zoomable,
+#previewInfoPanel #previewInfoMedia .info-media-image-zoomable,
+#previewInfoPanel .hotspot-info-front-media picture img,
+#previewInfoPanel #previewInfoMedia picture img {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: inherit !important;
+    background: transparent !important;
+    opacity: 1 !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    filter: none !important;
+    image-rendering: auto !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Retirer totalement tout ce qui peut assombrir ou ajouter une barre sur la face image */
+#previewInfoPanel .hotspot-info-front-vignette,
+#previewInfoPanel .hotspot-info-front-glow,
+#previewInfoPanel .hotspot-info-front-glow-a,
+#previewInfoPanel .hotspot-info-front-glow-b,
+#previewInfoPanel .hotspot-info-front-bottom,
+#previewInfoPanel .hotspot-info-front .hotspot-info-close,
+#previewInfoPanel .hotspot-info-front .hotspot-info-badge,
+#previewInfoPanel .hotspot-info-front .hotspot-info-flip-btn {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Placeholder seulement si aucune image */
+#previewInfoPanel .hotspot-info-front-media .info-media-empty,
+#previewInfoPanel #previewInfoMedia .info-media-empty {
+    position: absolute !important;
+    inset: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: inherit !important;
+    background:
+        radial-gradient(circle at 50% 24%, rgba(103,232,249,.14), transparent 34%),
+        linear-gradient(145deg, #020617, #0f172a) !important;
+    color: rgba(255,255,255,.74) !important;
+    font-size: 12px !important;
+    font-weight: 950 !important;
+    letter-spacing: .16em !important;
+    text-transform: uppercase !important;
+}
+
+/* Dos : garder le texte propre */
+#previewInfoPanel .hotspot-info-back-content {
+    padding: 2px 24px 24px !important;
+}
+
+#previewInfoPanel .hotspot-info-description {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.92 !important;
+    letter-spacing: .007em !important;
+    word-spacing: .06em !important;
+    white-space: pre-line !important;
+    color: rgba(226,232,240,.92) !important;
+}
+
+/* Mobile : portrait plus haut, image toujours cover */
+@media (max-width: 768px) {
+    #previewInfoPanel.hotspot-info-panel-3d,
+    .info-panel.hotspot-info-panel-3d {
+        left: 8px !important;
+        right: 8px !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 74px) !important;
+        width: auto !important;
+        height: min(590px, calc(100dvh - 112px)) !important;
+        max-height: calc(100dvh - 112px) !important;
+    }
+
+    #previewInfoPanel .hotspot-info-front,
+    #previewInfoPanel .hotspot-info-face {
+        border-radius: 24px !important;
+    }
+
+    #previewInfoPanel .hotspot-info-front-media img,
+    #previewInfoPanel #previewInfoMedia img,
+    #previewInfoPanel .hotspot-info-front-media .info-media-image,
+    #previewInfoPanel #previewInfoMedia .info-media-image,
+    #previewInfoPanel .hotspot-info-front-media .info-media-image-zoomable,
+    #previewInfoPanel #previewInfoMedia .info-media-image-zoomable {
+        object-fit: cover !important;
+        object-position: center center !important;
+    }
+
+    #previewInfoPanel .hotspot-info-back-content {
+        padding: 0 18px 18px !important;
+    }
+
+    #previewInfoPanel .hotspot-info-description {
+        line-height: 1.82 !important;
+        font-size: 13.6px !important;
+        word-spacing: .045em !important;
+    }
+}
+
