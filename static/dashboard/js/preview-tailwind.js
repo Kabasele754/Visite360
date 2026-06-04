@@ -1312,7 +1312,12 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             previewViewer?.classList.remove("is-cinematic-transition", "transitioning", "is-opening", "is-walk-transition");
             syncZoomButtonsState();
-        }, 540);
+
+            // Auto rotation au démarrage : le panorama commence à bouger automatiquement.
+            if (!autorotateEnabled && !document.hidden) {
+                startAutorotate();
+            }
+        }, 650);
     }
 
     function cinematicSwitchScene(targetScene) {
@@ -1390,6 +1395,11 @@ document.addEventListener("DOMContentLoaded", () => {
             isTransitioning = false;
             updateAllViewerSizes();
             syncZoomButtonsState();
+
+            // Relance douce après changement de scène, sauf si l'onglet est caché.
+            if (!document.hidden) {
+                startAutorotate();
+            }
         }, cinematicMs);
     }
 
@@ -1516,6 +1526,13 @@ document.addEventListener("DOMContentLoaded", () => {
         goToSceneWithWalk(targetScene);
     }
 
+    function updatePreviewEngagementBadgesFromPayload(data) {
+        if (!data || typeof data !== "object") return;
+        if (typeof window.updatePreviewTourEngagementBadges === "function") {
+            window.updatePreviewTourEngagementBadges(data);
+        }
+    }
+
     async function trackTourShare(channel = "web_share") {
         const engagementUrl = config.engagementUrl || window.PREVIEW_TOUR_ENGAGEMENT_URL || "";
         if (!engagementUrl) return null;
@@ -1534,7 +1551,9 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!response.ok) return null;
-            return await response.json();
+            const data = await response.json();
+            updatePreviewEngagementBadgesFromPayload(data);
+            return data;
         } catch (_) {
             return null;
         }
