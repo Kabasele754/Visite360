@@ -20,6 +20,7 @@ urlpatterns = [
     path("api/", include("apps.organizations.urls")),
     path("api/", include("apps.places.urls")),
     path("api/", include("apps.tours.urls")),
+    path("apis/public/", include("apps.tours.api.urls")),
     path("api/", include("apps.maps_explorer.urls")),
     path("api/", include("apps.leads.urls")),
     path("api/", include("apps.bookings.urls")),
