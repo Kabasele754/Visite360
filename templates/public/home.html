@@ -4546,6 +4546,279 @@
 }
 
 
+
+
+/* =====================================================================
+   FINAL OVERRIDE — MOBILE OLD PINTEREST STYLE / COMPACT 2 COLUMNS
+   Objectif : retrouver l'affichage mobile propre comme l'ancienne version.
+   - Mobile = 2 cards par ligne, compactes, sans grands espaces
+   - Les 2 premières cards commencent au même niveau
+   - Les suivantes gardent un petit rythme Pinterest contrôlé
+   - Desktop reste géré par le bloc 3 cards existant
+===================================================================== */
+
+@media (max-width: 640px) {
+    .feed-shell {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    #allTours .section-head {
+        margin-top: 14px !important;
+        margin-bottom: 12px !important;
+        padding: 18px 14px !important;
+        border-radius: 28px !important;
+    }
+
+    #catalogToursGrid.pin-masonry {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        column-count: initial !important;
+        column-gap: normal !important;
+        gap: 10px 8px !important;
+        align-items: start !important;
+        width: 100% !important;
+    }
+
+    #catalogToursGrid.pin-masonry .pin-card,
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(odd),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(even),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(2n),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(2n + 1),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(3n + 1),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(3n + 2),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(3n + 3),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 1),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 2),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 3),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 4) {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+        -webkit-column-break-inside: auto !important;
+        vertical-align: top !important;
+    }
+
+    /* Première ligne : même niveau + même hauteur, comme l'ancienne version. */
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(1),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(2) {
+        aspect-ratio: 3 / 4.45 !important;
+        margin-top: 0 !important;
+    }
+
+    /* Rythme Pinterest léger après la première ligne, sans gros trous. */
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 3) {
+        aspect-ratio: 3 / 4.85 !important;
+    }
+
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 4) {
+        aspect-ratio: 3 / 4.38 !important;
+    }
+
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 1):not(:nth-child(1)) {
+        aspect-ratio: 3 / 4.58 !important;
+    }
+
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(4n + 2):not(:nth-child(2)) {
+        aspect-ratio: 3 / 4.70 !important;
+    }
+
+    #catalogToursGrid .tour-card-3d,
+    #catalogToursGrid .tour-card-face {
+        border-radius: 22px !important;
+    }
+
+    #catalogToursGrid .tour-card-3d::before {
+        border-radius: 24px !important;
+    }
+
+    #catalogToursGrid .tour-card-topbar {
+        top: 8px !important;
+        left: 8px !important;
+        right: 8px !important;
+    }
+
+    #catalogToursGrid .tour-card-badge {
+        min-height: 27px !important;
+        padding: 6px 8px !important;
+        font-size: 8.2px !important;
+        letter-spacing: .08em !important;
+    }
+
+    #catalogToursGrid .tour-card-badge-dot {
+        width: 6px !important;
+        height: 6px !important;
+    }
+
+    #catalogToursGrid .tour-card-flip-btn {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 12px !important;
+        background: rgba(255,255,255,.18) !important;
+    }
+
+    #catalogToursGrid .tour-card-front-content {
+        padding: 10px !important;
+    }
+
+    #catalogToursGrid .tour-card-kicker {
+        padding: 6px 8px !important;
+        font-size: 8px !important;
+        letter-spacing: .09em !important;
+    }
+
+    #catalogToursGrid .tour-card-title {
+        margin-top: 7px !important;
+        font-size: 14px !important;
+        line-height: 1.05 !important;
+        letter-spacing: -0.035em !important;
+        -webkit-line-clamp: 2 !important;
+    }
+
+    #catalogToursGrid .tour-card-bottomline {
+        margin-top: 8px !important;
+        font-size: 9.2px !important;
+    }
+
+    #catalogToursGrid .tour-card-bottomline span:first-child {
+        display: none !important;
+    }
+
+    #catalogToursGrid .tour-card-bottomline span:last-child {
+        min-height: 25px !important;
+        padding: 0 8px !important;
+        font-size: 8.4px !important;
+    }
+
+    #catalogToursGrid .tour-card-engagement {
+        margin-top: 7px !important;
+        gap: 5px !important;
+        font-size: 8.6px !important;
+    }
+
+    #catalogToursGrid .tour-card-engagement-pill,
+    #catalogToursGrid .tour-card-share {
+        min-height: 24px !important;
+        padding: 0 7px !important;
+        gap: 3px !important;
+    }
+
+    #catalogToursGrid .tour-card-front-actions {
+        margin-top: 9px !important;
+        gap: 7px !important;
+    }
+
+    #catalogToursGrid .tour-card-primary {
+        min-height: 36px !important;
+        border-radius: 14px !important;
+        font-size: 10px !important;
+        border-width: 1.2px !important;
+    }
+
+    #catalogToursGrid .tour-card-secondary {
+        width: 36px !important;
+        min-height: 36px !important;
+        border-radius: 14px !important;
+        font-size: 12px !important;
+    }
+
+    #catalogToursGrid .tour-card-back {
+        padding: 10px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    #catalogToursGrid .tour-back-header {
+        gap: 7px !important;
+        margin-bottom: 7px !important;
+    }
+
+    #catalogToursGrid .tour-back-label {
+        padding: 5px 7px !important;
+        font-size: 7.6px !important;
+        letter-spacing: .08em !important;
+        margin-bottom: 5px !important;
+    }
+
+    #catalogToursGrid .tour-back-title {
+        font-size: 13.4px !important;
+        line-height: 1.08 !important;
+    }
+
+    #catalogToursGrid .tour-card-close {
+        width: 29px !important;
+        height: 29px !important;
+        font-size: 12px !important;
+    }
+
+    #catalogToursGrid .tour-back-text {
+        margin-top: 7px !important;
+        font-size: 9.2px !important;
+        line-height: 1.48 !important;
+        -webkit-line-clamp: 6 !important;
+        text-align: justify !important;
+        word-spacing: .025em !important;
+    }
+
+    #catalogToursGrid .tour-card-features {
+        margin-top: 8px !important;
+        gap: 5px !important;
+        padding-bottom: 5px !important;
+    }
+
+    #catalogToursGrid .tour-card-features li {
+        min-height: 27px !important;
+        padding: 6px 8px !important;
+        font-size: 8.2px !important;
+    }
+
+    #catalogToursGrid .tour-card-actions {
+        gap: 6px !important;
+        padding-top: 7px !important;
+        margin-top: auto !important;
+    }
+
+    #catalogToursGrid .tour-card-mini {
+        width: 33px !important;
+        height: 33px !important;
+        border-radius: 12px !important;
+    }
+
+    #catalogToursGrid .tour-card-action {
+        min-height: 34px !important;
+        border-radius: 12px !important;
+        font-size: 9.4px !important;
+    }
+}
+
+@media (max-width: 380px) {
+    #catalogToursGrid.pin-masonry {
+        gap: 9px 7px !important;
+    }
+
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(1),
+    #catalogToursGrid.pin-masonry .pin-card:nth-child(2) {
+        aspect-ratio: 3 / 4.55 !important;
+    }
+
+    #catalogToursGrid .tour-card-title {
+        font-size: 12.8px !important;
+    }
+
+    #catalogToursGrid .tour-card-primary,
+    #catalogToursGrid .tour-card-action {
+        font-size: 8.8px !important;
+    }
+
+    #catalogToursGrid .tour-card-engagement-pill {
+        padding: 0 6px !important;
+    }
+}
+
 </style>
 
     
