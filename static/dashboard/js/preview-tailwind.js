@@ -116,6 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let progressiveGeneration = 0;
     let progressiveUpgradeTimer = null;
     const decodedImageCache = new Map();
+    const decodedImageMetaCache = new Map();
     const preloadPromises = new Map();
     const layerQuality = { A: "none", B: "none" };
     const layerSceneId = { A: null, B: null };
@@ -538,8 +539,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const desktop =
             assets.viewer_desktop ||
             assets.desktop ||
-            sceneData?.image_360_url ||
             sceneData?.image_360_desktop_url ||
+            sceneData?.desktop_image_url ||
+            sceneData?.image_360_url ||
             assets.original ||
             sceneData?.image_360_original_url ||
             mobile ||
@@ -602,7 +604,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let compatible = mobile
             ? (assets.mobile || assets.desktop || assets.original || light)
-            : (assets.desktop || assets.original || assets.mobile || light);
+            : (
+                (assets.desktop && assets.desktop !== assets.preview && assets.desktop !== assets.thumbnail)
+                    ? assets.desktop
+                    : (assets.original || assets.desktop || assets.mobile || light)
+            );
 
         let ultra = "";
         if (!mobile && !profile.saveData && !profile.slowNetwork && !profile.lowMemory) {
@@ -655,6 +661,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (typeof image.decode === "function") await image.decode();
                     } catch (_) {}
                     decodedImageCache.set(url, true);
+                    decodedImageMetaCache.set(url, {
+                        width: Number(image.naturalWidth || 0),
+                        height: Number(image.naturalHeight || 0)
+                    });
                 }
                 preloadPromises.delete(url);
                 resolve(ok);
@@ -1760,12 +1770,19 @@ document.addEventListener("DOMContentLoaded", () => {
             };
         }
 
-        const logicalResolution = Math.max(
-            Number(sceneData?.face_size || 0),
-            Number(sceneData?.max_resolution || 0),
-            mobile ? 3072 : 4096
-        );
         const selectedImageUrl = imageUrlOverride || getPreferredImageUrl(sceneData);
+        const decodedMeta = decodedImageMetaCache.get(selectedImageUrl) || {};
+
+        // IMPORTANT : Marzipano doit connaître la largeur réelle de l'équirectangulaire.
+        // Une valeur fixe de 4096 peut plafonner la netteté d'une image 8K/12K.
+        const logicalResolution = Math.max(
+            Number(decodedMeta.width || 0),
+            Number(sceneData?.image_width || 0),
+            Number(sceneData?.width || 0),
+            Number(sceneData?.equirect_width || 0),
+            Number(sceneData?.max_resolution || 0),
+            mobile ? 4096 : 8192
+        );
 
         return {
             source: Marzipano.ImageUrlSource.fromString(selectedImageUrl),
