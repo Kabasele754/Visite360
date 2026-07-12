@@ -641,37 +641,75 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    function preloadDecodedImage(url, { priority = "auto" } = {}) {
+    function preloadDecodedImage(url, { priority = "auto", timeoutMs = 30000 } = {}) {
         if (!url) return Promise.resolve(false);
         if (decodedImageCache.has(url)) return Promise.resolve(true);
         if (preloadPromises.has(url)) return preloadPromises.get(url);
 
         const promise = new Promise((resolve) => {
             const image = new Image();
+            let settled = false;
+            let timeoutId = null;
+
             image.decoding = "async";
-            image.loading = priority === "high" ? "eager" : "lazy";
+
+            /*
+             * IMPORTANT : une image créée uniquement pour le préchargement n'est
+             * pas insérée dans le DOM. Avec loading="lazy", plusieurs navigateurs
+             * peuvent reporter indéfiniment son téléchargement. Elle doit donc
+             * toujours être eager. fetchPriority garde la priorité réseau voulue.
+             */
+            image.loading = "eager";
             try { image.fetchPriority = priority; } catch (_) {}
 
-            const finish = async (ok) => {
+            const finish = async (ok, reason = "") => {
+                if (settled) return;
+                settled = true;
+                if (timeoutId) clearTimeout(timeoutId);
+
                 if (ok) {
                     try {
                         if (typeof image.decode === "function") await image.decode();
-                    } catch (_) {}
+                    } catch (_) {
+                        /* Le fichier est déjà chargé ; decode() peut échouer sur Safari. */
+                    }
+
                     decodedImageCache.set(url, true);
                     decodedImageMetaCache.set(url, {
                         width: Number(image.naturalWidth || 0),
                         height: Number(image.naturalHeight || 0),
                     });
+
+                    console.info("[360 progressive] image ready", {
+                        url,
+                        priority,
+                        width: image.naturalWidth,
+                        height: image.naturalHeight,
+                    });
+                } else {
+                    console.warn("[360 progressive] image preload failed", {
+                        url,
+                        priority,
+                        reason,
+                    });
                 }
+
                 preloadPromises.delete(url);
                 resolve(ok);
             };
 
-            image.onload = () => finish(true);
-            image.onerror = () => finish(false);
+            image.onload = () => finish(true, "load");
+            image.onerror = () => finish(false, "error");
+
+            timeoutId = setTimeout(() => {
+                finish(false, "timeout");
+            }, timeoutMs);
+
             image.src = url;
 
-            if (image.complete && image.naturalWidth > 0) finish(true);
+            if (image.complete && image.naturalWidth > 0) {
+                finish(true, "memory-cache");
+            }
         });
 
         preloadPromises.set(url, promise);
@@ -832,9 +870,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function scheduleProgressiveUpgrade(sceneData, generation = progressiveGeneration) {
         clearTimeout(progressiveUpgradeTimer);
+
+        const plan = getProgressiveLoadPlan(sceneData);
+        console.info("[360 progressive] upgrade scheduled", {
+            sceneId: sceneData?.id,
+            deviceMode: plan.deviceMode,
+            currentQuality: layerQuality[activeLayerKey],
+            light: plan.light?.url || "",
+            compatible: plan.compatible?.url || "",
+        });
+
         progressiveUpgradeTimer = setTimeout(() => {
-            silentlyUpgradeCurrentScene(sceneData, generation);
-        }, getConnectionProfile().mediumNetwork ? 1200 : 420);
+            silentlyUpgradeCurrentScene(sceneData, generation).then((upgraded) => {
+                console.info("[360 progressive] upgrade finished", {
+                    sceneId: sceneData?.id,
+                    upgraded,
+                    activeQuality: layerQuality[activeLayerKey],
+                });
+            });
+        }, getConnectionProfile().mediumNetwork ? 1400 : 760);
     }
 
 
