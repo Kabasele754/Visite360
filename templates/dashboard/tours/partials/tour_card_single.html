@@ -1,0 +1,165 @@
+<div
+    class="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-soft"
+    id="tour-card-{{ tour.id }}">
+
+    <!-- IMAGE -->
+    <div class="relative aspect-[16/10] overflow-hidden bg-slate-100">
+        {% if tour.thumbnail_image %}
+            <picture>
+                {% if tour.thumbnail_image_mobile %}
+                    <source media="(max-width: 640px)" srcset="{{ tour.thumbnail_image_mobile.url }}">
+                {% endif %}
+                <img
+                    src="{{ tour.thumbnail_image.url }}"
+                    alt="{{ tour.title }}"
+                    loading="lazy"
+                    decoding="async"
+                    class="h-full w-full object-contain p-2 transition duration-500 group-hover:scale-[1.03]">
+            </picture>
+        {% else %}
+            <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-blue-50">
+                <div class="text-center">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">
+                        🌐
+                    </div>
+                    <p class="mt-3 text-xs font-black uppercase tracking-wide text-slate-400">
+                        No Image
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="absolute left-4 top-4 flex flex-wrap gap-2">
+            <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black shadow-sm ring-1
+                {% if tour.status == 'draft' %}
+                    bg-amber-50 text-amber-700 ring-amber-200
+                {% elif tour.status == 'published' %}
+                    bg-emerald-50 text-emerald-700 ring-emerald-200
+                {% else %}
+                    bg-slate-100 text-slate-600 ring-slate-200
+                {% endif %}">
+                <span class="h-2 w-2 rounded-full
+                    {% if tour.status == 'draft' %}bg-amber-500{% elif tour.status == 'published' %}bg-emerald-500{% else %}bg-slate-400{% endif %}">
+                </span>
+                {{ tour.get_status_display }}
+            </span>
+
+            {% if tour.is_featured %}
+                <span class="inline-flex rounded-full bg-blue-600 px-3 py-1 text-xs font-black text-white shadow-sm shadow-blue-500/20">
+                    Featured
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="p-5">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h3 class="line-clamp-2 text-lg font-black leading-tight text-slate-950">
+                    {{ tour.title }}
+                </h3>
+
+                <p class="mt-2 truncate text-sm font-semibold text-slate-500">
+                    📍 {{ tour.place.name }}{% if tour.place.city %} · {{ tour.place.city }}{% endif %}
+                </p>
+            </div>
+
+            <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black text-white">
+                360
+            </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+            {% if tour.virtual_tour_url %}
+                <span class="rounded-full bg-cyan-50 px-3 py-1 text-xs font-black text-cyan-700 ring-1 ring-cyan-200">
+                    360 URL
+                </span>
+            {% endif %}
+
+            {% if tour.video_tour %}
+                <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 ring-1 ring-violet-200">
+                    Video
+                </span>
+            {% endif %}
+
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+                v{{ tour.version|default:"1" }}
+            </span>
+        </div>
+
+        <div class="mt-5 grid grid-cols-2 gap-3">
+            <div class="rounded-2xl bg-slate-50 p-3">
+                <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">Price</p>
+                <p class="mt-1 text-sm font-black text-slate-950">
+                    {% if tour.price %}${{ tour.price }}{% else %}-{% endif %}
+                </p>
+            </div>
+
+            <div class="rounded-2xl bg-slate-50 p-3">
+                <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">Version</p>
+                <p class="mt-1 text-sm font-black text-slate-950">
+                    v{{ tour.version|default:"1" }}
+                </p>
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="mt-5 grid grid-cols-2 gap-2">
+            <a
+                class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-3 text-xs font-black text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700"
+                href="{% url 'tour-builder' current_organization.slug tour.id %}">
+                Builder
+            </a>
+
+            <button
+                type="button"
+                class="btn-as-link inline-flex items-center justify-center rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black text-slate-700 transition hover:bg-slate-200"
+                data-modal-url="{% url 'dashboard-tours-edit' current_organization.slug tour.id %}">
+                Edit
+            </button>
+
+            <button
+                type="button"
+                class="btn-as-link js-duplicate-tour inline-flex items-center justify-center rounded-2xl bg-slate-100 px-4 py-3 text-xs font-black text-slate-700 transition hover:bg-slate-200"
+                data-duplicate-url="{% url 'dashboard-tours-duplicate' current_organization.slug tour.id %}">
+                Duplicate
+            </button>
+
+            {% if tour.status == "published" %}
+                <button
+                    type="button"
+                    class="btn-as-link js-toggle-status inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-3 text-xs font-black text-amber-700 transition hover:bg-amber-100"
+                    data-status-url="{% url 'dashboard-tours-toggle-status' current_organization.slug tour.id %}"
+                    data-next-status="inactive">
+                    Unpublish
+                </button>
+            {% else %}
+                <button
+                    type="button"
+                    class="btn-as-link js-toggle-status inline-flex items-center justify-center rounded-2xl bg-emerald-50 px-4 py-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-100"
+                    data-status-url="{% url 'dashboard-tours-toggle-status' current_organization.slug tour.id %}"
+                    data-next-status="published">
+                    Publish
+                </button>
+            {% endif %}
+
+            <button
+                type="button"
+                class="btn-as-link js-toggle-featured inline-flex items-center justify-center rounded-2xl bg-blue-50 px-4 py-3 text-xs font-black text-blue-700 transition hover:bg-blue-100"
+                data-tour-id="{{ tour.id }}"
+                data-featured-url="{% url 'dashboard-tours-toggle-featured' current_organization.slug tour.id %}">
+                {% if tour.is_featured %}Unfeature{% else %}Feature{% endif %}
+            </button>
+
+            <button
+                type="button"
+                class="btn-as-link js-delete-tour inline-flex items-center justify-center rounded-2xl bg-rose-50 px-4 py-3 text-xs font-black text-rose-700 transition hover:bg-rose-100"
+                data-tour-id="{{ tour.id }}"
+                data-delete-url="{% url 'dashboard-tours-delete' current_organization.slug tour.id %}"
+                data-tour-title="{{ tour.title|escapejs }}">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>

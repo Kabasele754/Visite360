@@ -1,0 +1,155 @@
+<tr id="tour-row-{{ tour.id }}" class="transition hover:bg-slate-50/80">
+    <td class="px-5 py-5 align-middle">
+        <input
+            type="checkbox"
+            class="tour-checkbox h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            value="{{ tour.id }}">
+    </td>
+
+    <td class="px-5 py-5 align-middle">
+        <div class="h-16 w-24 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
+            {% if tour.thumbnail_image %}
+                <picture>
+                    {% if tour.thumbnail_image_mobile %}
+                        <source media="(max-width: 640px)" srcset="{{ tour.thumbnail_image_mobile.url }}">
+                    {% endif %}
+                    <img
+                        src="{{ tour.thumbnail_image.url }}"
+                        alt="{{ tour.title }}"
+                        loading="lazy"
+                        decoding="async"
+                        class="h-full w-full object-contain p-1">
+                </picture>
+            {% else %}
+                <div class="flex h-full w-full items-center justify-center text-[10px] font-black uppercase tracking-wide text-slate-400">
+                    No Image
+                </div>
+            {% endif %}
+        </div>
+    </td>
+
+    <td class="px-5 py-5 align-middle">
+        <div class="max-w-[280px]">
+            <strong class="block truncate text-sm font-black text-slate-950">
+                {{ tour.title }}
+            </strong>
+
+            <span class="mt-1 block truncate text-xs font-bold text-slate-400">
+                {{ tour.slug }}
+            </span>
+
+            <div class="mt-2 flex flex-wrap gap-1.5">
+                {% if tour.is_featured %}
+                    <span class="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700 ring-1 ring-blue-200">
+                        Featured
+                    </span>
+                {% endif %}
+
+                {% if tour.virtual_tour_url %}
+                    <span class="rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-black text-cyan-700 ring-1 ring-cyan-200">
+                        360 URL
+                    </span>
+                {% endif %}
+
+                {% if tour.video_tour %}
+                    <span class="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-700 ring-1 ring-violet-200">
+                        Video
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+
+    <td class="px-5 py-5 align-middle">
+        <div class="max-w-[180px] truncate text-sm font-bold text-slate-600">
+            {{ tour.place.name }}
+        </div>
+    </td>
+
+    <td class="px-5 py-5 align-middle">
+        <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ring-1
+            {% if tour.status == 'draft' %}
+                bg-amber-50 text-amber-700 ring-amber-200
+            {% elif tour.status == 'published' %}
+                bg-emerald-50 text-emerald-700 ring-emerald-200
+            {% else %}
+                bg-slate-100 text-slate-600 ring-slate-200
+            {% endif %}">
+            <span class="h-2 w-2 rounded-full
+                {% if tour.status == 'draft' %}bg-amber-500{% elif tour.status == 'published' %}bg-emerald-500{% else %}bg-slate-400{% endif %}">
+            </span>
+            {{ tour.get_status_display }}
+        </span>
+    </td>
+
+    <td class="px-5 py-5 align-middle text-sm font-black text-slate-700">
+        {% if tour.version %}v{{ tour.version }}{% else %}-{% endif %}
+    </td>
+
+    <td class="px-5 py-5 align-middle text-sm font-black text-slate-700">
+        {% if tour.price %}${{ tour.price }}{% else %}-{% endif %}
+    </td>
+
+    <td class="px-5 py-5 align-middle text-sm font-semibold text-slate-500">
+        {{ tour.created_at|date:"Y-m-d H:i" }}
+    </td>
+
+    <td class="px-5 py-5 align-middle">
+        <div class="flex flex-wrap justify-end gap-2">
+            <a
+                class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700"
+                href="{% url 'tour-builder' current_organization.slug tour.id %}">
+                Builder
+            </a>
+
+            <button
+                type="button"
+                class="btn-as-link inline-flex items-center justify-center rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200"
+                data-modal-url="{% url 'dashboard-tours-edit' current_organization.slug tour.id %}">
+                Edit
+            </button>
+
+            <button
+                type="button"
+                class="btn-as-link js-duplicate-tour inline-flex items-center justify-center rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200"
+                data-duplicate-url="{% url 'dashboard-tours-duplicate' current_organization.slug tour.id %}">
+                Duplicate
+            </button>
+
+            {% if tour.status == "published" %}
+                <button
+                    type="button"
+                    class="btn-as-link js-toggle-status inline-flex items-center justify-center rounded-xl bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 transition hover:bg-amber-100"
+                    data-status-url="{% url 'dashboard-tours-toggle-status' current_organization.slug tour.id %}"
+                    data-next-status="inactive">
+                    Unpublish
+                </button>
+            {% else %}
+                <button
+                    type="button"
+                    class="btn-as-link js-toggle-status inline-flex items-center justify-center rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-100"
+                    data-status-url="{% url 'dashboard-tours-toggle-status' current_organization.slug tour.id %}"
+                    data-next-status="published">
+                    Publish
+                </button>
+            {% endif %}
+
+            <button
+                type="button"
+                class="btn-as-link js-toggle-featured inline-flex items-center justify-center rounded-xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 transition hover:bg-blue-100"
+                data-tour-id="{{ tour.id }}"
+                data-featured-url="{% url 'dashboard-tours-toggle-featured' current_organization.slug tour.id %}">
+                {% if tour.is_featured %}Unfeature{% else %}Feature{% endif %}
+            </button>
+
+            <button
+                type="button"
+                class="btn-as-link js-delete-tour inline-flex items-center justify-center rounded-xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100"
+                data-tour-id="{{ tour.id }}"
+                data-delete-url="{% url 'dashboard-tours-delete' current_organization.slug tour.id %}"
+                data-tour-title="{{ tour.title|escapejs }}">
+                Delete
+            </button>
+        </div>
+    </td>
+</tr>
