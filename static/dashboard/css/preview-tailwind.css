@@ -3495,18 +3495,3 @@ body.preview-has-loaded .preview-intro-overlay.is-hidden + * {
     .preview-floor-card-hotspot { width: 250px !important; }
     .preview-floor-card.is-collapsed { width: 220px; }
 }
-
-
-/* PDF reader remains inside the media dialog on mobile and desktop. */
-.preview-pdf-dialog-reader { position: relative; width: 100%; height: 100%; min-height: 0; background: #eef2f7; overflow: hidden; }
-.preview-pdf-frame, .preview-pdf-object-fallback { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
-.preview-pdf-object-fallback { z-index: 0; }
-.preview-pdf-frame { z-index: 1; }
-.preview-pdf-inline-fallback { height: 100%; display: grid; place-content: center; gap: 8px; padding: 24px; text-align: center; color: #0f172a; }
-@media (max-width: 768px) {
-    .preview-media-card { height: min(92dvh, 820px) !important; max-height: 92dvh !important; }
-    .preview-media-body { min-height: 0 !important; flex: 1 1 auto !important; overflow: hidden !important; }
-    .preview-pdf-dialog-reader { min-height: 58dvh !important; }
-    .preview-media-footer { position: sticky !important; bottom: 0 !important; z-index: 5 !important; display: grid !important; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 7px !important; padding: 9px 10px calc(9px + env(safe-area-inset-bottom)) !important; background: rgba(2,6,23,.97) !important; }
-    .preview-media-footer .preview-media-action { min-width: 0 !important; padding: 0 8px !important; font-size: 11px !important; }
-}

@@ -141,7 +141,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function isMobileViewport() {
-        return window.matchMedia("(max-width: 768px)").matches;
+        const userAgent = String(navigator.userAgent || navigator.vendor || "").toLowerCase();
+        const mobileUserAgent = /android|iphone|ipad|ipod|mobile|webos|blackberry|iemobile|opera mini/.test(userAgent);
+        const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches === true;
+        const touchDevice = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
+        const compactScreen = window.matchMedia?.("(max-width: 900px)")?.matches === true;
+        return Boolean(mobileUserAgent || (coarsePointer && touchDevice && compactScreen));
     }
 
     function setupResponsiveMode() {
@@ -524,43 +529,45 @@ document.addEventListener("DOMContentLoaded", () => {
             preview ||
             "";
 
+        // Mobile reste strictement sur la version mobile.
         const mobile =
             assets.viewer_mobile ||
             assets.mobile ||
             sceneData?.image_360_mobile_url ||
             sceneData?.mobile_image_url ||
-            sceneData?.image_360_url ||
-            assets.viewer_desktop ||
-            assets.desktop ||
-            preview ||
-            thumbnail ||
             "";
 
+        // Desktop reste strictement sur la version desktop.
         const desktop =
             assets.viewer_desktop ||
             assets.desktop ||
             sceneData?.image_360_desktop_url ||
             sceneData?.desktop_image_url ||
             sceneData?.image_360_url ||
-            assets.original ||
-            sceneData?.image_360_original_url ||
-            mobile ||
-            preview ||
-            thumbnail ||
             "";
 
-        const original = assets.original || sceneData?.image_360_original_url || "";
-        const fallback = assets.fallback || desktop || mobile || preview || thumbnail || original || "";
+        const original =
+            assets.original ||
+            sceneData?.image_360_original_url ||
+            "";
 
-        return { preview, thumbnail, mobile, desktop, original, fallback };
+        return {
+            preview,
+            thumbnail,
+            mobile,
+            desktop,
+            original,
+            mobileFallback: mobile || preview || thumbnail || "",
+            desktopFallback: desktop || original || preview || thumbnail || "",
+        };
     }
 
     function getPreferredImageUrl(sceneData) {
         const assets = getSceneAssets(sceneData);
         if (isMobileViewport()) {
-            return assets.mobile || assets.desktop || assets.original || assets.preview || assets.thumbnail || assets.fallback || "";
+            return assets.mobile || assets.preview || assets.thumbnail || "";
         }
-        return assets.desktop || assets.original || assets.mobile || assets.preview || assets.thumbnail || assets.fallback || "";
+        return assets.desktop || assets.original || assets.preview || assets.thumbnail || "";
     }
 
     function getConnectionProfile() {
@@ -593,54 +600,44 @@ document.addEventListener("DOMContentLoaded", () => {
     function getProgressiveLoadPlan(sceneData) {
         const assets = getSceneAssets(sceneData);
         const profile = getConnectionProfile();
-        const mobile = isMobileViewport();
+        const mobileDevice = isMobileViewport();
 
-        const light =
-            assets.preview ||
-            assets.thumbnail ||
-            (mobile ? assets.mobile : assets.desktop) ||
-            assets.fallback ||
-            "";
-
-        let compatible = mobile
-            ? (assets.mobile || assets.desktop || assets.original || light)
-            : (
-                (assets.desktop && assets.desktop !== assets.preview && assets.desktop !== assets.thumbnail)
-                    ? assets.desktop
-                    : (assets.original || assets.desktop || assets.mobile || light)
-            );
-
-        let ultra = "";
-        if (!mobile && !profile.saveData && !profile.slowNetwork && !profile.lowMemory) {
-            ultra = assets.original && assets.original !== compatible
-                ? assets.original
-                : "";
+        if (mobileDevice) {
+            const light = assets.preview || assets.thumbnail || assets.mobile || "";
+            const compatible = assets.mobile || light || "";
+            const sequence = [];
+            [
+                { quality: "light", url: light },
+                { quality: "mobile", url: compatible },
+            ].forEach((entry) => {
+                if (entry.url && !sequence.some((item) => item.url === entry.url)) sequence.push(entry);
+            });
+            return {
+                deviceMode: "mobile",
+                light: sequence[0] || null,
+                compatible: sequence[1] || sequence[0] || null,
+                ultra: null,
+                sequence,
+                profile,
+            };
         }
 
-        if (profile.slowNetwork || profile.lowMemory) {
-            compatible = mobile
-                ? (assets.mobile || light)
-                : (assets.desktop || assets.mobile || light);
-            ultra = "";
-        }
-
+        const light = assets.preview || assets.thumbnail || assets.desktop || assets.original || "";
+        const compatible = assets.desktop || assets.original || light || "";
         const sequence = [];
         [
             { quality: "light", url: light },
-            { quality: mobile ? "mobile" : "desktop", url: compatible },
-            { quality: "ultra", url: ultra }
+            { quality: "desktop", url: compatible },
         ].forEach((entry) => {
-            if (!entry.url) return;
-            if (sequence.some((item) => item.url === entry.url)) return;
-            sequence.push(entry);
+            if (entry.url && !sequence.some((item) => item.url === entry.url)) sequence.push(entry);
         });
-
         return {
-            light: sequence[0] || { quality: "fallback", url: getPreferredImageUrl(sceneData) },
+            deviceMode: "desktop",
+            light: sequence[0] || null,
             compatible: sequence[1] || sequence[0] || null,
-            ultra: sequence[2] || null,
+            ultra: null,
             sequence,
-            profile
+            profile,
         };
     }
 
@@ -663,7 +660,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     decodedImageCache.set(url, true);
                     decodedImageMetaCache.set(url, {
                         width: Number(image.naturalWidth || 0),
-                        height: Number(image.naturalHeight || 0)
+                        height: Number(image.naturalHeight || 0),
                     });
                 }
                 preloadPromises.delete(url);
@@ -1424,7 +1421,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return "";
     }
 
-    function toEmbedUrl(url, autoplay=false, muted=false, loop=false) {
+    function toEmbedUrl(url, autoplay=false, muted=false) {
         try {
             const u = new URL(url, location.href);
             const youtubeId = extractYouTubeId(url);
@@ -1437,13 +1434,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     modestbranding: "1",
                     enablejsapi: "1",
                     origin: location.origin,
-                    controls: "1",
-                    fs: "1",
                 });
-                if (loop) {
-                    params.set("loop", "1");
-                    params.set("playlist", youtubeId);
-                }
                 return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}?${params.toString()}`;
             }
             if (u.hostname.includes("vimeo.com")) {
@@ -1463,32 +1454,30 @@ document.addEventListener("DOMContentLoaded", () => {
         if (hotspot.type === "pdf") {
             const url = c.document_url || hotspot.media_file_url || "";
             const safeUrl = escapeAttr(url);
+            const isCompactPdf = window.matchMedia?.("(max-width: 768px)")?.matches;
 
             if (!url) {
                 previewMediaBody.innerHTML = `<div class="preview-media-empty">PDF unavailable</div>`;
-            } else {
+            } else if (isCompactPdf) {
                 previewMediaBody.innerHTML = `
-                    <div class="preview-pdf-dialog-reader">
-                        <iframe class="preview-pdf-frame" src="${safeUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH" title="${escapeAttr(hotspot.title || hotspot.label || "PDF")}" loading="eager"></iframe>
-                        <object class="preview-pdf-object-fallback" data="${safeUrl}#toolbar=1&navpanes=0&view=FitH" type="application/pdf">
-                            <div class="preview-pdf-inline-fallback"><strong>Le lecteur PDF intégré n’est pas disponible sur cet appareil.</strong><span>Utilise le bouton Ouvrir ci-dessous sans fermer la visite.</span></div>
-                        </object>
+                    <div class="preview-pdf-mobile-shell">
+                        <div class="preview-pdf-mobile-icon" aria-hidden="true">PDF</div>
+                        <strong>${escapeAttr(hotspot.title || hotspot.label || "Document PDF")}</strong>
+                        <p>Ouvre le document dans le lecteur du téléphone pour une lecture plus nette.</p>
+                        <a class="preview-pdf-mobile-open" href="${safeUrl}" target="_blank" rel="noopener">Lire le PDF</a>
                     </div>`;
+            } else {
+                previewMediaBody.innerHTML = `<iframe class="preview-pdf-frame" src="${safeUrl}#toolbar=1&navpanes=0&view=FitH" title="PDF"></iframe>`;
             }
 
             if (url) {
                 previewMediaFooter.innerHTML = `
-                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Recharger</button>
                     <a class="preview-media-action preview-media-action-secondary" href="${safeUrl}" target="_blank" rel="noopener">Ouvrir</a>
                     ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${safeUrl}" download>Télécharger</a>`}`;
-                previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
-                    const frame = previewMediaBody.querySelector(".preview-pdf-frame");
-                    if (frame) frame.src = frame.src;
-                });
             }
         } else {
             const url = c.video_url || hotspot.media_file_url || "";
-            const embed = toEmbedUrl(url, !!c.autoplay, !!c.muted, !!c.loop);
+            const embed = toEmbedUrl(url, !!c.autoplay, !!c.muted);
             if (embed) previewMediaBody.innerHTML = `<iframe class="preview-video-frame" src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
             else if (url) previewMediaBody.innerHTML = `<video class="preview-video-player" controls playsinline preload="metadata" ${c.autoplay ? "autoplay" : ""} ${c.muted ? "muted" : ""} ${c.loop ? "loop" : ""} poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video>`;
             else previewMediaBody.innerHTML = `<div class="preview-media-empty">Video unavailable</div>`;
@@ -1599,7 +1588,7 @@ document.addEventListener("DOMContentLoaded", () => {
         node.className = "preview-hotspot preview-wall-video-hotspot";
         node.style.width = `${width}px`;
         node.style.height = `${height}px`;
-        const embed = toEmbedUrl(url, !!c.autoplay, c.muted !== false, !!c.loop);
+        const embed = toEmbedUrl(url, !!c.autoplay, c.muted !== false);
         if (embed) node.innerHTML = `<div class="preview-wall-video-frame"><iframe src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe><button type="button" aria-label="Open video">⤢</button></div>`;
         else node.innerHTML = `<div class="preview-wall-video-frame"><video playsinline ${c.autoplay ? "autoplay" : ""} ${c.muted !== false ? "muted" : ""} ${c.loop ? "loop" : ""} preload="metadata" poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video><button type="button" aria-label="Open video">⤢</button></div>`;
         node.querySelector("button")?.addEventListener("click", (event) => { event.stopPropagation(); openMediaHotspot(hotspot); });
@@ -1772,16 +1761,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const selectedImageUrl = imageUrlOverride || getPreferredImageUrl(sceneData);
         const decodedMeta = decodedImageMetaCache.get(selectedImageUrl) || {};
-
-        // IMPORTANT : Marzipano doit connaître la largeur réelle de l'équirectangulaire.
-        // Une valeur fixe de 4096 peut plafonner la netteté d'une image 8K/12K.
+        const declaredWidth = mobile
+            ? Number(sceneData?.mobile_width || sceneData?.image_360_mobile_width || 0)
+            : Number(sceneData?.desktop_width || sceneData?.image_360_desktop_width || sceneData?.image_width || 0);
         const logicalResolution = Math.max(
             Number(decodedMeta.width || 0),
-            Number(sceneData?.image_width || 0),
-            Number(sceneData?.width || 0),
-            Number(sceneData?.equirect_width || 0),
+            declaredWidth,
+            Number(sceneData?.face_size || 0),
             Number(sceneData?.max_resolution || 0),
-            mobile ? 4096 : 8192
+            mobile ? 2048 : 4096
         );
 
         return {

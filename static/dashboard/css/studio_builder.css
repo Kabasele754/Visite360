@@ -1886,34 +1886,3 @@ input[type="file"]::file-selector-button {
 .hotspot-type-panel[data-panel="pdf"],.hotspot-type-panel[data-panel="video"],.hotspot-type-panel[data-panel="floor"]{border:1px solid #dbeafe;background:linear-gradient(145deg,#fff,#f8fbff);border-radius:20px;padding:16px}.media-options{display:flex;flex-wrap:wrap;gap:12px}.media-options label,.media-check{display:flex;align-items:center;gap:8px;font-weight:800;color:#334155}.marzipano-hotspot-marker.hotspot-type-pdf,.marzipano-hotspot-marker.hotspot-type-video,.marzipano-hotspot-marker.hotspot-type-floor{border-radius:999px!important;background:rgba(2,6,23,.68)!important;border:1px solid rgba(255,255,255,.9)!important;box-shadow:0 12px 30px rgba(0,0,0,.3)!important}.marzipano-hotspot-marker.hotspot-type-pdf:after{content:"PDF";position:absolute;bottom:-18px;color:white;font-size:9px;font-weight:950}.marzipano-hotspot-marker.hotspot-type-video:after{content:"VIDEO";position:absolute;bottom:-18px;color:white;font-size:9px;font-weight:950}.marzipano-hotspot-marker.hotspot-type-floor:after{content:"ÉTAGE";position:absolute;bottom:-18px;color:white;font-size:9px;font-weight:950}
 
 .hotspot-type-panel[data-panel="door"]{border:1px solid #bae6fd;background:linear-gradient(145deg,#fff,#f0f9ff);border-radius:20px;padding:16px}.marzipano-hotspot-marker.hotspot-type-door{border:2px dashed rgba(255,255,255,.95)!important;border-radius:8px!important;background:rgba(14,165,233,.08)!important}.marzipano-hotspot-marker.hotspot-type-door:after{content:"DOOR";position:absolute;bottom:-18px;color:#fff;font-size:9px;font-weight:950}.form-help{margin:8px 0 0;color:#64748b;font-size:12px;line-height:1.5}
-
-
-/* =====================================================================
-   SURFACE TRACER — DOOR / WALL VIDEO
-===================================================================== */
-.surface-trace-launch-btn {
-    width: 100%; margin-top: 10px; padding: 13px 14px; display: flex; align-items: center;
-    gap: 12px; text-align: left; border-radius: 16px; border: 1px solid rgba(34,211,238,.35);
-    background: linear-gradient(135deg, rgba(34,211,238,.11), rgba(59,130,246,.08));
-    color: #fff; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease;
-}
-.surface-trace-launch-btn:hover { transform: translateY(-1px); border-color: rgba(103,232,249,.72); background: linear-gradient(135deg, rgba(34,211,238,.17), rgba(59,130,246,.12)); }
-.surface-trace-launch-btn > span { width: 40px; height: 40px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 12px; background: rgba(255,255,255,.09); font-size: 24px; }
-.surface-trace-launch-btn div { display: grid; gap: 3px; }
-.surface-trace-launch-btn strong { font-size: 13px; }
-.surface-trace-launch-btn small { color: rgba(226,232,240,.72); line-height: 1.35; }
-.surface-trace-launch-btn.is-door { border-color: rgba(251,191,36,.34); background: linear-gradient(135deg, rgba(251,191,36,.11), rgba(249,115,22,.08)); }
-
-.builder-surface-tracer { position: absolute; inset: 0; z-index: 9998; cursor: crosshair; touch-action: none; user-select: none; background: rgba(2,6,23,.08); }
-.builder-surface-tracer-help { position: absolute; z-index: 3; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); max-width: calc(100% - 24px); display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,.23); background: rgba(2,6,23,.82); color: #fff; box-shadow: 0 18px 45px rgba(0,0,0,.32); pointer-events: auto; }
-.builder-surface-tracer-help strong { white-space: nowrap; }
-.builder-surface-tracer-help span { color: rgba(226,232,240,.75); font-size: 12px; }
-.builder-surface-tracer-help button { border: 1px solid rgba(255,255,255,.22); border-radius: 999px; padding: 7px 11px; background: rgba(255,255,255,.08); color: #fff; cursor: pointer; }
-.builder-surface-tracer-box { position: absolute; display: none; z-index: 2; min-width: 1px; min-height: 1px; border: 2px solid #67e8f9; background: rgba(34,211,238,.12); box-shadow: 0 0 0 1px rgba(2,6,23,.65), inset 0 0 30px rgba(34,211,238,.1); pointer-events: none; }
-.builder-surface-tracer.is-door .builder-surface-tracer-box { border-color: #fbbf24; background: rgba(251,191,36,.11); }
-.builder-surface-tracer-box > b { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); border-radius: 999px; padding: 5px 9px; background: rgba(2,6,23,.72); color: #fff; font-size: 10px; letter-spacing: .14em; }
-.trace-corner { position: absolute; width: 12px; height: 12px; border: 2px solid currentColor; background: #020617; color: #67e8f9; }
-.is-door .trace-corner { color: #fbbf24; }
-.trace-tl { left: -7px; top: -7px; } .trace-tr { right: -7px; top: -7px; } .trace-bl { left: -7px; bottom: -7px; } .trace-br { right: -7px; bottom: -7px; }
-body.surface-trace-active .builder-toolbar, body.surface-trace-active .scene-sidebar { pointer-events: none; }
-@media (max-width: 768px) { .builder-surface-tracer-help { top: 10px; align-items: flex-start; flex-wrap: wrap; } .builder-surface-tracer-help span { width: 100%; order: 3; } }

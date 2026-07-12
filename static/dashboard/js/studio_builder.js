@@ -792,13 +792,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const hotspotVideoDisplayMode = document.getElementById("hotspotVideoDisplayMode");
     const hotspotVideoWidth = document.getElementById("hotspotVideoWidth");
     const hotspotVideoHeight = document.getElementById("hotspotVideoHeight");
-    const traceVideoSurfaceBtn = document.getElementById("traceVideoSurfaceBtn");
     const hotspotDoorTargetScene = document.getElementById("hotspotDoorTargetScene");
     const hotspotDoorDirection = document.getElementById("hotspotDoorDirection");
     const hotspotDoorWidth = document.getElementById("hotspotDoorWidth");
     const hotspotDoorHeight = document.getElementById("hotspotDoorHeight");
     const hotspotDoorLabel = document.getElementById("hotspotDoorLabel");
-    const traceDoorSurfaceBtn = document.getElementById("traceDoorSurfaceBtn");
     const hotspotVideoDescription = document.getElementById("hotspotVideoDescription");
     const hotspotVideoFile = document.getElementById("hotspotVideoFile");
     const hotspotVideoUrl = document.getElementById("hotspotVideoUrl");
@@ -2542,182 +2540,6 @@ document.addEventListener("DOMContentLoaded", () => {
         openModalShell();
     }
 
-
-    // ==================================================================
-    // SURFACE TRACER — VIDEO SCREEN / INTERACTIVE DOOR
-    // Draw directly over the active panorama. The rectangle center becomes
-    // the hotspot yaw/pitch and its pixel size is stored in payload.display.
-    // ==================================================================
-    let activeSurfaceTrace = null;
-
-    function hideHotspotModalForTrace() {
-        if (!hotspotModal) return;
-        hotspotModal.classList.add("hidden");
-        hotspotModal.classList.remove("is-opening", "is-closing");
-        document.body.classList.remove("modal-is-open");
-    }
-
-    function restoreHotspotModalAfterTrace() {
-        openModalShell();
-        renderHotspotLivePreview();
-    }
-
-    function cancelSurfaceTrace({ reopen = true } = {}) {
-        if (!activeSurfaceTrace) return;
-        const { overlay, cleanup } = activeSurfaceTrace;
-        try { cleanup?.(); } catch (_) {}
-        overlay?.remove();
-        activeSurfaceTrace = null;
-        document.body.classList.remove("surface-trace-active");
-        if (reopen) restoreHotspotModalAfterTrace();
-    }
-
-    function startSurfaceTrace(kind) {
-        const activeLayerEl = getLayerEl(activeLayerKey);
-        const activeView = layerViews[activeLayerKey];
-        if (!panoramaViewer || !activeLayerEl || !activeView) {
-            notify("Le panorama actif n'est pas prêt.", "warning");
-            return;
-        }
-
-        cancelSurfaceTrace({ reopen: false });
-        hideHotspotModalForTrace();
-        stopAutorotate?.();
-
-        const overlay = document.createElement("div");
-        overlay.className = `builder-surface-tracer is-${kind}`;
-        overlay.innerHTML = `
-            <div class="builder-surface-tracer-help">
-                <strong>${kind === "door" ? "Tracer la porte" : "Tracer l’écran vidéo"}</strong>
-                <span>Glisse du coin supérieur gauche vers le coin inférieur droit.</span>
-                <button type="button" data-cancel-surface-trace>Annuler</button>
-            </div>
-            <div class="builder-surface-tracer-box" aria-hidden="true">
-                <span class="trace-corner trace-tl"></span>
-                <span class="trace-corner trace-tr"></span>
-                <span class="trace-corner trace-bl"></span>
-                <span class="trace-corner trace-br"></span>
-                <b>${kind === "door" ? "PORTE" : "ÉCRAN"}</b>
-            </div>`;
-        panoramaViewer.appendChild(overlay);
-
-        const box = overlay.querySelector(".builder-surface-tracer-box");
-        const cancelBtn = overlay.querySelector("[data-cancel-surface-trace]");
-        let drawing = false;
-        let startX = 0;
-        let startY = 0;
-        let pointerId = null;
-
-        function localPoint(event) {
-            const rect = overlay.getBoundingClientRect();
-            return {
-                x: Math.max(0, Math.min(rect.width, event.clientX - rect.left)),
-                y: Math.max(0, Math.min(rect.height, event.clientY - rect.top)),
-            };
-        }
-
-        function renderBox(x1, y1, x2, y2) {
-            const left = Math.min(x1, x2);
-            const top = Math.min(y1, y2);
-            const width = Math.abs(x2 - x1);
-            const height = Math.abs(y2 - y1);
-            Object.assign(box.style, {
-                display: "block",
-                left: `${left}px`,
-                top: `${top}px`,
-                width: `${width}px`,
-                height: `${height}px`,
-            });
-            return { left, top, width, height };
-        }
-
-        function onPointerDown(event) {
-            if (event.target.closest("[data-cancel-surface-trace]")) return;
-            event.preventDefault();
-            event.stopPropagation();
-            const point = localPoint(event);
-            drawing = true;
-            pointerId = event.pointerId;
-            startX = point.x;
-            startY = point.y;
-            renderBox(startX, startY, startX, startY);
-            try { overlay.setPointerCapture(pointerId); } catch (_) {}
-        }
-
-        function onPointerMove(event) {
-            if (!drawing || event.pointerId !== pointerId) return;
-            event.preventDefault();
-            event.stopPropagation();
-            const point = localPoint(event);
-            renderBox(startX, startY, point.x, point.y);
-        }
-
-        function finishTrace(event) {
-            if (!drawing || event.pointerId !== pointerId) return;
-            event.preventDefault();
-            event.stopPropagation();
-            drawing = false;
-            const point = localPoint(event);
-            const traced = renderBox(startX, startY, point.x, point.y);
-
-            const minWidth = kind === "door" ? 70 : 110;
-            const minHeight = kind === "door" ? 120 : 70;
-            if (traced.width < minWidth || traced.height < minHeight) {
-                notify("La zone tracée est trop petite. Trace une zone plus grande.", "warning");
-                box.style.display = "none";
-                return;
-            }
-
-            const layerRect = activeLayerEl.getBoundingClientRect();
-            const overlayRect = overlay.getBoundingClientRect();
-            const centerClientX = overlayRect.left + traced.left + traced.width / 2;
-            const centerClientY = overlayRect.top + traced.top + traced.height / 2;
-            const coords = activeView.screenToCoordinates({
-                x: centerClientX - layerRect.left,
-                y: centerClientY - layerRect.top,
-            });
-
-            if (!coords) {
-                notify("Impossible de déterminer la position 360 de cette zone.", "error");
-                return;
-            }
-
-            pendingHotspotPosition = { yaw: coords.yaw, pitch: coords.pitch };
-            if (kind === "door") {
-                if (hotspotDoorWidth) hotspotDoorWidth.value = Math.round(traced.width);
-                if (hotspotDoorHeight) hotspotDoorHeight.value = Math.round(traced.height);
-            } else {
-                if (hotspotVideoDisplayMode) hotspotVideoDisplayMode.value = "screen";
-                if (hotspotVideoWidth) hotspotVideoWidth.value = Math.round(traced.width);
-                if (hotspotVideoHeight) hotspotVideoHeight.value = Math.round(traced.height);
-            }
-
-            notify(kind === "door" ? "Zone de porte enregistrée." : "Écran vidéo positionné.", "success");
-            setTimeout(() => cancelSurfaceTrace({ reopen: true }), 180);
-        }
-
-        function onKeyDown(event) {
-            if (event.key === "Escape") cancelSurfaceTrace({ reopen: true });
-        }
-
-        overlay.addEventListener("pointerdown", onPointerDown, { passive: false });
-        overlay.addEventListener("pointermove", onPointerMove, { passive: false });
-        overlay.addEventListener("pointerup", finishTrace, { passive: false });
-        overlay.addEventListener("pointercancel", finishTrace, { passive: false });
-        cancelBtn?.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            cancelSurfaceTrace({ reopen: true });
-        });
-        document.addEventListener("keydown", onKeyDown);
-
-        activeSurfaceTrace = {
-            overlay,
-            cleanup: () => document.removeEventListener("keydown", onKeyDown),
-        };
-        document.body.classList.add("surface-trace-active");
-    }
-
     function closeHotspotModalFn() {
         if (!hotspotModal || hotspotModal.classList.contains("hidden")) return;
 
@@ -3305,16 +3127,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     toolButtons.forEach(btn => {
         btn.addEventListener("click", () => setActiveTool(btn.dataset.tool));
-    });
-
-    traceVideoSurfaceBtn?.addEventListener("click", (event) => {
-        event.preventDefault();
-        startSurfaceTrace("video");
-    });
-
-    traceDoorSurfaceBtn?.addEventListener("click", (event) => {
-        event.preventDefault();
-        startSurfaceTrace("door");
     });
 
     hotspotType?.addEventListener("change", () => {
