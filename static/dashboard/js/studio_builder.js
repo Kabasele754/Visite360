@@ -778,6 +778,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const hotspotWebsiteTitle = document.getElementById("hotspotWebsiteTitle");
     const hotspotWebsiteButtonText = document.getElementById("hotspotWebsiteButtonText");
     const hotspotWebsiteUrl = document.getElementById("hotspotWebsiteUrl");
+    const hotspotFloorTargetScene = document.getElementById("hotspotFloorTargetScene");
+    const hotspotFloorDirection = document.getElementById("hotspotFloorDirection");
+    const hotspotFloorName = document.getElementById("hotspotFloorName");
+    const hotspotFloorNumber = document.getElementById("hotspotFloorNumber");
+    const hotspotFloorDestination = document.getElementById("hotspotFloorDestination");
+    const hotspotPdfTitle = document.getElementById("hotspotPdfTitle");
+    const hotspotPdfDescription = document.getElementById("hotspotPdfDescription");
+    const hotspotPdfFile = document.getElementById("hotspotPdfFile");
+    const hotspotPdfUrl = document.getElementById("hotspotPdfUrl");
+    const hotspotPdfDownload = document.getElementById("hotspotPdfDownload");
+    const hotspotVideoTitle = document.getElementById("hotspotVideoTitle");
+    const hotspotVideoDisplayMode = document.getElementById("hotspotVideoDisplayMode");
+    const hotspotVideoWidth = document.getElementById("hotspotVideoWidth");
+    const hotspotVideoHeight = document.getElementById("hotspotVideoHeight");
+    const traceVideoSurfaceBtn = document.getElementById("traceVideoSurfaceBtn");
+    const hotspotDoorTargetScene = document.getElementById("hotspotDoorTargetScene");
+    const hotspotDoorDirection = document.getElementById("hotspotDoorDirection");
+    const hotspotDoorWidth = document.getElementById("hotspotDoorWidth");
+    const hotspotDoorHeight = document.getElementById("hotspotDoorHeight");
+    const hotspotDoorLabel = document.getElementById("hotspotDoorLabel");
+    const traceDoorSurfaceBtn = document.getElementById("traceDoorSurfaceBtn");
+    const hotspotVideoDescription = document.getElementById("hotspotVideoDescription");
+    const hotspotVideoFile = document.getElementById("hotspotVideoFile");
+    const hotspotVideoUrl = document.getElementById("hotspotVideoUrl");
+    const hotspotVideoPoster = document.getElementById("hotspotVideoPoster");
+    const hotspotVideoAutoplay = document.getElementById("hotspotVideoAutoplay");
+    const hotspotVideoMuted = document.getElementById("hotspotVideoMuted");
+    const hotspotVideoLoop = document.getElementById("hotspotVideoLoop");
 
     const hotspotEditHud = document.getElementById("hotspotEditHud");
     const hudMoveLeft = document.getElementById("hudMoveLeft");
@@ -1163,6 +1191,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             hotspotTargetScene.appendChild(option);
+            if (hotspotFloorTargetScene) hotspotFloorTargetScene.appendChild(option.cloneNode(true));
+            if (hotspotDoorTargetScene) hotspotDoorTargetScene.appendChild(option.cloneNode(true));
         });
 
         if (
@@ -1186,6 +1216,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getTypeMeta(type) {
         const meta = {
+            floor: { kicker: "Property levels", title: "Floor Navigation", description: "Move beautifully between floors and levels." },
+            pdf: { kicker: "Document", title: "PDF Hotspot", description: "Open a brochure or document inside the tour." },
+            video: { kicker: "Media", title: "Video Hotspot", description: "Play as a classic hotspot or directly on a wall screen." },
+            door: { kicker: "Immersive navigation", title: "Interactive Door", description: "Trace a clickable door and animate its opening." },
             navigate: {
                 kicker: "Scene navigation",
                 title: "Navigation Hotspot",
@@ -1514,7 +1548,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const anchor = display.anchor || "bottom";
 
         const el = document.createElement("div");
-        el.className = `marzipano-hotspot marzipano-hotspot-marker variant-${variant} hotspot-anchor-${anchor}`;
+        el.className = `marzipano-hotspot marzipano-hotspot-marker variant-${variant} hotspot-anchor-${anchor} hotspot-type-${hotspot.type || "custom"}`;
         el.title = hotspot.label || "Hotspot";
         el.dataset.hotspotId = hotspot.id;
 
@@ -2164,6 +2198,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let actionText = "";
         let whatsapp = "";
         let contact = "";
+        let display = {};
 
         if (modalPreviewObjectUrl) {
             URL.revokeObjectURL(modalPreviewObjectUrl);
@@ -2229,6 +2264,30 @@ document.addEventListener("DOMContentLoaded", () => {
             actionText = hotspotWebsiteButtonText?.value || "Open";
         }
 
+        if (type === "floor") {
+            title = hotspotFloorName?.value || hotspotLabel?.value || "Floor";
+            content = { floor_name: title, floor_number: Number(hotspotFloorNumber?.value || 0), direction: hotspotFloorDirection?.value || "up", destination_label: hotspotFloorDestination?.value || "" };
+        }
+        if (type === "pdf") {
+            title = hotspotPdfTitle?.value || hotspotLabel?.value || "Document";
+            description = hotspotPdfDescription?.value || "";
+            content = { document_url: hotspotPdfUrl?.value || "", allow_download: hotspotPdfDownload?.checked !== false, button_text: "Open PDF" };
+        }
+        if (type === "video") {
+            title = hotspotVideoTitle?.value || hotspotLabel?.value || "Video";
+            description = hotspotVideoDescription?.value || "";
+            const url = hotspotVideoUrl?.value || "";
+            content = { video_url: url, video_source: /youtu/.test(url) ? "youtube" : /vimeo/.test(url) ? "vimeo" : "upload", autoplay: !!hotspotVideoAutoplay?.checked, muted: !!hotspotVideoMuted?.checked, loop: !!hotspotVideoLoop?.checked };
+            display = { ...(display || {}), variant: hotspotVideoDisplayMode?.value === "screen" ? "screen" : "pin", width: Number(hotspotVideoWidth?.value || 360), height: Number(hotspotVideoHeight?.value || 210) };
+        }
+
+        if (type === "door") {
+            title = hotspotDoorLabel?.value || hotspotLabel?.value || "Open the door";
+            description = "Interactive door navigation";
+            content = { opening_direction: hotspotDoorDirection?.value || "left" };
+            display = { ...(display || {}), variant: "door", width: Number(hotspotDoorWidth?.value || 180), height: Number(hotspotDoorHeight?.value || 320) };
+        }
+
         if (type === "custom") {
             title = hotspotLabel?.value || "Custom hotspot";
             description = hotspotTooltip?.value || "Custom action.";
@@ -2246,6 +2305,7 @@ document.addEventListener("DOMContentLoaded", () => {
             actionText,
             whatsapp,
             contact,
+            display,
         };
     }
 
@@ -2482,6 +2542,182 @@ document.addEventListener("DOMContentLoaded", () => {
         openModalShell();
     }
 
+
+    // ==================================================================
+    // SURFACE TRACER — VIDEO SCREEN / INTERACTIVE DOOR
+    // Draw directly over the active panorama. The rectangle center becomes
+    // the hotspot yaw/pitch and its pixel size is stored in payload.display.
+    // ==================================================================
+    let activeSurfaceTrace = null;
+
+    function hideHotspotModalForTrace() {
+        if (!hotspotModal) return;
+        hotspotModal.classList.add("hidden");
+        hotspotModal.classList.remove("is-opening", "is-closing");
+        document.body.classList.remove("modal-is-open");
+    }
+
+    function restoreHotspotModalAfterTrace() {
+        openModalShell();
+        renderHotspotLivePreview();
+    }
+
+    function cancelSurfaceTrace({ reopen = true } = {}) {
+        if (!activeSurfaceTrace) return;
+        const { overlay, cleanup } = activeSurfaceTrace;
+        try { cleanup?.(); } catch (_) {}
+        overlay?.remove();
+        activeSurfaceTrace = null;
+        document.body.classList.remove("surface-trace-active");
+        if (reopen) restoreHotspotModalAfterTrace();
+    }
+
+    function startSurfaceTrace(kind) {
+        const activeLayerEl = getLayerEl(activeLayerKey);
+        const activeView = layerViews[activeLayerKey];
+        if (!panoramaViewer || !activeLayerEl || !activeView) {
+            notify("Le panorama actif n'est pas prêt.", "warning");
+            return;
+        }
+
+        cancelSurfaceTrace({ reopen: false });
+        hideHotspotModalForTrace();
+        stopAutorotate?.();
+
+        const overlay = document.createElement("div");
+        overlay.className = `builder-surface-tracer is-${kind}`;
+        overlay.innerHTML = `
+            <div class="builder-surface-tracer-help">
+                <strong>${kind === "door" ? "Tracer la porte" : "Tracer l’écran vidéo"}</strong>
+                <span>Glisse du coin supérieur gauche vers le coin inférieur droit.</span>
+                <button type="button" data-cancel-surface-trace>Annuler</button>
+            </div>
+            <div class="builder-surface-tracer-box" aria-hidden="true">
+                <span class="trace-corner trace-tl"></span>
+                <span class="trace-corner trace-tr"></span>
+                <span class="trace-corner trace-bl"></span>
+                <span class="trace-corner trace-br"></span>
+                <b>${kind === "door" ? "PORTE" : "ÉCRAN"}</b>
+            </div>`;
+        panoramaViewer.appendChild(overlay);
+
+        const box = overlay.querySelector(".builder-surface-tracer-box");
+        const cancelBtn = overlay.querySelector("[data-cancel-surface-trace]");
+        let drawing = false;
+        let startX = 0;
+        let startY = 0;
+        let pointerId = null;
+
+        function localPoint(event) {
+            const rect = overlay.getBoundingClientRect();
+            return {
+                x: Math.max(0, Math.min(rect.width, event.clientX - rect.left)),
+                y: Math.max(0, Math.min(rect.height, event.clientY - rect.top)),
+            };
+        }
+
+        function renderBox(x1, y1, x2, y2) {
+            const left = Math.min(x1, x2);
+            const top = Math.min(y1, y2);
+            const width = Math.abs(x2 - x1);
+            const height = Math.abs(y2 - y1);
+            Object.assign(box.style, {
+                display: "block",
+                left: `${left}px`,
+                top: `${top}px`,
+                width: `${width}px`,
+                height: `${height}px`,
+            });
+            return { left, top, width, height };
+        }
+
+        function onPointerDown(event) {
+            if (event.target.closest("[data-cancel-surface-trace]")) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const point = localPoint(event);
+            drawing = true;
+            pointerId = event.pointerId;
+            startX = point.x;
+            startY = point.y;
+            renderBox(startX, startY, startX, startY);
+            try { overlay.setPointerCapture(pointerId); } catch (_) {}
+        }
+
+        function onPointerMove(event) {
+            if (!drawing || event.pointerId !== pointerId) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const point = localPoint(event);
+            renderBox(startX, startY, point.x, point.y);
+        }
+
+        function finishTrace(event) {
+            if (!drawing || event.pointerId !== pointerId) return;
+            event.preventDefault();
+            event.stopPropagation();
+            drawing = false;
+            const point = localPoint(event);
+            const traced = renderBox(startX, startY, point.x, point.y);
+
+            const minWidth = kind === "door" ? 70 : 110;
+            const minHeight = kind === "door" ? 120 : 70;
+            if (traced.width < minWidth || traced.height < minHeight) {
+                notify("La zone tracée est trop petite. Trace une zone plus grande.", "warning");
+                box.style.display = "none";
+                return;
+            }
+
+            const layerRect = activeLayerEl.getBoundingClientRect();
+            const overlayRect = overlay.getBoundingClientRect();
+            const centerClientX = overlayRect.left + traced.left + traced.width / 2;
+            const centerClientY = overlayRect.top + traced.top + traced.height / 2;
+            const coords = activeView.screenToCoordinates({
+                x: centerClientX - layerRect.left,
+                y: centerClientY - layerRect.top,
+            });
+
+            if (!coords) {
+                notify("Impossible de déterminer la position 360 de cette zone.", "error");
+                return;
+            }
+
+            pendingHotspotPosition = { yaw: coords.yaw, pitch: coords.pitch };
+            if (kind === "door") {
+                if (hotspotDoorWidth) hotspotDoorWidth.value = Math.round(traced.width);
+                if (hotspotDoorHeight) hotspotDoorHeight.value = Math.round(traced.height);
+            } else {
+                if (hotspotVideoDisplayMode) hotspotVideoDisplayMode.value = "screen";
+                if (hotspotVideoWidth) hotspotVideoWidth.value = Math.round(traced.width);
+                if (hotspotVideoHeight) hotspotVideoHeight.value = Math.round(traced.height);
+            }
+
+            notify(kind === "door" ? "Zone de porte enregistrée." : "Écran vidéo positionné.", "success");
+            setTimeout(() => cancelSurfaceTrace({ reopen: true }), 180);
+        }
+
+        function onKeyDown(event) {
+            if (event.key === "Escape") cancelSurfaceTrace({ reopen: true });
+        }
+
+        overlay.addEventListener("pointerdown", onPointerDown, { passive: false });
+        overlay.addEventListener("pointermove", onPointerMove, { passive: false });
+        overlay.addEventListener("pointerup", finishTrace, { passive: false });
+        overlay.addEventListener("pointercancel", finishTrace, { passive: false });
+        cancelBtn?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            cancelSurfaceTrace({ reopen: true });
+        });
+        document.addEventListener("keydown", onKeyDown);
+
+        activeSurfaceTrace = {
+            overlay,
+            cleanup: () => document.removeEventListener("keydown", onKeyDown),
+        };
+        document.body.classList.add("surface-trace-active");
+    }
+
     function closeHotspotModalFn() {
         if (!hotspotModal || hotspotModal.classList.contains("hidden")) return;
 
@@ -2516,6 +2752,19 @@ document.addEventListener("DOMContentLoaded", () => {
             return false;
         }
 
+
+        if (type === "floor" && !hotspotFloorTargetScene?.value) {
+            notify("Choisis une scène cible pour cet étage.", "warning");
+            hotspotFloorTargetScene?.focus?.();
+            return false;
+        }
+
+        if (type === "door" && !hotspotDoorTargetScene?.value) {
+            notify("Choisis la scène derrière la porte.", "warning");
+            hotspotDoorTargetScene?.focus?.();
+            return false;
+        }
+
         if (type === "navigate") {
             const ownerSceneId = getHotspotOwnerSceneId();
             const targetSceneId = normalizeBuilderSceneId(hotspotTargetScene?.value || "");
@@ -2542,6 +2791,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let title = hotspotLabel?.value || "Hotspot";
         let description = "";
         let content = {};
+        let display = {};
 
         if (type === "navigate") {
             content = {};
@@ -2595,6 +2845,30 @@ document.addEventListener("DOMContentLoaded", () => {
             };
         }
 
+        if (type === "floor") {
+            title = hotspotFloorName?.value || hotspotLabel?.value || "Floor";
+            content = { floor_name: title, floor_number: Number(hotspotFloorNumber?.value || 0), direction: hotspotFloorDirection?.value || "up", destination_label: hotspotFloorDestination?.value || "" };
+        }
+        if (type === "pdf") {
+            title = hotspotPdfTitle?.value || hotspotLabel?.value || "Document";
+            description = hotspotPdfDescription?.value || "";
+            content = { document_url: hotspotPdfUrl?.value || "", allow_download: hotspotPdfDownload?.checked !== false, button_text: "Open PDF" };
+        }
+        if (type === "video") {
+            title = hotspotVideoTitle?.value || hotspotLabel?.value || "Video";
+            description = hotspotVideoDescription?.value || "";
+            const url = hotspotVideoUrl?.value || "";
+            content = { video_url: url, video_source: /youtu/.test(url) ? "youtube" : /vimeo/.test(url) ? "vimeo" : "upload", autoplay: !!hotspotVideoAutoplay?.checked, muted: !!hotspotVideoMuted?.checked, loop: !!hotspotVideoLoop?.checked };
+            display = { ...(display || {}), variant: hotspotVideoDisplayMode?.value === "screen" ? "screen" : "pin", width: Number(hotspotVideoWidth?.value || 360), height: Number(hotspotVideoHeight?.value || 210) };
+        }
+
+        if (type === "door") {
+            title = hotspotDoorLabel?.value || hotspotLabel?.value || "Open the door";
+            description = "Interactive door navigation";
+            content = { opening_direction: hotspotDoorDirection?.value || "left" };
+            display = { ...(display || {}), variant: "door", width: Number(hotspotDoorWidth?.value || 180), height: Number(hotspotDoorHeight?.value || 320) };
+        }
+
         if (type === "custom") {
             content = {
                 tooltip: hotspotTooltip?.value || "",
@@ -2607,14 +2881,16 @@ document.addEventListener("DOMContentLoaded", () => {
             tooltip_text: hotspotTooltip?.value || "",
             title,
             description,
-            target_scene: hotspotTargetScene?.value || null,
+            target_scene: type === "floor" ? (hotspotFloorTargetScene?.value || null) : type === "door" ? (hotspotDoorTargetScene?.value || null) : (hotspotTargetScene?.value || null),
             yaw: pendingHotspotPosition.yaw,
             pitch: pendingHotspotPosition.pitch,
             selected_icon: hotspotSelectedIconInput?.value || selectedLibraryIcon || "default",
             payload: {
                 display: {
-                    variant: hotspotVariant?.value || "pin",
+                    variant: type === "video" && hotspotVideoDisplayMode?.value === "screen" ? "screen" : type === "door" ? "door" : (hotspotVariant?.value || "pin"),
                     size: Number(hotspotSize?.value || 56),
+                    width: type === "video" ? Number(hotspotVideoWidth?.value || 360) : type === "door" ? Number(hotspotDoorWidth?.value || 180) : undefined,
+                    height: type === "video" ? Number(hotspotVideoHeight?.value || 210) : type === "door" ? Number(hotspotDoorHeight?.value || 320) : undefined,
                     rotation: Number(hotspotRotation?.value || 0),
                     offset_x: Number(hotspotOffsetX?.value || 0),
                     offset_y: Number(hotspotOffsetY?.value || 0),
@@ -2644,6 +2920,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const data = await response.json();
         return data?.hotspot?.ad_image_url || "";
+    }
+
+    async function uploadHotspotMedia(hotspotId, type) {
+        if (!hotspotId || !config.uploadHotspotMediaBaseUrl) return null;
+        const media = type === "pdf" ? hotspotPdfFile?.files?.[0] : type === "video" ? hotspotVideoFile?.files?.[0] : null;
+        const poster = type === "video" ? hotspotVideoPoster?.files?.[0] : null;
+        if (!media && !poster) return null;
+        const fd = new FormData();
+        if (media) fd.append("media", media);
+        if (poster) fd.append("poster", poster);
+        const response = await fetch(`${config.uploadHotspotMediaBaseUrl}${hotspotId}/upload-media/`, { method: "POST", headers: { "X-CSRFToken": getCSRFToken() }, body: fd });
+        if (!response.ok) { const e = await response.json().catch(()=>({})); notify(e.detail || "Unable to upload media.", "error"); return null; }
+        return (await response.json()).hotspot;
     }
 
     async function createHotspotRequest() {
@@ -2679,7 +2968,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const data = await response.json();
-            const hotspot = data.hotspot;
+            let hotspot = data.hotspot;
+            if (type === "pdf" || type === "video") hotspot = (await uploadHotspotMedia(hotspot.id, type)) || hotspot;
 
             const imageFile = getImageFileForType(type);
             if (imageFile) {
@@ -2744,7 +3034,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const data = await response.json();
-            const updatedHotspot = data.hotspot;
+            let updatedHotspot = data.hotspot;
+            if (type === "pdf" || type === "video") updatedHotspot = (await uploadHotspotMedia(updatedHotspot.id, type)) || updatedHotspot;
 
             const imageFile = getImageFileForType(type);
             if (imageFile) {
@@ -3014,6 +3305,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     toolButtons.forEach(btn => {
         btn.addEventListener("click", () => setActiveTool(btn.dataset.tool));
+    });
+
+    traceVideoSurfaceBtn?.addEventListener("click", (event) => {
+        event.preventDefault();
+        startSurfaceTrace("video");
+    });
+
+    traceDoorSurfaceBtn?.addEventListener("click", (event) => {
+        event.preventDefault();
+        startSurfaceTrace("door");
     });
 
     hotspotType?.addEventListener("change", () => {

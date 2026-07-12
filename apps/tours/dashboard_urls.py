@@ -24,6 +24,7 @@ from .dashboard_views import (
     create_hotspot_ajax_view,
     update_hotspot_ajax_view,
     upload_hotspot_image_ajax_view,
+    upload_hotspot_media_ajax_view,
     delete_hotspot_ajax_view,
 
     scene_pipeline_status_ajax_view,
@@ -159,6 +160,11 @@ urlpatterns = [
         "dashboard/o/<slug:organization_slug>/hotspots/<int:hotspot_id>/upload-image/",
         upload_hotspot_image_ajax_view,
         name="dashboard-upload-hotspot-image-ajax",
+    ),
+    path(
+        "dashboard/o/<slug:organization_slug>/hotspots/<int:hotspot_id>/upload-media/",
+        upload_hotspot_media_ajax_view,
+        name="dashboard-upload-hotspot-media-ajax",
     ),
     path(
         "dashboard/o/<slug:organization_slug>/hotspots/<int:hotspot_id>/delete/",

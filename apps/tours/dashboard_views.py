@@ -317,6 +317,8 @@ def _serialize_hotspot_payload(request, hotspot):
         "description": hotspot.description or "",
         "selected_icon": hotspot.selected_icon or "default",
         "ad_image_url": _safe_file_url(request, getattr(hotspot, "ad_image", None)),
+        "media_file_url": _safe_file_url(request, getattr(hotspot, "media_file", None)),
+        "poster_image_url": _safe_file_url(request, getattr(hotspot, "poster_image", None)),
         "payload": hotspot.payload or {},
         "is_ai_generated": bool(getattr(hotspot, "is_ai_generated", False)),
     }
@@ -1578,6 +1580,55 @@ def upload_hotspot_image_ajax_view(request, organization_slug, hotspot_id):
         "success": True,
         "hotspot": _serialize_hotspot_payload(request, hotspot),
     })
+
+
+@login_required
+@require_POST
+def upload_hotspot_media_ajax_view(request, organization_slug, hotspot_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+
+    hotspot = get_object_or_404(
+        Hotspot.objects.select_related("scene", "scene__tour"),
+        id=hotspot_id,
+        organization=organization,
+    )
+
+    media_file = request.FILES.get("media")
+    poster_file = request.FILES.get("poster")
+    if not media_file and not poster_file:
+        return JsonResponse({"detail": "No media uploaded."}, status=400)
+
+    allowed_pdf = {"application/pdf"}
+    allowed_video = {"video/mp4", "video/webm", "video/quicktime", "application/octet-stream"}
+
+    if media_file:
+        content_type = (getattr(media_file, "content_type", "") or "").lower()
+        max_size = 25 * 1024 * 1024 if hotspot.type == Hotspot.Type.PDF else 250 * 1024 * 1024
+        if media_file.size > max_size:
+            return JsonResponse({"detail": "File too large."}, status=400)
+        if hotspot.type == Hotspot.Type.PDF and content_type not in allowed_pdf and not media_file.name.lower().endswith(".pdf"):
+            return JsonResponse({"detail": "Only PDF files are allowed."}, status=400)
+        if hotspot.type == Hotspot.Type.VIDEO and content_type not in allowed_video and not media_file.name.lower().endswith((".mp4", ".webm", ".mov")):
+            return JsonResponse({"detail": "Unsupported video format."}, status=400)
+        hotspot.media_file = media_file
+
+    if poster_file:
+        if poster_file.size > 8 * 1024 * 1024:
+            return JsonResponse({"detail": "Poster image too large."}, status=400)
+        hotspot.poster_image = poster_file
+
+    hotspot.save(update_fields=[field for field in ["media_file" if media_file else None, "poster_image" if poster_file else None, "updated_at"] if field])
+    content = dict((hotspot.payload or {}).get("content") or {})
+    if hotspot.media_file:
+        content["document_url" if hotspot.type == Hotspot.Type.PDF else "video_url"] = request.build_absolute_uri(hotspot.media_file.url)
+    if hotspot.poster_image:
+        content["poster_url"] = request.build_absolute_uri(hotspot.poster_image.url)
+    hotspot.payload = {**(hotspot.payload or {}), "content": content}
+    hotspot.save(update_fields=["payload", "updated_at"])
+    build_tour_manifest(hotspot.scene.tour)
+    return JsonResponse({"success": True, "hotspot": _serialize_hotspot_payload(request, hotspot)})
 
 
 @login_required

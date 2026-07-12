@@ -1,0 +1,152 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Street View Publisher — Tours existants</title>
+  <link rel="stylesheet" href="{% static 'app_streetview/css/canonical_publisher.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">360</div>
+        <div>
+          <h1>Street View Publisher</h1>
+          <p>Organisation → Place → Tour existant → Publication Google</p>
+        </div>
+      </div>
+      <div class="google-status" id="googleStatus">Google: vérification...</div>
+    </header>
+
+    <main class="layout">
+      <aside class="left-panel">
+        <section class="panel">
+          <div class="panel-title">1. Organisations</div>
+          <div id="organizationsList" class="stack small-list"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-title">2. Places</div>
+          <div id="placesList" class="stack small-list muted-box">Choisis d’abord une organisation.</div>
+        </section>
+        <section class="panel flex-fill">
+          <div class="panel-title">3. Tours existants</div>
+          <div id="toursList" class="stack small-list muted-box">Choisis un place.</div>
+        </section>
+      </aside>
+
+      <section class="main-panel">
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon">🗺️</div>
+          <h2>Sélectionne un tour existant</h2>
+          <p>On ne recrée plus les images 360. On lit directement tes Organization, Place, Tour et Scene360 déjà présents dans ton application.</p>
+        </div>
+
+        <div id="workspace" class="workspace hidden">
+          <div class="tour-header panel">
+            <div>
+              <div class="eyebrow" id="breadcrumb">Organisation / Place</div>
+              <h2 id="tourTitle">Tour</h2>
+              <p id="tourMeta">—</p>
+            </div>
+            <div class="actions">
+              <button id="applyPlaceGpsBtn" class="btn btn-soft">Appliquer GPS du place</button>
+              <button id="autoLinkBtn" class="btn btn-soft">Auto-lier aller/retour</button>
+              <button id="publishBtn" class="btn btn-primary">Publier / continuer</button>
+            </div>
+          </div>
+
+          <div class="content-grid">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <div class="panel-title">Images du tour</div>
+                  <p class="help">Liste compacte des scènes 360 existantes. Clique pour préparer et prévisualiser.</p>
+                </div>
+                <span class="badge" id="sceneCounter">0 scène</span>
+              </div>
+              <div id="sceneList" class="scene-list"></div>
+            </section>
+
+            <aside class="panel right-panel">
+              <div class="panel-title">Logique simple</div>
+              <div class="logic-steps">
+                <div><b>1</b><span>Choisis Organisation → Place → Tour.</span></div>
+                <div><b>2</b><span>Vérifie les images et le GPS.</span></div>
+                <div><b>3</b><span>Auto-lie les scènes ou utilise tes hotspots Navigate.</span></div>
+                <div><b>4</b><span>Publie seulement ce qui n’est pas encore sur Google.</span></div>
+              </div>
+              <hr>
+              <div class="panel-title">Connexion manuelle</div>
+              <div class="manual-connect">
+                <label>Depuis<select id="manualFromScene"></select></label>
+                <label>Vers<select id="manualToScene"></select></label>
+                <label>Label<input id="manualConnectionLabel" type="text" placeholder="Ex: Entrer / Retour"></label>
+                <button id="addManualConnectionBtn" class="btn btn-soft btn-full">Ajouter liaison manuelle</button>
+                <button id="retryConnectionsBtn" class="btn btn-soft btn-full">Envoyer/Réessayer connexions Google</button>
+                <div id="manualConnectionsList" class="connection-list muted-box">Aucune liaison.</div>
+              </div>
+              <hr>
+              <div class="panel-title">Liens Google</div>
+              <div id="shareLinks" class="share-list muted-box">Aucun lien publié pour le moment.</div>
+              <button id="copyAllLinksBtn" class="btn btn-soft btn-full">Copier tous les liens</button>
+            </aside>
+          </div>
+
+          <section class="panel detail-panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Préparer la scène</div>
+                <h3 id="sceneTitle">Aucune scène sélectionnée</h3>
+              </div>
+              <div class="actions">
+                <button id="openViewerBtn" class="btn btn-soft">Voir 360</button>
+                <button id="deleteGooglePhotoBtn" class="btn btn-danger">Effacer de Google</button>
+                <button id="saveSceneBtn" class="btn btn-primary">Sauvegarder caméra/GPS</button>
+              </div>
+            </div>
+            <div id="sceneDetailEmpty" class="muted-box">Clique sur une image dans la liste.</div>
+            <div id="sceneDetail" class="detail-grid hidden">
+              <img id="scenePreview" class="preview-img" alt="preview">
+              <div class="form-grid">
+                <label>Latitude<input id="sceneLat" type="number" step="0.000001"></label>
+                <label>Longitude<input id="sceneLng" type="number" step="0.000001"></label>
+                <label>Heading<input id="sceneHeading" type="number" step="0.1"></label>
+                <label>Pitch<input id="scenePitch" type="number" step="0.1"></label>
+                <label>Roll<input id="sceneRoll" type="number" step="0.1"></label>
+                <label>FOV<input id="sceneFov" type="number" step="1"></label>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">Logs publication</div>
+            <pre id="publishLogs" class="logs">Aucun log.</pre>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="viewerModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="eyebrow">Preview 360</div>
+          <h3 id="viewerTitle">Scène</h3>
+        </div>
+        <div class="actions">
+          <button id="captureCameraBtn" class="btn btn-soft">Définir comme vue principale</button>
+          <button id="closeViewerBtn" class="btn btn-danger">Fermer</button>
+        </div>
+      </div>
+      <div id="viewer" class="viewer"></div>
+    </div>
+  </div>
+
+  <div id="toastBox" class="toast-box"></div>
+  <script src="{% static 'app_streetview/js/canonical_publisher.js' %}"></script>
+</body>
+</html>

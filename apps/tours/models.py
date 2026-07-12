@@ -105,6 +105,14 @@ def hotspot_ad_upload_to(instance, filename):
     return f"tours/hotspots/ads/{_safe_webp_name(filename, 'hotspot-ad')}"
 
 
+def hotspot_media_upload_to(instance, filename):
+    return f"tours/hotspots/media/{_safe_original_file_name(filename, 'hotspot-media')}"
+
+
+def hotspot_poster_upload_to(instance, filename):
+    return f"tours/hotspots/posters/{_safe_webp_name(filename, 'hotspot-poster')}"
+
+
 def tour_photo_upload_to(instance, filename):
     return f"tours/photos/{_safe_webp_name(filename, 'tour-photo')}"
 
@@ -664,6 +672,10 @@ class Scene360Tile(TimeStampedModel):
 class Hotspot(TimeStampedModel):
     class Type(models.TextChoices):
         NAVIGATE = "navigate", "Navigate"
+        FLOOR = "floor", "Floor navigation"
+        PDF = "pdf", "PDF document"
+        VIDEO = "video", "Video"
+        DOOR = "door", "Interactive door"
         INFO = "info", "Info"
         CTA = "cta", "CTA"
         PRODUCT = "product", "Product"
@@ -706,6 +718,17 @@ class Hotspot(TimeStampedModel):
         null=True,
     )
 
+    media_file = models.FileField(
+        upload_to=hotspot_media_upload_to,
+        blank=True,
+        null=True,
+    )
+    poster_image = models.ImageField(
+        upload_to=hotspot_poster_upload_to,
+        blank=True,
+        null=True,
+    )
+
     payload = models.JSONField(default=dict, blank=True)
     is_ai_generated = models.BooleanField(default=False)
 
@@ -723,6 +746,14 @@ class Hotspot(TimeStampedModel):
     def ad_image_url(self):
         return self.ad_image.url if self.ad_image else None
 
+    @property
+    def media_file_url(self):
+        return self.media_file.url if self.media_file else None
+
+    @property
+    def poster_image_url(self):
+        return self.poster_image.url if self.poster_image else None
+
     def save(self, *args, **kwargs):
         if self.scene_id and self.organization_id != self.scene.organization_id:
             self.organization = self.scene.organization
@@ -730,7 +761,7 @@ class Hotspot(TimeStampedModel):
         if not self.hotspot_id:
             self.hotspot_id = _unique_short_id("hotspot")
 
-        if self.type != self.Type.NAVIGATE:
+        if self.type not in {self.Type.NAVIGATE, self.Type.FLOOR, self.Type.DOOR}:
             self.target_scene = None
 
         super().save(*args, **kwargs)

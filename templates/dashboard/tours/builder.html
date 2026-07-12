@@ -1995,6 +1995,10 @@
                 <label for="hotspotType">Type</label>
                 <select id="hotspotType">
                     <option value="navigate">Navigate</option>
+                    <option value="floor">Floor navigation</option>
+                    <option value="pdf">PDF / Document</option>
+                    <option value="video">Video</option>
+                    <option value="door">Interactive door</option>
                     <option value="info">Info</option>
                     <option value="product">Product</option>
                     <option value="cta">Website / CTA</option>
@@ -2080,6 +2084,65 @@
                         <option value="">Select a scene</option>
                     </select>
                 </div>
+            </div>
+
+
+            <div class="hotspot-type-panel" data-panel="floor">
+                <div class="form-row">
+                    <div class="form-group"><label for="hotspotFloorTargetScene">Target scene</label><select id="hotspotFloorTargetScene"><option value="">Select a scene</option></select></div>
+                    <div class="form-group"><label for="hotspotFloorDirection">Direction</label><select id="hotspotFloorDirection"><option value="up">Upstairs ↑</option><option value="down">Downstairs ↓</option><option value="same">Same level →</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="hotspotFloorName">Floor name</label><input id="hotspotFloorName" placeholder="First floor"></div>
+                    <div class="form-group"><label for="hotspotFloorNumber">Floor number</label><input id="hotspotFloorNumber" type="number" value="1"></div>
+                </div>
+                <div class="form-group"><label for="hotspotFloorDestination">Destination description</label><input id="hotspotFloorDestination" placeholder="Bedrooms and balcony"></div>
+            </div>
+
+            <div class="hotspot-type-panel" data-panel="pdf">
+                <div class="form-group"><label for="hotspotPdfTitle">Document title</label><input id="hotspotPdfTitle" placeholder="Property brochure"></div>
+                <div class="form-group"><label for="hotspotPdfDescription">Description</label><textarea id="hotspotPdfDescription" rows="3"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label for="hotspotPdfFile">Upload PDF</label><input id="hotspotPdfFile" type="file" accept="application/pdf,.pdf"></div>
+                    <div class="form-group"><label for="hotspotPdfUrl">External PDF URL</label><input id="hotspotPdfUrl" type="url" placeholder="https://..."></div>
+                </div>
+                <label class="media-check"><input id="hotspotPdfDownload" type="checkbox" checked> Allow download</label>
+            </div>
+
+            <div class="hotspot-type-panel" data-panel="video">
+                <div class="form-group"><label for="hotspotVideoTitle">Video title</label><input id="hotspotVideoTitle" placeholder="Video presentation"></div>
+                <div class="form-group"><label for="hotspotVideoDescription">Description</label><textarea id="hotspotVideoDescription" rows="3"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label for="hotspotVideoFile">Upload video</label><input id="hotspotVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"></div>
+                    <div class="form-group"><label for="hotspotVideoUrl">YouTube, Vimeo or MP4 URL</label><input id="hotspotVideoUrl" type="url" placeholder="https://..."></div>
+                </div>
+                <div class="form-group"><label for="hotspotVideoPoster">Poster image</label><input id="hotspotVideoPoster" type="file" accept="image/*"></div>
+                <div class="media-options"><label><input id="hotspotVideoAutoplay" type="checkbox"> Autoplay</label><label><input id="hotspotVideoMuted" type="checkbox"> Muted</label><label><input id="hotspotVideoLoop" type="checkbox"> Loop</label></div>
+                <div class="form-row">
+                    <div class="form-group"><label for="hotspotVideoDisplayMode">Display</label><select id="hotspotVideoDisplayMode"><option value="icon">Hotspot icon</option><option value="screen">Video fixed on screen / wall</option></select></div>
+                    <div class="form-group"><label for="hotspotVideoWidth">Screen width (px)</label><input id="hotspotVideoWidth" type="number" min="120" max="900" value="360"></div>
+                    <div class="form-group"><label for="hotspotVideoHeight">Screen height (px)</label><input id="hotspotVideoHeight" type="number" min="80" max="600" value="210"></div>
+                </div>
+                <button id="traceVideoSurfaceBtn" type="button" class="surface-trace-launch-btn">
+                    <span>▭</span><div><strong>Tracer l’écran dans la vue 360</strong><small>Dessine exactement la télévision, le projecteur ou l’écran mural.</small></div>
+                </button>
+            </div>
+
+
+            <div class="hotspot-type-panel" data-panel="door">
+                <div class="form-row">
+                    <div class="form-group"><label for="hotspotDoorTargetScene">Scene behind the door</label><select id="hotspotDoorTargetScene"><option value="">Select a scene</option></select></div>
+                    <div class="form-group"><label for="hotspotDoorDirection">Opening direction</label><select id="hotspotDoorDirection"><option value="left">Open left</option><option value="right">Open right</option><option value="center">Open forward</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="hotspotDoorWidth">Door width (px)</label><input id="hotspotDoorWidth" type="number" min="80" max="500" value="180"></div>
+                    <div class="form-group"><label for="hotspotDoorHeight">Door height (px)</label><input id="hotspotDoorHeight" type="number" min="140" max="800" value="320"></div>
+                </div>
+                <div class="form-group"><label for="hotspotDoorLabel">Door label</label><input id="hotspotDoorLabel" placeholder="Open the door"></div>
+                <button id="traceDoorSurfaceBtn" type="button" class="surface-trace-launch-btn is-door">
+                    <span>▯</span><div><strong>Tracer la porte dans la vue 360</strong><small>Dessine le contour réel de la porte : position et dimensions seront enregistrées.</small></div>
+                </button>
+                <p class="form-help">Tu peux encore ajuster manuellement la largeur et la hauteur après le traçage.</p>
             </div>
 
             <div class="hotspot-type-panel" data-panel="info">
@@ -2350,6 +2413,7 @@
         createHotspotBaseUrl: "/dashboard/o/{{ current_organization.slug }}/scenes/",
         updateHotspotBaseUrl: "/dashboard/o/{{ current_organization.slug }}/hotspots/",
         deleteHotspotBaseUrl: "/dashboard/o/{{ current_organization.slug }}/hotspots/",
+        uploadHotspotMediaBaseUrl: "/dashboard/o/{{ current_organization.slug }}/hotspots/",
         uploadHotspotImageBaseUrl: "/dashboard/o/{{ current_organization.slug }}/hotspots/",
         previewUrl: "{% url 'tour-preview' current_organization.slug tour.id %}",
         iconMap: {
@@ -2380,7 +2444,7 @@
 {{ scenes_json|json_script:"scenes-data" }}
 
 <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
-<script src="{% static 'dashboard/js/studio_builder.js' %}"></script>
+<script src="{% static 'dashboard/js/studio_builder.js' %}?v=surface-trace-pdf-youtube-final-20260712"></script>
 
 
 <script>

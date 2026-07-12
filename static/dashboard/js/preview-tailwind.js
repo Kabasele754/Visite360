@@ -65,6 +65,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewMountA = $("previewMountA");
     const previewMountB = $("previewMountB");
     const previewIntroOverlay = $("previewIntroOverlay");
+    const previewSceneLoadingOverlay = $("previewSceneLoadingOverlay");
+    const previewSceneLoadingImage = $("previewSceneLoadingImage");
+    const previewSceneLoadingText = $("previewSceneLoadingText");
 
     const previewScenesList = $("previewScenesList");
     const sceneCountBadge = $("sceneCountBadge");
@@ -108,6 +111,14 @@ document.addEventListener("DOMContentLoaded", () => {
     let autorotateLastTs = 0;
     let focusMode = false;
     let toastTimer = null;
+
+    /* Progressive 360 loading state */
+    let progressiveGeneration = 0;
+    let progressiveUpgradeTimer = null;
+    const decodedImageCache = new Map();
+    const preloadPromises = new Map();
+    const layerQuality = { A: "none", B: "none" };
+    const layerSceneId = { A: null, B: null };
 
     const MIN_FOV = degToRad(6);
     const MAX_FOV = degToRad(132);
@@ -549,6 +560,276 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return assets.desktop || assets.original || assets.mobile || assets.preview || assets.thumbnail || assets.fallback || "";
     }
+
+    function getConnectionProfile() {
+        const connection =
+            navigator.connection ||
+            navigator.mozConnection ||
+            navigator.webkitConnection ||
+            null;
+
+        const effectiveType = String(connection?.effectiveType || "").toLowerCase();
+        const saveData = Boolean(connection?.saveData);
+        const memory = Number(navigator.deviceMemory || 0);
+        const cores = Number(navigator.hardwareConcurrency || 0);
+        const slowNetwork = saveData || effectiveType === "slow-2g" || effectiveType === "2g";
+        const mediumNetwork = effectiveType === "3g";
+        const lowMemory = memory > 0 && memory <= 2;
+        const modestDevice = (memory > 0 && memory <= 4) || (cores > 0 && cores <= 4);
+
+        return {
+            saveData,
+            effectiveType,
+            slowNetwork,
+            mediumNetwork,
+            lowMemory,
+            modestDevice,
+            online: navigator.onLine !== false
+        };
+    }
+
+    function getProgressiveLoadPlan(sceneData) {
+        const assets = getSceneAssets(sceneData);
+        const profile = getConnectionProfile();
+        const mobile = isMobileViewport();
+
+        const light =
+            assets.preview ||
+            assets.thumbnail ||
+            (mobile ? assets.mobile : assets.desktop) ||
+            assets.fallback ||
+            "";
+
+        let compatible = mobile
+            ? (assets.mobile || assets.desktop || assets.original || light)
+            : (assets.desktop || assets.original || assets.mobile || light);
+
+        let ultra = "";
+        if (!mobile && !profile.saveData && !profile.slowNetwork && !profile.lowMemory) {
+            ultra = assets.original && assets.original !== compatible
+                ? assets.original
+                : "";
+        }
+
+        if (profile.slowNetwork || profile.lowMemory) {
+            compatible = mobile
+                ? (assets.mobile || light)
+                : (assets.desktop || assets.mobile || light);
+            ultra = "";
+        }
+
+        const sequence = [];
+        [
+            { quality: "light", url: light },
+            { quality: mobile ? "mobile" : "desktop", url: compatible },
+            { quality: "ultra", url: ultra }
+        ].forEach((entry) => {
+            if (!entry.url) return;
+            if (sequence.some((item) => item.url === entry.url)) return;
+            sequence.push(entry);
+        });
+
+        return {
+            light: sequence[0] || { quality: "fallback", url: getPreferredImageUrl(sceneData) },
+            compatible: sequence[1] || sequence[0] || null,
+            ultra: sequence[2] || null,
+            sequence,
+            profile
+        };
+    }
+
+    function preloadDecodedImage(url, { priority = "auto" } = {}) {
+        if (!url) return Promise.resolve(false);
+        if (decodedImageCache.has(url)) return Promise.resolve(true);
+        if (preloadPromises.has(url)) return preloadPromises.get(url);
+
+        const promise = new Promise((resolve) => {
+            const image = new Image();
+            image.decoding = "async";
+            image.loading = priority === "high" ? "eager" : "lazy";
+            try { image.fetchPriority = priority; } catch (_) {}
+
+            const finish = async (ok) => {
+                if (ok) {
+                    try {
+                        if (typeof image.decode === "function") await image.decode();
+                    } catch (_) {}
+                    decodedImageCache.set(url, true);
+                }
+                preloadPromises.delete(url);
+                resolve(ok);
+            };
+
+            image.onload = () => finish(true);
+            image.onerror = () => finish(false);
+            image.src = url;
+
+            if (image.complete && image.naturalWidth > 0) finish(true);
+        });
+
+        preloadPromises.set(url, promise);
+        return promise;
+    }
+
+    function setSceneLoadingPreview(sceneData, visible = true, message = "Loading panorama") {
+        if (!previewSceneLoadingOverlay) return;
+
+        if (!visible) {
+            previewSceneLoadingOverlay.classList.remove("is-visible", "is-progressive-visible");
+            previewSceneLoadingOverlay.setAttribute("aria-hidden", "true");
+            return;
+        }
+
+        const plan = getProgressiveLoadPlan(sceneData);
+        const previewUrl = plan.light?.url || getSceneThumbnailUrl(sceneData);
+
+        if (previewSceneLoadingImage) {
+            if (previewUrl) {
+                previewSceneLoadingImage.src = previewUrl;
+                previewSceneLoadingImage.classList.remove("hidden");
+            } else {
+                previewSceneLoadingImage.removeAttribute("src");
+                previewSceneLoadingImage.classList.add("hidden");
+            }
+        }
+
+        if (previewSceneLoadingText) previewSceneLoadingText.textContent = message;
+        previewSceneLoadingOverlay.classList.add("is-visible", "is-progressive-visible");
+        previewSceneLoadingOverlay.setAttribute("aria-hidden", "false");
+    }
+
+    function copyViewParameters(fromView, toView) {
+        if (!fromView || !toView) return;
+        try {
+            toView.setParameters({
+                yaw: fromView.yaw(),
+                pitch: fromView.pitch(),
+                fov: fromView.fov()
+            });
+        } catch (_) {}
+    }
+
+    function cancelProgressiveWork() {
+        progressiveGeneration += 1;
+        clearTimeout(progressiveUpgradeTimer);
+        progressiveUpgradeTimer = null;
+    }
+
+    function runWhenIdle(callback, timeout = 1400) {
+        if (typeof window.requestIdleCallback === "function") {
+            window.requestIdleCallback(callback, { timeout });
+        } else {
+            setTimeout(callback, Math.min(timeout, 650));
+        }
+    }
+
+    function preloadNeighbourScenes(sceneData, generation) {
+        const list = getNavigationSceneList();
+        if (!list.length || generation !== progressiveGeneration) return;
+
+        let index = findSceneListIndex(sceneData?.id);
+        if (index < 0) index = 0;
+
+        const candidates = [
+            list[(index + 1) % list.length],
+            list[(index - 1 + list.length) % list.length]
+        ].filter(Boolean);
+
+        runWhenIdle(() => {
+            if (generation !== progressiveGeneration || document.hidden) return;
+            candidates.forEach((entry) => {
+                const neighbour = findScene(entry?.id) || findScene(entry?.scene_id) || entry;
+                const plan = getProgressiveLoadPlan(neighbour);
+                const target = plan.compatible || plan.light;
+                if (target?.url) preloadDecodedImage(target.url, { priority: "low" });
+            });
+        }, 1800);
+    }
+
+    async function silentlyUpgradeCurrentScene(sceneData, generation, preferredEntry = null) {
+        if (!sceneData || generation !== progressiveGeneration || isTransitioning) return false;
+
+        const plan = getProgressiveLoadPlan(sceneData);
+        const currentQuality = layerQuality[activeLayerKey];
+        const upgradeEntry =
+            preferredEntry ||
+            (currentQuality === "light" ? plan.compatible : plan.ultra);
+
+        if (!upgradeEntry?.url) {
+            preloadNeighbourScenes(sceneData, generation);
+            return false;
+        }
+
+        const currentPlanEntry = plan.sequence.find((item) => item.quality === currentQuality);
+        if (currentPlanEntry?.url === upgradeEntry.url) {
+            preloadNeighbourScenes(sceneData, generation);
+            return false;
+        }
+
+        const loaded = await preloadDecodedImage(upgradeEntry.url, { priority: "low" });
+        if (!loaded || generation !== progressiveGeneration || isTransitioning) return false;
+        if (!sceneMatchesId(sceneData, currentSceneId)) return false;
+
+        const outgoingKey = activeLayerKey;
+        const incomingKey = standbyLayerKey();
+        const outgoingView = views[outgoingKey];
+
+        const built = buildSceneOnLayer(incomingKey, sceneData, {
+            imageUrl: upgradeEntry.url,
+            quality: upgradeEntry.quality,
+            preserveHotspots: true
+        });
+        if (!built || generation !== progressiveGeneration) return false;
+
+        copyViewParameters(outgoingView, views[incomingKey]);
+
+        const outgoingEl = getLayerEl(outgoingKey);
+        const incomingEl = getLayerEl(incomingKey);
+        if (!outgoingEl || !incomingEl) return false;
+
+        incomingEl.classList.remove("standby-layer", "layer-incoming", "layer-outgoing");
+        outgoingEl.classList.remove("layer-incoming", "layer-outgoing");
+        incomingEl.classList.add("quality-upgrade-incoming");
+        outgoingEl.classList.add("quality-upgrade-outgoing");
+        incomingEl.style.opacity = "1";
+
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        incomingEl.classList.add("quality-upgrade-visible");
+
+        await new Promise((resolve) => setTimeout(resolve, 520));
+        if (generation !== progressiveGeneration || isTransitioning) return false;
+
+        outgoingEl.classList.remove("active-layer", "quality-upgrade-outgoing");
+        outgoingEl.classList.add("standby-layer");
+        outgoingEl.style.opacity = "0";
+
+        incomingEl.classList.remove(
+            "standby-layer",
+            "quality-upgrade-incoming",
+            "quality-upgrade-visible"
+        );
+        incomingEl.classList.add("active-layer");
+        incomingEl.style.opacity = "1";
+
+        activeLayerKey = incomingKey;
+        updateAllViewerSizes();
+        syncZoomButtonsState();
+
+        progressiveUpgradeTimer = setTimeout(() => {
+            silentlyUpgradeCurrentScene(sceneData, generation);
+        }, 700);
+
+        preloadNeighbourScenes(sceneData, generation);
+        return true;
+    }
+
+    function scheduleProgressiveUpgrade(sceneData, generation = progressiveGeneration) {
+        clearTimeout(progressiveUpgradeTimer);
+        progressiveUpgradeTimer = setTimeout(() => {
+            silentlyUpgradeCurrentScene(sceneData, generation);
+        }, getConnectionProfile().mediumNetwork ? 1200 : 420);
+    }
+
 
     function getSceneThumbnailUrl(sceneData) {
         const assets = getSceneAssets(sceneData);
@@ -1106,7 +1387,240 @@ document.addEventListener("DOMContentLoaded", () => {
         markActiveSceneCard(scene?.id);
     }
 
-    function buildHotspotNode(hotspot) {
+    const previewMediaModal = $("previewMediaModal");
+    const previewMediaBody = $("previewMediaBody");
+    const previewMediaTitle = $("previewMediaTitle");
+    const previewMediaKicker = $("previewMediaKicker");
+    const previewMediaFooter = $("previewMediaFooter");
+    const previewFloorNavigator = $("previewFloorNavigator");
+
+    function escapeAttr(value) { return String(value || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+    function stopMediaPlayback() { previewMediaBody?.querySelectorAll("video").forEach(v => { try { v.pause(); v.src = ""; v.load(); } catch (_) {} }); previewMediaBody?.querySelectorAll("iframe").forEach(f => f.src = "about:blank"); }
+    function closeMediaHotspot() { stopMediaPlayback(); previewMediaModal?.classList.remove("open"); previewMediaModal?.setAttribute("aria-hidden", "true"); }
+    document.querySelectorAll("[data-media-close]").forEach(el => el.addEventListener("click", closeMediaHotspot));
+
+    function extractYouTubeId(url) {
+        try {
+            const u = new URL(url, location.href);
+            const host = u.hostname.replace(/^www\./, "").toLowerCase();
+            if (host === "youtu.be") return u.pathname.split("/").filter(Boolean)[0] || "";
+            if (host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) {
+                if (u.searchParams.get("v")) return u.searchParams.get("v");
+                const parts = u.pathname.split("/").filter(Boolean);
+                const marker = parts.findIndex((part) => ["embed", "shorts", "live"].includes(part));
+                if (marker >= 0 && parts[marker + 1]) return parts[marker + 1];
+            }
+        } catch (_) {}
+        return "";
+    }
+
+    function toEmbedUrl(url, autoplay=false, muted=false, loop=false) {
+        try {
+            const u = new URL(url, location.href);
+            const youtubeId = extractYouTubeId(url);
+            if (youtubeId) {
+                const params = new URLSearchParams({
+                    playsinline: "1",
+                    autoplay: autoplay ? "1" : "0",
+                    mute: muted ? "1" : "0",
+                    rel: "0",
+                    modestbranding: "1",
+                    enablejsapi: "1",
+                    origin: location.origin,
+                    controls: "1",
+                    fs: "1",
+                });
+                if (loop) {
+                    params.set("loop", "1");
+                    params.set("playlist", youtubeId);
+                }
+                return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}?${params.toString()}`;
+            }
+            if (u.hostname.includes("vimeo.com")) {
+                const id = u.pathname.split("/").filter(Boolean).pop();
+                return id ? `https://player.vimeo.com/video/${encodeURIComponent(id)}?autoplay=${autoplay?1:0}&muted=${muted?1:0}` : "";
+            }
+        } catch (_) {}
+        return "";
+    }
+
+    function openMediaHotspot(hotspot) {
+        if (!previewMediaModal || !previewMediaBody) return;
+        const c = hotspot.payload?.content || {};
+        previewMediaTitle.textContent = hotspot.title || hotspot.label || (hotspot.type === "pdf" ? "Document" : "Video");
+        previewMediaKicker.textContent = hotspot.type === "pdf" ? "PDF DOCUMENT" : "VIDEO";
+        previewMediaBody.innerHTML = ""; previewMediaFooter.innerHTML = "";
+        if (hotspot.type === "pdf") {
+            const url = c.document_url || hotspot.media_file_url || "";
+            const safeUrl = escapeAttr(url);
+
+            if (!url) {
+                previewMediaBody.innerHTML = `<div class="preview-media-empty">PDF unavailable</div>`;
+            } else {
+                previewMediaBody.innerHTML = `
+                    <div class="preview-pdf-dialog-reader">
+                        <iframe class="preview-pdf-frame" src="${safeUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH" title="${escapeAttr(hotspot.title || hotspot.label || "PDF")}" loading="eager"></iframe>
+                        <object class="preview-pdf-object-fallback" data="${safeUrl}#toolbar=1&navpanes=0&view=FitH" type="application/pdf">
+                            <div class="preview-pdf-inline-fallback"><strong>Le lecteur PDF intégré n’est pas disponible sur cet appareil.</strong><span>Utilise le bouton Ouvrir ci-dessous sans fermer la visite.</span></div>
+                        </object>
+                    </div>`;
+            }
+
+            if (url) {
+                previewMediaFooter.innerHTML = `
+                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Recharger</button>
+                    <a class="preview-media-action preview-media-action-secondary" href="${safeUrl}" target="_blank" rel="noopener">Ouvrir</a>
+                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${safeUrl}" download>Télécharger</a>`}`;
+                previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
+                    const frame = previewMediaBody.querySelector(".preview-pdf-frame");
+                    if (frame) frame.src = frame.src;
+                });
+            }
+        } else {
+            const url = c.video_url || hotspot.media_file_url || "";
+            const embed = toEmbedUrl(url, !!c.autoplay, !!c.muted, !!c.loop);
+            if (embed) previewMediaBody.innerHTML = `<iframe class="preview-video-frame" src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+            else if (url) previewMediaBody.innerHTML = `<video class="preview-video-player" controls playsinline preload="metadata" ${c.autoplay ? "autoplay" : ""} ${c.muted ? "muted" : ""} ${c.loop ? "loop" : ""} poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video>`;
+            else previewMediaBody.innerHTML = `<div class="preview-media-empty">Video unavailable</div>`;
+        }
+        previewMediaModal.classList.add("open"); previewMediaModal.setAttribute("aria-hidden", "false"); stopAutorotate();
+    }
+
+    function showFloorTransitionLabel(hotspot) {
+        const c = hotspot.payload?.content || {}; const el = document.createElement("div");
+        el.className = `preview-floor-transition ${c.direction || "up"}`;
+        el.innerHTML = `<strong>${c.direction === "down" ? "↓" : c.direction === "same" ? "→" : "↑"} ${escapeAttr(c.floor_name || hotspot.title || hotspot.label || "Floor")}</strong><span>${escapeAttr(c.destination_label || "")}</span>`;
+        previewViewer.appendChild(el); requestAnimationFrame(()=>el.classList.add("show")); setTimeout(()=>{el.classList.remove("show"); setTimeout(()=>el.remove(),350)},1400);
+    }
+
+    function ensureFloorDockControl() {
+        const dockRow = document.querySelector("#previewControlDock .dock-row");
+        if (!dockRow || document.getElementById("floorDockToggle")) return;
+        const floors = collectFloorDestinations();
+        if (!floors.length) return;
+        const divider = document.createElement("div"); divider.className = "dock-divider floor-dock-divider";
+        const wrap = document.createElement("div"); wrap.className = "floor-dock-wrap";
+        wrap.innerHTML = `<button id="floorDockToggle" type="button" class="control-btn" title="Floors" aria-label="Floors">⌂</button><div id="floorDockPanel" class="floor-dock-panel"></div>`;
+        dockRow.appendChild(divider); dockRow.appendChild(wrap);
+        const panel = wrap.querySelector("#floorDockPanel");
+        floors.forEach((floor) => {
+            const b=document.createElement("button"); b.type="button"; b.innerHTML=`<span>${escapeAttr(floor.number)}</span><div><strong>${escapeAttr(floor.name)}</strong><small>${escapeAttr(floor.description)}</small></div>`;
+            b.addEventListener("click", (e)=>{e.stopPropagation(); panel.classList.remove("open"); const t=findScene(floor.target); if(t){showFloorTransitionLabel(floor.hotspot); goToSceneWithWalk(t);}}); panel.appendChild(b);
+        });
+        wrap.querySelector("#floorDockToggle").addEventListener("click", (e)=>{e.stopPropagation(); panel.classList.toggle("open");});
+        document.addEventListener("click", ()=>panel.classList.remove("open"));
+    }
+
+    function renderFloorNavigator() {
+        if (!previewFloorNavigator) return;
+        const floorHotspots = scenes.flatMap(scene => (scene.hotspots || []).filter(h => h.type === "floor").map(h => ({...h, owner_scene_id: scene.id})));
+        const map = new Map(); floorHotspots.forEach(h => { const c=h.payload?.content||{}; const key=String(c.floor_number ?? c.floor_name ?? h.target_scene); if(!map.has(key)) map.set(key,h); });
+        previewFloorNavigator.innerHTML = "";
+        [...map.values()].sort((a,b)=>Number(b.payload?.content?.floor_number||0)-Number(a.payload?.content?.floor_number||0)).forEach(h=>{ const c=h.payload?.content||{}; const b=document.createElement("button"); b.type="button"; b.innerHTML=`<span>${escapeAttr(c.floor_number ?? "•")}</span><strong>${escapeAttr(c.floor_name || h.label || "Floor")}</strong>`; b.addEventListener("click",()=>{ const t=findScene(h.target_scene); if(t) goToSceneWithWalk(t); }); previewFloorNavigator.appendChild(b); });
+        previewFloorNavigator.classList.remove("has-floors");
+        ensureFloorDockControl();
+    }
+
+    function collectFloorDestinations() {
+        const result = [];
+        const seen = new Set();
+        scenes.forEach((scene) => {
+            (scene.hotspots || []).filter((h) => h.type === "floor" && h.target_scene).forEach((h) => {
+                const c = h.payload?.content || {};
+                const key = String(c.floor_number ?? c.floor_name ?? h.target_scene);
+                if (seen.has(key)) return;
+                seen.add(key);
+                result.push({ hotspot: h, number: c.floor_number ?? "•", name: c.floor_name || h.title || h.label || "Floor", description: c.destination_label || "", target: h.target_scene });
+            });
+        });
+        return result.sort((a, b) => Number(b.number || 0) - Number(a.number || 0));
+    }
+
+    function buildFloorCardNode(hotspot, sceneData) {
+        const floorHotspots = (sceneData?.hotspots || []).filter((h) => h.type === "floor");
+        if (floorHotspots[0] && String(floorHotspots[0].id) !== String(hotspot.id)) {
+            const hidden = document.createElement("div");
+            hidden.style.display = "none";
+            return hidden;
+        }
+        const floors = collectFloorDestinations();
+        const node = document.createElement("div");
+        node.className = "preview-hotspot preview-floor-card-hotspot";
+        node.innerHTML = `
+            <div class="preview-floor-card">
+                <button type="button" class="preview-floor-card-head" aria-expanded="true" aria-label="Réduire ou afficher les étages">
+                    <span>⌂</span>
+                    <div><small>PROPERTY LEVELS</small><strong>${escapeAttr(hotspot.title || hotspot.label || "Choose a floor")}</strong></div>
+                    <b class="preview-floor-card-chevron">⌃</b>
+                </button>
+                <div class="preview-floor-card-list"></div>
+            </div>`;
+        const card = node.querySelector(".preview-floor-card");
+        const head = node.querySelector(".preview-floor-card-head");
+        const list = node.querySelector(".preview-floor-card-list");
+        head?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const collapsed = card.classList.toggle("is-collapsed");
+            head.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        });
+        floors.forEach((floor) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.innerHTML = `<span>${escapeAttr(floor.number)}</span><div><strong>${escapeAttr(floor.name)}</strong><small>${escapeAttr(floor.description)}</small></div><b>→</b>`;
+            button.addEventListener("click", (event) => {
+                event.stopPropagation();
+                const target = findScene(floor.target);
+                if (!target || isTransitioning) return;
+                showFloorTransitionLabel(floor.hotspot);
+                goToSceneWithWalk(target);
+            });
+            list.appendChild(button);
+        });
+        stopTouchAndScrollEventPropagation(node);
+        return node;
+    }
+
+    function renderWallVideo(node, hotspot, display) {
+        const c = hotspot.payload?.content || {};
+        const url = c.video_url || hotspot.media_file_url || "";
+        const width = Math.max(120, Math.min(900, Number(display.width || 360)));
+        const height = Math.max(80, Math.min(600, Number(display.height || 210)));
+        node.className = "preview-hotspot preview-wall-video-hotspot";
+        node.style.width = `${width}px`;
+        node.style.height = `${height}px`;
+        const embed = toEmbedUrl(url, !!c.autoplay, c.muted !== false, !!c.loop);
+        if (embed) node.innerHTML = `<div class="preview-wall-video-frame"><iframe src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe><button type="button" aria-label="Open video">⤢</button></div>`;
+        else node.innerHTML = `<div class="preview-wall-video-frame"><video playsinline ${c.autoplay ? "autoplay" : ""} ${c.muted !== false ? "muted" : ""} ${c.loop ? "loop" : ""} preload="metadata" poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video><button type="button" aria-label="Open video">⤢</button></div>`;
+        node.querySelector("button")?.addEventListener("click", (event) => { event.stopPropagation(); openMediaHotspot(hotspot); });
+        stopTouchAndScrollEventPropagation(node);
+        return node;
+    }
+
+    function buildDoorNode(hotspot, display) {
+        const c = hotspot.payload?.content || {};
+        const node = document.createElement("div");
+        const width = Math.max(80, Math.min(500, Number(display.width || 180)));
+        const height = Math.max(140, Math.min(800, Number(display.height || 320)));
+        node.className = `preview-hotspot preview-door-hotspot door-open-${c.opening_direction || "left"}`;
+        node.style.width = `${width}px`;
+        node.style.height = `${height}px`;
+        node.innerHTML = `<div class="preview-door-outline"><div class="preview-door-panel"><span class="preview-door-handle"></span></div><div class="preview-door-label">${escapeAttr(hotspot.title || hotspot.label || "Open")}</div></div>`;
+        stopTouchAndScrollEventPropagation(node);
+        node.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (isTransitioning || !hotspot.target_scene) return;
+            node.classList.add("is-opening");
+            stopAutorotate();
+            setTimeout(() => {
+                const target = findScene(hotspot.target_scene);
+                if (target) goToSceneWithWalk(target);
+            }, 520);
+        });
+        return node;
+    }
+
+    function buildHotspotNode(hotspot, sceneData) {
         const display = hotspot.payload?.display || {};
         const variant = display.variant || "pin";
         const size = Number(display.size || 58);
@@ -1114,6 +1628,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const offsetX = Number(display.offset_x || 0);
         const offsetY = Number(display.offset_y || 0);
         const anchor = display.anchor || "bottom";
+
+        if (hotspot.type === "floor") return buildFloorCardNode(hotspot, sceneData);
+        if (hotspot.type === "video" && display.variant === "screen") return renderWallVideo(document.createElement("div"), hotspot, display);
+        if (hotspot.type === "door") return buildDoorNode(hotspot, display);
 
         const businessIconKeys = new Set(Object.keys(config.businessIconMap || {}).map((key) => String(key).toLowerCase()));
 
@@ -1144,6 +1662,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const node = document.createElement("div");
         node.className = [
             "preview-hotspot",
+            `hotspot-type-${hotspot.type || "custom"}`,
             `variant-${variant}`,
             `anchor-${anchor}`,
             `hotspot-kind-${hotspotKind}`,
@@ -1190,6 +1709,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 await navigateToScene(hotspot.target_scene, hotspot);
                 return;
             }
+            if (hotspot.type === "pdf" || hotspot.type === "video") {
+                openMediaHotspot(hotspot);
+                return;
+            }
             openInfoPanel(hotspot);
         });
 
@@ -1213,10 +1736,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return viewers[key];
     }
 
-    function getSceneSourceGeometryAndLimiter(sceneData) {
+    function getSceneSourceGeometryAndLimiter(sceneData, imageUrlOverride = "") {
         const mobile = isMobileViewport();
 
-        if (sceneData?.tiles_url) {
+        if (sceneData?.tiles_url && !imageUrlOverride) {
             return {
                 source: Marzipano.ImageUrlSource.fromString(
                     `${sceneData.tiles_url}/{z}/{f}/{y}/{x}.jpg`,
@@ -1242,7 +1765,7 @@ document.addEventListener("DOMContentLoaded", () => {
             Number(sceneData?.max_resolution || 0),
             mobile ? 3072 : 4096
         );
-        const selectedImageUrl = getPreferredImageUrl(sceneData);
+        const selectedImageUrl = imageUrlOverride || getPreferredImageUrl(sceneData);
 
         return {
             source: Marzipano.ImageUrlSource.fromString(selectedImageUrl),
@@ -1251,12 +1774,17 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    function buildSceneOnLayer(layerKey, sceneData) {
+    function buildSceneOnLayer(layerKey, sceneData, options = {}) {
         const viewer = ensureViewer(layerKey);
-        const selectedImageUrl = getPreferredImageUrl(sceneData);
-        if (!viewer || (!selectedImageUrl && !sceneData?.tiles_url)) return null;
+        const selectedImageUrl = options.imageUrl || getPreferredImageUrl(sceneData);
+        const useTiles = Boolean(sceneData?.tiles_url && !options.imageUrl);
 
-        const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(sceneData);
+        if (!viewer || (!selectedImageUrl && !useTiles)) return null;
+
+        const { source, geometry, limiter } = getSceneSourceGeometryAndLimiter(
+            sceneData,
+            options.imageUrl || ""
+        );
         const yaw = degToRad(sceneData.yaw_default || 0);
         const pitch = degToRad(sceneData.pitch_default || 0);
         const fov = getSceneFinalFov(sceneData);
@@ -1276,8 +1804,11 @@ document.addEventListener("DOMContentLoaded", () => {
             return null;
         }
 
+        layerQuality[layerKey] = options.quality || (useTiles ? "tiles" : "preferred");
+        layerSceneId[layerKey] = sceneData?.id ?? null;
+
         (sceneData.hotspots || []).forEach((hotspot) => {
-            const node = buildHotspotNode(hotspot);
+            const node = buildHotspotNode(hotspot, sceneData);
             marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
                 yaw: Number(hotspot.yaw || 0),
                 pitch: Number(hotspot.pitch || 0)
@@ -1320,18 +1851,39 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 650);
     }
 
-    function cinematicSwitchScene(targetScene) {
+    async function cinematicSwitchScene(targetScene) {
         if (!targetScene) {
             isTransitioning = false;
             return;
         }
 
+        cancelProgressiveWork();
+        const generation = progressiveGeneration;
         const outgoingKey = activeLayerKey;
         const incomingKey = standbyLayerKey();
         const cinematicMs = getCinematicTransitionMs();
+        const plan = getProgressiveLoadPlan(targetScene);
+        const firstEntry = plan.light || plan.compatible;
 
         previewViewer?.style?.setProperty("--preview-cinematic-ms", `${cinematicMs}ms`);
-        buildSceneOnLayer(incomingKey, targetScene);
+        setSceneLoadingPreview(targetScene, true, "Loading scene");
+
+        if (firstEntry?.url) {
+            await preloadDecodedImage(firstEntry.url, { priority: "high" });
+        }
+
+        if (generation !== progressiveGeneration) return;
+
+        const built = buildSceneOnLayer(incomingKey, targetScene, {
+            imageUrl: firstEntry?.url || "",
+            quality: firstEntry?.quality || "preferred"
+        });
+
+        if (!built) {
+            setSceneLoadingPreview(targetScene, false);
+            isTransitioning = false;
+            return;
+        }
 
         const incomingView = views[incomingKey];
         const outgoingEl = getLayerEl(outgoingKey);
@@ -1340,7 +1892,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!outgoingEl || !incomingEl) {
             activeLayerKey = incomingKey;
             currentSceneId = targetScene.id;
+            setSceneLoadingPreview(targetScene, false);
             isTransitioning = false;
+            scheduleProgressiveUpgrade(targetScene, generation);
             return;
         }
 
@@ -1348,9 +1902,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const endPitch = degToRad(targetScene.pitch_default || 0);
         const finalFov = getSceneFinalFov(targetScene);
 
-        // Même principe que le Builder : la nouvelle scène démarre directement
-        // dans sa direction par défaut. Le mouvement est porté par l'animation A/B,
-        // pas par un voile noir ni un écran de loading.
         if (incomingView) {
             incomingView.setParameters({
                 yaw: endYaw,
@@ -1359,8 +1910,23 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        outgoingEl.classList.remove("standby-layer", "layer-incoming", "layer-outgoing");
-        incomingEl.classList.remove("active-layer", "standby-layer", "layer-incoming", "layer-outgoing");
+        outgoingEl.classList.remove(
+            "standby-layer",
+            "layer-incoming",
+            "layer-outgoing",
+            "quality-upgrade-incoming",
+            "quality-upgrade-outgoing",
+            "quality-upgrade-visible"
+        );
+        incomingEl.classList.remove(
+            "active-layer",
+            "standby-layer",
+            "layer-incoming",
+            "layer-outgoing",
+            "quality-upgrade-incoming",
+            "quality-upgrade-outgoing",
+            "quality-upgrade-visible"
+        );
 
         outgoingEl.classList.add("active-layer");
         incomingEl.classList.add("layer-incoming");
@@ -1374,14 +1940,16 @@ document.addEventListener("DOMContentLoaded", () => {
         currentSceneId = targetScene.id;
         updateSceneMeta(targetScene);
         syncSceneInUrl(targetScene);
+        setSceneLoadingPreview(targetScene, false);
 
         requestAnimationFrame(() => {
-            // Force la même sensation que crossfadeToScene() du Builder.
             outgoingEl.classList.add("layer-outgoing");
             incomingEl.classList.add("layer-incoming");
         });
 
         setTimeout(() => {
+            if (generation !== progressiveGeneration) return;
+
             outgoingEl.classList.remove("active-layer", "layer-outgoing", "layer-incoming");
             outgoingEl.classList.add("standby-layer");
             outgoingEl.style.opacity = "0";
@@ -1391,12 +1959,14 @@ document.addEventListener("DOMContentLoaded", () => {
             incomingEl.style.opacity = "1";
 
             previewViewer?.classList.remove("is-cinematic-transition", "transitioning", "is-walk-transition");
+            closeMediaHotspot();
             activeLayerKey = incomingKey;
             isTransitioning = false;
             updateAllViewerSizes();
             syncZoomButtonsState();
 
-            // Relance douce après changement de scène, sauf si l'onglet est caché.
+            scheduleProgressiveUpgrade(targetScene, generation);
+
             if (!document.hidden) {
                 startAutorotate();
             }
@@ -1880,18 +2450,43 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sceneCountBadge) sceneCountBadge.textContent = `${getNavigationSceneList().length}`;
 
     renderSceneRail();
+    renderFloorNavigator();
     setupMobileZoomGestures();
 
     const initialScene = getInitialSceneFromUrl() || scenes[0];
     currentSceneId = initialScene.id;
 
-    buildSceneOnLayer(activeLayerKey, initialScene);
-    updateSceneMeta(initialScene);
-    syncSceneInUrl(initialScene);
+    async function bootProgressivePreview() {
+        cancelProgressiveWork();
+        const generation = progressiveGeneration;
+        const plan = getProgressiveLoadPlan(initialScene);
+        const firstEntry = plan.light || plan.compatible;
 
-    requestAnimationFrame(() => {
-        updateAllViewerSizes();
-        syncZoomButtonsState();
-        runInitialReveal(initialScene);
-    });
+        setSceneLoadingPreview(initialScene, true, "Preparing panorama");
+
+        if (firstEntry?.url) {
+            await preloadDecodedImage(firstEntry.url, { priority: "high" });
+        }
+
+        if (generation !== progressiveGeneration) return;
+
+        buildSceneOnLayer(activeLayerKey, initialScene, {
+            imageUrl: firstEntry?.url || "",
+            quality: firstEntry?.quality || "preferred"
+        });
+        updateSceneMeta(initialScene);
+        syncSceneInUrl(initialScene);
+
+        requestAnimationFrame(() => {
+            updateAllViewerSizes();
+            syncZoomButtonsState();
+            runInitialReveal(initialScene);
+            setTimeout(() => {
+                setSceneLoadingPreview(initialScene, false);
+                scheduleProgressiveUpgrade(initialScene, generation);
+            }, 260);
+        });
+    }
+
+    bootProgressivePreview();
 });

@@ -141,7 +141,8 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
@@ -171,7 +172,7 @@
         };
     </script>
 
-    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=hotspot-3d-modal-20260606">
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=surface-trace-pdf-youtube-final-20260712">
 
     <style>
         #previewDebugDialog,
@@ -515,6 +516,17 @@
             </div>
         </div>
 
+
+        <div id="previewMediaModal" class="preview-media-modal" aria-hidden="true">
+            <div class="preview-media-backdrop" data-media-close></div>
+            <section class="preview-media-card" role="dialog" aria-modal="true">
+                <header><div><span id="previewMediaKicker">MEDIA</span><h3 id="previewMediaTitle">Media</h3></div><button type="button" data-media-close>✕</button></header>
+                <div id="previewMediaBody" class="preview-media-body"></div>
+                <footer id="previewMediaFooter"></footer>
+            </section>
+        </div>
+        <div id="previewFloorNavigator" class="preview-floor-navigator" aria-hidden="true"></div>
+
         <div id="previewToast"
              class="pointer-events-none absolute bottom-24 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-sm font-bold text-white opacity-0 shadow-glow backdrop-blur-xl transition duration-300">
             Copied
@@ -555,7 +567,7 @@
     {{ scene_list_json|json_script:"preview-scene-list-data" }}
 
     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
-    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=share-backend-20260697"></script>
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=surface-trace-pdf-youtube-final-20260712"></script>
     <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-sharp-20260698"></script>
 
 

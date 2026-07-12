@@ -45,10 +45,20 @@ python-gettext==4.1
 requests>=2.28.1
 six==1.16.0
 
-
 # Deployment
 gunicorn==21.2.0
 
 # Payments / External services
 stripe
 firebase-admin
+
+# Google Street View / Maps / OAuth
+google-auth>=2.29.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+google-api-python-client>=2.130.0
+requests-oauthlib>=2.0.0
+
+# 360 Images / EXIF / GPS / XMP
+exifread>=3.0.0
+piexif>=1.1.3

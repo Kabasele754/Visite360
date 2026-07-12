@@ -4,6 +4,8 @@ from .models import Tour, Scene360, Hotspot, TourPhoto
 
 class HotspotSerializer(serializers.ModelSerializer):
     ad_image_url = serializers.SerializerMethodField()
+    media_file_url = serializers.SerializerMethodField()
+    poster_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Hotspot
@@ -23,6 +25,10 @@ class HotspotSerializer(serializers.ModelSerializer):
             "selected_icon",
             "ad_image",
             "ad_image_url",
+            "media_file",
+            "media_file_url",
+            "poster_image",
+            "poster_image_url",
             "payload",
             "created_at",
             "updated_at",
@@ -30,12 +36,20 @@ class HotspotSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "organization",
             "ad_image_url",
+            "media_file_url",
+            "poster_image_url",
             "created_at",
             "updated_at",
         ]
 
     def get_ad_image_url(self, obj):
         return obj.ad_image.url if obj.ad_image else None
+
+    def get_media_file_url(self, obj):
+        return obj.media_file.url if obj.media_file else None
+
+    def get_poster_image_url(self, obj):
+        return obj.poster_image.url if obj.poster_image else None
 
 
 class Scene360Serializer(serializers.ModelSerializer):

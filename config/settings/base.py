@@ -32,7 +32,10 @@ INSTALLED_APPS = [
     "apps.leads",
     "apps.bookings",
     "apps.analytics",
-    "apps.public"
+    "apps.public",
+    "apps.app_streetview",
+    
+    
 ]
 
 MIDDLEWARE = [

@@ -6,7 +6,8 @@
 {% block extra_css %}
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-    tailwind.config = {
+    window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
         theme: {
             extend: {
                 colors: {
