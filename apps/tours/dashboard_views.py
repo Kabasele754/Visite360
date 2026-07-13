@@ -1,4 +1,3 @@
-from pathlib import Path
 import json
 from copy import deepcopy
 
@@ -7,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Prefetch
-from django.http import JsonResponse, FileResponse, Http404
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -319,19 +318,6 @@ def _serialize_hotspot_payload(request, hotspot):
         "selected_icon": hotspot.selected_icon or "default",
         "ad_image_url": _safe_file_url(request, getattr(hotspot, "ad_image", None)),
         "media_file_url": _safe_file_url(request, getattr(hotspot, "media_file", None)),
-        "pdf_inline_url": (
-            request.build_absolute_uri(
-                reverse(
-                    "dashboard-hotspot-pdf-inline",
-                    kwargs={
-                        "organization_slug": hotspot.organization.slug,
-                        "hotspot_id": hotspot.id,
-                    },
-                )
-            )
-            if hotspot.type == Hotspot.Type.PDF and getattr(hotspot, "media_file", None)
-            else None
-        ),
         "poster_image_url": _safe_file_url(request, getattr(hotspot, "poster_image", None)),
         "payload": hotspot.payload or {},
         "is_ai_generated": bool(getattr(hotspot, "is_ai_generated", False)),
@@ -1596,39 +1582,6 @@ def upload_hotspot_image_ajax_view(request, organization_slug, hotspot_id):
     })
 
 
-
-@require_GET
-def hotspot_pdf_inline_view(request, organization_slug, hotspot_id):
-    """Serve un PDF hotspot en mode inline pour lecture dans le dialog."""
-    organization = get_object_or_404(Organization, slug=organization_slug)
-    hotspot = get_object_or_404(
-        Hotspot.objects.select_related("scene", "scene__tour"),
-        id=hotspot_id,
-        organization=organization,
-        type=Hotspot.Type.PDF,
-    )
-
-    if not hotspot.media_file:
-        raise Http404("PDF not found.")
-
-    try:
-        file_path = Path(hotspot.media_file.path)
-    except (NotImplementedError, ValueError):
-        # Stockage distant: laisser le storage ouvrir le fichier.
-        file_obj = hotspot.media_file.open("rb")
-        filename = Path(hotspot.media_file.name).name or "document.pdf"
-    else:
-        if not file_path.exists():
-            raise Http404("PDF file does not exist.")
-        file_obj = file_path.open("rb")
-        filename = file_path.name
-
-    response = FileResponse(file_obj, content_type="application/pdf")
-    response["Content-Disposition"] = f'inline; filename="{filename}"'
-    response["X-Frame-Options"] = "SAMEORIGIN"
-    response["Cache-Control"] = "private, max-age=3600"
-    return response
-
 @login_required
 @require_POST
 def upload_hotspot_media_ajax_view(request, organization_slug, hotspot_id):
@@ -1669,18 +1622,7 @@ def upload_hotspot_media_ajax_view(request, organization_slug, hotspot_id):
     hotspot.save(update_fields=[field for field in ["media_file" if media_file else None, "poster_image" if poster_file else None, "updated_at"] if field])
     content = dict((hotspot.payload or {}).get("content") or {})
     if hotspot.media_file:
-        if hotspot.type == Hotspot.Type.PDF:
-            content["document_url"] = request.build_absolute_uri(
-                reverse(
-                    "dashboard-hotspot-pdf-inline",
-                    kwargs={
-                        "organization_slug": organization.slug,
-                        "hotspot_id": hotspot.id,
-                    },
-                )
-            )
-        else:
-            content["video_url"] = request.build_absolute_uri(hotspot.media_file.url)
+        content["document_url" if hotspot.type == Hotspot.Type.PDF else "video_url"] = request.build_absolute_uri(hotspot.media_file.url)
     if hotspot.poster_image:
         content["poster_url"] = request.build_absolute_uri(hotspot.poster_image.url)
     hotspot.payload = {**(hotspot.payload or {}), "content": content}
