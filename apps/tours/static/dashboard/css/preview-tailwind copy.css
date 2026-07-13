@@ -1,0 +1,5309 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --glass-bg: rgba(11, 26, 48, 0.46);
+    --glass-bg-strong: rgba(8, 20, 38, 0.64);
+    --glass-line: rgba(255, 255, 255, 0.12);
+    --glass-line-soft: rgba(255, 255, 255, 0.08);
+    --text-main: #ffffff;
+    --text-soft: #d7e3f1;
+    --text-muted: #9db0c7;
+    --accent-a: #a5f3fc;
+    --accent-b: #67e8f9;
+    --accent-c: #60a5fa;
+    --shadow-soft: 0 12px 26px rgba(0, 0, 0, 0.14);
+    --shadow-panel: 0 22px 48px rgba(0, 0, 0, 0.20);
+    --shadow-premium: 0 26px 60px rgba(0, 0, 0, 0.24);
+    --dock-height: 92px;
+    --brand-top: 18px;
+    --brand-z: 30;
+    --chrome-z: 35;
+    --panel-z: 42;
+    --info-z: 60;
+    --intro-z: 80;
+}
+
+body {
+    min-height: 100dvh;
+    overscroll-behavior: none;
+    background:
+        radial-gradient(circle at top, rgba(103, 232, 249, 0.16), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(96, 165, 250, 0.14), transparent 25%),
+        linear-gradient(180deg, #081426 0%, #0a1d35 46%, #0b2240 100%);
+    color: var(--text-main);
+}
+
+.preview-page-shell {
+    position: relative;
+    width: 100vw;
+    min-height: 100dvh;
+    overflow: hidden;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ===== VIEWER ===== */
+.preview-viewer {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    min-height: 100svh;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at center, rgba(103, 232, 249, 0.12), transparent 32%),
+        linear-gradient(180deg, #081426 0%, #0a1d35 48%, #0b2240 100%);
+    isolation: isolate;
+}
+
+@supports (-webkit-touch-callout: none) {
+    html,
+    body,
+    .preview-page-shell,
+    .preview-viewer {
+        min-height: -webkit-fill-available;
+    }
+}
+
+.preview-viewer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: radial-gradient(circle at center, transparent 38%, rgba(0, 0, 0, 0.14) 100%);
+    opacity: 0;
+    transition: opacity 0.8s ease;
+}
+
+.preview-viewer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, transparent 18%, transparent 72%, rgba(0,0,0,0.14) 100%);
+}
+
+.preview-viewer.is-cinematic-transition::before {
+    opacity: 1;
+}
+
+.preview-viewer.is-entering::after {
+    animation: viewerEntryGlow 1.1s ease both;
+}
+
+@keyframes viewerEntryGlow {
+    0% {
+        opacity: 0;
+        transform: scale(1.02);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ===== LAYERS ===== */
+.preview-layer,
+.preview-mount {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.preview-layer {
+    opacity: 0;
+    transform: scale(1.02);
+    filter: blur(0);
+    transition:
+        opacity 1.1s ease,
+        transform 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 1.1s ease;
+    will-change: transform, opacity, filter;
+    pointer-events: none;
+}
+
+.preview-layer.active-layer {
+    opacity: 1;
+    z-index: 2;
+    transform: scale(1);
+    filter: blur(0);
+    pointer-events: auto;
+}
+
+.preview-layer.standby-layer {
+    opacity: 0;
+    z-index: 1;
+    transform: scale(1.04);
+}
+
+.preview-layer.layer-outgoing {
+    opacity: 0.12;
+    z-index: 2;
+    transform: scale(1.12);
+    filter: blur(1.2px);
+}
+
+.preview-layer.layer-incoming {
+    opacity: 1;
+    z-index: 3;
+    transform: scale(1.006);
+    filter: blur(0);
+}
+
+.preview-viewer.is-cinematic-transition .active-layer {
+    transform: scale(1.04);
+}
+
+/* ===== INTRO ===== */
+.preview-intro-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: var(--intro-z);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(circle at top, rgba(103,232,249,0.18), transparent 28%),
+        linear-gradient(180deg, rgba(7,20,38,0.94) 0%, rgba(10,29,53,0.92) 45%, rgba(11,34,64,0.94) 100%);
+    backdrop-filter: blur(16px);
+    transition:
+        opacity 0.9s ease,
+        visibility 0.9s ease,
+        transform 0.9s ease;
+}
+
+.preview-intro-overlay.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(1.03);
+}
+
+.preview-intro-glow {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(60px);
+    pointer-events: none;
+}
+
+.preview-intro-glow-a {
+    width: 280px;
+    height: 280px;
+    background: rgba(103, 232, 249, 0.16);
+    top: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.preview-intro-glow-b {
+    width: 320px;
+    height: 320px;
+    background: rgba(96, 165, 250, 0.13);
+    bottom: 10%;
+    right: 8%;
+}
+
+.preview-intro-card {
+    position: relative;
+    width: min(92vw, 460px);
+    padding: 28px 24px 22px;
+    border-radius: 32px;
+    border: 1px solid var(--glass-line);
+    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
+    box-shadow:
+        0 24px 60px rgba(0,0,0,0.20),
+        inset 0 1px 0 rgba(255,255,255,0.12);
+    text-align: center;
+    overflow: hidden;
+}
+
+.preview-intro-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(103,232,249,0.16), transparent 45%);
+    pointer-events: none;
+}
+
+.preview-intro-logo-wrap {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+.preview-intro-logo {
+    width: 82px;
+    height: 82px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 16px 30px rgba(0,0,0,0.18);
+    background: rgba(255,255,255,0.08);
+}
+
+.preview-intro-logo-fallback {
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+    font-weight: 900;
+    color: #d9f8ff;
+    background: linear-gradient(135deg, rgba(103,232,249,0.24), rgba(96,165,250,0.22));
+}
+
+.preview-intro-text {
+    position: relative;
+    z-index: 1;
+}
+
+.preview-intro-kicker {
+    margin: 0 0 8px;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    font-weight: 900;
+    color: rgba(186, 245, 255, 0.92);
+}
+
+.preview-intro-title {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: white;
+}
+
+.preview-intro-subtitle {
+    margin: 10px 0 0;
+    color: var(--text-soft);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.preview-intro-loader {
+    position: relative;
+    z-index: 1;
+    margin-top: 22px;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.08);
+}
+
+.preview-intro-loader-bar {
+    display: block;
+    width: 42%;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent-a) 0%, var(--accent-b) 50%, var(--accent-c) 100%);
+    animation: previewLoaderMove 1.3s ease-in-out infinite;
+}
+
+@keyframes previewLoaderMove {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(320%); }
+}
+
+/* ===== BRAND / TOP CHIP ===== */
+.brand-overlay-wrap {
+    position: absolute;
+    top: var(--brand-top);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--brand-z);
+    width: calc(100% - 32px);
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.brand-overlay-chip,
+.brand-header-chip {
+    position: relative;
+    min-width: 220px;
+    max-width: min(92vw, 520px);
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: linear-gradient(180deg, rgba(11,26,48,0.54), rgba(11,26,48,0.42));
+    backdrop-filter: blur(22px);
+    box-shadow:
+        0 20px 44px rgba(0,0,0,0.18),
+        inset 0 1px 0 rgba(255,255,255,0.10);
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.brand-overlay-chip-centered {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-overlay-chip::before,
+.brand-header-chip::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(103,232,249,0.18), transparent 42%);
+    pointer-events: none;
+}
+
+.brand-logo-frame {
+    position: relative;
+    flex-shrink: 0;
+    width: 54px;
+    height: 54px;
+    overflow: hidden;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.08);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.16);
+}
+
+.brand-logo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.brand-logo-fallback {
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    font-weight: 900;
+    color: #d9f8ff;
+    background: linear-gradient(135deg, rgba(103,232,249,0.24), rgba(96,165,250,0.22));
+}
+
+.brand-kicker {
+    margin: 0 0 2px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(186, 245, 255, 0.88);
+}
+
+.brand-company-name {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#previewSceneTitle,
+.preview-scene-title-chip,
+.scene-title-chip,
+.viewer-scene-title,
+.preview-top-actions,
+.top-right-actions,
+.top-floating-actions {
+    display: none !important;
+}
+
+/* ===== BOTTOM CHROME / DOCK ===== */
+.viewer-bottom-chrome {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--chrome-z);
+    pointer-events: none;
+    padding: 0 12px 14px;
+}
+
+.viewer-bottom-chrome-inner {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.viewer-bottom-chrome-card {
+    position: relative;
+    width: min(100%, 1120px);
+    border: 1px solid rgba(255,255,255,0.12);
+    background: linear-gradient(180deg, rgba(11,26,48,0.54), rgba(11,26,48,0.42));
+    box-shadow:
+        0 22px 48px rgba(0,0,0,0.20),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    border-radius: 28px;
+    padding: 12px;
+    pointer-events: auto;
+    overflow: visible;
+}
+
+.dock-scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    position: relative;
+}
+
+.dock-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.dock-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    min-width: max-content;
+    position: relative;
+}
+
+.dock-divider {
+    width: 1px;
+    height: 38px;
+    background: rgba(255,255,255,0.12);
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+
+.control-btn {
+    position: relative;
+    width: 52px;
+    min-width: 52px;
+    height: 52px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.10);
+    color: #ffffff;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 900;
+    cursor: pointer;
+    transition:
+        transform 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease;
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.control-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.16);
+    border-color: rgba(255,255,255,0.18);
+}
+
+.control-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.control-btn.active {
+    background: linear-gradient(135deg, var(--accent-a) 0%, var(--accent-b) 50%, var(--accent-c) 100%);
+    color: #08111f;
+    border-color: transparent;
+    box-shadow: 0 12px 24px rgba(103, 232, 249, 0.20);
+}
+
+.control-btn svg,
+.control-btn i,
+.control-btn img {
+    width: 21px;
+    height: 21px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.control-btn span,
+.control-btn .label,
+.control-btn .btn-label {
+    display: none !important;
+}
+
+/* ===== 3D STACK BUTTON ===== */
+.scene-stack-anchor {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.scene-stack-toggle-inline {
+    position: relative;
+    width: 78px;
+    min-width: 78px;
+    height: 52px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+        transform 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease;
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+    perspective: 900px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.scene-stack-toggle-inline::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(103,232,249,0.18), transparent 50%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.scene-stack-toggle-inline:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.16);
+}
+
+.scene-stack-toggle-inline:hover::before,
+.scene-stack-toggle-inline.open::before {
+    opacity: 1;
+}
+
+.scene-stack-mini-preview {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    transform-style: preserve-3d;
+}
+
+.scene-stack-mini-card {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 11px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.08);
+    box-shadow: 0 10px 18px rgba(0,0,0,0.16);
+    transition:
+        transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.42s ease,
+        filter 0.42s ease;
+}
+
+.scene-stack-mini-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.scene-stack-mini-card:nth-child(1) {
+    transform: translate3d(0, 0, 18px) rotate(0deg);
+    z-index: 3;
+}
+
+.scene-stack-mini-card:nth-child(2) {
+    transform: translate3d(4px, 4px, 8px) rotate(6deg);
+    z-index: 2;
+}
+
+.scene-stack-mini-card:nth-child(3) {
+    transform: translate3d(8px, 8px, 0) rotate(11deg);
+    z-index: 1;
+}
+
+.scene-stack-toggle-inline.open .scene-stack-mini-card:nth-child(1) {
+    transform: translate3d(-8px, -12px, 24px) rotate(-12deg);
+    box-shadow: 0 16px 26px rgba(0,0,0,0.18);
+}
+
+.scene-stack-toggle-inline.open .scene-stack-mini-card:nth-child(2) {
+    transform: translate3d(6px, 1px, 12px) rotate(4deg);
+    box-shadow: 0 12px 22px rgba(0,0,0,0.16);
+}
+
+.scene-stack-toggle-inline.open .scene-stack-mini-card:nth-child(3) {
+    transform: translate3d(16px, 13px, 0) rotate(15deg);
+    box-shadow: 0 10px 18px rgba(0,0,0,0.14);
+}
+
+.scene-stack-badge {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent-a) 0%, var(--accent-c) 100%);
+    color: #08111f;
+    font-size: 10px;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 16px rgba(103, 232, 249, 0.22);
+}
+
+/* ===== STACK PANEL ===== */
+.scene-stack-panel {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 12px);
+    width: 320px;
+    max-height: min(62vh, 520px);
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+    transform-origin: bottom left;
+    pointer-events: none;
+    transition:
+        opacity 0.26s ease,
+        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: var(--panel-z);
+}
+
+.scene-stack-panel.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.scene-stack-panel-inner {
+    overflow: hidden;
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(11,26,48,0.70);
+    backdrop-filter: blur(22px);
+    box-shadow: 0 24px 52px rgba(0,0,0,0.20);
+    padding: 14px;
+    max-height: min(62vh, 520px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.16) transparent;
+}
+
+.scene-stack-panel-inner::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scene-stack-panel-inner::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.14);
+    border-radius: 999px;
+}
+
+.scene-stack-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.scene-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 12px;
+    width: 100%;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+    border-radius: 22px;
+    padding: 11px;
+    color: white;
+    cursor: pointer;
+    overflow: hidden;
+    text-align: left;
+    transition:
+        transform 0.28s ease,
+        border-color 0.28s ease,
+        box-shadow 0.28s ease,
+        background 0.28s ease,
+        opacity 0.28s ease;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.14);
+    opacity: 0;
+    transform: translateY(26px) scale(0.97);
+}
+
+.scene-stack-panel.open .scene-card {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transition-delay: calc(var(--stagger, 0) * 45ms);
+}
+
+.scene-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(103,232,249,0.10), transparent 45%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.scene-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(103,232,249,0.30);
+    box-shadow: 0 16px 30px rgba(0,0,0,0.18);
+}
+
+.scene-card:hover::before,
+.scene-card.active::before {
+    opacity: 1;
+}
+
+.scene-card.active {
+    border-color: rgba(103,232,249,0.40);
+    background: linear-gradient(180deg, rgba(103,232,249,0.14), rgba(255,255,255,0.08));
+    box-shadow:
+        0 18px 34px rgba(0,0,0,0.18),
+        0 0 0 1px rgba(103,232,249,0.08) inset;
+}
+
+.scene-thumb {
+    position: relative;
+    width: 104px;
+    height: 78px;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.08);
+}
+
+.scene-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.scene-thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: #d8e6f7;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+}
+
+.scene-body {
+    min-width: 0;
+    align-self: center;
+}
+
+.scene-title {
+    display: block;
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.scene-subtitle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.scene-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(165,243,252,0.9);
+    box-shadow: 0 0 12px rgba(165,243,252,0.65);
+}
+
+/* ===== HOTSPOTS ===== */
+.preview-hotspot {
+    position: relative;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
+    will-change: transform;
+}
+
+.preview-hotspot:hover {
+    transform: scale(1.08);
+    filter: brightness(1.06);
+}
+
+.preview-hotspot::after {
+    content: "";
+    position: absolute;
+    inset: 14%;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(255,255,255,0.26), transparent 70%);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+
+.preview-hotspot:hover::after {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.preview-hotspot img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter:
+        drop-shadow(0 12px 20px rgba(0,0,0,0.24))
+        drop-shadow(0 4px 10px rgba(0,0,0,0.12));
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.preview-hotspot.variant-label {
+    min-width: 90px;
+    width: auto !important;
+    height: auto !important;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(11, 26, 48, 0.74);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: white;
+    font-size: 12px;
+    font-weight: 900;
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.18);
+}
+
+.preview-hotspot.variant-label img {
+    width: 22px;
+    height: 22px;
+}
+
+.preview-hotspot.variant-floor img {
+    transform: perspective(300px) rotateX(65deg);
+}
+
+.preview-hotspot.variant-flat img {
+    filter: drop-shadow(0 8px 12px rgba(0,0,0,0.14));
+}
+
+/* ===== INFO / AD PANEL ===== */
+.info-backdrop,
+#previewInfoBackdrop {
+    background: rgba(8, 15, 28, 0.16);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+}
+
+.info-backdrop.open,
+#previewInfoBackdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.info-panel,
+#previewInfoPanel {
+    transform: translateX(115%);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.28s ease;
+    z-index: var(--info-z);
+}
+
+.info-panel.open,
+#previewInfoPanel.open {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.info-media-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.info-media-empty {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: var(--text-soft);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+/* ===== TOAST ===== */
+.toast-show {
+    opacity: 1 !important;
+    transform: translate(-50%, -8px) !important;
+}
+
+/* ===== UI HIDE MODE ===== */
+.ui-hidden [data-ui="chrome"] {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+    transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+[data-ui="chrome"] {
+    transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+/* ===== TABLET ===== */
+@media (max-width: 1024px) {
+    .brand-overlay-wrap {
+        top: 14px;
+    }
+
+    .viewer-bottom-chrome {
+        padding-inline: 10px;
+        padding-bottom: 12px;
+    }
+
+    .viewer-bottom-chrome-card {
+        border-radius: 24px;
+        padding: 10px;
+    }
+
+    .scene-stack-panel {
+        width: min(78vw, 320px);
+    }
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+    :root {
+        --dock-height: 82px;
+        --brand-top: 12px;
+    }
+
+    .preview-intro-card {
+        padding: 24px 18px 18px;
+        border-radius: 26px;
+    }
+
+    .preview-intro-logo {
+        width: 70px;
+        height: 70px;
+    }
+
+    .brand-overlay-wrap {
+        top: 10px;
+        width: calc(100% - 18px);
+    }
+
+    .brand-overlay-chip,
+    .brand-header-chip {
+        max-width: calc(100vw - 1.1rem);
+        padding: 9px 12px;
+        border-radius: 22px;
+    }
+
+    .brand-logo-frame {
+        width: 42px;
+        height: 42px;
+    }
+
+    .brand-kicker {
+        font-size: 9px;
+        letter-spacing: 0.22em;
+    }
+
+    .brand-company-name {
+        font-size: 14px;
+        max-width: 58vw;
+    }
+
+    .viewer-bottom-chrome {
+        padding: 0 8px 10px;
+    }
+
+    .viewer-bottom-chrome-card {
+        width: 100%;
+        border-radius: 22px;
+        padding: 8px;
+    }
+
+    .dock-scroll {
+        overflow-x: auto;
+        overflow-y: visible;
+        padding-bottom: 2px;
+    }
+
+    .dock-row {
+        gap: 7px;
+        min-width: max-content;
+    }
+
+    .control-btn {
+        width: 46px;
+        min-width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        font-size: 18px;
+    }
+
+    .control-btn svg,
+    .control-btn i,
+    .control-btn img {
+        width: 19px;
+        height: 19px;
+    }
+
+    .scene-stack-anchor {
+        position: relative;
+    }
+
+    .scene-stack-toggle-inline {
+        width: 66px;
+        min-width: 66px;
+        height: 46px;
+        border-radius: 16px;
+    }
+
+    .scene-stack-mini-preview {
+        width: 31px;
+        height: 31px;
+    }
+
+    .dock-divider {
+        height: 30px;
+    }
+
+    .scene-stack-panel {
+        left: 0;
+        right: auto;
+        bottom: calc(100% + 10px);
+        width: min(88vw, 330px);
+        max-height: min(56vh, 440px);
+        transform: translateY(22px) scale(0.96);
+        transform-origin: bottom left;
+    }
+
+    .scene-stack-panel.open {
+        transform: translateY(0) scale(1);
+    }
+
+    .scene-stack-panel-inner {
+        max-height: min(56vh, 440px);
+        border-radius: 24px;
+        padding: 12px;
+    }
+
+    .scene-card {
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 10px;
+        border-radius: 18px;
+        padding: 9px;
+    }
+
+    .scene-thumb {
+        width: 88px;
+        height: 66px;
+        border-radius: 15px;
+    }
+
+    .scene-title {
+        font-size: 14px;
+    }
+
+    .scene-subtitle {
+        font-size: 11px;
+    }
+
+    .preview-hotspot.variant-label {
+        min-width: 78px;
+        padding: 8px 11px;
+        gap: 8px;
+        font-size: 11px;
+    }
+
+    .preview-hotspot.variant-label img {
+        width: 18px;
+        height: 18px;
+    }
+
+    .info-panel,
+    #previewInfoPanel {
+        right: 10px !important;
+        left: 10px !important;
+        bottom: 76px !important;
+        width: auto !important;
+        max-width: none !important;
+        transform: translateY(120%);
+        border-radius: 24px !important;
+    }
+
+    .info-panel.open,
+    #previewInfoPanel.open {
+        transform: translateY(0);
+    }
+}
+
+/* ===== SMALL MOBILE ===== */
+@media (max-width: 480px) {
+    .brand-overlay-chip,
+    .brand-header-chip {
+        padding: 8px 10px;
+    }
+
+    .brand-logo-frame {
+        width: 38px;
+        height: 38px;
+    }
+
+    .brand-company-name {
+        font-size: 13px;
+        max-width: 56vw;
+    }
+
+    .control-btn {
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        border-radius: 15px;
+    }
+
+    .scene-stack-toggle-inline {
+        width: 62px;
+        min-width: 62px;
+        height: 44px;
+        border-radius: 15px;
+    }
+
+    .scene-stack-panel {
+        width: min(92vw, 320px);
+    }
+
+    .scene-card {
+        grid-template-columns: 82px minmax(0, 1fr);
+    }
+
+    .scene-thumb {
+        width: 82px;
+        height: 62px;
+    }
+}
+
+
+
+
+@media (max-width: 768px) {
+    .brand-overlay-chip,
+    .brand-header-chip,
+    .dock-scroll,
+    .scene-stack-panel-inner,
+    .info-panel,
+    #previewInfoPanel {
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+    }
+}
+
+
+
+
+
+/* ===== MOBILE SAFE DOCK FIX ===== */
+#previewControlDock {
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 70 !important;
+}
+
+#previewControlDock .dock-scroll {
+    max-width: 100%;
+}
+
+#previewToast {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px) !important;
+}
+
+@media (max-width: 768px) {
+    html,
+    body {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    #previewControlDock {
+        width: calc(100vw - 12px) !important;
+        max-width: calc(100vw - 12px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    }
+
+    #previewControlDock .dock-scroll {
+        border-radius: 22px !important;
+        padding: 6px !important;
+    }
+
+    #previewControlDock .dock-row {
+        gap: 6px;
+    }
+
+    #previewControlDock .control-btn {
+        width: 42px;
+        min-width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        font-size: 17px;
+    }
+
+    #previewControlDock .scene-stack-toggle-inline {
+        width: 58px;
+        min-width: 58px;
+        height: 42px;
+        border-radius: 14px;
+    }
+
+    #previewControlDock .scene-stack-mini-preview {
+        width: 28px;
+        height: 28px;
+    }
+
+    #previewControlDock .scene-stack-badge {
+        right: 3px;
+        top: 3px;
+    }
+
+    #previewControlDock .dock-divider {
+        height: 24px;
+        margin: 0 1px;
+    }
+
+    #previewSceneRail.scene-stack-panel {
+        left: 0 !important;
+        width: min(92vw, 330px) !important;
+        bottom: calc(100% + 8px) !important;
+        max-height: min(52vh, 400px) !important;
+    }
+
+    #previewSceneRail .scene-stack-panel-inner {
+        max-height: min(52vh, 400px) !important;
+    }
+
+    .info-panel,
+    #previewInfoPanel {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+    }
+
+    #previewToast {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 76px) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #previewControlDock {
+        width: calc(100vw - 10px) !important;
+        max-width: calc(100vw - 10px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 6px) !important;
+    }
+
+    #previewControlDock .dock-scroll {
+        padding: 5px !important;
+        border-radius: 20px !important;
+    }
+
+    #previewControlDock .dock-row {
+        gap: 5px;
+    }
+
+    #previewControlDock .control-btn {
+        width: 39px;
+        min-width: 39px;
+        height: 39px;
+        border-radius: 13px;
+        font-size: 16px;
+    }
+
+    #previewControlDock .scene-stack-toggle-inline {
+        width: 54px;
+        min-width: 54px;
+        height: 39px;
+        border-radius: 13px;
+    }
+
+    #previewControlDock .scene-stack-mini-preview {
+        width: 25px;
+        height: 25px;
+    }
+
+    #previewControlDock .dock-divider {
+        height: 22px;
+    }
+
+    .info-panel,
+    #previewInfoPanel {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 68px) !important;
+    }
+
+    #previewToast {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+    }
+}
+
+/* =====================================================================
+   PREVIEW CSS — TAILWIND / BUILDER STYLE FINAL ADAPTATION
+   À placer à la fin du fichier preview.css.
+   Compatible avec ton template preview + Marzipano + scènes A/B.
+   Objectif :
+   - look proche du builder
+   - glassmorphism premium
+   - transition cinématique entre scènes
+   - boutons transparents premium
+   - hotspots navigation PNG simple
+   - autres hotspots visibles/pro
+   - mobile responsive + pinch zoom conservé
+===================================================================== */
+
+/* ------------------------------
+   Design tokens: builder + Tailwind feeling
+------------------------------ */
+:root {
+    --preview-bg-950: #020617;
+    --preview-bg-900: #081426;
+    --preview-bg-850: #0a1d35;
+    --preview-bg-800: #0b2240;
+
+    --preview-slate-50: #f8fafc;
+    --preview-slate-100: #f1f5f9;
+    --preview-slate-200: #e2e8f0;
+    --preview-slate-300: #cbd5e1;
+    --preview-slate-400: #94a3b8;
+    --preview-slate-500: #64748b;
+
+    --preview-cyan-100: #cffafe;
+    --preview-cyan-200: #a5f3fc;
+    --preview-cyan-300: #67e8f9;
+    --preview-cyan-400: #22d3ee;
+    --preview-blue-400: #60a5fa;
+
+    --preview-glass: rgba(15, 23, 42, 0.38);
+    --preview-glass-2: rgba(15, 23, 42, 0.52);
+    --preview-glass-strong: rgba(8, 14, 28, 0.72);
+    --preview-glass-white: rgba(255, 255, 255, 0.09);
+    --preview-border: rgba(255, 255, 255, 0.14);
+    --preview-border-strong: rgba(255, 255, 255, 0.26);
+
+    --preview-shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.16);
+    --preview-shadow-md: 0 20px 44px rgba(0, 0, 0, 0.22);
+    --preview-shadow-lg: 0 28px 70px rgba(0, 0, 0, 0.32);
+
+    --preview-radius-xl: 1.5rem;
+    --preview-radius-2xl: 1.75rem;
+    --preview-radius-3xl: 2rem;
+
+    --dock-height: 92px;
+    --brand-top: 18px;
+    --brand-z: 50;
+    --chrome-z: 70;
+    --panel-z: 80;
+    --info-z: 90;
+    --intro-z: 100;
+}
+
+/* ------------------------------
+   Base preview shell
+------------------------------ */
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    overscroll-behavior: none;
+    background:
+        radial-gradient(circle at 20% 0%, rgba(34, 211, 238, 0.16), transparent 30%),
+        radial-gradient(circle at 90% 95%, rgba(96, 165, 250, 0.16), transparent 26%),
+        linear-gradient(180deg, var(--preview-bg-900) 0%, var(--preview-bg-850) 50%, var(--preview-bg-800) 100%) !important;
+}
+
+body {
+    color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+}
+
+.preview-page-shell {
+    position: relative;
+    width: 100vw;
+    min-height: 100dvh;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at top, rgba(34, 211, 238, 0.14), transparent 32%),
+        linear-gradient(180deg, rgba(2, 6, 23, 0.35), rgba(2, 6, 23, 0.12));
+}
+
+/* ------------------------------
+   Viewer: cleaner like builder canvas
+------------------------------ */
+#previewViewer,
+.preview-viewer {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100svh !important;
+    overflow: hidden !important;
+    isolation: isolate !important;
+    background:
+        radial-gradient(circle at center, rgba(103, 232, 249, 0.10), transparent 34%),
+        linear-gradient(180deg, #071426 0%, #0a1d35 48%, #0b2240 100%) !important;
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+}
+
+/* Permanent depth overlay */
+#previewViewer::after,
+.preview-viewer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0.64;
+    background:
+        radial-gradient(circle at 50% 48%, transparent 42%, rgba(0, 0, 0, 0.18) 100%),
+        linear-gradient(180deg, rgba(2, 6, 23, 0.20) 0%, transparent 20%, transparent 72%, rgba(2, 6, 23, 0.28) 100%);
+}
+
+/* Cinematic vignette during scene transition */
+#previewViewer::before,
+.preview-viewer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    opacity: 0;
+    background:
+        radial-gradient(circle at center, transparent 34%, rgba(0, 0, 0, 0.22) 72%, rgba(0, 0, 0, 0.48) 100%),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.24), transparent 18%, transparent 82%, rgba(0, 0, 0, 0.24));
+    transition: opacity 520ms ease;
+}
+
+#previewViewer.is-cinematic-transition::before,
+#previewViewer.transitioning::before,
+.preview-viewer.is-cinematic-transition::before,
+.preview-viewer.transitioning::before {
+    opacity: 1;
+}
+
+/* ------------------------------
+   Layers: builder-like A/B transition
+------------------------------ */
+#previewLayerA,
+#previewLayerB,
+.preview-layer,
+.marzipano-layer {
+    position: absolute !important;
+    inset: 0 !important;
+    transform-origin: center center !important;
+    backface-visibility: hidden !important;
+    will-change: transform, opacity, filter !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#previewMountA,
+#previewMountB,
+.preview-mount,
+.marzipano-mount {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+}
+
+.preview-layer.active-layer,
+.marzipano-layer.active-layer {
+    opacity: 1 !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
+    transform: scale(1);
+    filter: blur(0) brightness(1);
+}
+
+.preview-layer.standby-layer,
+.marzipano-layer.standby-layer {
+    opacity: 0 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+    transform: scale(1.035);
+    filter: blur(0) brightness(1);
+}
+
+/* Use keyframes during cinematic transition */
+.preview-viewer.is-cinematic-transition .preview-layer,
+.preview-viewer.transitioning .preview-layer,
+.preview-viewer.is-cinematic-transition .marzipano-layer,
+.preview-viewer.transitioning .marzipano-layer {
+    transition: none !important;
+}
+
+.preview-layer.layer-outgoing,
+.marzipano-layer.layer-outgoing,
+.preview-viewer.is-cinematic-transition .layer-outgoing,
+.preview-viewer.transitioning .layer-outgoing {
+    z-index: 2 !important;
+    pointer-events: none !important;
+    animation: previewBuilderOutgoing 880ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+.preview-layer.layer-incoming,
+.marzipano-layer.layer-incoming,
+.preview-viewer.is-cinematic-transition .layer-incoming,
+.preview-viewer.transitioning .layer-incoming {
+    z-index: 3 !important;
+    pointer-events: auto !important;
+    animation: previewBuilderIncoming 920ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+@keyframes previewBuilderOutgoing {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+    32% {
+        transform: scale(1.065);
+        opacity: 0.98;
+        filter: blur(0.25px) brightness(0.98) saturate(1.02);
+    }
+    58% {
+        transform: scale(1.135);
+        opacity: 0.76;
+        filter: blur(1.15px) brightness(0.94) saturate(1);
+    }
+    100% {
+        transform: scale(1.205);
+        opacity: 0;
+        filter: blur(3px) brightness(0.86) saturate(0.96);
+    }
+}
+
+@keyframes previewBuilderIncoming {
+    0% {
+        transform: scale(1.16);
+        opacity: 0;
+        filter: blur(3.8px) brightness(0.86) saturate(0.96);
+    }
+    30% {
+        transform: scale(1.115);
+        opacity: 0.22;
+        filter: blur(2.8px) brightness(0.90) saturate(0.98);
+    }
+    62% {
+        transform: scale(1.055);
+        opacity: 0.76;
+        filter: blur(1px) brightness(0.97) saturate(1.01);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+}
+
+.preview-viewer.is-cinematic-transition .layer-incoming::after,
+.preview-viewer.transitioning .layer-incoming::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0;
+    background:
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.20), transparent 44%),
+        linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.10), transparent);
+    animation: previewBuilderLightSweep 780ms ease forwards;
+}
+
+@keyframes previewBuilderLightSweep {
+    0% { opacity: 0; transform: scale(1.04); }
+    28% { opacity: 0.28; }
+    100% { opacity: 0; transform: scale(1); }
+}
+
+/* ------------------------------
+   Intro overlay: modern Tailwind card
+------------------------------ */
+.preview-intro-overlay {
+    z-index: var(--intro-z) !important;
+    background:
+        radial-gradient(circle at 50% 16%, rgba(34, 211, 238, 0.20), transparent 30%),
+        radial-gradient(circle at 86% 88%, rgba(96, 165, 250, 0.18), transparent 28%),
+        linear-gradient(180deg, rgba(2, 6, 23, 0.92), rgba(8, 20, 38, 0.90)) !important;
+    backdrop-filter: blur(18px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+}
+
+.preview-intro-card {
+    border-radius: 2rem !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.055)) !important;
+    box-shadow:
+        0 30px 80px rgba(0,0,0,0.26),
+        inset 0 1px 0 rgba(255,255,255,0.14) !important;
+}
+
+.preview-intro-title {
+    font-weight: 950 !important;
+    letter-spacing: -0.05em !important;
+}
+
+.preview-intro-loader {
+    background: rgba(255, 255, 255, 0.10) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.preview-intro-loader-bar {
+    background: linear-gradient(90deg, var(--preview-cyan-200), var(--preview-cyan-300), var(--preview-blue-400)) !important;
+}
+
+/* ------------------------------
+   Brand overlay: transparent integrated in panorama
+------------------------------ */
+#brandOverlay,
+.brand-overlay-wrap {
+    position: absolute !important;
+    left: 50% !important;
+    top: max(14px, env(safe-area-inset-top, 0px)) !important;
+    transform: translateX(-50%) !important;
+    z-index: var(--brand-z) !important;
+    width: auto !important;
+    max-width: calc(100vw - 20px) !important;
+    pointer-events: none !important;
+}
+
+.brand-overlay-chip,
+.brand-header-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    min-height: 54px !important;
+    max-width: min(520px, calc(100vw - 20px)) !important;
+    padding: 8px 18px 8px 10px !important;
+    border-radius: 999px !important;
+    color: #ffffff !important;
+
+    background: rgba(255, 255, 255, 0.045) !important;
+    border: 1.35px solid rgba(255, 255, 255, 0.80) !important;
+
+    backdrop-filter: blur(14px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+
+    box-shadow:
+        0 14px 36px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+
+    overflow: hidden;
+    pointer-events: none !important;
+}
+
+.brand-overlay-chip::before,
+.brand-header-chip::before {
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent 46%) !important;
+}
+
+.brand-logo-frame {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    border-radius: 999px !important;
+    border: 1.15px solid rgba(255,255,255,0.85) !important;
+    background: rgba(255,255,255,0.10) !important;
+    box-shadow:
+        0 8px 18px rgba(0,0,0,0.22),
+        inset 0 1px 0 rgba(255,255,255,0.16) !important;
+}
+
+.brand-kicker {
+    margin: 0 0 2px !important;
+    color: rgba(255,255,255,0.72) !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.14em !important;
+    text-transform: uppercase !important;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.45) !important;
+}
+
+.brand-company-name {
+    margin: 0 !important;
+    max-width: 360px !important;
+    color: #ffffff !important;
+    font-size: 15px !important;
+    line-height: 1.1 !important;
+    font-weight: 950 !important;
+    letter-spacing: -0.025em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-shadow:
+        0 1px 10px rgba(0,0,0,0.50),
+        0 0 1px rgba(0,0,0,0.75) !important;
+}
+
+/* ------------------------------
+   Bottom dock: like builder toolbar but preview premium
+------------------------------ */
+#previewControlDock,
+.viewer-bottom-chrome {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
+    transform: translateX(-50%) !important;
+    z-index: var(--chrome-z) !important;
+    width: min(1120px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    padding: 0 !important;
+    pointer-events: none;
+}
+
+.viewer-bottom-chrome-inner,
+#previewControlDock > .viewer-bottom-chrome-inner {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.viewer-bottom-chrome-card,
+#previewControlDock .viewer-bottom-chrome-card,
+#previewControlDock .dock-scroll {
+    width: 100% !important;
+    border-radius: 28px !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.46), rgba(15, 23, 42, 0.34)) !important;
+    box-shadow:
+        0 22px 48px rgba(0,0,0,0.22),
+        inset 0 1px 0 rgba(255,255,255,0.08) !important;
+    backdrop-filter: blur(20px) saturate(155%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(155%) !important;
+    padding: 10px !important;
+    pointer-events: auto;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    scrollbar-width: none;
+}
+
+#previewControlDock .dock-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.dock-row,
+#previewControlDock .dock-row {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: max-content !important;
+    white-space: nowrap !important;
+}
+
+.dock-divider,
+#previewControlDock .dock-divider {
+    width: 1px !important;
+    height: 36px !important;
+    background: rgba(255,255,255,0.16) !important;
+    margin: 0 2px !important;
+    flex-shrink: 0 !important;
+}
+
+.control-btn,
+#previewControlDock .control-btn {
+    position: relative !important;
+    width: 50px !important;
+    min-width: 50px !important;
+    height: 50px !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    background: rgba(255,255,255,0.095) !important;
+    color: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 950 !important;
+    cursor: pointer !important;
+    transition:
+        transform 0.16s ease,
+        background 0.16s ease,
+        border-color 0.16s ease,
+        box-shadow 0.16s ease !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.07) !important;
+}
+
+.control-btn:hover,
+#previewControlDock .control-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.16) !important;
+    border-color: rgba(255,255,255,0.24) !important;
+}
+
+.control-btn:active,
+#previewControlDock .control-btn:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.control-btn.active,
+#previewControlDock .control-btn.active {
+    background: linear-gradient(135deg, var(--preview-cyan-200), var(--preview-cyan-300), var(--preview-blue-400)) !important;
+    color: #06111f !important;
+    border-color: transparent !important;
+    box-shadow: 0 12px 24px rgba(103,232,249,0.22) !important;
+}
+
+.control-btn span,
+.control-btn .label,
+.control-btn .btn-label {
+    display: none !important;
+}
+
+/* ------------------------------
+   Scene stack / rail: Tailwind cards
+------------------------------ */
+.scene-stack-toggle-inline {
+    width: 76px !important;
+    min-width: 76px !important;
+    height: 50px !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.075)) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.09) !important;
+}
+
+.scene-stack-panel,
+#previewSceneRail {
+    z-index: var(--panel-z) !important;
+}
+
+.scene-stack-panel-inner,
+#previewSceneRail .scene-stack-panel-inner {
+    border-radius: 28px !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    background: rgba(15, 23, 42, 0.72) !important;
+    backdrop-filter: blur(22px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(150%) !important;
+    box-shadow: 0 24px 52px rgba(0,0,0,0.25) !important;
+}
+
+.scene-card {
+    border-radius: 22px !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.105), rgba(255,255,255,0.055)) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.16) !important;
+}
+
+.scene-card:hover {
+    border-color: rgba(103,232,249,0.35) !important;
+    box-shadow: 0 16px 34px rgba(0,0,0,0.22) !important;
+}
+
+.scene-card.active {
+    border-color: rgba(103,232,249,0.48) !important;
+    background:
+        linear-gradient(180deg, rgba(103,232,249,0.15), rgba(255,255,255,0.075)) !important;
+}
+
+.scene-thumb {
+    border-radius: 18px !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+}
+
+/* ------------------------------
+   Hotspots
+------------------------------ */
+
+/* Do not transform parent; Marzipano controls it */
+.preview-hotspot {
+    position: relative;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    will-change: auto !important;
+    touch-action: none !important;
+}
+
+/* Inner wrapper can animate without breaking Marzipano position */
+.preview-hotspot .hotspot-grow-wrap {
+    transform: var(--hotspot-base-transform, none);
+    transform-origin: center center !important;
+}
+
+/* Navigation hotspot = PNG only */
+.preview-hotspot.hotspot-kind-navigate,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-navigate.variant-label,
+.preview-hotspot.hotspot-kind-navigate.variant-label .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-navigate.variant-floor .hotspot-grow-wrap {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::after {
+    display: none !important;
+    content: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate img,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    opacity: 0.98 !important;
+    filter:
+        drop-shadow(0 3px 5px rgba(0,0,0,0.34))
+        drop-shadow(0 8px 12px rgba(0,0,0,0.22)) !important;
+}
+
+/* Other hotspots premium transparent */
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap {
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background:
+        radial-gradient(circle at 35% 22%, rgba(255,255,255,0.22), rgba(255,255,255,0.070) 48%, rgba(255,255,255,0.018) 100%);
+    border: 1px solid rgba(255,255,255,0.34);
+    box-shadow:
+        0 14px 28px rgba(0,0,0,0.24),
+        inset 0 1px 0 rgba(255,255,255,0.16);
+    backdrop-filter: blur(9px) saturate(140%);
+    -webkit-backdrop-filter: blur(9px) saturate(140%);
+    animation: previewHotspotFloat 3.2s ease-in-out infinite;
+    animation-delay: var(--hotspot-grow-delay, 0ms);
+}
+
+@keyframes previewHotspotFloat {
+    0%, 100% {
+        transform: var(--hotspot-base-transform, none) translateY(0) scale(1);
+    }
+    50% {
+        transform: var(--hotspot-base-transform, none) translateY(-2px) scale(1.025);
+    }
+}
+
+.preview-hotspot:not(.hotspot-kind-navigate) img {
+    object-fit: contain !important;
+    filter:
+        drop-shadow(0 12px 20px rgba(0,0,0,0.25))
+        drop-shadow(0 4px 10px rgba(0,0,0,0.16)) !important;
+}
+
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-cta .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-custom .hotspot-grow-wrap {
+    background:
+        radial-gradient(circle at 35% 22%, rgba(255,255,255,0.30), rgba(255,255,255,0.105) 48%, rgba(255,255,255,0.028) 100%) !important;
+    border-color: rgba(255,255,255,0.46) !important;
+}
+
+/* ------------------------------
+   Info / product panel: Tailwind glass card
+------------------------------ */
+#previewInfoPanel,
+.info-panel {
+    z-index: var(--info-z) !important;
+    border-radius: 28px !important;
+    border: 1px solid rgba(255,255,255,0.16) !important;
+    background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.66)) !important;
+    backdrop-filter: blur(22px) saturate(155%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(155%) !important;
+    box-shadow: 0 28px 70px rgba(0,0,0,0.30) !important;
+    color: #ffffff !important;
+}
+
+#previewInfoBackdrop,
+.info-backdrop {
+    background: rgba(2, 6, 23, 0.20) !important;
+    backdrop-filter: blur(1px);
+}
+
+.info-media-image {
+    object-fit: cover !important;
+}
+
+/* ------------------------------
+   Toast
+------------------------------ */
+#previewToast {
+    z-index: 95 !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255,255,255,0.16) !important;
+    background: rgba(15,23,42,0.70) !important;
+    backdrop-filter: blur(18px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.26) !important;
+}
+
+/* ------------------------------
+   Mobile responsive
+------------------------------ */
+@media (max-width: 1024px) {
+    #brandOverlay,
+    .brand-overlay-wrap {
+        top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    }
+
+    #previewControlDock,
+    .viewer-bottom-chrome {
+        width: calc(100vw - 18px) !important;
+        max-width: calc(100vw - 18px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    }
+
+    .scene-stack-panel {
+        width: min(82vw, 330px) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --brand-top: 10px;
+        --dock-height: 78px;
+    }
+
+    .preview-layer.layer-outgoing,
+    .marzipano-layer.layer-outgoing,
+    .preview-viewer.is-cinematic-transition .layer-outgoing,
+    .preview-viewer.transitioning .layer-outgoing {
+        animation-duration: 640ms !important;
+    }
+
+    .preview-layer.layer-incoming,
+    .marzipano-layer.layer-incoming,
+    .preview-viewer.is-cinematic-transition .layer-incoming,
+    .preview-viewer.transitioning .layer-incoming {
+        animation-duration: 680ms !important;
+    }
+
+    @keyframes previewBuilderOutgoing {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+            filter: blur(0px) brightness(1);
+        }
+        55% {
+            transform: scale(1.075);
+            opacity: 0.58;
+            filter: blur(0.8px) brightness(0.94);
+        }
+        100% {
+            transform: scale(1.13);
+            opacity: 0;
+            filter: blur(1.8px) brightness(0.88);
+        }
+    }
+
+    @keyframes previewBuilderIncoming {
+        0% {
+            transform: scale(1.10);
+            opacity: 0;
+            filter: blur(2.2px) brightness(0.88);
+        }
+        62% {
+            transform: scale(1.03);
+            opacity: 0.82;
+            filter: blur(0.55px) brightness(0.97);
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+            filter: blur(0px) brightness(1);
+        }
+    }
+
+    #brandOverlay,
+    .brand-overlay-wrap {
+        width: auto !important;
+        max-width: calc(100vw - 14px) !important;
+    }
+
+    .brand-overlay-chip,
+    .brand-header-chip {
+        min-height: 44px !important;
+        padding: 6px 12px 6px 7px !important;
+        gap: 8px !important;
+        border-radius: 999px !important;
+        background: rgba(255,255,255,0.040) !important;
+        border: 1.15px solid rgba(255,255,255,0.78) !important;
+    }
+
+    .brand-logo-frame {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+    }
+
+    .brand-kicker {
+        display: none !important;
+    }
+
+    .brand-company-name {
+        font-size: 13px !important;
+        max-width: 200px !important;
+    }
+
+    #previewControlDock,
+    .viewer-bottom-chrome {
+        width: calc(100vw - 12px) !important;
+        max-width: calc(100vw - 12px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    }
+
+    #previewControlDock .dock-scroll,
+    .viewer-bottom-chrome-card {
+        padding: 7px !important;
+        border-radius: 22px !important;
+    }
+
+    #previewControlDock .dock-row,
+    .dock-row {
+        gap: 6px !important;
+    }
+
+    .control-btn,
+    #previewControlDock .control-btn {
+        width: 42px !important;
+        min-width: 42px !important;
+        height: 42px !important;
+        border-radius: 14px !important;
+        font-size: 17px !important;
+    }
+
+    .scene-stack-toggle-inline {
+        width: 58px !important;
+        min-width: 58px !important;
+        height: 42px !important;
+        border-radius: 14px !important;
+    }
+
+    .scene-stack-mini-preview {
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    .dock-divider,
+    #previewControlDock .dock-divider {
+        height: 24px !important;
+    }
+
+    #previewSceneRail.scene-stack-panel,
+    .scene-stack-panel {
+        left: 0 !important;
+        bottom: calc(100% + 8px) !important;
+        width: min(92vw, 330px) !important;
+        max-height: min(52vh, 400px) !important;
+    }
+
+    .scene-stack-panel-inner {
+        max-height: min(52vh, 400px) !important;
+        border-radius: 24px !important;
+        padding: 12px !important;
+    }
+
+    .scene-card {
+        grid-template-columns: 88px minmax(0, 1fr) !important;
+        gap: 10px !important;
+        border-radius: 18px !important;
+        padding: 9px !important;
+    }
+
+    .scene-thumb {
+        width: 88px !important;
+        height: 66px !important;
+        border-radius: 15px !important;
+    }
+
+    .scene-title {
+        font-size: 14px !important;
+    }
+
+    .scene-subtitle {
+        font-size: 11px !important;
+    }
+
+    #previewInfoPanel,
+    .info-panel {
+        right: 10px !important;
+        left: 10px !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+        width: auto !important;
+        max-width: none !important;
+        border-radius: 24px !important;
+        transform: translateY(120%) !important;
+    }
+
+    #previewInfoPanel.open,
+    .info-panel.open {
+        transform: translateY(0) !important;
+    }
+
+    #previewToast {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 76px) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .brand-company-name {
+        max-width: 160px !important;
+        font-size: 12px !important;
+    }
+
+    .control-btn,
+    #previewControlDock .control-btn {
+        width: 39px !important;
+        min-width: 39px !important;
+        height: 39px !important;
+        border-radius: 13px !important;
+        font-size: 16px !important;
+    }
+
+    .scene-stack-toggle-inline {
+        width: 54px !important;
+        min-width: 54px !important;
+        height: 39px !important;
+    }
+
+    .scene-card {
+        grid-template-columns: 82px minmax(0, 1fr) !important;
+    }
+
+    .scene-thumb {
+        width: 82px !important;
+        height: 62px !important;
+    }
+}
+
+/* ------------------------------
+   Reduced motion
+------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+    .preview-layer.layer-outgoing,
+    .preview-layer.layer-incoming,
+    .marzipano-layer.layer-outgoing,
+    .marzipano-layer.layer-incoming {
+        animation: none !important;
+        transition: opacity 180ms ease !important;
+        transform: scale(1) !important;
+        filter: none !important;
+    }
+
+    .preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap {
+        animation: none !important;
+        transform: var(--hotspot-base-transform, none) !important;
+    }
+}
+
+/* =====================================================================
+   FINAL OVERRIDE — BUILDER-LIKE PREVIEW STABLE
+   À garder tout à la fin du fichier preview-tailwind.css
+   - Même logique A/B que Builder
+   - Transition cinéma fluide et rapide
+   - Zoom mobile/pinch stable
+   - Aucun transform sur le parent hotspot Marzipano
+===================================================================== */
+html,
+body,
+.preview-page-shell,
+#previewViewer,
+.preview-viewer {
+    overscroll-behavior: none !important;
+    -webkit-overflow-scrolling: auto !important;
+}
+
+#previewViewer,
+.preview-viewer,
+#previewLayerA,
+#previewLayerB,
+.preview-layer,
+#previewMountA,
+#previewMountB,
+.preview-mount {
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+}
+
+#previewLayerA,
+#previewLayerB,
+.preview-layer {
+    position: absolute !important;
+    inset: 0 !important;
+    transform-origin: center center !important;
+    backface-visibility: hidden !important;
+    will-change: transform, opacity, filter !important;
+}
+
+#previewMountA,
+#previewMountB,
+.preview-mount {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.preview-layer.active-layer {
+    opacity: 1 !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
+    transform: scale(1) !important;
+    filter: blur(0) brightness(1) saturate(1) !important;
+}
+
+.preview-layer.standby-layer {
+    opacity: 0 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+    transform: scale(1.035) !important;
+    filter: blur(0) brightness(1) saturate(1) !important;
+}
+
+.preview-viewer.is-cinematic-transition::before,
+.preview-viewer.transitioning::before,
+#previewViewer.is-cinematic-transition::before,
+#previewViewer.transitioning::before {
+    opacity: 1 !important;
+}
+
+.preview-viewer.is-cinematic-transition .preview-layer,
+.preview-viewer.transitioning .preview-layer {
+    transition: none !important;
+}
+
+.preview-layer.layer-outgoing,
+.preview-viewer.is-cinematic-transition .layer-outgoing,
+.preview-viewer.transitioning .layer-outgoing {
+    z-index: 2 !important;
+    pointer-events: none !important;
+    animation: previewBuilderOutgoingStable 920ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+.preview-layer.layer-incoming,
+.preview-viewer.is-cinematic-transition .layer-incoming,
+.preview-viewer.transitioning .layer-incoming {
+    z-index: 3 !important;
+    pointer-events: auto !important;
+    animation: previewBuilderIncomingStable 960ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+@keyframes previewBuilderOutgoingStable {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+    35% {
+        transform: scale(1.085);
+        opacity: 0.96;
+        filter: blur(0.35px) brightness(0.98) saturate(1.02);
+    }
+    66% {
+        transform: scale(1.16);
+        opacity: 0.64;
+        filter: blur(1.15px) brightness(0.94) saturate(1);
+    }
+    100% {
+        transform: scale(1.22);
+        opacity: 0;
+        filter: blur(3px) brightness(0.86) saturate(0.96);
+    }
+}
+
+@keyframes previewBuilderIncomingStable {
+    0% {
+        transform: scale(1.16);
+        opacity: 0;
+        filter: blur(3.6px) brightness(0.86) saturate(0.96);
+    }
+    32% {
+        transform: scale(1.11);
+        opacity: 0.30;
+        filter: blur(2.35px) brightness(0.91) saturate(0.98);
+    }
+    68% {
+        transform: scale(1.045);
+        opacity: 0.82;
+        filter: blur(0.75px) brightness(0.98) saturate(1.01);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+}
+
+.preview-hotspot {
+    will-change: auto !important;
+    contain: layout style !important;
+}
+
+.preview-hotspot .hotspot-grow-wrap {
+    transform: var(--hotspot-base-transform, none) !important;
+    transform-origin: center center !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate,
+.preview-hotspot.hotspot-kind-navigate * {
+    animation: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-navigate.variant-label .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-navigate.variant-floor .hotspot-grow-wrap {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-navigate.variant-label .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-navigate.variant-label .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-navigate.variant-floor .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-navigate.variant-floor .hotspot-grow-wrap::after {
+    display: none !important;
+    content: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate img,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img,
+.preview-hotspot.hotspot-kind-navigate.variant-label img,
+.preview-hotspot.hotspot-kind-navigate.variant-floor img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    filter:
+        drop-shadow(0 3px 5px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22)) !important;
+}
+
+@media (max-width: 768px) {
+    .preview-layer.layer-outgoing,
+    .preview-viewer.is-cinematic-transition .layer-outgoing,
+    .preview-viewer.transitioning .layer-outgoing {
+        animation-duration: 640ms !important;
+    }
+
+    .preview-layer.layer-incoming,
+    .preview-viewer.is-cinematic-transition .layer-incoming,
+    .preview-viewer.transitioning .layer-incoming {
+        animation-duration: 680ms !important;
+    }
+
+    #previewViewer,
+    .preview-viewer,
+    .preview-layer,
+    .preview-mount {
+        touch-action: none !important;
+        -ms-touch-action: none !important;
+    }
+
+    .preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap {
+        animation-duration: 3s !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .preview-layer.layer-outgoing,
+    .preview-layer.layer-incoming {
+        animation: none !important;
+        transition: opacity 180ms ease !important;
+        transform: scale(1) !important;
+        filter: none !important;
+    }
+}
+
+/* =====================================================================
+   MOBILE FIX PATCH — Zoom réel + transition A/B sans blocage mobile
+   À garder tout à la fin du fichier.
+===================================================================== */
+html,
+body,
+.preview-page-shell,
+#previewViewer,
+.preview-viewer {
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+}
+
+#previewViewer,
+.preview-viewer,
+#previewViewer canvas,
+.preview-viewer canvas,
+#previewLayerA,
+#previewLayerB,
+.preview-layer,
+#previewMountA,
+#previewMountB,
+.preview-mount {
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+}
+
+/* Les boutons doivent rester faciles à taper sans déclencher le pinch. */
+#previewControlDock,
+#previewControlDock *,
+#previewSceneRail,
+#previewSceneRail *,
+#previewInfoPanel,
+#previewInfoPanel *,
+[data-ui="chrome"],
+[data-ui="chrome"] * {
+    touch-action: manipulation !important;
+}
+
+/* Le loader ne doit jamais cacher la transition cinéma. */
+.preview-scene-loading-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    transition: opacity 220ms ease !important;
+    overflow: hidden !important;
+    background: #020617 !important;
+}
+
+.preview-scene-loading-overlay.is-visible {
+    opacity: 0.42 !important;
+}
+
+.preview-scene-loading-image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    filter: blur(8px) brightness(0.78) saturate(1.08) !important;
+    transform: scale(1.04) !important;
+}
+
+.preview-scene-loading-shade {
+    position: absolute !important;
+    inset: 0 !important;
+    background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.42) 100%) !important;
+}
+
+.preview-scene-loading-chip {
+    position: absolute !important;
+    left: 50% !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 104px) !important;
+    transform: translateX(-50%) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    border-radius: 999px !important;
+    background: rgba(2,6,23,0.68) !important;
+    padding: 8px 12px !important;
+    color: white !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    backdrop-filter: blur(16px) !important;
+}
+
+.preview-scene-loading-dot {
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 999px !important;
+    background: #67e8f9 !important;
+    box-shadow: 0 0 18px rgba(103,232,249,0.9) !important;
+}
+
+/* Pendant l'animation, les layers ne doivent PAS garder active-layer/standby-layer.
+   Le JS les enlève temporairement; ces règles prennent alors tout le contrôle. */
+.preview-viewer.is-cinematic-transition .preview-layer,
+.preview-viewer.transitioning .preview-layer {
+    transition: none !important;
+}
+
+.preview-viewer.is-cinematic-transition .layer-outgoing,
+.preview-viewer.transitioning .layer-outgoing,
+.preview-layer.layer-outgoing:not(.active-layer):not(.standby-layer) {
+    z-index: 2 !important;
+    pointer-events: none !important;
+    animation: previewMobileOutgoingCinema 820ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+.preview-viewer.is-cinematic-transition .layer-incoming,
+.preview-viewer.transitioning .layer-incoming,
+.preview-layer.layer-incoming:not(.active-layer):not(.standby-layer) {
+    z-index: 3 !important;
+    pointer-events: auto !important;
+    animation: previewMobileIncomingCinema 860ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+.preview-viewer.is-cinematic-transition::before,
+.preview-viewer.transitioning::before {
+    opacity: 0.94 !important;
+}
+
+.preview-viewer.is-cinematic-transition .layer-incoming::after,
+.preview-viewer.transitioning .layer-incoming::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 20 !important;
+    pointer-events: none !important;
+    background:
+        radial-gradient(circle at center, rgba(255,255,255,0.18), transparent 42%),
+        linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent) !important;
+    animation: previewMobileLightSweep 720ms ease forwards !important;
+}
+
+@keyframes previewMobileOutgoingCinema {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+    35% {
+        transform: scale(1.075);
+        opacity: 0.94;
+        filter: blur(0.35px) brightness(0.98) saturate(1.02);
+    }
+    66% {
+        transform: scale(1.135);
+        opacity: 0.56;
+        filter: blur(1.1px) brightness(0.93) saturate(0.98);
+    }
+    100% {
+        transform: scale(1.19);
+        opacity: 0;
+        filter: blur(2.6px) brightness(0.86) saturate(0.95);
+    }
+}
+
+@keyframes previewMobileIncomingCinema {
+    0% {
+        transform: scale(1.13);
+        opacity: 0;
+        filter: blur(3px) brightness(0.86) saturate(0.96);
+    }
+    35% {
+        transform: scale(1.09);
+        opacity: 0.30;
+        filter: blur(2.1px) brightness(0.90) saturate(0.98);
+    }
+    70% {
+        transform: scale(1.035);
+        opacity: 0.84;
+        filter: blur(0.65px) brightness(0.98) saturate(1.01);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+}
+
+@keyframes previewMobileLightSweep {
+    0% {
+        opacity: 0;
+        transform: scale(1.04);
+    }
+    30% {
+        opacity: 0.35;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1);
+    }
+}
+
+@media (min-width: 769px) {
+    .preview-viewer.is-cinematic-transition .layer-outgoing,
+    .preview-viewer.transitioning .layer-outgoing,
+    .preview-layer.layer-outgoing:not(.active-layer):not(.standby-layer) {
+        animation-duration: 1080ms !important;
+    }
+
+    .preview-viewer.is-cinematic-transition .layer-incoming,
+    .preview-viewer.transitioning .layer-incoming,
+    .preview-layer.layer-incoming:not(.active-layer):not(.standby-layer) {
+        animation-duration: 1120ms !important;
+    }
+}
+
+
+/* =====================================================================
+   CINEMATIC ZOOM PATCH — current scene zoom in + next scene dezoom
+   À garder tout à la fin du fichier CSS.
+   Corrige surtout le mobile: pendant la transition, le layer sortant
+   n'utilise plus active-layer, donc l'opacité et le transform animés
+   ne sont plus bloqués par opacity: 1 !important.
+===================================================================== */
+#previewViewer.preview-viewer,
+.preview-viewer {
+    perspective: 1200px !important;
+}
+
+.preview-viewer.is-cinematic-transition::before,
+.preview-viewer.transitioning::before {
+    opacity: 1 !important;
+    background:
+        radial-gradient(circle at center, transparent 28%, rgba(0,0,0,0.22) 66%, rgba(0,0,0,0.54) 100%),
+        linear-gradient(90deg, rgba(0,0,0,0.25), transparent 18%, transparent 82%, rgba(0,0,0,0.25)) !important;
+    transition: opacity 280ms ease !important;
+}
+
+.preview-viewer.is-cinematic-transition .preview-layer,
+.preview-viewer.transitioning .preview-layer {
+    transition: none !important;
+    will-change: transform, opacity, filter !important;
+    backface-visibility: hidden !important;
+    transform-origin: center center !important;
+}
+
+/* Sortie: la scène courante avance vers l'utilisateur, devient floue, puis disparaît. */
+.preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing,
+.preview-viewer.transitioning .preview-layer.layer-outgoing,
+.preview-layer.layer-outgoing {
+    z-index: 2 !important;
+    pointer-events: none !important;
+    animation: previewCinematicCurrentZoomOut 1320ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+/* Entrée: la scène suivante commence zoomée, puis dézoome vers sa position finale. */
+.preview-viewer.is-cinematic-transition .preview-layer.layer-incoming,
+.preview-viewer.transitioning .preview-layer.layer-incoming,
+.preview-layer.layer-incoming {
+    z-index: 3 !important;
+    pointer-events: auto !important;
+    animation: previewCinematicNextDezoomIn 1360ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+@keyframes previewCinematicCurrentZoomOut {
+    0% {
+        transform: scale(1) translateZ(0);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+    18% {
+        transform: scale(1.055) translateZ(0);
+        opacity: 1;
+        filter: blur(0.15px) brightness(0.99) saturate(1.02);
+    }
+    40% {
+        transform: scale(1.12) translateZ(0);
+        opacity: 0.92;
+        filter: blur(0.65px) brightness(0.96) saturate(1.01);
+    }
+    64% {
+        transform: scale(1.19) translateZ(0);
+        opacity: 0.54;
+        filter: blur(1.8px) brightness(0.91) saturate(0.98);
+    }
+    100% {
+        transform: scale(1.285) translateZ(0);
+        opacity: 0;
+        filter: blur(4px) brightness(0.82) saturate(0.94);
+    }
+}
+
+@keyframes previewCinematicNextDezoomIn {
+    0% {
+        transform: scale(1.22) translateZ(0);
+        opacity: 0;
+        filter: blur(4.5px) brightness(0.82) saturate(0.94);
+    }
+    18% {
+        transform: scale(1.18) translateZ(0);
+        opacity: 0.16;
+        filter: blur(3.4px) brightness(0.88) saturate(0.97);
+    }
+    42% {
+        transform: scale(1.115) translateZ(0);
+        opacity: 0.48;
+        filter: blur(2px) brightness(0.93) saturate(1);
+    }
+    68% {
+        transform: scale(1.045) translateZ(0);
+        opacity: 0.84;
+        filter: blur(0.75px) brightness(0.985) saturate(1.01);
+    }
+    100% {
+        transform: scale(1) translateZ(0);
+        opacity: 1;
+        filter: blur(0px) brightness(1) saturate(1);
+    }
+}
+
+.preview-viewer.is-cinematic-transition .preview-layer.layer-incoming::after,
+.preview-viewer.transitioning .preview-layer.layer-incoming::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 30 !important;
+    pointer-events: none !important;
+    opacity: 0;
+    background:
+        radial-gradient(circle at center, rgba(255,255,255,0.24), transparent 44%),
+        linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.12) 55%, transparent 100%) !important;
+    animation: previewCinematicLightSweep 980ms ease forwards !important;
+}
+
+@keyframes previewCinematicLightSweep {
+    0% { opacity: 0; transform: scale(1.06) translateX(-4%); }
+    30% { opacity: 0.32; }
+    100% { opacity: 0; transform: scale(1) translateX(4%); }
+}
+
+@media (max-width: 768px) {
+    .preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing,
+    .preview-viewer.transitioning .preview-layer.layer-outgoing,
+    .preview-layer.layer-outgoing {
+        animation-duration: 1040ms !important;
+    }
+
+    .preview-viewer.is-cinematic-transition .preview-layer.layer-incoming,
+    .preview-viewer.transitioning .preview-layer.layer-incoming,
+    .preview-layer.layer-incoming {
+        animation-duration: 1080ms !important;
+    }
+
+    @keyframes previewCinematicCurrentZoomOut {
+        0% {
+            transform: scale(1) translateZ(0);
+            opacity: 1;
+            filter: blur(0px) brightness(1) saturate(1);
+        }
+        28% {
+            transform: scale(1.07) translateZ(0);
+            opacity: 0.96;
+            filter: blur(0.25px) brightness(0.98) saturate(1.02);
+        }
+        62% {
+            transform: scale(1.16) translateZ(0);
+            opacity: 0.56;
+            filter: blur(1.2px) brightness(0.92) saturate(0.98);
+        }
+        100% {
+            transform: scale(1.24) translateZ(0);
+            opacity: 0;
+            filter: blur(3px) brightness(0.84) saturate(0.95);
+        }
+    }
+
+    @keyframes previewCinematicNextDezoomIn {
+        0% {
+            transform: scale(1.18) translateZ(0);
+            opacity: 0;
+            filter: blur(3.4px) brightness(0.84) saturate(0.95);
+        }
+        32% {
+            transform: scale(1.12) translateZ(0);
+            opacity: 0.34;
+            filter: blur(2.2px) brightness(0.90) saturate(0.98);
+        }
+        70% {
+            transform: scale(1.045) translateZ(0);
+            opacity: 0.86;
+            filter: blur(0.65px) brightness(0.98) saturate(1.01);
+        }
+        100% {
+            transform: scale(1) translateZ(0);
+            opacity: 1;
+            filter: blur(0px) brightness(1) saturate(1);
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing,
+    .preview-viewer.transitioning .preview-layer.layer-outgoing,
+    .preview-viewer.is-cinematic-transition .preview-layer.layer-incoming,
+    .preview-viewer.transitioning .preview-layer.layer-incoming {
+        animation: none !important;
+    }
+}
+
+/* =====================================================================
+   MOBILE CINEMATIC FORCE PATCH
+   À garder tout à la fin.
+   But: sur mobile, ne plus dépendre uniquement des keyframes CSS autour
+   du canvas WebGL. Le JS anime les layers avec Web Animations API.
+===================================================================== */
+@media (max-width: 768px) {
+    body.mobile #previewViewer.mobile-cinematic-running .preview-layer.layer-outgoing,
+    body.mobile #previewViewer.mobile-cinematic-running .preview-layer.layer-incoming,
+    body.mobile .preview-viewer.mobile-cinematic-running .preview-layer.layer-outgoing,
+    body.mobile .preview-viewer.mobile-cinematic-running .preview-layer.layer-incoming,
+    #previewViewer.mobile-cinematic-running .preview-layer.mobile-wa-layer,
+    .preview-viewer.mobile-cinematic-running .preview-layer.mobile-wa-layer {
+        animation: none !important;
+        transition: none !important;
+        will-change: transform, opacity, filter !important;
+        backface-visibility: hidden !important;
+        -webkit-backface-visibility: hidden !important;
+        transform-style: preserve-3d !important;
+        -webkit-transform-style: preserve-3d !important;
+        contain: layout paint size !important;
+    }
+
+    #previewViewer.mobile-cinematic-running,
+    .preview-viewer.mobile-cinematic-running {
+        perspective: 1400px !important;
+        -webkit-perspective: 1400px !important;
+    }
+
+    #previewViewer.mobile-cinematic-running::before,
+    .preview-viewer.mobile-cinematic-running::before {
+        opacity: 1 !important;
+        transition: opacity 180ms ease !important;
+        background:
+            radial-gradient(circle at center, transparent 24%, rgba(0,0,0,0.24) 62%, rgba(0,0,0,0.56) 100%),
+            linear-gradient(90deg, rgba(0,0,0,0.24), transparent 20%, transparent 80%, rgba(0,0,0,0.24)) !important;
+    }
+
+    #previewViewer.mobile-cinematic-running .preview-layer.layer-incoming::after,
+    .preview-viewer.mobile-cinematic-running .preview-layer.layer-incoming::after {
+        content: "" !important;
+        position: absolute !important;
+        inset: 0 !important;
+        z-index: 30 !important;
+        pointer-events: none !important;
+        opacity: 0;
+        background:
+            radial-gradient(circle at center, rgba(255,255,255,0.20), transparent 44%),
+            linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent) !important;
+        animation: mobileCinematicSweepForced 960ms ease forwards !important;
+    }
+
+    @keyframes mobileCinematicSweepForced {
+        0% { opacity: 0; transform: scale(1.05) translate3d(-3%,0,0); }
+        32% { opacity: 0.32; }
+        100% { opacity: 0; transform: scale(1) translate3d(3%,0,0); }
+    }
+}
+
+/* =====================================================================
+   FINAL CLEAN CINEMATIC PATCH
+   Objectif : loading visible + disparition nette de l'image sans flou.
+   À garder tout à la fin du fichier.
+===================================================================== */
+
+/* Loading visible, mais léger : il ne cache plus l'image pendant l'animation. */
+.preview-scene-loading-overlay {
+    z-index: 55 !important;
+    background: transparent !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 180ms ease !important;
+}
+
+.preview-scene-loading-overlay.is-visible {
+    opacity: 1 !important;
+}
+
+.preview-scene-loading-image,
+.preview-scene-loading-shade {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    filter: none !important;
+}
+
+.preview-scene-loading-chip {
+    z-index: 2 !important;
+    opacity: 1 !important;
+    background: rgba(2, 6, 23, 0.76) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26) !important;
+    backdrop-filter: blur(12px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+}
+
+/* Pendant la transition : aucun flou sur les panoramas. On garde uniquement zoom + opacity. */
+.preview-viewer.is-cinematic-transition .preview-layer,
+.preview-viewer.transitioning .preview-layer,
+.preview-viewer.mobile-cinematic-running .preview-layer {
+    filter: none !important;
+    will-change: transform, opacity !important;
+}
+
+.preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing,
+.preview-viewer.transitioning .preview-layer.layer-outgoing,
+.preview-layer.layer-outgoing {
+    animation-name: previewCinematicCurrentCleanDisappear !important;
+    filter: none !important;
+}
+
+.preview-viewer.is-cinematic-transition .preview-layer.layer-incoming,
+.preview-viewer.transitioning .preview-layer.layer-incoming,
+.preview-layer.layer-incoming {
+    animation-name: previewCinematicNextCleanAppear !important;
+    filter: none !important;
+}
+
+/* On enlève le flash/sweep qui donnait une impression de voile/flou. */
+.preview-viewer.is-cinematic-transition .preview-layer.layer-incoming::after,
+.preview-viewer.transitioning .preview-layer.layer-incoming::after,
+.preview-viewer.mobile-cinematic-running .preview-layer.layer-incoming::after {
+    content: none !important;
+    display: none !important;
+    animation: none !important;
+    background: transparent !important;
+}
+
+/* Vignette cinéma propre, sans blur et sans voile agressif. */
+.preview-viewer.is-cinematic-transition::before,
+.preview-viewer.transitioning::before,
+.preview-viewer.mobile-cinematic-running::before {
+    opacity: 1 !important;
+    background:
+        radial-gradient(circle at center, transparent 34%, rgba(0, 0, 0, 0.12) 66%, rgba(0, 0, 0, 0.34) 100%) !important;
+}
+
+@keyframes previewCinematicCurrentCleanDisappear {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 1;
+        filter: none;
+    }
+    24% {
+        transform: translate3d(0, 0, 0) scale(1.055);
+        opacity: 1;
+        filter: none;
+    }
+    52% {
+        transform: translate3d(0, 0, 0) scale(1.13);
+        opacity: 0.70;
+        filter: none;
+    }
+    78% {
+        transform: translate3d(0, 0, 0) scale(1.20);
+        opacity: 0.22;
+        filter: none;
+    }
+    100% {
+        transform: translate3d(0, 0, 0) scale(1.28);
+        opacity: 0;
+        filter: none;
+    }
+}
+
+@keyframes previewCinematicNextCleanAppear {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1.18);
+        opacity: 0;
+        filter: none;
+    }
+    28% {
+        transform: translate3d(0, 0, 0) scale(1.13);
+        opacity: 0.28;
+        filter: none;
+    }
+    62% {
+        transform: translate3d(0, 0, 0) scale(1.055);
+        opacity: 0.82;
+        filter: none;
+    }
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 1;
+        filter: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .preview-scene-loading-chip {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 116px) !important;
+        padding: 9px 13px !important;
+        font-size: 12px !important;
+    }
+
+    .preview-viewer.is-cinematic-transition .preview-layer.layer-outgoing,
+    .preview-viewer.transitioning .preview-layer.layer-outgoing,
+    .preview-layer.layer-outgoing {
+        animation-duration: 1120ms !important;
+    }
+
+    .preview-viewer.is-cinematic-transition .preview-layer.layer-incoming,
+    .preview-viewer.transitioning .preview-layer.layer-incoming,
+    .preview-layer.layer-incoming {
+        animation-duration: 1160ms !important;
+    }
+
+    @keyframes previewCinematicCurrentCleanDisappear {
+        0% {
+            transform: translate3d(0, 0, 0) scale(1);
+            opacity: 1;
+            filter: none;
+        }
+        26% {
+            transform: translate3d(0, 0, 0) scale(1.06);
+            opacity: 1;
+            filter: none;
+        }
+        58% {
+            transform: translate3d(0, 0, 0) scale(1.15);
+            opacity: 0.58;
+            filter: none;
+        }
+        100% {
+            transform: translate3d(0, 0, 0) scale(1.25);
+            opacity: 0;
+            filter: none;
+        }
+    }
+
+    @keyframes previewCinematicNextCleanAppear {
+        0% {
+            transform: translate3d(0, 0, 0) scale(1.16);
+            opacity: 0;
+            filter: none;
+        }
+        34% {
+            transform: translate3d(0, 0, 0) scale(1.10);
+            opacity: 0.36;
+            filter: none;
+        }
+        72% {
+            transform: translate3d(0, 0, 0) scale(1.04);
+            opacity: 0.88;
+            filter: none;
+        }
+        100% {
+            transform: translate3d(0, 0, 0) scale(1);
+            opacity: 1;
+            filter: none;
+        }
+    }
+}
+
+/* =====================================================================
+   MOBILE IMAGE-FIRST FINAL PATCH
+   Objectif: ne plus afficher l'effet de loading bleu/fond vide sur mobile.
+   Quand une attente existe, on montre la vraie image de la scène, sans blur,
+   sans chip, sans gradient. Pendant la transition, on joue uniquement avec
+   les deux layers panoramiques Marzipano.
+===================================================================== */
+.preview-scene-loading-overlay {
+    background: transparent !important;
+    z-index: 2 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 180ms ease !important;
+}
+
+.preview-scene-loading-overlay.is-visible {
+    opacity: 1 !important;
+}
+
+.preview-scene-loading-image {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    filter: none !important;
+}
+
+.preview-scene-loading-shade,
+.preview-scene-loading-chip,
+.preview-scene-loading-dot {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+.preview-viewer.transitioning .preview-scene-loading-overlay,
+.preview-viewer.is-cinematic-transition .preview-scene-loading-overlay,
+.preview-viewer.mobile-cinematic-running .preview-scene-loading-overlay {
+    opacity: 0 !important;
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    #previewViewer.mobile-cinematic-running::before,
+    .preview-viewer.mobile-cinematic-running::before,
+    #previewViewer.walk-cinematic-running::before,
+    .preview-viewer.walk-cinematic-running::before {
+        opacity: 0 !important;
+        background: transparent !important;
+    }
+
+    #previewViewer.mobile-cinematic-running .preview-layer.layer-incoming::after,
+    .preview-viewer.mobile-cinematic-running .preview-layer.layer-incoming::after,
+    #previewViewer.walk-cinematic-running .preview-layer.layer-incoming::after,
+    .preview-viewer.walk-cinematic-running .preview-layer.layer-incoming::after {
+        content: none !important;
+        display: none !important;
+        opacity: 0 !important;
+        background: transparent !important;
+        animation: none !important;
+    }
+
+    .preview-viewer.mobile-cinematic-running .preview-layer.layer-outgoing,
+    .preview-viewer.mobile-cinematic-running .preview-layer.layer-incoming {
+        filter: none !important;
+    }
+}
+
+
+
+/* =====================================================================
+   FINAL PATCH — HOTSPOTS BORDER ONLY + NO TITLE/TEXT
+   À garder tout à la fin du fichier CSS.
+   Objectif:
+   - les hotspots product/info/whatsapp/phone/email gardent leur place Marzipano
+   - pastille très transparente avec bordure blanche uniquement
+   - aucun titre/label visible
+   - navigation PNG reste intacte
+===================================================================== */
+
+/* 1) Parent Marzipano stable : ne jamais mettre padding/width auto ici */
+.preview-hotspot {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: transparent !important;
+    text-shadow: none !important;
+    overflow: visible !important;
+    contain: layout style !important;
+}
+
+/* 2) Masquer tous les textes/titres visibles des hotspots */
+.preview-hotspot .hotspot-label-text,
+.preview-hotspot .hotspot-title,
+.preview-hotspot .hotspot-name,
+.preview-hotspot .hotspot-caption,
+.preview-hotspot .hotspot-tooltip,
+.preview-hotspot .hotspot-text,
+.preview-hotspot .label,
+.preview-hotspot .title,
+.preview-hotspot.variant-label > span:not(.hotspot-grow-wrap),
+.preview-hotspot:not(.hotspot-kind-navigate) > span:not(.hotspot-grow-wrap) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    color: transparent !important;
+    text-shadow: none !important;
+    pointer-events: none !important;
+}
+
+/* 3) Les hotspots business restent seulement en cercle transparent + bordure blanche */
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-cta .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-whatsapp .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-phone .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-email .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-custom .hotspot-grow-wrap {
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 999px !important;
+
+    background: rgba(255, 255, 255, 0.018) !important;
+    border: 1.55px solid rgba(255, 255, 255, 0.92) !important;
+    outline: none !important;
+
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, 0.26),
+        0 0 0 4px rgba(255, 255, 255, 0.055),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+
+    color: transparent !important;
+    text-shadow: none !important;
+
+    transform: var(--hotspot-base-transform, none) !important;
+    transform-origin: center center !important;
+    animation: hotspotBorderOnlyPulse 3.15s ease-in-out infinite !important;
+}
+
+/* 4) Petit anneau blanc discret, sans texte */
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-cta .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-whatsapp .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-phone .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-email .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-custom .hotspot-grow-wrap::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: -5px !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255, 255, 255, 0.26) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    opacity: 0.82 !important;
+    pointer-events: none !important;
+}
+
+/* 5) Pulse premium très léger */
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-cta .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-whatsapp .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-phone .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-email .hotspot-grow-wrap::after,
+.preview-hotspot.hotspot-kind-custom .hotspot-grow-wrap::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: -9px !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    background: transparent !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    animation: hotspotBorderOnlyRing 2.6s ease-out infinite !important;
+}
+
+/* 6) Icône centrée, sans label */
+.preview-hotspot:not(.hotspot-kind-navigate) img,
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap img,
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap img,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap img,
+.preview-hotspot.hotspot-kind-cta .hotspot-grow-wrap img,
+.preview-hotspot.hotspot-kind-whatsapp .hotspot-grow-wrap img,
+.preview-hotspot.hotspot-kind-phone .hotspot-grow-wrap img,
+.preview-hotspot.hotspot-kind-email .hotspot-grow-wrap img,
+.preview-hotspot.hotspot-kind-custom .hotspot-grow-wrap img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    padding: 9px !important;
+    margin: 0 !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+    filter:
+        drop-shadow(0 4px 7px rgba(0, 0, 0, 0.32))
+        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.20)) !important;
+}
+
+/* 7) Hover/tap : on garde la position, seulement un effet doux sur le wrapper */
+.preview-hotspot:not(.hotspot-kind-navigate):hover {
+    filter: none !important;
+}
+
+.preview-hotspot:not(.hotspot-kind-navigate):hover .hotspot-grow-wrap,
+.preview-hotspot:not(.hotspot-kind-navigate):active .hotspot-grow-wrap {
+    background: rgba(255, 255, 255, 0.032) !important;
+    border-color: rgba(255, 255, 255, 1) !important;
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.30),
+        0 0 0 5px rgba(255, 255, 255, 0.075),
+        0 0 22px rgba(255, 255, 255, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+/* 8) Navigation: ne change rien, PNG simple */
+.preview-hotspot.hotspot-kind-navigate,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-navigate.variant-label,
+.preview-hotspot.hotspot-kind-navigate.variant-label .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-navigate.variant-floor .hotspot-grow-wrap {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::after {
+    display: none !important;
+    content: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate img,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img {
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* 9) Animations */
+@keyframes hotspotBorderOnlyPulse {
+    0%, 100% {
+        transform: var(--hotspot-base-transform, none) translateY(0) scale(1);
+    }
+    50% {
+        transform: var(--hotspot-base-transform, none) translateY(-1.5px) scale(1.025);
+    }
+}
+
+@keyframes hotspotBorderOnlyRing {
+    0% {
+        opacity: 0.40;
+        transform: scale(0.88);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.28);
+    }
+}
+
+/* 10) Mobile : taille visuelle propre et sans titre */
+@media (max-width: 768px) {
+    .preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap {
+        border-width: 1.35px !important;
+        background: rgba(255, 255, 255, 0.014) !important;
+    }
+
+    .preview-hotspot:not(.hotspot-kind-navigate) img,
+    .preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap img {
+        padding: 8px !important;
+    }
+}
+
+
+
+/* =====================================================================
+   FINAL PATCH — HOTSPOTS PNG NETS + BRAND LEFT MOBILE + DOCK PRO
+   À coller TOUT EN BAS de preview-tailwind.css
+   Objectifs :
+   - PNG hotspots plus grands, nets, sans texte visible
+   - aucun déplacement des hotspots Marzipano
+   - top brand transparent, bordure blanche, sans flou
+   - mobile: brand au coin gauche
+   - dock transparent pro avec bordure blanche
+===================================================================== */
+
+/* ===============================
+   1) HOTSPOTS — stabilité Marzipano
+   Ne jamais transformer le parent .preview-hotspot.
+   Marzipano utilise ce parent pour calculer la position.
+================================ */
+.preview-hotspot,
+.preview-hotspot:hover,
+.preview-hotspot:active,
+.preview-hotspot:focus {
+    filter: none !important;
+    background: transparent !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    contain: layout style !important;
+    will-change: auto !important;
+    touch-action: none !important;
+}
+
+.preview-hotspot::before,
+.preview-hotspot::after,
+.preview-hotspot:hover::before,
+.preview-hotspot:hover::after {
+    content: none !important;
+    display: none !important;
+}
+
+/* Le wrapper interne seul reçoit le design/animation. */
+.preview-hotspot .hotspot-grow-wrap {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    transform: var(--hotspot-base-transform, none) !important;
+    transform-origin: center center !important;
+    will-change: transform, opacity !important;
+}
+
+/* On cache tous les titres/labels visibles des hotspots.
+   L'image PNG reste seule dans la pastille. */
+.preview-hotspot .hotspot-label-text,
+.preview-hotspot .hotspot-title,
+.preview-hotspot .hotspot-name,
+.preview-hotspot .label,
+.preview-hotspot span:not(.hotspot-grow-wrap) {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+/* ===============================
+   2) HOTSPOTS BUSINESS — PNG grand, net, bordure blanche
+================================ */
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap {
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.035) !important;
+    border: 1.45px solid rgba(255, 255, 255, 0.86) !important;
+    box-shadow:
+        0 10px 22px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: hotspotPngCleanPulse 2.85s ease-in-out infinite !important;
+    animation-delay: var(--hotspot-grow-delay, 0ms) !important;
+}
+
+/* Important: le PNG occupe presque tout l'intérieur. */
+.preview-hotspot:not(.hotspot-kind-navigate) img,
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap img {
+    display: block !important;
+    width: 86% !important;
+    height: 86% !important;
+    max-width: 86% !important;
+    max-height: 86% !important;
+    object-fit: contain !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    opacity: 1 !important;
+    image-rendering: auto !important;
+    transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    filter:
+        drop-shadow(0 4px 8px rgba(0, 0, 0, 0.32))
+        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18)) !important;
+}
+
+.preview-hotspot:not(.hotspot-kind-navigate):hover .hotspot-grow-wrap {
+    background: rgba(255, 255, 255, 0.060) !important;
+    border-color: rgba(255, 255, 255, 0.96) !important;
+    box-shadow:
+        0 14px 28px rgba(0, 0, 0, 0.26),
+        0 0 0 5px rgba(255, 255, 255, 0.060),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+@keyframes hotspotPngCleanPulse {
+    0%, 100% {
+        transform: var(--hotspot-base-transform, none) scale(1) translateY(0);
+        opacity: 1;
+    }
+    50% {
+        transform: var(--hotspot-base-transform, none) scale(1.045) translateY(-1px);
+        opacity: 0.96;
+    }
+}
+
+/* WhatsApp / product / info : même style propre, mais un peu plus visible. */
+.preview-hotspot.hotspot-kind-whatsapp .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-cta .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-cart .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-phone .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-website .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-ad .hotspot-grow-wrap {
+    background: rgba(255, 255, 255, 0.045) !important;
+    border-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* ===============================
+   3) NAVIGATION — on garde les PNG simples, sans pastille
+================================ */
+.preview-hotspot.hotspot-kind-navigate,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-navigate.variant-label,
+.preview-hotspot.hotspot-kind-navigate.variant-floor,
+.preview-hotspot.hotspot-kind-navigate.variant-flat {
+    background: transparent !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate img,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    opacity: 0.98 !important;
+    filter:
+        drop-shadow(0 3px 5px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22)) !important;
+}
+
+/* ===============================
+   4) BRAND TOP — transparent, bordure blanche, texte net
+================================ */
+#brandOverlay,
+.brand-overlay-wrap {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    z-index: 72 !important;
+    width: auto !important;
+    max-width: calc(100vw - 18px) !important;
+    pointer-events: none !important;
+}
+
+.brand-overlay-chip,
+.brand-overlay-chip-centered,
+.brand-header-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    min-height: 46px !important;
+    max-width: min(520px, calc(100vw - 18px)) !important;
+    padding: 6px 15px 6px 7px !important;
+    border-radius: 999px !important;
+    border: 1.35px solid rgba(255, 255, 255, 0.92) !important;
+    background: rgba(0, 0, 0, 0.08) !important;
+    color: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+.brand-overlay-chip::before,
+.brand-overlay-chip::after,
+.brand-header-chip::before,
+.brand-header-chip::after {
+    content: none !important;
+    display: none !important;
+}
+
+.brand-logo-frame {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 999px !important;
+    border: 1.15px solid rgba(255, 255, 255, 0.90) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+}
+
+.brand-logo-frame img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    padding: 2px !important;
+    margin: 0 !important;
+    opacity: 1 !important;
+    filter: none !important;
+    image-rendering: auto !important;
+    transform: translateZ(0) !important;
+}
+
+.brand-kicker {
+    display: none !important;
+}
+
+.brand-company-name {
+    margin: 0 !important;
+    color: #ffffff !important;
+    font-size: 13px !important;
+    line-height: 1.05 !important;
+    font-weight: 950 !important;
+    letter-spacing: -0.02em !important;
+    max-width: 310px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-shadow:
+        0 1px 8px rgba(0, 0, 0, 0.82),
+        0 0 1px rgba(0, 0, 0, 0.95) !important;
+}
+
+/* Mobile : logo/chip au coin gauche, bordure blanche, texte net. */
+@media (max-width: 768px) {
+    #brandOverlay,
+    .brand-overlay-wrap {
+        top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+        left: calc(env(safe-area-inset-left, 0px) + 8px) !important;
+        right: auto !important;
+            max-width: calc(100vw - 16px) !important;
+    }
+
+    .brand-overlay-chip,
+    .brand-overlay-chip-centered,
+    .brand-header-chip {
+        min-height: 42px !important;
+        max-width: min(250px, calc(100vw - 16px)) !important;
+        padding: 5px 12px 5px 6px !important;
+        gap: 8px !important;
+        background: rgba(0, 0, 0, 0.06) !important;
+        border: 1.25px solid rgba(255, 255, 255, 0.94) !important;
+    }
+
+    .brand-logo-frame {
+        width: 31px !important;
+        height: 31px !important;
+        min-width: 31px !important;
+        min-height: 31px !important;
+    }
+
+    .brand-company-name {
+        font-size: 12px !important;
+        max-width: 175px !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .brand-overlay-chip,
+    .brand-overlay-chip-centered,
+    .brand-header-chip {
+        max-width: min(220px, calc(100vw - 14px)) !important;
+        padding-right: 10px !important;
+    }
+
+    .brand-company-name {
+        max-width: 145px !important;
+        font-size: 11.5px !important;
+    }
+}
+
+/* ===============================
+   5) DOCK BOTTOM — transparent pro + bordure blanche
+================================ */
+#previewControlDock {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    transform: translateX(-50%) !important;
+    z-index: 76 !important;
+    width: min(760px, calc(100vw - 12px)) !important;
+    max-width: calc(100vw - 12px) !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+}
+
+#previewControlDock .dock-scroll {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 24px !important;
+    border: 1.35px solid rgba(255, 255, 255, 0.86) !important;
+    background: rgba(0, 0, 0, 0.10) !important;
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 7px !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    scrollbar-width: none !important;
+    pointer-events: auto !important;
+}
+
+#previewControlDock .dock-scroll::-webkit-scrollbar {
+    display: none !important;
+}
+
+#previewControlDock .dock-row {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    min-width: max-content !important;
+    white-space: nowrap !important;
+}
+
+#previewControlDock .dock-divider {
+    width: 1px !important;
+    height: 28px !important;
+    margin: 0 1px !important;
+    background: rgba(255, 255, 255, 0.42) !important;
+    flex-shrink: 0 !important;
+}
+
+#previewControlDock .control-btn,
+#previewControlDock .scene-stack-toggle-inline {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    border-radius: 15px !important;
+    border: 1.15px solid rgba(255, 255, 255, 0.72) !important;
+    background: rgba(255, 255, 255, 0.055) !important;
+    color: #ffffff !important;
+    box-shadow:
+        0 6px 14px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 950 !important;
+    transition:
+        transform 160ms ease,
+        background 160ms ease,
+        border-color 160ms ease,
+        box-shadow 160ms ease !important;
+}
+
+#previewControlDock .scene-stack-toggle-inline {
+    width: 56px !important;
+    min-width: 56px !important;
+}
+
+#previewControlDock .control-btn:hover,
+#previewControlDock .scene-stack-toggle-inline:hover,
+#previewControlDock .control-btn.active,
+#previewControlDock .scene-stack-toggle-inline.open {
+    background: rgba(255, 255, 255, 0.11) !important;
+    border-color: rgba(255, 255, 255, 0.96) !important;
+    transform: translateY(-1px) !important;
+}
+
+#previewControlDock .control-btn:active,
+#previewControlDock .scene-stack-toggle-inline:active {
+    transform: translateY(0) scale(0.97) !important;
+}
+
+#previewControlDock .scene-stack-mini-preview {
+    width: 28px !important;
+    height: 28px !important;
+}
+
+#previewControlDock .scene-stack-mini-card {
+    border: 1px solid rgba(255, 255, 255, 0.78) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+#previewControlDock .scene-stack-badge {
+    right: 2px !important;
+    top: 2px !important;
+    min-width: 17px !important;
+    height: 17px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    color: #0f172a !important;
+    font-size: 10px !important;
+    font-weight: 950 !important;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.18) !important;
+}
+
+@media (max-width: 768px) {
+    #previewControlDock {
+        width: calc(100vw - 10px) !important;
+        max-width: calc(100vw - 10px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 7px) !important;
+    }
+
+    #previewControlDock .dock-scroll {
+        border-radius: 21px !important;
+        padding: 6px !important;
+    }
+
+    #previewControlDock .dock-row {
+        gap: 6px !important;
+    }
+
+    #previewControlDock .control-btn {
+        width: 39px !important;
+        min-width: 39px !important;
+        height: 39px !important;
+        border-radius: 14px !important;
+        font-size: 16px !important;
+    }
+
+    #previewControlDock .scene-stack-toggle-inline {
+        width: 53px !important;
+        min-width: 53px !important;
+        height: 39px !important;
+        border-radius: 14px !important;
+    }
+
+    #previewControlDock .scene-stack-mini-preview {
+        width: 25px !important;
+        height: 25px !important;
+    }
+
+    #previewControlDock .dock-divider {
+        height: 23px !important;
+    }
+}
+
+/* ===============================
+   6) Scene rail reste pro et transparent
+================================ */
+#previewSceneRail .scene-stack-panel-inner,
+.scene-stack-panel-inner {
+    border: 1.25px solid rgba(255, 255, 255, 0.84) !important;
+    background: rgba(0, 0, 0, 0.14) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28) !important;
+}
+
+#previewSceneRail .scene-card,
+.scene-card {
+    border: 1px solid rgba(255, 255, 255, 0.38) !important;
+    background: rgba(255, 255, 255, 0.055) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+#previewSceneRail .scene-card.active,
+.scene-card.active {
+    border-color: rgba(255, 255, 255, 0.92) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Pas de flou global sur les images UI. */
+.brand-overlay-chip *,
+#previewControlDock *,
+.preview-hotspot * {
+    filter: none;
+}
+
+/* On remet seulement les ombres des PNG hotspots après le reset ci-dessus. */
+.preview-hotspot:not(.hotspot-kind-navigate) img,
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap img {
+    filter:
+        drop-shadow(0 4px 8px rgba(0, 0, 0, 0.32))
+        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18)) !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate img,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img {
+    filter:
+        drop-shadow(0 3px 5px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22)) !important;
+}
+
+/* =====================================================================
+   ✅ FINAL STABLE PATCH — BRAND CENTER + PNG HOTSPOTS STABLE + WHITE BORDER
+   À garder TOUT EN BAS du fichier preview-tailwind.css.
+   Cette section corrige les anciennes règles qui mettaient le brand à gauche
+   et stabilise les hotspots sans déplacer le parent Marzipano.
+===================================================================== */
+
+/* ===============================
+   1) BRAND TOP — logo à gauche À L'INTÉRIEUR du border blanc
+   Le chip reste centré sur desktop ET mobile.
+================================ */
+#brandOverlay,
+.brand-overlay-wrap {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    z-index: 90 !important;
+    width: auto !important;
+    max-width: calc(100vw - 14px) !important;
+    pointer-events: none !important;
+}
+
+.brand-overlay-chip,
+.brand-overlay-chip-centered,
+.brand-header-chip {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 9px !important;
+    min-height: 44px !important;
+    width: auto !important;
+    max-width: min(420px, calc(100vw - 14px)) !important;
+    padding: 5px 14px 5px 6px !important;
+    border-radius: 999px !important;
+    border: 1.35px solid rgba(255, 255, 255, 0.94) !important;
+    background: rgba(0, 0, 0, 0.055) !important;
+    color: #ffffff !important;
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+.brand-overlay-chip::before,
+.brand-overlay-chip::after,
+.brand-header-chip::before,
+.brand-header-chip::after {
+    content: none !important;
+    display: none !important;
+}
+
+.brand-logo-frame {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    flex: 0 0 auto !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    border-radius: 999px !important;
+    border: 1.15px solid rgba(255, 255, 255, 0.92) !important;
+    background: rgba(255, 255, 255, 0.055) !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+}
+
+.brand-logo-frame img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    padding: 2px !important;
+    margin: 0 !important;
+    opacity: 1 !important;
+    filter: none !important;
+    image-rendering: auto !important;
+    transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+}
+
+.brand-logo-fallback {
+    display: grid !important;
+    place-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    font-size: 12px !important;
+    font-weight: 950 !important;
+    line-height: 1 !important;
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.045) !important;
+}
+
+.brand-overlay-chip .min-w-0,
+.brand-header-chip .min-w-0 {
+    min-width: 0 !important;
+    text-align: left !important;
+}
+
+.brand-kicker {
+    display: none !important;
+}
+
+.brand-company-name {
+    margin: 0 !important;
+    color: #ffffff !important;
+    font-size: 13px !important;
+    line-height: 1.05 !important;
+    font-weight: 950 !important;
+    letter-spacing: -0.02em !important;
+    max-width: 290px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: left !important;
+    text-shadow:
+        0 1px 8px rgba(0, 0, 0, 0.84),
+        0 0 1px rgba(0, 0, 0, 0.95) !important;
+}
+
+@media (max-width: 768px) {
+    #brandOverlay,
+    .brand-overlay-wrap {
+        top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        max-width: calc(100vw - 12px) !important;
+    }
+
+    .brand-overlay-chip,
+    .brand-overlay-chip-centered,
+    .brand-header-chip {
+        min-height: 42px !important;
+        max-width: min(260px, calc(100vw - 12px)) !important;
+        padding: 5px 12px 5px 6px !important;
+        gap: 8px !important;
+        border-radius: 999px !important;
+        border: 1.25px solid rgba(255, 255, 255, 0.94) !important;
+        background: rgba(0, 0, 0, 0.050) !important;
+    }
+
+    .brand-logo-frame {
+        width: 31px !important;
+        height: 31px !important;
+        min-width: 31px !important;
+        min-height: 31px !important;
+    }
+
+    .brand-company-name {
+        max-width: 185px !important;
+        font-size: 12px !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .brand-overlay-chip,
+    .brand-overlay-chip-centered,
+    .brand-header-chip {
+        max-width: min(230px, calc(100vw - 10px)) !important;
+        padding-right: 10px !important;
+    }
+
+    .brand-company-name {
+        max-width: 150px !important;
+        font-size: 11.5px !important;
+    }
+}
+
+/* ===============================
+   2) HOTSPOTS — parent Marzipano 100% stable
+   Aucun transform / padding / border sur le parent.
+================================ */
+.preview-hotspot,
+.preview-hotspot:hover,
+.preview-hotspot:active,
+.preview-hotspot:focus {
+    filter: none !important;
+    background: transparent !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    contain: layout style !important;
+    will-change: auto !important;
+    touch-action: none !important;
+    color: transparent !important;
+    text-shadow: none !important;
+}
+
+.preview-hotspot::before,
+.preview-hotspot::after,
+.preview-hotspot:hover::before,
+.preview-hotspot:hover::after {
+    content: none !important;
+    display: none !important;
+}
+
+.preview-hotspot .hotspot-grow-wrap {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    transform: var(--hotspot-base-transform, none) !important;
+    transform-origin: center center !important;
+    will-change: transform, opacity !important;
+}
+
+/* Cacher définitivement les textes/titres visuels des hotspots. */
+.preview-hotspot .hotspot-label-text,
+.preview-hotspot .hotspot-title,
+.preview-hotspot .hotspot-name,
+.preview-hotspot .hotspot-caption,
+.preview-hotspot .hotspot-tooltip,
+.preview-hotspot .hotspot-text,
+.preview-hotspot .label,
+.preview-hotspot .title,
+.preview-hotspot span:not(.hotspot-grow-wrap) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    color: transparent !important;
+    text-shadow: none !important;
+    pointer-events: none !important;
+}
+
+/* ===============================
+   3) HOTSPOTS BUSINESS — bordure blanche + PNG grand/net
+   L'animation ne déplace pas le point: elle pulse seulement scale/opacity.
+================================ */
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap {
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.024) !important;
+    border: 1.45px solid rgba(255, 255, 255, 0.90) !important;
+    box-shadow:
+        0 10px 22px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: hotspotStableWhitePulse 2.9s ease-in-out infinite !important;
+    animation-delay: var(--hotspot-grow-delay, 0ms) !important;
+}
+
+.preview-hotspot.hotspot-kind-whatsapp .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-cta .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-cart .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-phone .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-website .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-ad .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-custom .hotspot-grow-wrap {
+    background: rgba(255, 255, 255, 0.032) !important;
+    border-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: -4px !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    background: transparent !important;
+    pointer-events: none !important;
+}
+
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: -8px !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    background: transparent !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    animation: hotspotStableWhiteRing 2.7s ease-out infinite !important;
+}
+
+/* PNG très grand dans la pastille, sans padding ni flou. */
+.preview-hotspot:not(.hotspot-kind-navigate) img,
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap img {
+    display: block !important;
+    width: 90% !important;
+    height: 90% !important;
+    max-width: 90% !important;
+    max-height: 90% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+    image-rendering: auto !important;
+    transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    filter:
+        drop-shadow(0 4px 8px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.20)) !important;
+}
+
+.preview-hotspot:not(.hotspot-kind-navigate):hover .hotspot-grow-wrap,
+.preview-hotspot:not(.hotspot-kind-navigate):active .hotspot-grow-wrap {
+    background: rgba(255, 255, 255, 0.052) !important;
+    border-color: rgba(255, 255, 255, 1) !important;
+    box-shadow:
+        0 14px 28px rgba(0, 0, 0, 0.28),
+        0 0 0 4px rgba(255, 255, 255, 0.055),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+@keyframes hotspotStableWhitePulse {
+    0%, 100% {
+        transform: var(--hotspot-base-transform, none) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: var(--hotspot-base-transform, none) scale(1.035);
+        opacity: 0.97;
+    }
+}
+
+@keyframes hotspotStableWhiteRing {
+    0% {
+        opacity: 0.38;
+        transform: scale(0.90);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.24);
+    }
+}
+
+/* ===============================
+   4) NAVIGATION — PNG simple, aucune pastille, aucune animation
+================================ */
+.preview-hotspot.hotspot-kind-navigate,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-navigate.variant-label,
+.preview-hotspot.hotspot-kind-navigate.variant-floor,
+.preview-hotspot.hotspot-kind-navigate.variant-flat {
+    background: transparent !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::after {
+    content: none !important;
+    display: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate img,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    opacity: 0.98 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    filter:
+        drop-shadow(0 3px 5px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22)) !important;
+}
+
+/* ===============================
+   5) DOCK BOTTOM — transparent pro + bordure blanche
+================================ */
+#previewControlDock {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    transform: translateX(-50%) !important;
+    z-index: 88 !important;
+    width: min(760px, calc(100vw - 12px)) !important;
+    max-width: calc(100vw - 12px) !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+}
+
+#previewControlDock .dock-scroll {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 24px !important;
+    border: 1.35px solid rgba(255, 255, 255, 0.86) !important;
+    background: rgba(0, 0, 0, 0.095) !important;
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 7px !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    scrollbar-width: none !important;
+    pointer-events: auto !important;
+}
+
+#previewControlDock .dock-scroll::-webkit-scrollbar {
+    display: none !important;
+}
+
+#previewControlDock .dock-row {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    min-width: max-content !important;
+    white-space: nowrap !important;
+}
+
+#previewControlDock .dock-divider {
+    width: 1px !important;
+    height: 28px !important;
+    margin: 0 1px !important;
+    background: rgba(255, 255, 255, 0.42) !important;
+    flex-shrink: 0 !important;
+}
+
+#previewControlDock .control-btn,
+#previewControlDock .scene-stack-toggle-inline {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    border-radius: 15px !important;
+    border: 1.15px solid rgba(255, 255, 255, 0.72) !important;
+    background: rgba(255, 255, 255, 0.055) !important;
+    color: #ffffff !important;
+    box-shadow:
+        0 6px 14px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 950 !important;
+    transition:
+        transform 160ms ease,
+        background 160ms ease,
+        border-color 160ms ease,
+        box-shadow 160ms ease !important;
+}
+
+#previewControlDock .scene-stack-toggle-inline {
+    width: 56px !important;
+    min-width: 56px !important;
+}
+
+#previewControlDock .control-btn:hover,
+#previewControlDock .scene-stack-toggle-inline:hover,
+#previewControlDock .control-btn.active,
+#previewControlDock .scene-stack-toggle-inline.open {
+    background: rgba(255, 255, 255, 0.11) !important;
+    border-color: rgba(255, 255, 255, 0.96) !important;
+    transform: translateY(-1px) !important;
+}
+
+#previewControlDock .control-btn:active,
+#previewControlDock .scene-stack-toggle-inline:active {
+    transform: translateY(0) scale(0.97) !important;
+}
+
+#previewControlDock .scene-stack-mini-preview {
+    width: 28px !important;
+    height: 28px !important;
+}
+
+#previewControlDock .scene-stack-mini-card {
+    border: 1px solid rgba(255, 255, 255, 0.78) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+#previewControlDock .scene-stack-badge {
+    right: 2px !important;
+    top: 2px !important;
+    min-width: 17px !important;
+    height: 17px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    color: #0f172a !important;
+    font-size: 10px !important;
+    font-weight: 950 !important;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.18) !important;
+}
+
+@media (max-width: 768px) {
+    #previewControlDock {
+        width: calc(100vw - 10px) !important;
+        max-width: calc(100vw - 10px) !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 7px) !important;
+    }
+
+    #previewControlDock .dock-scroll {
+        border-radius: 21px !important;
+        padding: 6px !important;
+    }
+
+    #previewControlDock .dock-row {
+        gap: 6px !important;
+    }
+
+    #previewControlDock .control-btn {
+        width: 39px !important;
+        min-width: 39px !important;
+        height: 39px !important;
+        border-radius: 14px !important;
+        font-size: 16px !important;
+    }
+
+    #previewControlDock .scene-stack-toggle-inline {
+        width: 53px !important;
+        min-width: 53px !important;
+        height: 39px !important;
+        border-radius: 14px !important;
+    }
+
+    #previewControlDock .scene-stack-mini-preview {
+        width: 25px !important;
+        height: 25px !important;
+    }
+
+    #previewControlDock .dock-divider {
+        height: 23px !important;
+    }
+}
+
+/* ===============================
+   6) Scene rail transparent + bordure blanche
+================================ */
+#previewSceneRail .scene-stack-panel-inner,
+.scene-stack-panel-inner {
+    border: 1.25px solid rgba(255, 255, 255, 0.84) !important;
+    background: rgba(0, 0, 0, 0.14) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28) !important;
+}
+
+#previewSceneRail .scene-card,
+.scene-card {
+    border: 1px solid rgba(255, 255, 255, 0.38) !important;
+    background: rgba(255, 255, 255, 0.055) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+#previewSceneRail .scene-card.active,
+.scene-card.active {
+    border-color: rgba(255, 255, 255, 0.92) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Pas de flou global sur la UI. */
+.brand-overlay-chip *,
+#previewControlDock *,
+.preview-hotspot * {
+    filter: none;
+}
+
+/* Remettre seulement l'ombre des PNG hotspots après le reset ci-dessus. */
+.preview-hotspot:not(.hotspot-kind-navigate) img,
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap img {
+    filter:
+        drop-shadow(0 4px 8px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.20)) !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate img,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img {
+    filter:
+        drop-shadow(0 3px 5px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22)) !important;
+}
+
+
+/* =====================================================================
+   FINAL HOTSPOT POSITION FIX — IMPORTANT
+   Le parent .preview-hotspot est positionné par Marzipano avec un transform inline.
+   Donc on ne met JAMAIS transform:none !important sur ce parent.
+   Toute animation/design se fait uniquement sur .hotspot-grow-wrap.
+===================================================================== */
+.preview-hotspot,
+.preview-hotspot:hover,
+.preview-hotspot:active,
+.preview-hotspot:focus {
+    background: transparent !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    color: transparent !important;
+    text-shadow: none !important;
+    filter: none !important;
+    /* surtout: aucun transform ici, sinon Marzipano perd la position */
+}
+
+.preview-hotspot::before,
+.preview-hotspot::after,
+.preview-hotspot:hover::before,
+.preview-hotspot:hover::after {
+    content: none !important;
+    display: none !important;
+}
+
+.preview-hotspot .hotspot-grow-wrap {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    transform: var(--hotspot-base-transform, none) !important;
+    transform-origin: center center !important;
+    will-change: transform, opacity !important;
+}
+
+.preview-hotspot .hotspot-label-text,
+.preview-hotspot .hotspot-title,
+.preview-hotspot .hotspot-name,
+.preview-hotspot .hotspot-caption,
+.preview-hotspot .hotspot-tooltip,
+.preview-hotspot .hotspot-text,
+.preview-hotspot .label,
+.preview-hotspot .title,
+.preview-hotspot span:not(.hotspot-grow-wrap) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    color: transparent !important;
+    text-shadow: none !important;
+    pointer-events: none !important;
+}
+
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap {
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.035) !important;
+    border: 1.45px solid rgba(255, 255, 255, 0.88) !important;
+    box-shadow:
+        0 10px 22px rgba(0, 0, 0, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: hotspotPngCleanPulseFixed 2.85s ease-in-out infinite !important;
+    animation-delay: var(--hotspot-grow-delay, 0ms) !important;
+}
+
+.preview-hotspot:not(.hotspot-kind-navigate) img,
+.preview-hotspot:not(.hotspot-kind-navigate) .hotspot-grow-wrap img {
+    display: block !important;
+    width: 88% !important;
+    height: 88% !important;
+    max-width: 88% !important;
+    max-height: 88% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    opacity: 1 !important;
+    image-rendering: auto !important;
+    transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    filter:
+        drop-shadow(0 4px 8px rgba(0, 0, 0, 0.32))
+        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18)) !important;
+}
+
+.preview-hotspot.hotspot-kind-whatsapp .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-product .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-info .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-cta .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-cart .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-phone .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-website .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-ad .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-custom .hotspot-grow-wrap {
+    background: rgba(255, 255, 255, 0.045) !important;
+    border-color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.preview-hotspot:not(.hotspot-kind-navigate):hover .hotspot-grow-wrap,
+.preview-hotspot:not(.hotspot-kind-navigate):active .hotspot-grow-wrap {
+    background: rgba(255, 255, 255, 0.065) !important;
+    border-color: rgba(255, 255, 255, 1) !important;
+    box-shadow:
+        0 14px 28px rgba(0, 0, 0, 0.28),
+        0 0 0 5px rgba(255, 255, 255, 0.060),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap,
+.preview-hotspot.hotspot-kind-navigate.variant-label,
+.preview-hotspot.hotspot-kind-navigate.variant-floor,
+.preview-hotspot.hotspot-kind-navigate.variant-flat {
+    background: transparent !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::before,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap::after {
+    display: none !important;
+    content: none !important;
+}
+
+.preview-hotspot.hotspot-kind-navigate img,
+.preview-hotspot.hotspot-kind-navigate .hotspot-grow-wrap img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    opacity: 0.98 !important;
+    filter:
+        drop-shadow(0 3px 5px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22)) !important;
+}
+
+@keyframes hotspotPngCleanPulseFixed {
+    0%, 100% {
+        transform: var(--hotspot-base-transform, none) scale(1) translateY(0);
+        opacity: 1;
+    }
+    50% {
+        transform: var(--hotspot-base-transform, none) scale(1.045) translateY(-1px);
+        opacity: 0.97;
+    }
+}
+
+/* Brand: le logo reste à gauche À L'INTÉRIEUR du border blanc,
+   mais le chip complet reste bien placé et responsive. */
+#brandOverlay,
+.brand-overlay-wrap {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    max-width: calc(100vw - 18px) !important;
+    z-index: 72 !important;
+    pointer-events: none !important;
+}
+
+.brand-overlay-chip,
+.brand-overlay-chip-centered,
+.brand-header-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 9px !important;
+    min-height: 44px !important;
+    max-width: min(520px, calc(100vw - 18px)) !important;
+    padding: 5px 14px 5px 6px !important;
+    border-radius: 999px !important;
+    border: 1.35px solid rgba(255, 255, 255, 0.92) !important;
+    background: rgba(0, 0, 0, 0.075) !important;
+    color: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+.brand-logo-frame {
+    width: 33px !important;
+    height: 33px !important;
+    min-width: 33px !important;
+    min-height: 33px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 999px !important;
+    border: 1.1px solid rgba(255, 255, 255, 0.90) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+}
+
+.brand-logo-frame img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    padding: 2px !important;
+    margin: 0 !important;
+    filter: none !important;
+    transform: translateZ(0) !important;
+}
+
+.brand-kicker {
+    display: none !important;
+}
+
+.brand-company-name {
+    margin: 0 !important;
+    color: #ffffff !important;
+    font-size: 13px !important;
+    line-height: 1.05 !important;
+    font-weight: 950 !important;
+    letter-spacing: -0.02em !important;
+    max-width: 310px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-shadow:
+        0 1px 8px rgba(0, 0, 0, 0.82),
+        0 0 1px rgba(0, 0, 0, 0.95) !important;
+}
+
+@media (max-width: 768px) {
+    #brandOverlay,
+    .brand-overlay-wrap {
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+        max-width: calc(100vw - 14px) !important;
+    }
+
+    .brand-overlay-chip,
+    .brand-overlay-chip-centered,
+    .brand-header-chip {
+        max-width: min(270px, calc(100vw - 14px)) !important;
+        min-height: 41px !important;
+        padding: 5px 11px 5px 6px !important;
+        gap: 8px !important;
+    }
+
+    .brand-logo-frame {
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        min-height: 30px !important;
+    }
+
+    .brand-company-name {
+        max-width: 190px !important;
+        font-size: 12px !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .brand-overlay-chip,
+    .brand-overlay-chip-centered,
+    .brand-header-chip {
+        max-width: min(235px, calc(100vw - 12px)) !important;
+    }
+
+    .brand-company-name {
+        max-width: 155px !important;
+        font-size: 11.5px !important;
+    }
+}
+
+
+
+
+/* =========================================================
+   FINAL PATCH — PREVIEW LAYER A/B + CINEMATIC EVENTS
+   À coller tout à la fin de dashboard/css/preview-tailwind.css
+   Compatible avec preview-tailwind-cinematic-mobile-zoom.js
+========================================================= */
+
+html,
+body,
+.preview-page-shell,
+#previewViewer,
+.preview-viewer {
+    overscroll-behavior: none !important;
+}
+
+#previewViewer,
+.preview-viewer {
+    position: relative !important;
+    overflow: hidden !important;
+    background: #02070d !important;
+    isolation: isolate !important;
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+}
+
+#previewLayerA,
+#previewLayerB,
+.preview-layer {
+    position: absolute !important;
+    inset: 0 !important;
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+    transform: translate3d(0, 0, 0) scale(1.035);
+    transform-origin: center center !important;
+    backface-visibility: hidden !important;
+    will-change: transform, opacity, filter !important;
+    filter: blur(0) brightness(1) saturate(1);
+    transition:
+        opacity 760ms ease,
+        transform 820ms cubic-bezier(0.22, 1, 0.36, 1),
+        filter 760ms ease;
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+}
+
+#previewMountA,
+#previewMountB,
+.preview-mount {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+}
+
+#previewViewer canvas,
+.preview-viewer canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+}
+
+.preview-layer.active-layer {
+    opacity: 1 !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
+    transform: translate3d(0, 0, 0) scale(1) !important;
+    filter: blur(0) brightness(1) saturate(1) !important;
+}
+
+.preview-layer.standby-layer {
+    opacity: 0 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+    transform: translate3d(0, 0, 0) scale(1.035) !important;
+    filter: blur(0) brightness(1) saturate(1) !important;
+}
+
+/* Voile cinéma pendant la transition */
+.preview-viewer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    opacity: 0;
+    background:
+        radial-gradient(circle at center, transparent 36%, rgba(0, 0, 0, 0.26) 76%, rgba(0, 0, 0, 0.46) 100%),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.20), transparent 18%, transparent 82%, rgba(0, 0, 0, 0.20));
+    transition: opacity 420ms ease;
+}
+
+.preview-viewer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0.42;
+    background: radial-gradient(circle at 50% 45%, transparent 45%, rgba(0, 0, 0, 0.15) 100%);
+}
+
+.preview-viewer.is-cinematic-transition::before,
+.preview-viewer.transitioning::before {
+    opacity: 1 !important;
+}
+
+.preview-viewer.is-cinematic-transition .preview-layer,
+.preview-viewer.transitioning .preview-layer {
+    transition: none !important;
+}
+
+.preview-layer.layer-outgoing,
+.preview-viewer.is-cinematic-transition .layer-outgoing,
+.preview-viewer.transitioning .layer-outgoing {
+    z-index: 2 !important;
+    pointer-events: none !important;
+    animation: previewPanoOutgoingCinematic 860ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+.preview-layer.layer-incoming,
+.preview-viewer.is-cinematic-transition .layer-incoming,
+.preview-viewer.transitioning .layer-incoming {
+    z-index: 3 !important;
+    pointer-events: auto !important;
+    animation: previewPanoIncomingCinematic 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+.preview-viewer.is-opening .active-layer {
+    animation: previewPanoInitialReveal 920ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+@keyframes previewPanoOutgoingCinematic {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 1;
+        filter: blur(0) brightness(1) saturate(1);
+    }
+    45% {
+        transform: translate3d(0, 0, 0) scale(1.09);
+        opacity: 0.78;
+        filter: blur(0.8px) brightness(0.95) saturate(1.02);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) scale(1.18);
+        opacity: 0;
+        filter: blur(2.8px) brightness(0.86) saturate(0.95);
+    }
+}
+
+@keyframes previewPanoIncomingCinematic {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1.13);
+        opacity: 0;
+        filter: blur(3px) brightness(0.86) saturate(0.96);
+    }
+    55% {
+        transform: translate3d(0, 0, 0) scale(1.045);
+        opacity: 0.78;
+        filter: blur(0.9px) brightness(0.97) saturate(1.02);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 1;
+        filter: blur(0) brightness(1) saturate(1);
+    }
+}
+
+@keyframes previewPanoInitialReveal {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1.08);
+        opacity: 0.70;
+        filter: blur(1.6px) brightness(0.90);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 1;
+        filter: blur(0) brightness(1);
+    }
+}
+
+/* Loading progressif miniature -> panorama */
+.preview-scene-loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    background: #020617;
+    transition: opacity 240ms ease, visibility 240ms ease;
+}
+
+.preview-scene-loading-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.preview-scene-loading-image {
+    position: absolute;
+    inset: -18px;
+    width: calc(100% + 36px);
+    height: calc(100% + 36px);
+    object-fit: cover;
+    opacity: 0.78;
+    filter: blur(14px) saturate(1.08) brightness(0.82);
+    transform: scale(1.045);
+}
+
+.preview-scene-loading-image.hidden {
+    display: none !important;
+}
+
+.preview-scene-loading-shade {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at center, rgba(255,255,255,.05), transparent 36%),
+        linear-gradient(180deg, rgba(2,6,23,.28), rgba(2,6,23,.62));
+}
+
+.preview-scene-loading-chip {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(92px, 11vh, 128px);
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(255,255,255,.22);
+    background: rgba(2,6,23,.38);
+    color: rgba(255,255,255,.92);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .02em;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 20px 70px rgba(0,0,0,.28);
+}
+
+.preview-scene-loading-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(34,211,238,.95);
+    box-shadow: 0 0 0 5px rgba(34,211,238,.13);
+}
+
+/* Les contrôles gardent leurs clics normaux */
+#previewControlDock,
+#previewControlDock *,
+#previewSceneRail,
+#previewSceneRail * {
+    touch-action: manipulation !important;
+}
+
+/* Le panneau info garde son scroll vertical */
+#previewInfoPanel,
+#previewInfoPanel * {
+    touch-action: pan-y !important;
+}
+
+@media (max-width: 768px) {
+    .preview-layer.layer-outgoing,
+    .preview-viewer.is-cinematic-transition .layer-outgoing,
+    .preview-viewer.transitioning .layer-outgoing {
+        animation-duration: 620ms !important;
+    }
+
+    .preview-layer.layer-incoming,
+    .preview-viewer.is-cinematic-transition .layer-incoming,
+    .preview-viewer.transitioning .layer-incoming {
+        animation-duration: 660ms !important;
+    }
+
+    .preview-scene-loading-chip {
+        bottom: 92px;
+        max-width: calc(100vw - 28px);
+        white-space: nowrap;
+    }
+
+    .preview-scene-loading-image {
+        filter: blur(12px) saturate(1.08) brightness(.82);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .preview-layer,
+    .preview-layer.layer-outgoing,
+    .preview-layer.layer-incoming,
+    .preview-viewer.is-opening .active-layer {
+        animation: none !important;
+        transition: opacity 180ms ease !important;
+        transform: translate3d(0, 0, 0) scale(1) !important;
+        filter: none !important;
+    }
+
+    .preview-viewer::before {
+        transition: none !important;
+        opacity: 0 !important;
+    }
+}

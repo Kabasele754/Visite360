@@ -1536,6 +1536,8 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaModal?.classList.remove("open");
         previewMediaModal?.setAttribute("inert", "");
         previewMediaModal?.setAttribute("aria-hidden", "true");
+        const mediaCard = previewMediaModal?.querySelector(".preview-media-card");
+        if (mediaCard) delete mediaCard.dataset.mediaType;
         if (mediaModalPreviousFocus && typeof mediaModalPreviousFocus.focus === "function") {
             requestAnimationFrame(() => mediaModalPreviousFocus.focus({ preventScroll: true }));
         }
@@ -1585,88 +1587,28 @@ document.addEventListener("DOMContentLoaded", () => {
         return "";
     }
 
-    async function renderPdfInsideDialog(url) {
-        const token = ++activePdfRenderToken;
-        const moduleUrl = String(config.pdfJsModuleUrl || "").trim();
-        const workerUrl = String(config.pdfJsWorkerUrl || "").trim();
+    function buildNativePdfUrl(url) {
+        const raw = String(url || "").trim();
+        if (!raw) return "";
+        const separator = raw.includes("#") ? "&" : "#";
+        return `${raw}${separator}toolbar=1&navpanes=0&scrollbar=1&view=FitH`;
+    }
+
+    function renderPdfInsideDialog(url, title = "Document PDF") {
+        activePdfRenderToken += 1;
+        const iframeUrl = buildNativePdfUrl(url);
 
         previewMediaBody.innerHTML = `
-            <div class="preview-pdf-reader is-rendering" data-pdf-reader>
-                <div class="preview-pdf-pages" data-pdf-pages></div>
-                <div class="preview-pdf-loading">
-                    <span></span>
-                    <strong>Chargement du document…</strong>
-                </div>
+            <div class="preview-pdf-reader is-ready" data-pdf-reader>
+                <iframe
+                    class="preview-pdf-frame"
+                    src="${escapeAttr(iframeUrl)}"
+                    title="${escapeAttr(title)}"
+                    loading="eager"
+                    referrerpolicy="same-origin"
+                    allow="fullscreen">
+                </iframe>
             </div>`;
-
-        const reader = previewMediaBody.querySelector("[data-pdf-reader]");
-        const pagesRoot = previewMediaBody.querySelector("[data-pdf-pages]");
-
-        try {
-            if (!moduleUrl) throw new Error("PDF.js module URL missing");
-            const pdfjsLib = await import(moduleUrl);
-            if (workerUrl) pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-
-            const loadingTask = pdfjsLib.getDocument({
-                url,
-                withCredentials: true,
-            });
-            const pdf = await loadingTask.promise;
-            if (token != activePdfRenderToken) {
-                try { loadingTask.destroy(); } catch (_) {}
-                return;
-            }
-
-            reader?.classList.remove("is-rendering");
-            reader?.classList.add("is-ready");
-
-            for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-                if (token != activePdfRenderToken) return;
-                const page = await pdf.getPage(pageNumber);
-                const baseViewport = page.getViewport({ scale: 1 });
-                const availableWidth = Math.max(
-                    280,
-                    Math.min(
-                        pagesRoot?.clientWidth || window.innerWidth,
-                        isMobileViewport() ? window.innerWidth - 24 : 940
-                    )
-                );
-                const scale = clamp(availableWidth / baseViewport.width, 0.65, 2.2);
-                const viewport = page.getViewport({ scale });
-
-                const pageShell = document.createElement("article");
-                pageShell.className = "preview-pdf-page";
-                pageShell.setAttribute("aria-label", `Page ${pageNumber} sur ${pdf.numPages}`);
-
-                const canvas = document.createElement("canvas");
-                const outputScale = Math.min(window.devicePixelRatio || 1, 2);
-                canvas.width = Math.floor(viewport.width * outputScale);
-                canvas.height = Math.floor(viewport.height * outputScale);
-                canvas.style.width = `${Math.floor(viewport.width)}px`;
-                canvas.style.height = `${Math.floor(viewport.height)}px`;
-
-                pageShell.appendChild(canvas);
-                pagesRoot?.appendChild(pageShell);
-
-                const context = canvas.getContext("2d", { alpha: false });
-                await page.render({
-                    canvasContext: context,
-                    viewport,
-                    transform: outputScale !== 1
-                        ? [outputScale, 0, 0, outputScale, 0, 0]
-                        : null,
-                }).promise;
-            }
-        } catch (error) {
-            console.warn("PDF_RENDER_FAILED", error);
-            if (token != activePdfRenderToken) return;
-            previewMediaBody.innerHTML = `
-                <div class="preview-pdf-fallback">
-                    <strong>Le lecteur PDF intégré n’a pas pu ouvrir ce document.</strong>
-                    <p>Vérifie que le fichier est accessible avec la même session et qu’il s’agit bien d’un PDF valide.</p>
-                    <a href="${escapeAttr(url)}" target="_blank" rel="noopener">Ouvrir le document</a>
-                </div>`;
-        }
     }
 
     async function openMediaHotspot(hotspot) {
@@ -1677,6 +1619,9 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaModal.setAttribute("aria-hidden", "false");
         previewMediaModal.classList.add("open");
 
+        const mediaCard = previewMediaModal.querySelector(".preview-media-card");
+        if (mediaCard) mediaCard.dataset.mediaType = hotspot.type || "media";
+
         const c = hotspot.payload?.content || {};
         previewMediaTitle.textContent = hotspot.title || hotspot.label || (hotspot.type === "pdf" ? "Document" : "Video");
         previewMediaKicker.textContent = hotspot.type === "pdf" ? "PDF DOCUMENT" : "VIDEO";
@@ -1684,18 +1629,18 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaFooter.innerHTML = "";
 
         if (hotspot.type === "pdf") {
-            const url = c.document_url || hotspot.media_file_url || "";
+            const url = hotspot.pdf_inline_url || c.pdf_inline_url || c.document_url || hotspot.media_file_url || "";
             if (!url) {
                 previewMediaBody.innerHTML = `<div class="preview-media-empty">PDF unavailable</div>`;
             } else {
-                await renderPdfInsideDialog(url);
+                renderPdfInsideDialog(url, previewMediaTitle.textContent || "Document PDF");
                 previewMediaFooter.innerHTML = `
                     <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Recharger</button>
                     <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">Plein écran</a>
                     ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${escapeAttr(url)}" download>Télécharger</a>`}`;
 
                 previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
-                    renderPdfInsideDialog(url);
+                    renderPdfInsideDialog(url, previewMediaTitle.textContent || "Document PDF");
                 });
             }
         } else {

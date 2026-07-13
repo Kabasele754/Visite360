@@ -38,6 +38,10 @@ INSTALLED_APPS = [
     
 ]
 
+# show x-frame-options header in response for all views, including error pages
+X_FRAME_OPTIONS = "SAMEORIGIN"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",

@@ -3753,3 +3753,87 @@ body.preview-has-loaded .preview-intro-overlay.is-hidden + * {
         padding: 10px 8px 24px;
     }
 }
+
+
+/* =====================================================================
+   FINAL — NATIVE PDF READER INSIDE MEDIA DIALOG
+===================================================================== */
+.preview-media-card[data-media-type="pdf"] {
+    width: min(1040px, calc(100vw - 28px)) !important;
+    height: min(900px, 92dvh) !important;
+}
+.preview-media-card[data-media-type="pdf"] .preview-media-body {
+    display: block !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    background: #f8fafc !important;
+}
+.preview-pdf-reader {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
+}
+.preview-pdf-frame {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 520px !important;
+    border: 0 !important;
+    background: #fff !important;
+}
+.preview-media-card[data-media-type="pdf"] footer {
+    position: relative !important;
+    z-index: 5 !important;
+    flex: 0 0 auto !important;
+    background: #020617 !important;
+}
+.preview-media-action {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 999px;
+    font-weight: 900;
+    cursor: pointer;
+    text-decoration: none;
+}
+.preview-media-action-primary { background: #fff; color: #07111f; }
+.preview-media-action-secondary { background: rgba(255,255,255,.09); color: #fff; border: 1px solid rgba(255,255,255,.18); }
+@media (max-width: 768px) {
+    .preview-media-modal { padding: 0 !important; }
+    .preview-media-card[data-media-type="pdf"] {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        max-width: none !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+        border: 0 !important;
+    }
+    .preview-media-card[data-media-type="pdf"] header {
+        padding-top: calc(10px + env(safe-area-inset-top)) !important;
+    }
+    .preview-pdf-frame {
+        min-height: 0 !important;
+        height: 100% !important;
+    }
+    .preview-media-card[data-media-type="pdf"] footer {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 7px !important;
+        padding: 9px 9px calc(9px + env(safe-area-inset-bottom)) !important;
+    }
+    .preview-media-card[data-media-type="pdf"] footer .preview-media-action {
+        min-width: 0 !important;
+        padding: 0 8px !important;
+        font-size: 11px !important;
+        text-align: center !important;
+    }
+}

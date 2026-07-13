@@ -557,8 +557,6 @@
                 phone: "{% static 'dashboard/icons/business/phone.png' %}",
                 website: "{% static 'dashboard/icons/business/website.png' %}"
             },
-            pdfJsModuleUrl: "{% static 'public/vendor/pdfjs/build/pdf.mjs' %}",
-            pdfJsWorkerUrl: "{% static 'public/vendor/pdfjs/build/pdf.worker.mjs' %}",
             engagementUrl: "/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/",
             initialViews: "{{ tour.unique_views_count|default:tour.view_count|default:0 }}",
             initialShares: "{{ tour.share_count|default:tour.shares.count|default:0 }}"
