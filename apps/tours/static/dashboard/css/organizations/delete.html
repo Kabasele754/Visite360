@@ -1,0 +1,21 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Delete Organization{% endblock %}
+{% block page_title %}Delete Organization{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Delete "{{ organization.name }}"?</h2>
+    <p class="topbar-subtitle">
+        This action cannot be undone.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-danger">Yes, delete</button>
+            <a href="{% url 'dashboard-organizations-list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
