@@ -1508,26 +1508,50 @@ document.addEventListener("DOMContentLoaded", () => {
         if (hotspot.type === "pdf") {
             const url = c.document_url || hotspot.media_file_url || "";
             const safeUrl = escapeAttr(url);
-            const isCompactPdf = window.matchMedia?.("(max-width: 768px)")?.matches;
-
             if (!url) {
                 previewMediaBody.innerHTML = `<div class="preview-media-empty">PDF unavailable</div>`;
-            } else if (isCompactPdf) {
-                previewMediaBody.innerHTML = `
-                    <div class="preview-pdf-mobile-shell">
-                        <div class="preview-pdf-mobile-icon" aria-hidden="true">PDF</div>
-                        <strong>${escapeAttr(hotspot.title || hotspot.label || "Document PDF")}</strong>
-                        <p>Ouvre le document dans le lecteur du téléphone pour une lecture plus nette.</p>
-                        <a class="preview-pdf-mobile-open" href="${safeUrl}" target="_blank" rel="noopener">Lire le PDF</a>
-                    </div>`;
             } else {
-                previewMediaBody.innerHTML = `<iframe class="preview-pdf-frame" src="${safeUrl}#toolbar=1&navpanes=0&view=FitH" title="PDF"></iframe>`;
+                const nativePdfUrl = `${safeUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`;
+                const configuredPdfJsViewer = String(config.pdfJsViewerUrl || "").trim();
+                const readerUrl = configuredPdfJsViewer
+                    ? `${configuredPdfJsViewer}${configuredPdfJsViewer.includes("?") ? "&" : "?"}file=${encodeURIComponent(url)}`
+                    : nativePdfUrl;
+
+                previewMediaBody.innerHTML = `
+                    <div class="preview-pdf-reader" data-pdf-reader>
+                        <iframe
+                            class="preview-pdf-frame"
+                            src="${escapeAttr(readerUrl)}"
+                            title="${escapeAttr(hotspot.title || hotspot.label || "Document PDF")}"
+                            loading="eager"
+                            allow="fullscreen"
+                        ></iframe>
+                        <div class="preview-pdf-loading" aria-hidden="true">
+                            <span></span>
+                            <strong>Chargement du document…</strong>
+                        </div>
+                    </div>`;
+
+                const frame = previewMediaBody.querySelector(".preview-pdf-frame");
+                const reader = previewMediaBody.querySelector("[data-pdf-reader]");
+                frame?.addEventListener("load", () => reader?.classList.add("is-ready"), { once: true });
             }
 
             if (url) {
                 previewMediaFooter.innerHTML = `
-                    <a class="preview-media-action preview-media-action-secondary" href="${safeUrl}" target="_blank" rel="noopener">Ouvrir</a>
+                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Recharger</button>
+                    <a class="preview-media-action preview-media-action-secondary" href="${safeUrl}" target="_blank" rel="noopener">Plein écran</a>
                     ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${safeUrl}" download>Télécharger</a>`}`;
+
+                previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
+                    const frame = previewMediaBody.querySelector(".preview-pdf-frame");
+                    const reader = previewMediaBody.querySelector("[data-pdf-reader]");
+                    if (!frame) return;
+                    reader?.classList.remove("is-ready");
+                    const currentSrc = frame.src;
+                    frame.src = "about:blank";
+                    requestAnimationFrame(() => { frame.src = currentSrc; });
+                });
             }
         } else {
             const url = c.video_url || hotspot.media_file_url || "";
@@ -2521,7 +2545,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const plan = getProgressiveLoadPlan(initialScene);
         const firstEntry = plan.light || plan.compatible;
 
-        setSceneLoadingPreview(initialScene, true, "Preparing panorama");
+        // Au premier affichage, l'intro couvre déjà le viewer.
+        // Ne pas ajouter une deuxième image de chargement par-dessus le panorama,
+        // sinon l'utilisateur a l'impression de voir plusieurs images superposées.
+        setSceneLoadingPreview(initialScene, false);
 
         if (firstEntry?.url) {
             await preloadDecodedImage(firstEntry.url, { priority: "high" });
@@ -2540,10 +2567,19 @@ document.addEventListener("DOMContentLoaded", () => {
             updateAllViewerSizes();
             syncZoomButtonsState();
             runInitialReveal(initialScene);
+
+            // Attendre la fin complète de l'introduction avant la montée en qualité.
+            // Ainsi, la preview légère ne se mélange jamais avec l'animation d'ouverture.
             setTimeout(() => {
+                previewViewer?.classList.remove(
+                    "is-opening",
+                    "is-cinematic-transition",
+                    "transitioning",
+                    "is-walk-transition"
+                );
                 setSceneLoadingPreview(initialScene, false);
                 scheduleProgressiveUpgrade(initialScene, generation);
-            }, 260);
+            }, 920);
         });
     }
 
