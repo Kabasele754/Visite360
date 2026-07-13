@@ -107,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentSceneId = null;
     let isTransitioning = false;
     let autorotateEnabled = false;
+    let autorotateSuppressedByUser = false;
     let autorotateFrame = null;
     let autorotateLastTs = 0;
     let focusMode = false;
@@ -115,6 +116,56 @@ document.addEventListener("DOMContentLoaded", () => {
     /* Progressive 360 loading state */
     let progressiveGeneration = 0;
     let progressiveUpgradeTimer = null;
+    const QUALITY_CACHE_NAME = "ziarama-360-quality-v1";
+
+    async function isPersistentQualityCached(url) {
+        if (!url) return false;
+        try {
+            if ("caches" in window) {
+                const cached = await caches.match(url, { ignoreSearch: false });
+                if (cached) return true;
+            }
+        } catch (_) {}
+        try {
+            return localStorage.getItem(`ziarama360:${url}`) === "1";
+        } catch (_) {
+            return false;
+        }
+    }
+
+    async function persistQualityAsset(url) {
+        if (!url) return;
+        try {
+            localStorage.setItem(`ziarama360:${url}`, "1");
+        } catch (_) {}
+        if (!("caches" in window)) return;
+        try {
+            const cache = await caches.open(QUALITY_CACHE_NAME);
+            const existing = await cache.match(url);
+            if (existing) return;
+            const response = await fetch(url, {
+                credentials: "same-origin",
+                cache: "force-cache",
+            });
+            if (response.ok || response.type === "opaque") {
+                await cache.put(url, response.clone());
+            }
+        } catch (_) {}
+    }
+
+    async function getBestInitialEntry(sceneData) {
+        const plan = getProgressiveLoadPlan(sceneData);
+        const clearEntry = plan.compatible || plan.light;
+        if (clearEntry?.url && await isPersistentQualityCached(clearEntry.url)) {
+            console.info("[360 progressive] cached clear image selected", {
+                sceneId: sceneData?.id,
+                quality: clearEntry.quality,
+                url: clearEntry.url,
+            });
+            return clearEntry;
+        }
+        return plan.light || clearEntry;
+    }
     const decodedImageCache = new Map();
     const decodedImageMetaCache = new Map();
     const preloadPromises = new Map();
@@ -812,6 +863,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const loaded = await preloadDecodedImage(upgradeEntry.url, { priority: "low" });
+        if (loaded) persistQualityAsset(upgradeEntry.url);
         if (!loaded || generation !== progressiveGeneration || isTransitioning) return false;
         if (!sceneMatchesId(sceneData, currentSceneId)) return false;
 
@@ -1323,7 +1375,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.classList.add("info-panel-open");
     }
 
-    function stopAutorotate() {
+    function stopAutorotate({ suppress = false } = {}) {
+        if (suppress) autorotateSuppressedByUser = true;
         autorotateEnabled = false;
         autorotateLastTs = 0;
         if (autorotateFrame) {
@@ -1350,16 +1403,21 @@ document.addEventListener("DOMContentLoaded", () => {
         autorotateFrame = requestAnimationFrame(autorotateLoop);
     }
 
-    function startAutorotate() {
+    function startAutorotate({ force = false } = {}) {
         if (autorotateEnabled) return;
+        if (autorotateSuppressedByUser && !force) return;
+        if (force) autorotateSuppressedByUser = false;
         autorotateEnabled = true;
         autorotateBtn?.classList.add("active");
         autorotateFrame = requestAnimationFrame(autorotateLoop);
     }
 
     function toggleAutorotate() {
-        if (autorotateEnabled) stopAutorotate();
-        else startAutorotate();
+        if (autorotateEnabled) {
+            stopAutorotate({ suppress: true });
+        } else {
+            startAutorotate({ force: true });
+        }
     }
 
     function setFocusMode(enabled) {
@@ -1454,11 +1512,39 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewMediaKicker = $("previewMediaKicker");
     const previewMediaFooter = $("previewMediaFooter");
     const previewFloorNavigator = $("previewFloorNavigator");
+    let mediaModalPreviousFocus = null;
+    let activePdfRenderToken = 0;
 
     function escapeAttr(value) { return String(value || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-    function stopMediaPlayback() { previewMediaBody?.querySelectorAll("video").forEach(v => { try { v.pause(); v.src = ""; v.load(); } catch (_) {} }); previewMediaBody?.querySelectorAll("iframe").forEach(f => f.src = "about:blank"); }
-    function closeMediaHotspot() { stopMediaPlayback(); previewMediaModal?.classList.remove("open"); previewMediaModal?.setAttribute("aria-hidden", "true"); }
-    document.querySelectorAll("[data-media-close]").forEach(el => el.addEventListener("click", closeMediaHotspot));
+
+    function stopMediaPlayback() {
+        activePdfRenderToken += 1;
+        previewMediaBody?.querySelectorAll("video").forEach(v => {
+            try { v.pause(); v.removeAttribute("src"); v.load(); } catch (_) {}
+        });
+        previewMediaBody?.querySelectorAll("iframe").forEach(f => {
+            try { f.src = "about:blank"; } catch (_) {}
+        });
+    }
+
+    function closeMediaHotspot() {
+        const focused = document.activeElement;
+        if (focused && previewMediaModal?.contains(focused) && typeof focused.blur === "function") {
+            focused.blur();
+        }
+        stopMediaPlayback();
+        previewMediaModal?.classList.remove("open");
+        previewMediaModal?.setAttribute("inert", "");
+        previewMediaModal?.setAttribute("aria-hidden", "true");
+        if (mediaModalPreviousFocus && typeof mediaModalPreviousFocus.focus === "function") {
+            requestAnimationFrame(() => mediaModalPreviousFocus.focus({ preventScroll: true }));
+        }
+        mediaModalPreviousFocus = null;
+    }
+
+    document.querySelectorAll("[data-media-close]").forEach(el => {
+        el.addEventListener("click", closeMediaHotspot);
+    });
 
     function extractYouTubeId(url) {
         try {
@@ -1499,68 +1585,136 @@ document.addEventListener("DOMContentLoaded", () => {
         return "";
     }
 
-    function openMediaHotspot(hotspot) {
+    async function renderPdfInsideDialog(url) {
+        const token = ++activePdfRenderToken;
+        const moduleUrl = String(config.pdfJsModuleUrl || "").trim();
+        const workerUrl = String(config.pdfJsWorkerUrl || "").trim();
+
+        previewMediaBody.innerHTML = `
+            <div class="preview-pdf-reader is-rendering" data-pdf-reader>
+                <div class="preview-pdf-pages" data-pdf-pages></div>
+                <div class="preview-pdf-loading">
+                    <span></span>
+                    <strong>Chargement du document…</strong>
+                </div>
+            </div>`;
+
+        const reader = previewMediaBody.querySelector("[data-pdf-reader]");
+        const pagesRoot = previewMediaBody.querySelector("[data-pdf-pages]");
+
+        try {
+            if (!moduleUrl) throw new Error("PDF.js module URL missing");
+            const pdfjsLib = await import(moduleUrl);
+            if (workerUrl) pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+
+            const loadingTask = pdfjsLib.getDocument({
+                url,
+                withCredentials: true,
+            });
+            const pdf = await loadingTask.promise;
+            if (token != activePdfRenderToken) {
+                try { loadingTask.destroy(); } catch (_) {}
+                return;
+            }
+
+            reader?.classList.remove("is-rendering");
+            reader?.classList.add("is-ready");
+
+            for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+                if (token != activePdfRenderToken) return;
+                const page = await pdf.getPage(pageNumber);
+                const baseViewport = page.getViewport({ scale: 1 });
+                const availableWidth = Math.max(
+                    280,
+                    Math.min(
+                        pagesRoot?.clientWidth || window.innerWidth,
+                        isMobileViewport() ? window.innerWidth - 24 : 940
+                    )
+                );
+                const scale = clamp(availableWidth / baseViewport.width, 0.65, 2.2);
+                const viewport = page.getViewport({ scale });
+
+                const pageShell = document.createElement("article");
+                pageShell.className = "preview-pdf-page";
+                pageShell.setAttribute("aria-label", `Page ${pageNumber} sur ${pdf.numPages}`);
+
+                const canvas = document.createElement("canvas");
+                const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = Math.floor(viewport.width * outputScale);
+                canvas.height = Math.floor(viewport.height * outputScale);
+                canvas.style.width = `${Math.floor(viewport.width)}px`;
+                canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+                pageShell.appendChild(canvas);
+                pagesRoot?.appendChild(pageShell);
+
+                const context = canvas.getContext("2d", { alpha: false });
+                await page.render({
+                    canvasContext: context,
+                    viewport,
+                    transform: outputScale !== 1
+                        ? [outputScale, 0, 0, outputScale, 0, 0]
+                        : null,
+                }).promise;
+            }
+        } catch (error) {
+            console.warn("PDF_RENDER_FAILED", error);
+            if (token != activePdfRenderToken) return;
+            previewMediaBody.innerHTML = `
+                <div class="preview-pdf-fallback">
+                    <strong>Le lecteur PDF intégré n’a pas pu ouvrir ce document.</strong>
+                    <p>Vérifie que le fichier est accessible avec la même session et qu’il s’agit bien d’un PDF valide.</p>
+                    <a href="${escapeAttr(url)}" target="_blank" rel="noopener">Ouvrir le document</a>
+                </div>`;
+        }
+    }
+
+    async function openMediaHotspot(hotspot) {
         if (!previewMediaModal || !previewMediaBody) return;
+
+        mediaModalPreviousFocus = document.activeElement;
+        previewMediaModal.removeAttribute("inert");
+        previewMediaModal.setAttribute("aria-hidden", "false");
+        previewMediaModal.classList.add("open");
+
         const c = hotspot.payload?.content || {};
         previewMediaTitle.textContent = hotspot.title || hotspot.label || (hotspot.type === "pdf" ? "Document" : "Video");
         previewMediaKicker.textContent = hotspot.type === "pdf" ? "PDF DOCUMENT" : "VIDEO";
-        previewMediaBody.innerHTML = ""; previewMediaFooter.innerHTML = "";
+        previewMediaBody.innerHTML = "";
+        previewMediaFooter.innerHTML = "";
+
         if (hotspot.type === "pdf") {
             const url = c.document_url || hotspot.media_file_url || "";
-            const safeUrl = escapeAttr(url);
             if (!url) {
                 previewMediaBody.innerHTML = `<div class="preview-media-empty">PDF unavailable</div>`;
             } else {
-                const nativePdfUrl = `${safeUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`;
-                const configuredPdfJsViewer = String(config.pdfJsViewerUrl || "").trim();
-                const readerUrl = configuredPdfJsViewer
-                    ? `${configuredPdfJsViewer}${configuredPdfJsViewer.includes("?") ? "&" : "?"}file=${encodeURIComponent(url)}`
-                    : nativePdfUrl;
-
-                previewMediaBody.innerHTML = `
-                    <div class="preview-pdf-reader" data-pdf-reader>
-                        <iframe
-                            class="preview-pdf-frame"
-                            src="${escapeAttr(readerUrl)}"
-                            title="${escapeAttr(hotspot.title || hotspot.label || "Document PDF")}"
-                            loading="eager"
-                            allow="fullscreen"
-                        ></iframe>
-                        <div class="preview-pdf-loading" aria-hidden="true">
-                            <span></span>
-                            <strong>Chargement du document…</strong>
-                        </div>
-                    </div>`;
-
-                const frame = previewMediaBody.querySelector(".preview-pdf-frame");
-                const reader = previewMediaBody.querySelector("[data-pdf-reader]");
-                frame?.addEventListener("load", () => reader?.classList.add("is-ready"), { once: true });
-            }
-
-            if (url) {
+                await renderPdfInsideDialog(url);
                 previewMediaFooter.innerHTML = `
                     <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Recharger</button>
-                    <a class="preview-media-action preview-media-action-secondary" href="${safeUrl}" target="_blank" rel="noopener">Plein écran</a>
-                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${safeUrl}" download>Télécharger</a>`}`;
+                    <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">Plein écran</a>
+                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${escapeAttr(url)}" download>Télécharger</a>`}`;
 
                 previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
-                    const frame = previewMediaBody.querySelector(".preview-pdf-frame");
-                    const reader = previewMediaBody.querySelector("[data-pdf-reader]");
-                    if (!frame) return;
-                    reader?.classList.remove("is-ready");
-                    const currentSrc = frame.src;
-                    frame.src = "about:blank";
-                    requestAnimationFrame(() => { frame.src = currentSrc; });
+                    renderPdfInsideDialog(url);
                 });
             }
         } else {
             const url = c.video_url || hotspot.media_file_url || "";
             const embed = toEmbedUrl(url, !!c.autoplay, !!c.muted);
-            if (embed) previewMediaBody.innerHTML = `<iframe class="preview-video-frame" src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
-            else if (url) previewMediaBody.innerHTML = `<video class="preview-video-player" controls playsinline preload="metadata" ${c.autoplay ? "autoplay" : ""} ${c.muted ? "muted" : ""} ${c.loop ? "loop" : ""} poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video>`;
-            else previewMediaBody.innerHTML = `<div class="preview-media-empty">Video unavailable</div>`;
+            if (embed) {
+                previewMediaBody.innerHTML = `<iframe class="preview-video-frame" src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+            } else if (url) {
+                previewMediaBody.innerHTML = `<video class="preview-video-player" controls playsinline preload="metadata" ${c.autoplay ? "autoplay" : ""} ${c.muted ? "muted" : ""} ${c.loop ? "loop" : ""} poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video>`;
+            } else {
+                previewMediaBody.innerHTML = `<div class="preview-media-empty">Video unavailable</div>`;
+            }
         }
-        previewMediaModal.classList.add("open"); previewMediaModal.setAttribute("aria-hidden", "false"); stopAutorotate();
+
+        stopAutorotate({ suppress: true });
+        requestAnimationFrame(() => {
+            const closeButton = previewMediaModal.querySelector("[data-media-close]");
+            closeButton?.focus({ preventScroll: true });
+        });
     }
 
     function showFloorTransitionLabel(hotspot) {
@@ -1929,7 +2083,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Auto rotation au démarrage : le panorama commence à bouger automatiquement.
             if (!autorotateEnabled && !document.hidden) {
-                startAutorotate();
+                startAutorotate({ force: false });
             }
         }, 650);
     }
@@ -1946,7 +2100,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const incomingKey = standbyLayerKey();
         const cinematicMs = getCinematicTransitionMs();
         const plan = getProgressiveLoadPlan(targetScene);
-        const firstEntry = plan.light || plan.compatible;
+        const firstEntry = await getBestInitialEntry(targetScene);
 
         previewViewer?.style?.setProperty("--preview-cinematic-ms", `${cinematicMs}ms`);
         setSceneLoadingPreview(targetScene, true, "Loading scene");
@@ -2050,9 +2204,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             scheduleProgressiveUpgrade(targetScene, generation);
 
-            if (!document.hidden) {
-                startAutorotate();
-            }
+            // Ne pas redémarrer automatiquement après une navigation.
+            // L'utilisateur peut le réactiver avec le bouton dédié.
         }, cinematicMs);
     }
 
@@ -2066,7 +2219,7 @@ document.addEventListener("DOMContentLoaded", () => {
         isTransitioning = true;
         closeInfoPanel();
         closeSceneStack();
-        stopAutorotate();
+        stopAutorotate({ suppress: true });
 
         previewViewer?.classList.remove("is-walk-transition");
         previewViewer?.style?.setProperty("--preview-cinematic-ms", `${getCinematicTransitionMs()}ms`);
@@ -2112,7 +2265,7 @@ document.addEventListener("DOMContentLoaded", () => {
         isTransitioning = true;
         closeInfoPanel();
         closeSceneStack();
-        stopAutorotate();
+        stopAutorotate({ suppress: true });
 
         previewViewer?.classList.remove("is-walk-transition");
         previewViewer?.style?.setProperty("--preview-cinematic-ms", `${getCinematicTransitionMs()}ms`);
@@ -2311,7 +2464,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const view = getCurrentView();
                 if (!view) return;
                 event.preventDefault();
-                stopAutorotate();
+                stopAutorotate({ suppress: true });
                 localPinch.active = true;
                 localPinch.startDistance = getTouchDistance(event.touches);
                 localPinch.startFov = view.fov();
@@ -2319,7 +2472,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
-            stopAutorotate();
+            stopAutorotate({ suppress: true });
         }, { passive: false, capture: true });
 
         previewViewer.addEventListener("touchmove", (event) => {
@@ -2376,6 +2529,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         previewViewer.addEventListener("pointerdown", (event) => {
+            if ("ontouchstart" in window) return;
             if (event.pointerType !== "touch") return;
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
             stopAutorotate();
@@ -2391,6 +2545,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }, { passive: false, capture: true });
 
         previewViewer.addEventListener("pointermove", (event) => {
+            if ("ontouchstart" in window) return;
             if (event.pointerType !== "touch" || !activePointers.has(event.pointerId)) return;
             if (!isInsidePreview(event.target) || shouldIgnoreZoomTarget(event.target)) return;
             activePointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY });
@@ -2439,7 +2594,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const view = getCurrentView();
             if (!view) return;
             event.preventDefault();
-            stopAutorotate();
+            stopAutorotate({ suppress: true });
             const direction = event.deltaY > 0 ? 1 : -1;
             setZoomInstant(view.fov() + degToRad(direction * 7));
         }, { passive: false, capture: true });
@@ -2459,12 +2614,12 @@ document.addEventListener("DOMContentLoaded", () => {
     nextSceneBtn?.addEventListener("click", () => goToRelativeScene(1));
 
     bindZoomButton(zoomOutBtn, () => {
-        stopAutorotate();
+        stopAutorotate({ suppress: true });
         zoomBy(isMobileViewport() ? 8 : 10, 120);
     });
 
     bindZoomButton(zoomInBtn, () => {
-        stopAutorotate();
+        stopAutorotate({ suppress: true });
         zoomBy(isMobileViewport() ? -8 : -10, 120);
     });
 
@@ -2480,7 +2635,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     previewInfoBackdrop?.addEventListener("click", closeInfoPanel);
     previewViewer?.addEventListener("click", () => closeInfoPanel());
-    previewViewer?.addEventListener("pointerdown", () => stopAutorotate());
+    previewViewer?.addEventListener("pointerdown", () => {
+        stopAutorotate({ suppress: true });
+    });
 
     window.addEventListener("resize", () => {
         updateAllViewerSizes();
@@ -2543,7 +2700,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cancelProgressiveWork();
         const generation = progressiveGeneration;
         const plan = getProgressiveLoadPlan(initialScene);
-        const firstEntry = plan.light || plan.compatible;
+        const firstEntry = await getBestInitialEntry(initialScene);
 
         // Au premier affichage, l'intro couvre déjà le viewer.
         // Ne pas ajouter une deuxième image de chargement par-dessus le panorama,

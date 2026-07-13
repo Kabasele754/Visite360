@@ -3605,3 +3605,151 @@ body.preview-has-loaded .preview-intro-overlay.is-hidden + * {
         white-space: nowrap;
     }
 }
+
+
+/* =====================================================================
+   FINAL FIX — PDF.JS IN-DIALOG + MOBILE PANORAMA TOUCH
+===================================================================== */
+.preview-media-modal[inert] {
+    pointer-events: none !important;
+}
+
+.preview-media-body {
+    overflow: hidden !important;
+}
+
+.preview-pdf-reader {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background: #d9dee7;
+    touch-action: pan-x pan-y pinch-zoom !important;
+}
+
+.preview-pdf-pages {
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 20px;
+}
+
+.preview-pdf-page {
+    display: flex;
+    justify-content: center;
+    width: max-content;
+    max-width: 100%;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .22);
+}
+
+.preview-pdf-page canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.preview-pdf-loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    gap: 12px;
+    color: #fff;
+    background: #020617;
+    z-index: 2;
+}
+
+.preview-pdf-reader.is-ready .preview-pdf-loading {
+    display: none;
+}
+
+.preview-pdf-fallback {
+    max-width: 520px;
+    padding: 28px;
+    text-align: center;
+    color: #e2e8f0;
+}
+
+.preview-pdf-fallback strong {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.preview-pdf-fallback p {
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+.preview-pdf-fallback a {
+    display: inline-flex;
+    margin-top: 10px;
+    padding: 11px 16px;
+    border-radius: 999px;
+    color: #020617;
+    background: #fff;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+#previewViewer,
+.preview-viewer,
+#previewLayerA,
+#previewLayerB,
+.preview-layer,
+#previewMountA,
+#previewMountB,
+.preview-mount {
+    touch-action: none !important;
+}
+
+.preview-media-modal,
+.preview-media-modal * {
+    touch-action: manipulation;
+}
+
+.preview-pdf-reader,
+.preview-pdf-reader * {
+    touch-action: pan-x pan-y pinch-zoom !important;
+}
+
+@media (max-width: 768px) {
+    .preview-media-card {
+        height: 100dvh !important;
+        width: 100vw !important;
+        border-radius: 0 !important;
+    }
+
+    .preview-media-card footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding:
+            10px
+            max(10px, env(safe-area-inset-right))
+            calc(10px + env(safe-area-inset-bottom))
+            max(10px, env(safe-area-inset-left)) !important;
+        background: rgba(2, 6, 23, .96);
+    }
+
+    .preview-media-action {
+        min-width: 0;
+        text-align: center;
+        padding: 10px 8px !important;
+        font-size: 11px;
+    }
+
+    .preview-pdf-pages {
+        gap: 12px;
+        padding: 10px 8px 24px;
+    }
+}

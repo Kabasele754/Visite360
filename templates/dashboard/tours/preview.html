@@ -517,7 +517,7 @@
         </div>
 
 
-        <div id="previewMediaModal" class="preview-media-modal" aria-hidden="true">
+        <div id="previewMediaModal" class="preview-media-modal" aria-hidden="true" inert>
             <div class="preview-media-backdrop" data-media-close></div>
             <section class="preview-media-card" role="dialog" aria-modal="true">
                 <header><div><span id="previewMediaKicker">MEDIA</span><h3 id="previewMediaTitle">Media</h3></div><button type="button" data-media-close>✕</button></header>
@@ -557,6 +557,8 @@
                 phone: "{% static 'dashboard/icons/business/phone.png' %}",
                 website: "{% static 'dashboard/icons/business/website.png' %}"
             },
+            pdfJsModuleUrl: "{% static 'public/vendor/pdfjs/build/pdf.mjs' %}",
+            pdfJsWorkerUrl: "{% static 'public/vendor/pdfjs/build/pdf.worker.mjs' %}",
             engagementUrl: "/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/",
             initialViews: "{{ tour.unique_views_count|default:tour.view_count|default:0 }}",
             initialShares: "{{ tour.share_count|default:tour.shares.count|default:0 }}"
