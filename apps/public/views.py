@@ -1,4 +1,4 @@
-from urllib.parse import unquote
+from urllib.parse import parse_qs, unquote, urlparse
 
 from django.conf import settings
 from django.core.cache import cache
@@ -7,6 +7,7 @@ from django.utils.text import Truncator
 import hashlib
 import json
 import uuid
+import re
 
 from django.db.models import F
 from django.utils.decorators import method_decorator
@@ -983,7 +984,116 @@ def _get_public_map_available_cities():
     return cities
 
 
-def _build_public_map_tour_item(tour):
+
+
+def _extract_google_streetview_pano_id(value):
+    """
+    Extract the public Google Maps pano id from a Google Maps Street View URL.
+    Fallback is handled by the frontend with the Street View Publish photo id.
+    """
+    if not value:
+        return ""
+
+    raw = str(value).strip()
+
+    try:
+        parsed = urlparse(raw)
+        query = parse_qs(parsed.query or "")
+        panoid = (query.get("panoid") or [""])[0]
+        if panoid:
+            return unquote(panoid)
+    except Exception:
+        pass
+
+    # Common Google Maps share pattern:
+    # ...data=!3m4!1e1!3m2!1s<public-pano-id>!2e10
+    match = re.search(r"(?:!|&)1s([^!&]+)", raw)
+    if match:
+        return unquote(match.group(1))
+
+    return ""
+
+
+def _get_google_streetview_state_map_for_tours(tour_ids):
+    """
+    Returns the first Google-published scene state for each source tour.
+    The page can then open the real uploaded Street View panorama instead of
+    searching a random nearby road Street View.
+    """
+    tour_ids = [int(tour_id) for tour_id in tour_ids if tour_id]
+    if not tour_ids:
+        return {}
+
+    try:
+        from apps.app_streetview.models import StreetViewSourceSceneState
+    except Exception:
+        return {}
+
+    states = (
+        StreetViewSourceSceneState.objects
+        .filter(
+            publication__source_tour_id__in=tour_ids,
+            google_photo_id__gt="",
+        )
+        .select_related("publication", "source_scene", "source_scene__tour", "source_scene__tour__place")
+        .order_by("publication__source_tour_id", "source_scene__order", "source_scene_id")
+    )
+
+    state_map = {}
+
+    for state in states:
+        tour_id = state.publication.source_tour_id
+        current = state_map.get(tour_id)
+
+        if current is None:
+            state_map[tour_id] = state
+            continue
+
+        # Prefer a scene whose connections were already applied successfully.
+        if current.publish_status != "connected" and state.publish_status == "connected":
+            state_map[tour_id] = state
+
+    return state_map
+
+
+def _build_google_streetview_payload(state):
+    if not state or not getattr(state, "google_photo_id", ""):
+        return {
+            "available": False,
+            "photo_id": "",
+            "pano_id": "",
+            "share_link": "",
+            "thumbnail_url": "",
+            "scene_id": None,
+            "scene_title": "",
+            "publish_status": "",
+            "heading": 0,
+            "pitch": 0,
+            "latitude": None,
+            "longitude": None,
+        }
+
+    lat = state.effective_latitude
+    lng = state.effective_longitude
+    share_link = state.google_share_link or ""
+    pano_id = _extract_google_streetview_pano_id(share_link) or state.google_photo_id
+
+    return {
+        "available": True,
+        "photo_id": state.google_photo_id,
+        "pano_id": pano_id,
+        "share_link": share_link,
+        "thumbnail_url": state.google_thumbnail_url or "",
+        "scene_id": state.source_scene_id,
+        "scene_title": state.source_scene.title if state.source_scene else "",
+        "publish_status": state.publish_status,
+        "heading": float(state.heading or 0),
+        "pitch": float(state.pitch or 0),
+        "latitude": float(lat) if lat is not None else None,
+        "longitude": float(lng) if lng is not None else None,
+    }
+
+def _build_public_map_tour_item(tour, streetview_state=None):
     place = tour.place
 
     lat = tour.lat if tour.lat is not None else place.latitude
@@ -1058,7 +1168,9 @@ def _build_public_map_tour_item(tour):
         )
     ).lower()
 
-    return {
+    google_streetview = _build_google_streetview_payload(streetview_state)
+
+    result = {
         "id": tour.id,
         "title": tour.title or "",
         "slug": tour.slug or "",
@@ -1088,10 +1200,18 @@ def _build_public_map_tour_item(tour):
                 "tour_id": tour.id,
             },
         ),
-        "street_view_lat": lat,
-        "street_view_lng": lng,
+        "street_view_lat": google_streetview.get("latitude") or lat,
+        "street_view_lng": google_streetview.get("longitude") or lng,
+        "google_streetview": google_streetview,
+        "has_google_streetview": bool(google_streetview.get("available")),
+        "google_streetview_photo_id": google_streetview.get("photo_id", ""),
+        "google_streetview_pano_id": google_streetview.get("pano_id", ""),
+        "google_streetview_share_link": google_streetview.get("share_link", ""),
+        "google_streetview_scene_title": google_streetview.get("scene_title", ""),
         "search_blob": search_blob,
     }
+
+    return result
 
 
 def public_tours_map_view(request):
@@ -1109,7 +1229,7 @@ def public_tours_map_view(request):
 
     total_count = filtered_qs.count()
 
-    tours_qs = (
+    tours_qs = list(
         filtered_qs
         .prefetch_related(
             Prefetch(
@@ -1121,10 +1241,14 @@ def public_tours_map_view(request):
         .order_by("-is_featured", "-created_at")[:PUBLIC_MAP_TOUR_LIMIT]
     )
 
+    streetview_state_map = _get_google_streetview_state_map_for_tours([tour.id for tour in tours_qs])
     tours_map_data = []
 
     for tour in tours_qs:
-        item = _build_public_map_tour_item(tour)
+        item = _build_public_map_tour_item(
+            tour,
+            streetview_state=streetview_state_map.get(tour.id),
+        )
 
         if item is not None:
             tours_map_data.append(item)

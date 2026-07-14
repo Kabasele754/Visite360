@@ -689,42 +689,182 @@
 
         .street-panel {
             position: absolute;
-            left: 18px;
-            right: 18px;
-            bottom: 18px;
-            z-index: 6;
-            border-radius: 28px;
-            border: 1px solid rgba(255,255,255,0.78);
-            background: rgba(255,255,255,0.68);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+            inset: 22px;
+            z-index: 16;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            border-radius: 36px;
+            border: 1px solid rgba(255,255,255,0.82);
+            background: rgba(248, 250, 252, 0.72);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow:
+                0 34px 100px rgba(15, 23, 42, 0.28),
+                inset 0 1px 0 rgba(255,255,255,0.78);
             overflow: hidden;
-            transform: translateY(24px);
+            transform: translateY(26px) scale(.985);
             opacity: 0;
             pointer-events: none;
-            transition: 0.28s ease;
+            transition:
+                opacity .24s ease,
+                transform .30s cubic-bezier(.22, 1, .36, 1);
+        }
+
+        .street-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,.44), rgba(255,255,255,0) 16%),
+                radial-gradient(circle at 12% 0%, rgba(34,211,238,.16), transparent 24%),
+                radial-gradient(circle at 88% 0%, rgba(59,130,246,.14), transparent 22%);
         }
 
         body.theme-dark .street-panel {
-            background: rgba(15,23,42,0.82);
-            border-color: rgba(255,255,255,0.10);
+            background: rgba(2, 6, 23, 0.78);
+            border-color: rgba(255,255,255,0.12);
+            box-shadow:
+                0 34px 100px rgba(0,0,0,0.46),
+                inset 0 1px 0 rgba(255,255,255,0.08);
         }
 
         .street-panel.open {
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
             opacity: 1;
             pointer-events: auto;
         }
 
+        .street-head,
+        .street-foot {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px 16px;
+            background: rgba(255,255,255,.62);
+            border-color: rgba(255,255,255,.72);
+        }
+
+        .street-head {
+            border-bottom: 1px solid rgba(255,255,255,.72);
+        }
+
+        .street-foot {
+            border-top: 1px solid rgba(255,255,255,.72);
+        }
+
+        body.theme-dark .street-head,
+        body.theme-dark .street-foot {
+            background: rgba(2,6,23,.64);
+            border-color: rgba(255,255,255,.10);
+        }
+
+        .street-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .street-mark {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 17px;
+            color: #062436;
+            background: linear-gradient(135deg, #22d3ee, #3b82f6);
+            box-shadow: 0 14px 30px rgba(14,165,233,.24);
+            font-size: 18px;
+        }
+
+        .street-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 0 0 auto;
+        }
+
+        .street-icon-btn {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 17px;
+            border: 1px solid rgba(255,255,255,.78);
+            background: rgba(255,255,255,.78);
+            color: #0f172a;
+            cursor: pointer;
+            transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+            box-shadow: 0 12px 28px rgba(15,23,42,.12);
+        }
+
+        .street-icon-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,.96);
+            box-shadow: 0 16px 34px rgba(15,23,42,.16);
+        }
+
+        .street-icon-btn.primary {
+            background: linear-gradient(135deg, #22d3ee, #3b82f6);
+            color: #062436;
+            border-color: rgba(255,255,255,.82);
+        }
+
+        body.theme-dark .street-icon-btn {
+            color: #fff;
+            background: rgba(255,255,255,.10);
+            border-color: rgba(255,255,255,.14);
+            box-shadow: 0 12px 28px rgba(0,0,0,.24);
+        }
+
+        body.theme-dark .street-icon-btn.primary {
+            color: #06111f;
+            background: linear-gradient(135deg, #67e8f9, #60a5fa);
+        }
+
         #streetView {
+            position: relative;
+            z-index: 2;
             width: 100%;
-            height: 330px;
+            height: 100%;
+            min-height: 520px;
             background: #e2e8f0;
         }
 
         body.theme-dark #streetView .gm-style {
-            filter: invert(92%) hue-rotate(180deg) saturate(85%) brightness(78%) contrast(112%);
+            filter: none !important;
+        }
+
+        body.street-open .selected-tour-card {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .street-disabled,
+        .street-disabled:hover {
+            opacity: .46 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+            filter: grayscale(1);
+        }
+
+        .street-ready-dot {
+            display: inline-flex;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16,185,129,.12);
+            margin-right: 6px;
+            vertical-align: middle;
         }
 
         .filter-input {
@@ -1095,14 +1235,32 @@
             }
 
             .street-panel {
-                left: 12px;
-                right: 12px;
-                bottom: 16px;
-                border-radius: 24px;
+                inset: 10px;
+                top: max(86px, env(safe-area-inset-top, 0px) + 72px);
+                bottom: max(12px, env(safe-area-inset-bottom, 0px) + 10px);
+                border-radius: 30px;
+            }
+
+            .street-head,
+            .street-foot {
+                padding: 12px;
+            }
+
+            .street-mark {
+                width: 38px;
+                height: 38px;
+                border-radius: 15px;
+                font-size: 16px;
+            }
+
+            .street-icon-btn {
+                width: 42px;
+                height: 42px;
+                border-radius: 16px;
             }
 
             #streetView {
-                height: 230px;
+                min-height: 0;
             }
 
             .filters-panel {
@@ -1259,11 +1417,18 @@
             }
 
             .street-panel {
-                bottom: 14px;
+                inset: 8px;
+                top: max(78px, env(safe-area-inset-top, 0px) + 66px);
+                bottom: max(10px, env(safe-area-inset-bottom, 0px) + 8px);
+                border-radius: 26px;
             }
 
-            #streetView {
-                height: 210px;
+            .street-head h3 {
+                font-size: 15px !important;
+            }
+
+            .street-panel-message-wrap {
+                max-width: calc(100vw - 132px);
             }
 
             .gm-marker-card .inner {
@@ -1612,38 +1777,39 @@
 
                     <div id="selectedTourCard" class="selected-tour-card"></div>
 
-                    <div id="streetPanel" class="street-panel">
-                        <div class="flex items-center justify-between gap-3 border-b border-white/70 px-5 py-4">
-                            <div>
-                                <p class="text-xs font-black uppercase tracking-[0.24em] text-cyan-700">Google Street View</p>
-                                <h3 id="streetPanelTitle" class="mt-1 text-lg font-black tracking-tight text-slate-900 dark-title">Street View</h3>
+                    <div id="streetPanel" class="street-panel" aria-live="polite">
+                        <div class="street-head">
+                            <div class="street-title-wrap">
+                                <span class="street-mark" aria-hidden="true">🛣️</span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-700">Google Street View</p>
+                                    <h3 id="streetPanelTitle" class="mt-0.5 truncate text-lg font-black tracking-tight text-slate-900 dark-title">Street View</h3>
+                                </div>
                             </div>
 
-                            <button
-                                id="closeStreetBtn"
-                                type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/82 text-slate-700 transition hover:bg-white"
-                            >
-                                ✕
-                            </button>
+                            <div class="street-actions">
+                                <button id="openPreviewFromStreetBtn" type="button" class="street-icon-btn primary" aria-label="Ouvrir la visite 360" title="Ouvrir la visite 360">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7Z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                                    </svg>
+                                </button>
+                                <button id="closeStreetBtn" type="button" class="street-icon-btn" aria-label="Fermer Street View" title="Fermer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         <div id="streetView"></div>
 
-                        <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-                            <p id="streetPanelMessage" class="text-sm font-semibold text-slate-600 dark-text">
-                                Move around the area in Street View.
-                            </p>
-
-                            <div class="flex gap-3">
-                                <button
-                                    id="openPreviewFromStreetBtn"
-                                    type="button"
-                                    class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
-                                >
-                                    Open 360 Tour
-                                </button>
+                        <div class="street-foot">
+                            <div class="street-panel-message-wrap min-w-0">
+                                <p id="streetPanelMessage" class="truncate text-sm font-semibold text-slate-600 dark-text">Street View</p>
                             </div>
+
+                            <div class="hidden text-xs font-black uppercase tracking-[0.18em] text-cyan-700 sm:block">Explore</div>
                         </div>
                     </div>
                 </div>
@@ -1909,8 +2075,64 @@
             if (dom.statCities) dom.statCities.textContent = cityCount;
         }
 
+        function getGoogleStreetView(tour) {
+            return tour && tour.google_streetview ? tour.google_streetview : {};
+        }
+
+        function hasGoogleStreetView(tour) {
+            const googleStreet = getGoogleStreetView(tour);
+            return Boolean(
+                tour?.has_google_streetview ||
+                googleStreet.available ||
+                tour?.google_streetview_photo_id ||
+                googleStreet.photo_id
+            );
+        }
+
+        function extractPanoIdFromShareLink(value) {
+            if (!value) return "";
+
+            try {
+                const url = new URL(value, window.location.origin);
+                const panoid = url.searchParams.get("panoid");
+                if (panoid) return panoid;
+            } catch (error) {
+                // Keep fallback below.
+            }
+
+            const match = String(value).match(/(?:!|&)1s([^!&]+)/);
+            return match ? decodeURIComponent(match[1]) : "";
+        }
+
+        function getGoogleStreetPanoCandidates(tour) {
+            const googleStreet = getGoogleStreetView(tour);
+            const candidates = [
+                googleStreet.pano_id,
+                tour?.google_streetview_pano_id,
+                extractPanoIdFromShareLink(googleStreet.share_link || tour?.google_streetview_share_link || ""),
+                googleStreet.photo_id,
+                tour?.google_streetview_photo_id,
+            ];
+
+            return [...new Set(candidates.filter(Boolean).map(v => String(v).trim()).filter(Boolean))];
+        }
+
+        function normalizeHeadingForGoogle(value) {
+            const number = Number(value || 0);
+            if (!Number.isFinite(number)) return 0;
+            return ((number % 360) + 360) % 360;
+        }
+
+        function openStreetDisabledNotice(tour) {
+            // No popup: the button is disabled when no real Google Street View scene exists.
+            console.info("No published Google Street View scene for this tour yet.", tour?.id);
+        }
+
         function buildResultCard(tour) {
             const isActive = String(state.selectedId) === String(tour.id);
+            const googleStreetReady = hasGoogleStreetView(tour);
+            const streetAttrs = googleStreetReady ? "" : 'disabled aria-disabled="true" title="Street View Google non publié"';
+            const streetClass = googleStreetReady ? "" : "street-disabled";
 
             return `
                 <article class="result-card ${isActive ? 'active' : ''} rounded-[28px] border border-white/80 bg-white/78 p-4 shadow-glass" data-tour-id="${tour.id}">
@@ -1945,8 +2167,8 @@
                                     Map
                                 </button>
 
-                                <button type="button" class="street-tour-btn inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-2.5 text-sm font-black text-slate-700 transition hover:bg-white" data-tour-id="${tour.id}">
-                                    Street
+                                <button type="button" class="street-tour-btn ${streetClass} inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-2.5 text-sm font-black text-slate-700 transition hover:bg-white" data-tour-id="${tour.id}" ${streetAttrs}>
+                                    ${googleStreetReady ? '<span class="street-ready-dot"></span>' : ''}Street
                                 </button>
 
                                 <button type="button" class="preview-tour-btn inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110" data-preview-url="${tour.preview_url}">
@@ -2017,10 +2239,12 @@
                 btn.addEventListener("click", () => {
                     const tour = getTourById(btn.dataset.tourId);
 
-                    if (tour) {
+                    if (tour && hasGoogleStreetView(tour)) {
                         focusTour(tour, true);
                         openStreetViewForTour(tour);
                         maybeCloseMobileSheet();
+                    } else {
+                        openStreetDisabledNotice(tour);
                     }
                 });
             });
@@ -2054,6 +2278,9 @@
 
         function renderSelectedTourCard() {
             const tour = getTourById(state.selectedId);
+            const googleStreetReady = hasGoogleStreetView(tour);
+            const streetAttrs = googleStreetReady ? "" : 'disabled aria-disabled="true" title="Street View Google non publié"';
+            const streetClass = googleStreetReady ? "" : "street-disabled";
 
             if (!tour || isMobileLayout()) {
                 dom.selectedTourCard.innerHTML = "";
@@ -2094,8 +2321,8 @@
                             </div>
 
                             <div class="mt-4 flex flex-wrap gap-2">
-                                <button type="button" id="selectedStreetBtn" class="inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-white">
-                                    Street View
+                                <button type="button" id="selectedStreetBtn" class="${streetClass} inline-flex items-center justify-center rounded-2xl border border-white/80 bg-white/86 px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-white" ${streetAttrs}>
+                                    ${googleStreetReady ? '<span class="street-ready-dot"></span>' : ''}Street View
                                 </button>
 
                                 <button type="button" id="selectedPreviewBtn" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110">
@@ -2107,7 +2334,13 @@
                 </div>
             `;
 
-            document.getElementById("selectedStreetBtn")?.addEventListener("click", () => openStreetViewForTour(tour));
+            document.getElementById("selectedStreetBtn")?.addEventListener("click", () => {
+                if (hasGoogleStreetView(tour)) {
+                    openStreetViewForTour(tour);
+                } else {
+                    openStreetDisabledNotice(tour);
+                }
+            });
             document.getElementById("selectedPreviewBtn")?.addEventListener("click", () => openTourPreview(tour.preview_url));
         }
 
@@ -2115,6 +2348,9 @@
             const wrapper = document.createElement("div");
             wrapper.className = "gm-marker-card";
             wrapper.dataset.tourId = tour.id;
+            const googleStreetReady = hasGoogleStreetView(tour);
+            const streetMarkerClass = googleStreetReady ? "" : "street-disabled";
+            const streetMarkerAttrs = googleStreetReady ? "" : 'disabled aria-disabled="true" title="Street View Google non publié"';
 
             wrapper.innerHTML = `
                 <div class="inner">
@@ -2140,7 +2376,7 @@
 
                     <div class="gm-marker-actions">
                         <button type="button" class="gm-marker-action-btn marker-focus-btn">Focus</button>
-                        <button type="button" class="gm-marker-action-btn marker-street-btn">Street</button>
+                        <button type="button" class="gm-marker-action-btn ${streetMarkerClass} marker-street-btn" ${streetMarkerAttrs}>Street</button>
                         <button type="button" class="gm-marker-action-btn primary marker-preview-btn">360 Tour</button>
                     </div>
                 </div>
@@ -2162,8 +2398,13 @@
             wrapper.querySelector(".marker-street-btn")?.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                focusTour(tour, true);
-                openStreetViewForTour(tour);
+
+                if (hasGoogleStreetView(tour)) {
+                    focusTour(tour, true);
+                    openStreetViewForTour(tour);
+                } else {
+                    openStreetDisabledNotice(tour);
+                }
             });
 
             wrapper.querySelector(".marker-preview-btn")?.addEventListener("click", (e) => {
@@ -2284,38 +2525,73 @@
             document.body.classList.remove("street-open");
             dom.streetPanel.classList.remove("open");
             dom.closeStreetBtnTop.classList.add("hidden");
+
+            if (state.panorama) {
+                state.panorama.setVisible(false);
+            }
         }
 
         function openStreetViewForTour(tour) {
             if (!state.streetService || !state.panorama) return;
 
-            const location = { lat: tour.street_view_lat, lng: tour.street_view_lng };
+            if (!hasGoogleStreetView(tour)) {
+                openStreetDisabledNotice(tour);
+                return;
+            }
 
-            dom.streetPanelTitle.textContent = `${tour.title} · Street View`;
-            dom.streetPanelMessage.textContent = `Searching Street View near ${tour.place_name}...`;
+            const googleStreet = getGoogleStreetView(tour);
+            const candidates = getGoogleStreetPanoCandidates(tour);
+            const heading = normalizeHeadingForGoogle(googleStreet.heading ?? 34);
+            const pitch = Number.isFinite(Number(googleStreet.pitch)) ? Number(googleStreet.pitch) : 0;
 
-            state.streetService.getPanorama(
-                { location, radius: 120 },
-                (data, status) => {
-                    dom.streetPanel.classList.add("open");
-                    dom.closeStreetBtnTop.classList.remove("hidden");
-                    document.body.classList.add("street-open");
-                    state.streetViewOpen = true;
+            dom.streetPanel.classList.add("open");
+            dom.closeStreetBtnTop.classList.remove("hidden");
+            document.body.classList.add("street-open");
+            state.streetViewOpen = true;
 
-                    if (status === google.maps.StreetViewStatus.OK && data && data.location) {
-                        state.panorama.setPano(data.location.pano);
-                        state.panorama.setPov({ heading: 34, pitch: 0 });
-                        state.panorama.setVisible(true);
-                        dom.streetPanelMessage.textContent = `Street View loaded near ${tour.place_name}.`;
-                    } else {
-                        dom.streetPanelMessage.textContent = `No Street View available close to this location.`;
-                    }
+            dom.streetPanelTitle.textContent = tour.title || "Street View";
+            dom.streetPanelMessage.textContent = googleStreet.scene_title
+                ? `Scène : ${googleStreet.scene_title}`
+                : `Ouverture Street View...`;
+
+            window.setTimeout(() => {
+                if (state.panorama && window.google?.maps?.event) {
+                    google.maps.event.trigger(state.panorama, "resize");
                 }
-            );
+            }, 80);
 
             dom.openPreviewFromStreetBtn.onclick = () => {
                 openTourPreview(tour.preview_url);
             };
+
+            const tryCandidate = (index = 0) => {
+                const candidate = candidates[index];
+
+                if (!candidate) {
+                    dom.streetPanelMessage.textContent = `Street View Google non disponible pour cette visite.`;
+                    state.panorama.setVisible(false);
+                    return;
+                }
+
+                state.streetService.getPanorama({ pano: candidate }, (data, status) => {
+                    if (status === google.maps.StreetViewStatus.OK && data && data.location) {
+                        state.panorama.setPano(data.location.pano || candidate);
+                        state.panorama.setPov({ heading, pitch });
+                        state.panorama.setVisible(true);
+                        window.setTimeout(() => {
+                            google.maps.event.trigger(state.panorama, "resize");
+                        }, 80);
+                        dom.streetPanelMessage.textContent = googleStreet.scene_title
+                            ? `Scène : ${googleStreet.scene_title}`
+                            : `Street View chargé.`;
+                        return;
+                    }
+
+                    tryCandidate(index + 1);
+                });
+            };
+
+            tryCandidate(0);
         }
 
         async function initMapCore() {
@@ -2562,6 +2838,11 @@
                     return;
                 }
 
+                if (state.streetViewOpen) {
+                    closeStreetView();
+                    return;
+                }
+
                 dom.settingsMenu?.classList.remove("open");
             });
 
@@ -2598,15 +2879,9 @@
         };
     </script>
 
-    {% comment %} <script
+    <script
         async
         src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&loading=async&v=weekly&libraries=places,geometry,marker&callback=initToursExplorerMap">
-    </script> {% endcomment %}
-
-
-        <script
-        async
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVrWrJYK2DrDokWGZZvmk8tuxFRb-iZ1w&loading=async&v=weekly&libraries=places,geometry,marker&callback=initToursExplorerMap">
     </script>
 
 </body>
