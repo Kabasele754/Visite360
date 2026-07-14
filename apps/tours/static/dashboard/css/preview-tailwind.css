@@ -3753,3 +3753,106 @@ body.preview-has-loaded .preview-intro-overlay.is-hidden + * {
         padding: 10px 8px 24px;
     }
 }
+
+/* =====================================================================
+   FINAL FIX — PDF MOBILE PHYSIQUE, RENDU PROGRESSIF ET MÉMOIRE STABLE
+===================================================================== */
+.preview-pdf-reader {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    background: #dce2ea !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y pinch-zoom !important;
+}
+
+.preview-pdf-pages {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 14px !important;
+    padding: 12px !important;
+}
+
+.preview-pdf-page {
+    position: relative !important;
+    flex: 0 0 auto !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    min-height: 180px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .18) !important;
+}
+
+.preview-pdf-page-placeholder {
+    width: min(100%, 820px) !important;
+    aspect-ratio: 0.707 / 1 !important;
+    background: linear-gradient(110deg, #f8fafc 20%, #e2e8f0 38%, #f8fafc 56%) !important;
+    background-size: 240% 100% !important;
+    animation: previewPdfPageSkeleton 1.25s linear infinite !important;
+}
+
+.preview-pdf-page-placeholder-label,
+.preview-pdf-page-error {
+    color: #64748b !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+}
+
+.preview-pdf-canvas {
+    display: block !important;
+    max-width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+}
+
+.preview-pdf-loading small {
+    color: #94a3b8 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+}
+
+.preview-pdf-reader.is-ready > .preview-pdf-loading {
+    display: none !important;
+}
+
+@keyframes previewPdfPageSkeleton {
+    to { background-position-x: -240%; }
+}
+
+@media (max-width: 768px) {
+    .preview-media-body {
+        display: block !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+    }
+
+    .preview-pdf-pages {
+        gap: 8px !important;
+        padding: 7px 6px 20px !important;
+    }
+
+    .preview-pdf-page {
+        width: 100% !important;
+        min-height: 150px !important;
+        border-radius: 5px !important;
+    }
+
+    .preview-pdf-page-placeholder {
+        width: 100% !important;
+    }
+}

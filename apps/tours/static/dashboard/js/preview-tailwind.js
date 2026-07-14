@@ -1514,11 +1514,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewFloorNavigator = $("previewFloorNavigator");
     let mediaModalPreviousFocus = null;
     let activePdfRenderToken = 0;
+    let activePdfLoadingTask = null;
+    let activePdfDocument = null;
+    let activePdfObserver = null;
 
     function escapeAttr(value) { return String(value || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-    function stopMediaPlayback() {
+    async function stopMediaPlayback() {
         activePdfRenderToken += 1;
+
+        try { activePdfObserver?.disconnect?.(); } catch (_) {}
+        activePdfObserver = null;
+
+        try { await activePdfLoadingTask?.destroy?.(); } catch (_) {}
+        activePdfLoadingTask = null;
+
+        try { await activePdfDocument?.destroy?.(); } catch (_) {}
+        activePdfDocument = null;
+
         previewMediaBody?.querySelectorAll("video").forEach(v => {
             try { v.pause(); v.removeAttribute("src"); v.load(); } catch (_) {}
         });
@@ -1585,8 +1598,114 @@ document.addEventListener("DOMContentLoaded", () => {
         return "";
     }
 
+    function waitForPdfContainer(element, timeoutMs = 3000) {
+        return new Promise((resolve, reject) => {
+            const startedAt = performance.now();
+
+            const inspect = () => {
+                if (!element || !document.body.contains(element)) {
+                    reject(new Error("Le conteneur PDF a été retiré."));
+                    return;
+                }
+
+                const rect = element.getBoundingClientRect();
+                const style = window.getComputedStyle(element);
+                const visible =
+                    rect.width >= 240 &&
+                    rect.height >= 180 &&
+                    style.display !== "none" &&
+                    style.visibility !== "hidden";
+
+                if (visible) {
+                    resolve(rect);
+                    return;
+                }
+
+                if (performance.now() - startedAt >= timeoutMs) {
+                    reject(new Error("Le lecteur PDF n'a pas reçu une taille visible."));
+                    return;
+                }
+
+                requestAnimationFrame(inspect);
+            };
+
+            requestAnimationFrame(inspect);
+        });
+    }
+
+    function getPdfOutputScale() {
+        const ratio = Number(window.devicePixelRatio || 1);
+        // Un téléphone physique ne doit pas créer des dizaines de canvas 2x/3x.
+        return isMobileViewport()
+            ? Math.min(Math.max(ratio, 1), 1.25)
+            : Math.min(Math.max(ratio, 1), 1.65);
+    }
+
+    async function renderPdfPage({ pdf, pageNumber, shell, pagesRoot, token }) {
+        if (token !== activePdfRenderToken || shell.dataset.rendered === "1") return;
+        shell.dataset.rendering = "1";
+
+        try {
+            const page = await pdf.getPage(pageNumber);
+            if (token !== activePdfRenderToken) return;
+
+            const baseViewport = page.getViewport({ scale: 1 });
+            const rootRect = pagesRoot.getBoundingClientRect();
+            const availableWidth = Math.max(
+                260,
+                Math.min(
+                    rootRect.width - (isMobileViewport() ? 12 : 30),
+                    isMobileViewport() ? window.innerWidth - 16 : 920
+                )
+            );
+            const cssScale = clamp(availableWidth / baseViewport.width, 0.55, 2.2);
+            const viewport = page.getViewport({ scale: cssScale });
+            const outputScale = getPdfOutputScale();
+
+            const canvas = document.createElement("canvas");
+            canvas.className = "preview-pdf-canvas";
+            canvas.width = Math.max(1, Math.floor(viewport.width * outputScale));
+            canvas.height = Math.max(1, Math.floor(viewport.height * outputScale));
+            canvas.style.width = `${Math.floor(viewport.width)}px`;
+            canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+            const context = canvas.getContext("2d", {
+                alpha: false,
+                willReadFrequently: false,
+            });
+            if (!context) throw new Error("Canvas 2D indisponible");
+
+            shell.innerHTML = "";
+            shell.appendChild(canvas);
+
+            await page.render({
+                canvasContext: context,
+                viewport,
+                transform: outputScale !== 1
+                    ? [outputScale, 0, 0, outputScale, 0, 0]
+                    : null,
+                background: "#ffffff",
+            }).promise;
+
+            page.cleanup?.();
+            shell.dataset.rendered = "1";
+            delete shell.dataset.rendering;
+        } catch (error) {
+            delete shell.dataset.rendering;
+            shell.innerHTML = `<div class="preview-pdf-page-error">Page ${pageNumber} indisponible</div>`;
+            console.error("PDF_PAGE_RENDER_FAILED", { pageNumber, error });
+        }
+    }
+
     async function renderPdfInsideDialog(url) {
         const token = ++activePdfRenderToken;
+
+        try { activePdfObserver?.disconnect?.(); } catch (_) {}
+        activePdfObserver = null;
+        try { await activePdfLoadingTask?.destroy?.(); } catch (_) {}
+        activePdfLoadingTask = null;
+        try { await activePdfDocument?.destroy?.(); } catch (_) {}
+        activePdfDocument = null;
 
         const moduleUrl = String(
             config.pdfJsModuleUrl ||
@@ -1600,108 +1719,101 @@ document.addEventListener("DOMContentLoaded", () => {
 
         previewMediaBody.innerHTML = `
             <div class="preview-pdf-reader is-rendering" data-pdf-reader>
-                <div class="preview-pdf-pages" data-pdf-pages></div>
                 <div class="preview-pdf-loading">
                     <span></span>
                     <strong>Chargement du document…</strong>
+                    <small>Préparation de la première page</small>
                 </div>
+                <div class="preview-pdf-pages" data-pdf-pages></div>
             </div>`;
 
         const reader = previewMediaBody.querySelector("[data-pdf-reader]");
         const pagesRoot = previewMediaBody.querySelector("[data-pdf-pages]");
 
         try {
+            await waitForPdfContainer(reader);
+            if (token !== activePdfRenderToken) return;
+
             console.info("[PDF.js] loading module", { moduleUrl, workerUrl, url });
-
             const pdfjsLib = await import(moduleUrl);
-            pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+            if (pdfjsLib?.GlobalWorkerOptions) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+            }
 
-            /*
-             * Important pour Android / Samsung Internet : on télécharge le PDF
-             * nous-mêmes avec les cookies de session, puis PDF.js rend les pages
-             * depuis les octets. Aucun iframe PDF natif n'est utilisé.
-             */
             const response = await fetch(url, {
                 method: "GET",
                 credentials: "same-origin",
                 cache: "force-cache",
                 headers: {
-                    "Accept": "application/pdf",
+                    Accept: "application/pdf",
                     "X-Requested-With": "XMLHttpRequest",
                 },
             });
 
-            if (!response.ok) {
-                throw new Error(`PDF HTTP ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`PDF HTTP ${response.status}`);
 
             const contentType = String(response.headers.get("content-type") || "").toLowerCase();
             if (contentType && !contentType.includes("application/pdf") && !contentType.includes("octet-stream")) {
-                console.warn("[PDF.js] unexpected content type", contentType);
+                throw new Error(`Réponse PDF invalide : ${contentType}`);
             }
 
             const pdfBytes = new Uint8Array(await response.arrayBuffer());
-            if (!pdfBytes.length) throw new Error("PDF vide");
+            if (!pdfBytes.length) throw new Error("Le fichier PDF est vide.");
             if (token !== activePdfRenderToken) return;
 
-            const loadingTask = pdfjsLib.getDocument({
+            activePdfLoadingTask = pdfjsLib.getDocument({
                 data: pdfBytes,
+                isEvalSupported: false,
                 disableAutoFetch: false,
                 disableStream: false,
-                useWorkerFetch: true,
-                isEvalSupported: false,
+                useWorkerFetch: false,
             });
 
-            const pdf = await loadingTask.promise;
-            if (token !== activePdfRenderToken) {
-                try { await loadingTask.destroy(); } catch (_) {}
-                return;
-            }
+            const pdf = await activePdfLoadingTask.promise;
+            activePdfDocument = pdf;
+            if (token !== activePdfRenderToken) return;
 
-            reader?.classList.remove("is-rendering");
-            reader?.classList.add("is-ready");
-
+            // Crée des emplacements légers. On ne crée pas tous les canvas à la fois.
+            const shells = [];
             for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-                if (token !== activePdfRenderToken) return;
-
-                const page = await pdf.getPage(pageNumber);
-                const baseViewport = page.getViewport({ scale: 1 });
-                const rootWidth = Math.max(280, pagesRoot?.clientWidth || previewMediaBody.clientWidth || window.innerWidth);
-                const maxWidth = isMobileViewport()
-                    ? Math.max(280, window.innerWidth - 20)
-                    : 940;
-                const availableWidth = Math.min(rootWidth, maxWidth);
-                const scale = clamp(availableWidth / baseViewport.width, 0.65, 2.4);
-                const viewport = page.getViewport({ scale });
-
-                const pageShell = document.createElement("article");
-                pageShell.className = "preview-pdf-page";
-                pageShell.setAttribute("aria-label", `Page ${pageNumber} sur ${pdf.numPages}`);
-
-                const canvas = document.createElement("canvas");
-                const outputScale = Math.min(window.devicePixelRatio || 1, 2);
-                canvas.width = Math.floor(viewport.width * outputScale);
-                canvas.height = Math.floor(viewport.height * outputScale);
-                canvas.style.width = `${Math.floor(viewport.width)}px`;
-                canvas.style.height = `${Math.floor(viewport.height)}px`;
-
-                pageShell.appendChild(canvas);
-                pagesRoot?.appendChild(pageShell);
-
-                const context = canvas.getContext("2d", { alpha: false });
-                if (!context) throw new Error("Canvas 2D indisponible");
-
-                await page.render({
-                    canvasContext: context,
-                    viewport,
-                    transform: outputScale !== 1
-                        ? [outputScale, 0, 0, outputScale, 0, 0]
-                        : null,
-                    background: "#ffffff",
-                }).promise;
+                const shell = document.createElement("article");
+                shell.className = "preview-pdf-page preview-pdf-page-placeholder";
+                shell.dataset.pageNumber = String(pageNumber);
+                shell.innerHTML = `<div class="preview-pdf-page-placeholder-label">Page ${pageNumber}</div>`;
+                pagesRoot.appendChild(shell);
+                shells.push(shell);
             }
 
-            console.info("[PDF.js] render finished", { pages: pdf.numPages, url });
+            // La première page est rendue avant de retirer le loader.
+            await renderPdfPage({
+                pdf,
+                pageNumber: 1,
+                shell: shells[0],
+                pagesRoot,
+                token,
+            });
+            if (token !== activePdfRenderToken) return;
+
+            reader.classList.remove("is-rendering");
+            reader.classList.add("is-ready");
+
+            // Les autres pages sont rendues seulement quand elles approchent de l'écran.
+            activePdfObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const shell = entry.target;
+                    const pageNumber = Number(shell.dataset.pageNumber || 0);
+                    if (!pageNumber || shell.dataset.rendered === "1" || shell.dataset.rendering === "1") return;
+                    renderPdfPage({ pdf, pageNumber, shell, pagesRoot, token });
+                });
+            }, {
+                root: reader,
+                rootMargin: "700px 0px",
+                threshold: 0.01,
+            });
+
+            shells.slice(1).forEach(shell => activePdfObserver.observe(shell));
+            console.info("[PDF.js] first page ready", { pages: pdf.numPages, url });
         } catch (error) {
             console.error("PDF_RENDER_FAILED", error);
             if (token !== activePdfRenderToken) return;
@@ -1709,7 +1821,7 @@ document.addEventListener("DOMContentLoaded", () => {
             previewMediaBody.innerHTML = `
                 <div class="preview-pdf-fallback">
                     <strong>Impossible de lire ce PDF dans la visite.</strong>
-                    <p>Le lecteur intégré n'a pas pu récupérer ou analyser le document.</p>
+                    <p>${escapeAttr(error?.message || "Le lecteur PDF n'a pas pu démarrer.")}</p>
                     <button type="button" class="preview-media-action preview-media-action-primary" data-pdf-retry>
                         Réessayer
                     </button>
@@ -1740,7 +1852,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!url) {
                 previewMediaBody.innerHTML = `<div class="preview-media-empty">PDF unavailable</div>`;
             } else {
-                await renderPdfInsideDialog(url);
                 previewMediaFooter.innerHTML = `
                     <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Recharger</button>
                     <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">Plein écran</a>
@@ -1748,6 +1859,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
                     renderPdfInsideDialog(url);
+                });
+
+                // Laisse deux frames au dialog mobile pour recevoir sa vraie taille.
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => renderPdfInsideDialog(url));
                 });
             }
         } else {
