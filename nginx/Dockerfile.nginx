@@ -1,19 +1,28 @@
 FROM nginx:latest
 
-# Create SSL folder
+# Crée les dossiers nécessaires
 RUN mkdir -p /etc/nginx/ssl
 
-# Install only openssl if you still want dhparam generation here
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# Installe openssl
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Generate Diffie-Hellman file
+# Génère le fichier Diffie-Hellman
 RUN openssl dhparam -out /etc/nginx/dhparam.pem 2048
 
-# Copy nginx config
+# Supprime la configuration Nginx par défaut
+RUN rm -f /etc/nginx/conf.d/default.conf
+
+# Copie la configuration principale
 COPY ./default.conf /etc/nginx/conf.d/default.conf
 
-# Copy startup script
+# Copie le fichier MIME personnalisé avec prise en charge de .mjs
+COPY ./mime.types /etc/nginx/mime.types
+
+# Copie le script de démarrage
 COPY ./start-nginx.sh /start-nginx.sh
+
 RUN chmod +x /start-nginx.sh
 
 EXPOSE 80
