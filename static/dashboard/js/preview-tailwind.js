@@ -1514,11 +1514,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewFloorNavigator = $("previewFloorNavigator");
     let mediaModalPreviousFocus = null;
     let activePdfRenderToken = 0;
+    let activePdfLoadingTask = null;
+    let activePdfDocument = null;
+    let activePdfObserver = null;
 
     function escapeAttr(value) { return String(value || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-    function stopMediaPlayback() {
+    async function stopMediaPlayback() {
         activePdfRenderToken += 1;
+
+        try { activePdfObserver?.disconnect?.(); } catch (_) {}
+        activePdfObserver = null;
+
+        try { await activePdfLoadingTask?.destroy?.(); } catch (_) {}
+        activePdfLoadingTask = null;
+
+        try { await activePdfDocument?.destroy?.(); } catch (_) {}
+        activePdfDocument = null;
+
         previewMediaBody?.querySelectorAll("video").forEach(v => {
             try { v.pause(); v.removeAttribute("src"); v.load(); } catch (_) {}
         });
@@ -1536,8 +1549,6 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaModal?.classList.remove("open");
         previewMediaModal?.setAttribute("inert", "");
         previewMediaModal?.setAttribute("aria-hidden", "true");
-        const mediaCard = previewMediaModal?.querySelector(".preview-media-card");
-        if (mediaCard) delete mediaCard.dataset.mediaType;
         if (mediaModalPreviousFocus && typeof mediaModalPreviousFocus.focus === "function") {
             requestAnimationFrame(() => mediaModalPreviousFocus.focus({ preventScroll: true }));
         }
@@ -1587,28 +1598,266 @@ document.addEventListener("DOMContentLoaded", () => {
         return "";
     }
 
-    function buildNativePdfUrl(url) {
-        const raw = String(url || "").trim();
-        if (!raw) return "";
-        const separator = raw.includes("#") ? "&" : "#";
-        return `${raw}${separator}toolbar=1&navpanes=0&scrollbar=1&view=FitH`;
+    function isSamsungInternet() {
+        const ua = String(navigator.userAgent || "").toLowerCase();
+        return ua.includes("samsungbrowser");
     }
 
-    function renderPdfInsideDialog(url, title = "Document PDF") {
-        activePdfRenderToken += 1;
-        const iframeUrl = buildNativePdfUrl(url);
+    function shouldDisablePdfWorker() {
+        // Samsung Internet and some Android WebViews are more stable
+        // when PDF.js parses the document on the main thread.
+        return isSamsungInternet() || isMobileViewport();
+    }
+
+    function waitForPdfContainer(element, timeoutMs = 3000) {
+        return new Promise((resolve, reject) => {
+            const startedAt = performance.now();
+
+            const inspect = () => {
+                if (!element || !document.body.contains(element)) {
+                    reject(new Error("The PDF container was removed."));
+                    return;
+                }
+
+                const rect = element.getBoundingClientRect();
+                const style = window.getComputedStyle(element);
+                const visible =
+                    rect.width >= 240 &&
+                    rect.height >= 180 &&
+                    style.display !== "none" &&
+                    style.visibility !== "hidden";
+
+                if (visible) {
+                    resolve(rect);
+                    return;
+                }
+
+                if (performance.now() - startedAt >= timeoutMs) {
+                    reject(new Error("The PDF reader did not receive a visible size."));
+                    return;
+                }
+
+                requestAnimationFrame(inspect);
+            };
+
+            requestAnimationFrame(inspect);
+        });
+    }
+
+    function getPdfOutputScale() {
+        const ratio = Number(window.devicePixelRatio || 1);
+        // Un téléphone physique ne doit pas créer des dizaines de canvas 2x/3x.
+        return isMobileViewport()
+            ? 1
+            : Math.min(Math.max(ratio, 1), 1.5);
+    }
+
+    async function renderPdfPage({ pdf, pageNumber, shell, pagesRoot, token }) {
+        if (token !== activePdfRenderToken || shell.dataset.rendered === "1") return;
+        shell.dataset.rendering = "1";
+
+        try {
+            const page = await pdf.getPage(pageNumber);
+            if (token !== activePdfRenderToken) return;
+
+            const baseViewport = page.getViewport({ scale: 1 });
+            const rootRect = pagesRoot.getBoundingClientRect();
+            const availableWidth = Math.max(
+                260,
+                Math.min(
+                    rootRect.width - (isMobileViewport() ? 12 : 30),
+                    isMobileViewport() ? Math.min(window.innerWidth - 20, 720) : 920
+                )
+            );
+            const cssScale = clamp(availableWidth / baseViewport.width, 0.55, 2.2);
+            const viewport = page.getViewport({ scale: cssScale });
+            const outputScale = getPdfOutputScale();
+
+            const canvas = document.createElement("canvas");
+            canvas.className = "preview-pdf-canvas";
+            canvas.width = Math.max(1, Math.floor(viewport.width * outputScale));
+            canvas.height = Math.max(1, Math.floor(viewport.height * outputScale));
+            canvas.style.width = `${Math.floor(viewport.width)}px`;
+            canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+            const context = canvas.getContext("2d", {
+                alpha: false,
+                willReadFrequently: false,
+            });
+            if (!context) throw new Error("Canvas 2D is unavailable");
+
+            shell.innerHTML = "";
+            shell.appendChild(canvas);
+
+            await page.render({
+                canvasContext: context,
+                viewport,
+                transform: outputScale !== 1
+                    ? [outputScale, 0, 0, outputScale, 0, 0]
+                    : null,
+                background: "#ffffff",
+            }).promise;
+
+            page.cleanup?.();
+            shell.dataset.rendered = "1";
+            delete shell.dataset.rendering;
+        } catch (error) {
+            delete shell.dataset.rendering;
+            shell.innerHTML = `<div class="preview-pdf-page-error">Page ${pageNumber} unavailable</div>`;
+            console.error("PDF_PAGE_RENDER_FAILED", { pageNumber, error });
+        }
+    }
+
+    async function renderPdfInsideDialog(url) {
+        const token = ++activePdfRenderToken;
+
+        try { activePdfObserver?.disconnect?.(); } catch (_) {}
+        activePdfObserver = null;
+        try { await activePdfLoadingTask?.destroy?.(); } catch (_) {}
+        activePdfLoadingTask = null;
+        try { await activePdfDocument?.destroy?.(); } catch (_) {}
+        activePdfDocument = null;
+
+        const moduleUrl = String(
+            config.pdfJsModuleUrl ||
+            "/static/public/vendor/pdfjs/build/pdf.mjs"
+        ).trim();
+
+        const workerUrl = String(
+            config.pdfJsWorkerUrl ||
+            "/static/public/vendor/pdfjs/build/pdf.worker.mjs"
+        ).trim();
 
         previewMediaBody.innerHTML = `
-            <div class="preview-pdf-reader is-ready" data-pdf-reader>
-                <iframe
-                    class="preview-pdf-frame"
-                    src="${escapeAttr(iframeUrl)}"
-                    title="${escapeAttr(title)}"
-                    loading="eager"
-                    referrerpolicy="same-origin"
-                    allow="fullscreen">
-                </iframe>
+            <div class="preview-pdf-reader is-rendering" data-pdf-reader>
+                <div class="preview-pdf-loading">
+                    <span></span>
+                    <strong>Loading document…</strong>
+                    <small>Preparing the first page</small>
+                </div>
+                <div class="preview-pdf-pages" data-pdf-pages></div>
             </div>`;
+
+        const reader = previewMediaBody.querySelector("[data-pdf-reader]");
+        const pagesRoot = previewMediaBody.querySelector("[data-pdf-pages]");
+
+        try {
+            await waitForPdfContainer(reader);
+            if (token !== activePdfRenderToken) return;
+
+            console.info("[PDF.js] loading module", { moduleUrl, workerUrl, url });
+            const pdfjsLib = await import(moduleUrl);
+            if (pdfjsLib?.GlobalWorkerOptions) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+            }
+
+            const response = await fetch(url, {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "force-cache",
+                headers: {
+                    Accept: "application/pdf",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            });
+
+            if (!response.ok) throw new Error(`PDF HTTP ${response.status}`);
+
+            const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+            if (contentType && !contentType.includes("application/pdf") && !contentType.includes("octet-stream")) {
+                throw new Error(`Invalid PDF response: ${contentType}`);
+            }
+
+            const pdfBytes = new Uint8Array(await response.arrayBuffer());
+            if (!pdfBytes.length) throw new Error("The PDF file is empty.");
+
+            const signature = String.fromCharCode(...pdfBytes.slice(0, 5));
+            if (signature !== "%PDF-") {
+                throw new Error("The server response is not a valid PDF file.");
+            }
+            if (token !== activePdfRenderToken) return;
+
+            const disableWorker = shouldDisablePdfWorker();
+
+            activePdfLoadingTask = pdfjsLib.getDocument({
+                data: pdfBytes,
+                isEvalSupported: false,
+                disableWorker,
+                disableAutoFetch: isMobileViewport(),
+                disableStream: true,
+                useWorkerFetch: false,
+                verbosity: 0,
+            });
+
+            console.info("[PDF.js] document task created", {
+                disableWorker,
+                samsungInternet: isSamsungInternet(),
+                mobile: isMobileViewport(),
+                bytes: pdfBytes.length,
+            });
+
+            const pdf = await activePdfLoadingTask.promise;
+            activePdfDocument = pdf;
+            if (token !== activePdfRenderToken) return;
+
+            // Crée des emplacements légers. On ne crée pas tous les canvas à la fois.
+            const shells = [];
+            for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+                const shell = document.createElement("article");
+                shell.className = "preview-pdf-page preview-pdf-page-placeholder";
+                shell.dataset.pageNumber = String(pageNumber);
+                shell.innerHTML = `<div class="preview-pdf-page-placeholder-label">Page ${pageNumber}</div>`;
+                pagesRoot.appendChild(shell);
+                shells.push(shell);
+            }
+
+            // La première page est rendue avant de retirer le loader.
+            await renderPdfPage({
+                pdf,
+                pageNumber: 1,
+                shell: shells[0],
+                pagesRoot,
+                token,
+            });
+            if (token !== activePdfRenderToken) return;
+
+            reader.classList.remove("is-rendering");
+            reader.classList.add("is-ready");
+
+            // Les autres pages sont rendues seulement quand elles approchent de l'écran.
+            activePdfObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const shell = entry.target;
+                    const pageNumber = Number(shell.dataset.pageNumber || 0);
+                    if (!pageNumber || shell.dataset.rendered === "1" || shell.dataset.rendering === "1") return;
+                    renderPdfPage({ pdf, pageNumber, shell, pagesRoot, token });
+                });
+            }, {
+                root: reader,
+                rootMargin: "700px 0px",
+                threshold: 0.01,
+            });
+
+            shells.slice(1).forEach(shell => activePdfObserver.observe(shell));
+            console.info("[PDF.js] first page ready", { pages: pdf.numPages, url });
+        } catch (error) {
+            console.error("PDF_RENDER_FAILED", error);
+            if (token !== activePdfRenderToken) return;
+
+            previewMediaBody.innerHTML = `
+                <div class="preview-pdf-fallback">
+                    <strong>Unable to display this PDF inside the tour.</strong>
+                    <p>${escapeAttr(error?.message || "The PDF reader could not start.")}</p>
+                    <button type="button" class="preview-media-action preview-media-action-primary" data-pdf-retry>
+                        Try again
+                    </button>
+                </div>`;
+
+            previewMediaBody.querySelector("[data-pdf-retry]")?.addEventListener("click", () => {
+                renderPdfInsideDialog(url);
+            });
+        }
     }
 
     async function openMediaHotspot(hotspot) {
@@ -1619,9 +1868,6 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaModal.setAttribute("aria-hidden", "false");
         previewMediaModal.classList.add("open");
 
-        const mediaCard = previewMediaModal.querySelector(".preview-media-card");
-        if (mediaCard) mediaCard.dataset.mediaType = hotspot.type || "media";
-
         const c = hotspot.payload?.content || {};
         previewMediaTitle.textContent = hotspot.title || hotspot.label || (hotspot.type === "pdf" ? "Document" : "Video");
         previewMediaKicker.textContent = hotspot.type === "pdf" ? "PDF DOCUMENT" : "VIDEO";
@@ -1629,18 +1875,22 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaFooter.innerHTML = "";
 
         if (hotspot.type === "pdf") {
-            const url = hotspot.pdf_inline_url || c.pdf_inline_url || c.document_url || hotspot.media_file_url || "";
+            const url = c.document_url || hotspot.media_file_url || "";
             if (!url) {
                 previewMediaBody.innerHTML = `<div class="preview-media-empty">PDF unavailable</div>`;
             } else {
-                renderPdfInsideDialog(url, previewMediaTitle.textContent || "Document PDF");
                 previewMediaFooter.innerHTML = `
-                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Recharger</button>
-                    <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">Plein écran</a>
-                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${escapeAttr(url)}" download>Télécharger</a>`}`;
+                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Reload</button>
+                    <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">Full screen</a>
+                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${escapeAttr(url)}" download>Download</a>`}`;
 
                 previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
-                    renderPdfInsideDialog(url, previewMediaTitle.textContent || "Document PDF");
+                    renderPdfInsideDialog(url);
+                });
+
+                // Laisse deux frames au dialog mobile pour recevoir sa vraie taille.
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => renderPdfInsideDialog(url));
                 });
             }
         } else {
@@ -1683,7 +1933,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const b=document.createElement("button"); b.type="button"; b.innerHTML=`<span>${escapeAttr(floor.number)}</span><div><strong>${escapeAttr(floor.name)}</strong><small>${escapeAttr(floor.description)}</small></div>`;
             b.addEventListener("click", (e)=>{e.stopPropagation(); panel.classList.remove("open"); const t=findScene(floor.target); if(t){showFloorTransitionLabel(floor.hotspot); goToSceneWithWalk(t);}}); panel.appendChild(b);
         });
-        wrap.querySelector("#floorDockToggle").addEventListener("click", (e)=>{e.stopPropagation(); panel.classList.toggle("open");});
+        const floorToggle = wrap.querySelector("#floorDockToggle");
+        floorToggle.setAttribute("aria-expanded", "false");
+        floorToggle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const opened = panel.classList.toggle("open");
+            floorToggle.setAttribute("aria-expanded", opened ? "true" : "false");
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!wrap.contains(event.target)) {
+                panel.classList.remove("open");
+                floorToggle.setAttribute("aria-expanded", "false");
+            }
+        });
         document.addEventListener("click", ()=>panel.classList.remove("open"));
     }
 
@@ -1712,7 +1975,38 @@ document.addEventListener("DOMContentLoaded", () => {
         return result.sort((a, b) => Number(b.number || 0) - Number(a.number || 0));
     }
 
+    function getSurfacePerspectiveScale(view, referenceFovDeg = 100) {
+        if (!view || typeof view.fov !== "function") return 1;
+        const currentFov = clamp(Number(view.fov() || degToRad(referenceFovDeg)), MIN_FOV, MAX_FOV);
+        const referenceFov = clamp(degToRad(referenceFovDeg), MIN_FOV, MAX_FOV);
+        const denominator = Math.tan(currentFov / 2);
+        if (!Number.isFinite(denominator) || denominator <= 0) return 1;
+        const scale = Math.tan(referenceFov / 2) / denominator;
+        return clamp(scale, 0.28, 2.5);
+    }
+
+    function updateSurfaceHotspots(layerKey) {
+        const view = views[layerKey];
+        const mount = getMountEl(layerKey);
+        if (!view || !mount) return;
+        mount.querySelectorAll(".preview-surface-hotspot").forEach((node) => {
+            const referenceFov = Number(node.dataset.referenceFov || 100);
+            const scale = getSurfacePerspectiveScale(view, referenceFov);
+            node.style.setProperty("--surface-perspective-scale", scale.toFixed(4));
+        });
+    }
+
+    function bindSurfaceScaling(layerKey) {
+        const view = views[layerKey];
+        if (!view || view.__surfaceScalingBound) return;
+        view.__surfaceScalingBound = true;
+        const refresh = () => updateSurfaceHotspots(layerKey);
+        try { view.addEventListener?.("change", refresh); } catch (_) {}
+        requestAnimationFrame(refresh);
+    }
+
     function buildFloorCardNode(hotspot, sceneData) {
+        const display = hotspot.payload?.display || {};
         const floorHotspots = (sceneData?.hotspots || []).filter((h) => h.type === "floor");
         if (floorHotspots[0] && String(floorHotspots[0].id) !== String(hotspot.id)) {
             const hidden = document.createElement("div");
@@ -1721,15 +2015,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const floors = collectFloorDestinations();
         const node = document.createElement("div");
-        node.className = "preview-hotspot preview-floor-card-hotspot";
+        const width = Math.max(220, Math.min(520, Number(display.width || 310)));
+        const referenceFov = Number(display.reference_fov || sceneData?.hfov_default || 100);
+        node.className = "preview-hotspot preview-surface-hotspot preview-floor-card-hotspot";
+        node.style.width = `${width}px`;
+        node.dataset.referenceFov = String(referenceFov);
         node.innerHTML = `
+            <div class="preview-surface-scale-wrap">
             <div class="preview-floor-card">
-                <button type="button" class="preview-floor-card-head" aria-expanded="true" aria-label="Réduire ou afficher les étages">
+                <button type="button" class="preview-floor-card-head" aria-expanded="true" aria-label="Collapse or expand floors">
                     <span>⌂</span>
                     <div><small>PROPERTY LEVELS</small><strong>${escapeAttr(hotspot.title || hotspot.label || "Choose a floor")}</strong></div>
                     <b class="preview-floor-card-chevron">⌃</b>
                 </button>
                 <div class="preview-floor-card-list"></div>
+            </div>
             </div>`;
         const card = node.querySelector(".preview-floor-card");
         const head = node.querySelector(".preview-floor-card-head");
@@ -1762,12 +2062,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const url = c.video_url || hotspot.media_file_url || "";
         const width = Math.max(120, Math.min(900, Number(display.width || 360)));
         const height = Math.max(80, Math.min(600, Number(display.height || 210)));
-        node.className = "preview-hotspot preview-wall-video-hotspot";
+        const referenceFov = Number(display.reference_fov || 100);
+        node.className = "preview-hotspot preview-surface-hotspot preview-wall-video-hotspot";
         node.style.width = `${width}px`;
         node.style.height = `${height}px`;
+        node.dataset.referenceFov = String(referenceFov);
         const embed = toEmbedUrl(url, !!c.autoplay, c.muted !== false);
-        if (embed) node.innerHTML = `<div class="preview-wall-video-frame"><iframe src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe><button type="button" aria-label="Open video">⤢</button></div>`;
-        else node.innerHTML = `<div class="preview-wall-video-frame"><video playsinline ${c.autoplay ? "autoplay" : ""} ${c.muted !== false ? "muted" : ""} ${c.loop ? "loop" : ""} preload="metadata" poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video><button type="button" aria-label="Open video">⤢</button></div>`;
+        if (embed) node.innerHTML = `<div class="preview-surface-scale-wrap"><div class="preview-wall-video-frame"><iframe src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe><button type="button" aria-label="Open video">⤢</button></div></div>`;
+        else node.innerHTML = `<div class="preview-surface-scale-wrap"><div class="preview-wall-video-frame"><video playsinline ${c.autoplay ? "autoplay" : ""} ${c.muted !== false ? "muted" : ""} ${c.loop ? "loop" : ""} preload="metadata" poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video><button type="button" aria-label="Open video">⤢</button></div></div>`;
         node.querySelector("button")?.addEventListener("click", (event) => { event.stopPropagation(); openMediaHotspot(hotspot); });
         stopTouchAndScrollEventPropagation(node);
         return node;
@@ -1778,10 +2080,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const node = document.createElement("div");
         const width = Math.max(80, Math.min(500, Number(display.width || 180)));
         const height = Math.max(140, Math.min(800, Number(display.height || 320)));
-        node.className = `preview-hotspot preview-door-hotspot door-open-${c.opening_direction || "left"}`;
+        const referenceFov = Number(display.reference_fov || 100);
+        node.className = `preview-hotspot preview-surface-hotspot preview-door-hotspot door-open-${c.opening_direction || "left"}`;
         node.style.width = `${width}px`;
         node.style.height = `${height}px`;
-        node.innerHTML = `<div class="preview-door-outline"><div class="preview-door-panel"><span class="preview-door-handle"></span></div><div class="preview-door-label">${escapeAttr(hotspot.title || hotspot.label || "Open")}</div></div>`;
+        node.dataset.referenceFov = String(referenceFov);
+        node.innerHTML = `<div class="preview-surface-scale-wrap"><div class="preview-door-outline"><div class="preview-door-panel"><span class="preview-door-handle"></span></div><div class="preview-door-label">${escapeAttr(hotspot.title || hotspot.label || "Open")}</div></div></div>`;
         stopTouchAndScrollEventPropagation(node);
         node.addEventListener("click", (event) => {
             event.stopPropagation();
@@ -1991,11 +2295,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         (sceneData.hotspots || []).forEach((hotspot) => {
             const node = buildHotspotNode(hotspot, sceneData);
+            if (!node) return;
             marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
                 yaw: Number(hotspot.yaw || 0),
                 pitch: Number(hotspot.pitch || 0)
             });
         });
+
+        bindSurfaceScaling(layerKey);
+        updateSurfaceHotspots(layerKey);
 
         requestAnimationFrame(() => {
             updateAllViewerSizes();

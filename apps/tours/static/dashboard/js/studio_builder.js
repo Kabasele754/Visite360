@@ -879,6 +879,14 @@ document.addEventListener("DOMContentLoaded", () => {
         return rad * 180 / Math.PI;
     }
 
+    function getSurfaceReferenceFovDeg() {
+        const view = layerViews[activeLayerKey];
+        if (view && typeof view.fov === "function") {
+            return Number(radiansToDegrees(view.fov()).toFixed(3));
+        }
+        return Number(activeScene?.hfov_default || 100);
+    }
+
     function degreesToRadians(deg) {
         return deg * Math.PI / 180;
     }
@@ -2276,14 +2284,14 @@ document.addEventListener("DOMContentLoaded", () => {
             description = hotspotVideoDescription?.value || "";
             const url = hotspotVideoUrl?.value || "";
             content = { video_url: url, video_source: /youtu/.test(url) ? "youtube" : /vimeo/.test(url) ? "vimeo" : "upload", autoplay: !!hotspotVideoAutoplay?.checked, muted: !!hotspotVideoMuted?.checked, loop: !!hotspotVideoLoop?.checked };
-            display = { ...(display || {}), variant: hotspotVideoDisplayMode?.value === "screen" ? "screen" : "pin", width: Number(hotspotVideoWidth?.value || 360), height: Number(hotspotVideoHeight?.value || 210) };
+            display = { ...(display || {}), variant: hotspotVideoDisplayMode?.value === "screen" ? "screen" : "pin", width: Number(hotspotVideoWidth?.value || 360), height: Number(hotspotVideoHeight?.value || 210), reference_fov: getSurfaceReferenceFovDeg() };
         }
 
         if (type === "door") {
             title = hotspotDoorLabel?.value || hotspotLabel?.value || "Open the door";
             description = "Interactive door navigation";
             content = { opening_direction: hotspotDoorDirection?.value || "left" };
-            display = { ...(display || {}), variant: "door", width: Number(hotspotDoorWidth?.value || 180), height: Number(hotspotDoorHeight?.value || 320) };
+            display = { ...(display || {}), variant: "door", width: Number(hotspotDoorWidth?.value || 180), height: Number(hotspotDoorHeight?.value || 320), reference_fov: getSurfaceReferenceFovDeg() };
         }
 
         if (type === "custom") {
@@ -2681,14 +2689,14 @@ document.addEventListener("DOMContentLoaded", () => {
             description = hotspotVideoDescription?.value || "";
             const url = hotspotVideoUrl?.value || "";
             content = { video_url: url, video_source: /youtu/.test(url) ? "youtube" : /vimeo/.test(url) ? "vimeo" : "upload", autoplay: !!hotspotVideoAutoplay?.checked, muted: !!hotspotVideoMuted?.checked, loop: !!hotspotVideoLoop?.checked };
-            display = { ...(display || {}), variant: hotspotVideoDisplayMode?.value === "screen" ? "screen" : "pin", width: Number(hotspotVideoWidth?.value || 360), height: Number(hotspotVideoHeight?.value || 210) };
+            display = { ...(display || {}), variant: hotspotVideoDisplayMode?.value === "screen" ? "screen" : "pin", width: Number(hotspotVideoWidth?.value || 360), height: Number(hotspotVideoHeight?.value || 210), reference_fov: getSurfaceReferenceFovDeg() };
         }
 
         if (type === "door") {
             title = hotspotDoorLabel?.value || hotspotLabel?.value || "Open the door";
             description = "Interactive door navigation";
             content = { opening_direction: hotspotDoorDirection?.value || "left" };
-            display = { ...(display || {}), variant: "door", width: Number(hotspotDoorWidth?.value || 180), height: Number(hotspotDoorHeight?.value || 320) };
+            display = { ...(display || {}), variant: "door", width: Number(hotspotDoorWidth?.value || 180), height: Number(hotspotDoorHeight?.value || 320), reference_fov: getSurfaceReferenceFovDeg() };
         }
 
         if (type === "custom") {
@@ -2711,8 +2719,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 display: {
                     variant: type === "video" && hotspotVideoDisplayMode?.value === "screen" ? "screen" : type === "door" ? "door" : (hotspotVariant?.value || "pin"),
                     size: Number(hotspotSize?.value || 56),
-                    width: type === "video" ? Number(hotspotVideoWidth?.value || 360) : type === "door" ? Number(hotspotDoorWidth?.value || 180) : undefined,
+                    width: type === "video" ? Number(hotspotVideoWidth?.value || 360) : type === "door" ? Number(hotspotDoorWidth?.value || 180) : type === "floor" ? 310 : undefined,
                     height: type === "video" ? Number(hotspotVideoHeight?.value || 210) : type === "door" ? Number(hotspotDoorHeight?.value || 320) : undefined,
+                    reference_fov: ["video", "door", "floor"].includes(type) ? getSurfaceReferenceFovDeg() : undefined,
                     rotation: Number(hotspotRotation?.value || 0),
                     offset_x: Number(hotspotOffsetX?.value || 0),
                     offset_y: Number(hotspotOffsetY?.value || 0),

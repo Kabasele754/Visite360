@@ -3927,3 +3927,80 @@ body.preview-has-loaded .preview-intro-overlay.is-hidden + * {
         box-shadow: 0 4px 14px rgba(15, 23, 42, .16) !important;
     }
 }
+
+
+/* =====================================================================
+   FINAL ANGULAR SURFACE FIX — FLOOR / DOOR / WALL VIDEO
+   Keeps traced surfaces proportional to the panorama while zooming.
+===================================================================== */
+.preview-surface-hotspot {
+    overflow: visible !important;
+    transform-origin: center center !important;
+}
+
+.preview-surface-hotspot > .preview-surface-scale-wrap {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    transform: scale(var(--surface-perspective-scale, 1)) !important;
+    transform-origin: center center !important;
+    will-change: transform !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+}
+
+.preview-floor-card-hotspot {
+    height: auto !important;
+    min-height: 1px !important;
+    pointer-events: auto !important;
+}
+
+.preview-floor-card-hotspot > .preview-surface-scale-wrap {
+    position: relative !important;
+    inset: auto !important;
+    height: auto !important;
+    transform-origin: center bottom !important;
+}
+
+.preview-wall-video-hotspot > .preview-surface-scale-wrap,
+.preview-door-hotspot > .preview-surface-scale-wrap {
+    pointer-events: auto !important;
+}
+
+.preview-wall-video-frame,
+.preview-door-outline {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+@media (max-width: 768px), (pointer: coarse) {
+    /* Keep the floor card in the panorama at its saved yaw/pitch. */
+    .preview-floor-card-hotspot {
+        display: block !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        width: min(270px, 76vw) !important;
+        max-width: 76vw !important;
+        transform: none !important;
+    }
+
+    .preview-floor-card {
+        border-radius: 18px !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    .preview-floor-card-head {
+        padding: 10px 11px !important;
+    }
+
+    .preview-floor-card-list {
+        max-height: 190px !important;
+    }
+
+    /* The dock remains as an optional second access, not the primary position. */
+    .floor-dock-panel {
+        max-height: min(38dvh, 300px) !important;
+    }
+}

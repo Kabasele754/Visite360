@@ -1975,11 +1975,38 @@ document.addEventListener("DOMContentLoaded", () => {
         return result.sort((a, b) => Number(b.number || 0) - Number(a.number || 0));
     }
 
-    function buildFloorCardNode(hotspot, sceneData) {
-        // On physical mobile, keep floor navigation in the fixed dock panel.
-        // A panorama-attached card moves with Marzipano and can drift upward.
-        if (isMobileViewport()) return null;
+    function getSurfacePerspectiveScale(view, referenceFovDeg = 100) {
+        if (!view || typeof view.fov !== "function") return 1;
+        const currentFov = clamp(Number(view.fov() || degToRad(referenceFovDeg)), MIN_FOV, MAX_FOV);
+        const referenceFov = clamp(degToRad(referenceFovDeg), MIN_FOV, MAX_FOV);
+        const denominator = Math.tan(currentFov / 2);
+        if (!Number.isFinite(denominator) || denominator <= 0) return 1;
+        const scale = Math.tan(referenceFov / 2) / denominator;
+        return clamp(scale, 0.28, 2.5);
+    }
 
+    function updateSurfaceHotspots(layerKey) {
+        const view = views[layerKey];
+        const mount = getMountEl(layerKey);
+        if (!view || !mount) return;
+        mount.querySelectorAll(".preview-surface-hotspot").forEach((node) => {
+            const referenceFov = Number(node.dataset.referenceFov || 100);
+            const scale = getSurfacePerspectiveScale(view, referenceFov);
+            node.style.setProperty("--surface-perspective-scale", scale.toFixed(4));
+        });
+    }
+
+    function bindSurfaceScaling(layerKey) {
+        const view = views[layerKey];
+        if (!view || view.__surfaceScalingBound) return;
+        view.__surfaceScalingBound = true;
+        const refresh = () => updateSurfaceHotspots(layerKey);
+        try { view.addEventListener?.("change", refresh); } catch (_) {}
+        requestAnimationFrame(refresh);
+    }
+
+    function buildFloorCardNode(hotspot, sceneData) {
+        const display = hotspot.payload?.display || {};
         const floorHotspots = (sceneData?.hotspots || []).filter((h) => h.type === "floor");
         if (floorHotspots[0] && String(floorHotspots[0].id) !== String(hotspot.id)) {
             const hidden = document.createElement("div");
@@ -1988,8 +2015,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const floors = collectFloorDestinations();
         const node = document.createElement("div");
-        node.className = "preview-hotspot preview-floor-card-hotspot";
+        const width = Math.max(220, Math.min(520, Number(display.width || 310)));
+        const referenceFov = Number(display.reference_fov || sceneData?.hfov_default || 100);
+        node.className = "preview-hotspot preview-surface-hotspot preview-floor-card-hotspot";
+        node.style.width = `${width}px`;
+        node.dataset.referenceFov = String(referenceFov);
         node.innerHTML = `
+            <div class="preview-surface-scale-wrap">
             <div class="preview-floor-card">
                 <button type="button" class="preview-floor-card-head" aria-expanded="true" aria-label="Collapse or expand floors">
                     <span>⌂</span>
@@ -1997,6 +2029,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <b class="preview-floor-card-chevron">⌃</b>
                 </button>
                 <div class="preview-floor-card-list"></div>
+            </div>
             </div>`;
         const card = node.querySelector(".preview-floor-card");
         const head = node.querySelector(".preview-floor-card-head");
@@ -2029,12 +2062,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const url = c.video_url || hotspot.media_file_url || "";
         const width = Math.max(120, Math.min(900, Number(display.width || 360)));
         const height = Math.max(80, Math.min(600, Number(display.height || 210)));
-        node.className = "preview-hotspot preview-wall-video-hotspot";
+        const referenceFov = Number(display.reference_fov || 100);
+        node.className = "preview-hotspot preview-surface-hotspot preview-wall-video-hotspot";
         node.style.width = `${width}px`;
         node.style.height = `${height}px`;
+        node.dataset.referenceFov = String(referenceFov);
         const embed = toEmbedUrl(url, !!c.autoplay, c.muted !== false);
-        if (embed) node.innerHTML = `<div class="preview-wall-video-frame"><iframe src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe><button type="button" aria-label="Open video">⤢</button></div>`;
-        else node.innerHTML = `<div class="preview-wall-video-frame"><video playsinline ${c.autoplay ? "autoplay" : ""} ${c.muted !== false ? "muted" : ""} ${c.loop ? "loop" : ""} preload="metadata" poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video><button type="button" aria-label="Open video">⤢</button></div>`;
+        if (embed) node.innerHTML = `<div class="preview-surface-scale-wrap"><div class="preview-wall-video-frame"><iframe src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe><button type="button" aria-label="Open video">⤢</button></div></div>`;
+        else node.innerHTML = `<div class="preview-surface-scale-wrap"><div class="preview-wall-video-frame"><video playsinline ${c.autoplay ? "autoplay" : ""} ${c.muted !== false ? "muted" : ""} ${c.loop ? "loop" : ""} preload="metadata" poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video><button type="button" aria-label="Open video">⤢</button></div></div>`;
         node.querySelector("button")?.addEventListener("click", (event) => { event.stopPropagation(); openMediaHotspot(hotspot); });
         stopTouchAndScrollEventPropagation(node);
         return node;
@@ -2045,10 +2080,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const node = document.createElement("div");
         const width = Math.max(80, Math.min(500, Number(display.width || 180)));
         const height = Math.max(140, Math.min(800, Number(display.height || 320)));
-        node.className = `preview-hotspot preview-door-hotspot door-open-${c.opening_direction || "left"}`;
+        const referenceFov = Number(display.reference_fov || 100);
+        node.className = `preview-hotspot preview-surface-hotspot preview-door-hotspot door-open-${c.opening_direction || "left"}`;
         node.style.width = `${width}px`;
         node.style.height = `${height}px`;
-        node.innerHTML = `<div class="preview-door-outline"><div class="preview-door-panel"><span class="preview-door-handle"></span></div><div class="preview-door-label">${escapeAttr(hotspot.title || hotspot.label || "Open")}</div></div>`;
+        node.dataset.referenceFov = String(referenceFov);
+        node.innerHTML = `<div class="preview-surface-scale-wrap"><div class="preview-door-outline"><div class="preview-door-panel"><span class="preview-door-handle"></span></div><div class="preview-door-label">${escapeAttr(hotspot.title || hotspot.label || "Open")}</div></div></div>`;
         stopTouchAndScrollEventPropagation(node);
         node.addEventListener("click", (event) => {
             event.stopPropagation();
@@ -2264,6 +2301,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 pitch: Number(hotspot.pitch || 0)
             });
         });
+
+        bindSurfaceScaling(layerKey);
+        updateSurfaceHotspots(layerKey);
 
         requestAnimationFrame(() => {
             updateAllViewerSizes();
