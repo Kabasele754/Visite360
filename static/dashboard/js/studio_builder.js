@@ -839,6 +839,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let isSceneTransitioning = false;
     let activeLayerKey = "A";
     let editingHotspotId = null;
+    let floorGroupItems = [];
+    let floorGroupEditorReady = false;
     let selectedHotspotId = null;
     let selectedHotspotDraft = null;
     let draggedSceneId = null;
@@ -2271,8 +2273,24 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (type === "floor") {
-            title = hotspotFloorName?.value || hotspotLabel?.value || "Floor";
-            content = { floor_name: title, floor_number: Number(hotspotFloorNumber?.value || 0), direction: hotspotFloorDirection?.value || "up", destination_label: hotspotFloorDestination?.value || "" };
+            const floorItems = getAllFloorGroupItems();
+            const primaryFloor = floorItems[0] || getPrimaryFloorItemFromFields();
+            title = primaryFloor.floor_name || hotspotLabel?.value || "Floor navigation";
+            content = {
+                floor_name: primaryFloor.floor_name,
+                floor_number: Number(primaryFloor.floor_number || 0),
+                direction: primaryFloor.direction || "same",
+                destination_label: primaryFloor.destination_label || "",
+                floor_items: floorItems.map((item, index) => ({
+                    uid: item.uid || `floor-${index + 1}`,
+                    floor_name: item.floor_name,
+                    floor_number: Number(item.floor_number || 0),
+                    direction: item.direction || "same",
+                    destination_label: item.destination_label || "",
+                    target_scene: normalizeBuilderSceneId(item.target_scene),
+                    order: index,
+                })),
+            };
         }
         if (type === "pdf") {
             title = hotspotPdfTitle?.value || hotspotLabel?.value || "Document";
@@ -2468,6 +2486,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         resetHotspotModalFields();
         refreshTargetSceneOptions("");
+        floorGroupItems = [];
+        loadFloorGroupEditor({}, null);
 
         if (hotspotTargetScene) {
             hotspotTargetScene.value = "";
@@ -2541,6 +2561,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (hotspotWebsiteButtonText) hotspotWebsiteButtonText.value = content.button_text || "";
         if (hotspotWebsiteUrl) hotspotWebsiteUrl.value = content.cta_url || "";
 
+        if (type === "floor") {
+            loadFloorGroupEditor(content, hotspot);
+        } else {
+            floorGroupItems = [];
+            renderFloorGroupEditor();
+        }
+
         updateHotspotTypePanels(type);
         activateIconOption(hotspot.selected_icon || "default");
         renderHotspotLivePreview();
@@ -2570,6 +2597,217 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
     }
 
+
+    function normalizeFloorGroupItem(item = {}, index = 0) {
+        return {
+            uid: String(item.uid || item.id || `floor-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`),
+            floor_name: String(item.floor_name || item.name || `Floor ${index + 1}`),
+            floor_number: Number.isFinite(Number(item.floor_number ?? item.number))
+                ? Number(item.floor_number ?? item.number)
+                : index,
+            direction: String(item.direction || "up"),
+            destination_label: String(item.destination_label || item.description || ""),
+            target_scene: normalizeBuilderSceneId(item.target_scene || item.target || ""),
+        };
+    }
+
+    function getPrimaryFloorItemFromFields() {
+        return normalizeFloorGroupItem({
+            uid: "primary-floor",
+            floor_name: hotspotFloorName?.value || hotspotLabel?.value || "Ground floor",
+            floor_number: Number(hotspotFloorNumber?.value || 0),
+            direction: hotspotFloorDirection?.value || "same",
+            destination_label: hotspotFloorDestination?.value || "",
+            target_scene: hotspotFloorTargetScene?.value || "",
+        }, 0);
+    }
+
+    function setPrimaryFloorFields(item) {
+        const floor = normalizeFloorGroupItem(item || {}, 0);
+        if (hotspotFloorName) hotspotFloorName.value = floor.floor_name;
+        if (hotspotFloorNumber) hotspotFloorNumber.value = floor.floor_number;
+        if (hotspotFloorDirection) hotspotFloorDirection.value = floor.direction;
+        if (hotspotFloorDestination) hotspotFloorDestination.value = floor.destination_label;
+        if (hotspotFloorTargetScene) hotspotFloorTargetScene.value = floor.target_scene;
+    }
+
+    function getAllFloorGroupItems() {
+        const primary = getPrimaryFloorItemFromFields();
+        return [primary, ...floorGroupItems.map(normalizeFloorGroupItem)]
+            .filter((item) => item.floor_name || item.target_scene);
+    }
+
+    function createFloorSceneOptions(selectedValue = "") {
+        const ownerSceneId = getHotspotOwnerSceneId();
+        const normalizedSelected = normalizeBuilderSceneId(selectedValue || "");
+        return [
+            `<option value="">Select destination scene</option>`,
+            ...scenesData.map((scene) => {
+                const id = normalizeBuilderSceneId(scene.id);
+                const disabled = id === ownerSceneId ? " disabled" : "";
+                const selected = id === normalizedSelected ? " selected" : "";
+                const current = disabled ? " — current scene" : "";
+                return `<option value="${escapeHtml(id)}"${selected}${disabled}>${escapeHtml(scene.title || "Scene")}${current}</option>`;
+            }),
+        ].join("");
+    }
+
+    function ensureFloorGroupEditor() {
+        if (floorGroupEditorReady) return document.getElementById("floorGroupEditor");
+        const panel = document.querySelector('[data-panel="floor"]');
+        if (!panel) return null;
+
+        const editor = document.createElement("section");
+        editor.id = "floorGroupEditor";
+        editor.className = "floor-group-editor";
+        editor.innerHTML = `
+            <div class="floor-group-editor-head">
+                <div class="floor-group-editor-icon" aria-hidden="true">
+                    <svg viewBox="0 0 64 64"><path d="M11 53h42M16 53V20l16-9 16 9v33M23 29h6M35 29h6M23 39h6M35 39h6M29 53v-8h6v8"/></svg>
+                </div>
+                <div class="floor-group-editor-copy">
+                    <small>FLOOR DIRECTORY</small>
+                    <strong>Build all levels from one hotspot</strong>
+                    <span>Add, edit, reorder or remove floor destinations.</span>
+                </div>
+                <button type="button" class="floor-group-add-btn" id="addFloorGroupItem">
+                    <span>＋</span> Add floor
+                </button>
+            </div>
+            <div class="floor-group-primary-note">
+                <span class="floor-group-primary-dot"></span>
+                The fields above define the primary level shown on the hotspot.
+            </div>
+            <div class="floor-group-list" id="floorGroupList"></div>
+            <div class="floor-group-empty" id="floorGroupEmpty">
+                <strong>No additional floors yet</strong>
+                <span>Use “Add floor” to include another level in the same navigation hotspot.</span>
+            </div>
+        `;
+        panel.appendChild(editor);
+
+        editor.querySelector("#addFloorGroupItem")?.addEventListener("click", () => {
+            const nextNumber = getAllFloorGroupItems().reduce((max, item) => Math.max(max, Number(item.floor_number || 0)), -1) + 1;
+            floorGroupItems.push(normalizeFloorGroupItem({
+                floor_name: `Floor ${nextNumber}`,
+                floor_number: nextNumber,
+                direction: "up",
+                target_scene: "",
+            }, floorGroupItems.length + 1));
+            renderFloorGroupEditor();
+        });
+
+        floorGroupEditorReady = true;
+        return editor;
+    }
+
+    function moveFloorGroupItem(index, delta) {
+        const next = index + delta;
+        if (next < 0 || next >= floorGroupItems.length) return;
+        const copy = [...floorGroupItems];
+        [copy[index], copy[next]] = [copy[next], copy[index]];
+        floorGroupItems = copy;
+        renderFloorGroupEditor();
+    }
+
+    function renderFloorGroupEditor() {
+        const editor = ensureFloorGroupEditor();
+        if (!editor) return;
+        const list = editor.querySelector("#floorGroupList");
+        const empty = editor.querySelector("#floorGroupEmpty");
+        if (!list || !empty) return;
+        list.innerHTML = "";
+        empty.hidden = floorGroupItems.length > 0;
+
+        floorGroupItems.forEach((rawItem, index) => {
+            const item = normalizeFloorGroupItem(rawItem, index + 1);
+            const card = document.createElement("article");
+            card.className = "floor-group-item";
+            card.dataset.floorUid = item.uid;
+            card.innerHTML = `
+                <div class="floor-group-item-index">${index + 2}</div>
+                <div class="floor-group-item-body">
+                    <div class="floor-group-item-top">
+                        <div>
+                            <small>ADDITIONAL LEVEL</small>
+                            <strong>${escapeHtml(item.floor_name || `Floor ${index + 2}`)}</strong>
+                        </div>
+                        <div class="floor-group-item-actions">
+                            <button type="button" data-move="up" aria-label="Move floor up" ${index === 0 ? "disabled" : ""}>↑</button>
+                            <button type="button" data-move="down" aria-label="Move floor down" ${index === floorGroupItems.length - 1 ? "disabled" : ""}>↓</button>
+                            <button type="button" data-remove aria-label="Remove floor">×</button>
+                        </div>
+                    </div>
+                    <div class="floor-group-fields">
+                        <label>
+                            <span>Floor name</span>
+                            <input type="text" data-field="floor_name" value="${escapeHtml(item.floor_name)}" placeholder="Second floor">
+                        </label>
+                        <label>
+                            <span>Floor number</span>
+                            <input type="number" data-field="floor_number" value="${escapeHtml(item.floor_number)}" step="1">
+                        </label>
+                        <label class="floor-group-field-wide">
+                            <span>Destination scene</span>
+                            <select data-field="target_scene">${createFloorSceneOptions(item.target_scene)}</select>
+                        </label>
+                        <label>
+                            <span>Direction</span>
+                            <select data-field="direction">
+                                <option value="up" ${item.direction === "up" ? "selected" : ""}>Up</option>
+                                <option value="down" ${item.direction === "down" ? "selected" : ""}>Down</option>
+                                <option value="same" ${item.direction === "same" ? "selected" : ""}>Same level</option>
+                            </select>
+                        </label>
+                        <label class="floor-group-field-wide">
+                            <span>Short description</span>
+                            <input type="text" data-field="destination_label" value="${escapeHtml(item.destination_label)}" placeholder="Bedrooms, balcony and lounge">
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            card.querySelectorAll("[data-field]").forEach((input) => {
+                input.addEventListener("input", () => {
+                    const field = input.dataset.field;
+                    floorGroupItems[index] = {
+                        ...floorGroupItems[index],
+                        [field]: field === "floor_number" ? Number(input.value || 0) : input.value,
+                    };
+                    if (field === "floor_name") {
+                        const title = card.querySelector(".floor-group-item-top strong");
+                        if (title) title.textContent = input.value || `Floor ${index + 2}`;
+                    }
+                    renderHotspotLivePreview();
+                });
+                input.addEventListener("change", () => input.dispatchEvent(new Event("input")));
+            });
+            card.querySelector('[data-move="up"]')?.addEventListener("click", () => moveFloorGroupItem(index, -1));
+            card.querySelector('[data-move="down"]')?.addEventListener("click", () => moveFloorGroupItem(index, 1));
+            card.querySelector("[data-remove]")?.addEventListener("click", () => {
+                floorGroupItems.splice(index, 1);
+                renderFloorGroupEditor();
+                renderHotspotLivePreview();
+            });
+            list.appendChild(card);
+        });
+    }
+
+    function loadFloorGroupEditor(content = {}, hotspot = null) {
+        const items = Array.isArray(content.floor_items) && content.floor_items.length
+            ? content.floor_items.map(normalizeFloorGroupItem)
+            : [normalizeFloorGroupItem({
+                floor_name: content.floor_name || hotspot?.title || hotspot?.label || "Ground floor",
+                floor_number: content.floor_number ?? 0,
+                direction: content.direction || "same",
+                destination_label: content.destination_label || "",
+                target_scene: hotspot?.target_scene || "",
+            }, 0)];
+        setPrimaryFloorFields(items[0]);
+        floorGroupItems = items.slice(1);
+        renderFloorGroupEditor();
+    }
+
     function validateHotspotPayload(type) {
         if (!pendingHotspotPosition) {
             notify("Aucune position hotspot n'est définie.", "warning");
@@ -2583,10 +2821,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        if (type === "floor" && !hotspotFloorTargetScene?.value) {
-            notify("Choisis une scène cible pour cet étage.", "warning");
-            hotspotFloorTargetScene?.focus?.();
-            return false;
+        if (type === "floor") {
+            const floors = getAllFloorGroupItems();
+            if (!floors.length || floors.some((floor) => !floor.target_scene)) {
+                notify("Select a destination scene for every floor.", "warning");
+                const missing = document.querySelector('#floorGroupEditor select[data-field="target_scene"]:invalid, #floorGroupEditor select[data-field="target_scene"]');
+                (missing || hotspotFloorTargetScene)?.focus?.();
+                return false;
+            }
+            const ownerSceneId = getHotspotOwnerSceneId();
+            if (floors.some((floor) => normalizeBuilderSceneId(floor.target_scene) === ownerSceneId)) {
+                notify("A floor destination cannot be the current scene.", "warning");
+                return false;
+            }
+            const seenTargets = new Set();
+            for (const floor of floors) {
+                const target = normalizeBuilderSceneId(floor.target_scene);
+                if (seenTargets.has(target)) {
+                    notify("Each floor must point to a different scene.", "warning");
+                    return false;
+                }
+                seenTargets.add(target);
+            }
         }
 
         if (type === "door" && !hotspotDoorTargetScene?.value) {
@@ -2676,8 +2932,24 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (type === "floor") {
-            title = hotspotFloorName?.value || hotspotLabel?.value || "Floor";
-            content = { floor_name: title, floor_number: Number(hotspotFloorNumber?.value || 0), direction: hotspotFloorDirection?.value || "up", destination_label: hotspotFloorDestination?.value || "" };
+            const floorItems = getAllFloorGroupItems();
+            const primaryFloor = floorItems[0] || getPrimaryFloorItemFromFields();
+            title = primaryFloor.floor_name || hotspotLabel?.value || "Floor navigation";
+            content = {
+                floor_name: primaryFloor.floor_name,
+                floor_number: Number(primaryFloor.floor_number || 0),
+                direction: primaryFloor.direction || "same",
+                destination_label: primaryFloor.destination_label || "",
+                floor_items: floorItems.map((item, index) => ({
+                    uid: item.uid || `floor-${index + 1}`,
+                    floor_name: item.floor_name,
+                    floor_number: Number(item.floor_number || 0),
+                    direction: item.direction || "same",
+                    destination_label: item.destination_label || "",
+                    target_scene: normalizeBuilderSceneId(item.target_scene),
+                    order: index,
+                })),
+            };
         }
         if (type === "pdf") {
             title = hotspotPdfTitle?.value || hotspotLabel?.value || "Document";
@@ -2711,7 +2983,7 @@ document.addEventListener("DOMContentLoaded", () => {
             tooltip_text: hotspotTooltip?.value || "",
             title,
             description,
-            target_scene: type === "floor" ? (hotspotFloorTargetScene?.value || null) : type === "door" ? (hotspotDoorTargetScene?.value || null) : (hotspotTargetScene?.value || null),
+            target_scene: type === "floor" ? (getAllFloorGroupItems()[0]?.target_scene || null) : type === "door" ? (hotspotDoorTargetScene?.value || null) : (hotspotTargetScene?.value || null),
             yaw: pendingHotspotPosition.yaw,
             pitch: pendingHotspotPosition.pitch,
             selected_icon: hotspotSelectedIconInput?.value || selectedLibraryIcon || "default",
@@ -3324,6 +3596,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     bindModalPreviewInputs();
+    ensureFloorGroupEditor();
+    renderFloorGroupEditor();
     decorateHotspotIconOptions();
     installBuilderSceneCaptureOnce();
 

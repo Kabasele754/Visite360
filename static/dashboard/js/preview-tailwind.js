@@ -1654,10 +1654,54 @@ document.addEventListener("DOMContentLoaded", () => {
         return ua.includes("samsungbrowser");
     }
 
+    function isIOSWebKit() {
+        const ua = String(navigator.userAgent || "");
+        const platform = String(navigator.platform || "");
+        const touchMac = platform === "MacIntel" && Number(navigator.maxTouchPoints || 0) > 1;
+        return /iPad|iPhone|iPod/i.test(ua) || touchMac;
+    }
+
     function shouldDisablePdfWorker() {
-        // Samsung Internet and some Android WebViews are more stable
+        // Physical iPhone/iPad and Samsung Internet are more reliable
         // when PDF.js parses the document on the main thread.
-        return isSamsungInternet() || isMobileViewport();
+        return isIOSWebKit() || isSamsungInternet() || isMobileViewport();
+    }
+
+    async function importPdfJsModule(primaryUrl) {
+        const legacyUrl = String(
+            config.pdfJsLegacyModuleUrl ||
+            "/static/public/vendor/pdfjs/legacy/build/pdf.mjs"
+        ).trim();
+
+        const candidates = isIOSWebKit()
+            ? [legacyUrl, primaryUrl]
+            : [primaryUrl, legacyUrl];
+
+        let lastError = null;
+
+        for (const candidate of candidates.filter(Boolean)) {
+            try {
+                console.info("[PDF.js] importing module", {
+                    candidate,
+                    ios: isIOSWebKit(),
+                    samsung: isSamsungInternet(),
+                });
+                const module = await import(candidate);
+                console.info("[PDF.js] module imported", {
+                    candidate,
+                    version: module?.version || "unknown",
+                });
+                return { module, moduleUrl: candidate };
+            } catch (error) {
+                lastError = error;
+                console.warn("[PDF.js] module import failed", {
+                    candidate,
+                    message: error?.message || String(error),
+                });
+            }
+        }
+
+        throw lastError || new Error("Unable to load the PDF reader module.");
     }
 
     function waitForPdfContainer(element, timeoutMs = 3000) {
@@ -1797,9 +1841,17 @@ document.addEventListener("DOMContentLoaded", () => {
             if (token !== activePdfRenderToken) return;
 
             console.info("[PDF.js] loading module", { moduleUrl, workerUrl, url });
-            const pdfjsLib = await import(moduleUrl);
+            const importedPdfJs = await importPdfJsModule(moduleUrl);
+            const pdfjsLib = importedPdfJs.module;
+            const effectiveWorkerUrl = importedPdfJs.moduleUrl.includes("/legacy/")
+                ? String(
+                    config.pdfJsLegacyWorkerUrl ||
+                    "/static/public/vendor/pdfjs/legacy/build/pdf.worker.mjs"
+                ).trim()
+                : workerUrl;
+
             if (pdfjsLib?.GlobalWorkerOptions) {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+                pdfjsLib.GlobalWorkerOptions.workerSrc = effectiveWorkerUrl;
             }
 
             const response = await fetch(url, {
@@ -1899,7 +1951,12 @@ document.addEventListener("DOMContentLoaded", () => {
             previewMediaBody.innerHTML = `
                 <div class="preview-pdf-fallback">
                     <strong>Unable to display this PDF inside the tour.</strong>
-                    <p>${escapeAttr(error?.message || "The PDF reader could not start.")}</p>
+                    <p>${escapeAttr(
+                        error?.message ||
+                        (isIOSWebKit()
+                            ? "The iPhone PDF reader could not start. Please try again."
+                            : "The PDF reader could not start.")
+                    )}</p>
                     <button type="button" class="preview-media-action preview-media-action-primary" data-pdf-retry>
                         Try again
                     </button>
@@ -2014,16 +2071,62 @@ document.addEventListener("DOMContentLoaded", () => {
     function collectFloorDestinations() {
         const result = [];
         const seen = new Set();
+
         scenes.forEach((scene) => {
-            (scene.hotspots || []).filter((h) => h.type === "floor" && h.target_scene).forEach((h) => {
-                const c = h.payload?.content || {};
-                const key = String(c.floor_number ?? c.floor_name ?? h.target_scene);
-                if (seen.has(key)) return;
-                seen.add(key);
-                result.push({ hotspot: h, number: c.floor_number ?? "•", name: c.floor_name || h.title || h.label || "Floor", description: c.destination_label || "", target: h.target_scene });
-            });
+            (scene.hotspots || [])
+                .filter((hotspot) => hotspot.type === "floor")
+                .forEach((hotspot) => {
+                    const content = hotspot.payload?.content || {};
+                    const groupedItems = Array.isArray(content.floor_items)
+                        ? content.floor_items
+                        : [];
+
+                    const items = groupedItems.length
+                        ? groupedItems
+                        : [{
+                            floor_name: content.floor_name,
+                            floor_number: content.floor_number,
+                            direction: content.direction,
+                            destination_label: content.destination_label,
+                            target_scene: hotspot.target_scene,
+                            order: 0,
+                        }];
+
+                    items.forEach((item, itemIndex) => {
+                        const target = item.target_scene || hotspot.target_scene;
+                        if (!target) return;
+                        const number = item.floor_number ?? item.number ?? "•";
+                        const name = item.floor_name || item.name || hotspot.title || hotspot.label || "Floor";
+                        const key = String(item.uid || `${number}:${target}`);
+                        if (seen.has(key)) return;
+                        seen.add(key);
+                        result.push({
+                            hotspot: {
+                                ...hotspot,
+                                target_scene: target,
+                                payload: {
+                                    ...(hotspot.payload || {}),
+                                    content: {
+                                        ...content,
+                                        ...item,
+                                    },
+                                },
+                            },
+                            number,
+                            name,
+                            description: item.destination_label || item.description || "",
+                            direction: item.direction || "same",
+                            target,
+                            order: Number(item.order ?? itemIndex),
+                        });
+                    });
+                });
         });
-        return result.sort((a, b) => Number(b.number || 0) - Number(a.number || 0));
+
+        return result.sort((a, b) => {
+            const numberDiff = Number(b.number || 0) - Number(a.number || 0);
+            return numberDiff || Number(a.order || 0) - Number(b.order || 0);
+        });
     }
 
     function getSurfacePerspectiveScale(view, referenceFovDeg = 100) {
