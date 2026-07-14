@@ -2719,8 +2719,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 display: {
                     variant: type === "video" && hotspotVideoDisplayMode?.value === "screen" ? "screen" : type === "door" ? "door" : (hotspotVariant?.value || "pin"),
                     size: Number(hotspotSize?.value || 56),
-                    width: type === "video" ? Number(hotspotVideoWidth?.value || 360) : type === "door" ? Number(hotspotDoorWidth?.value || 180) : type === "floor" ? 310 : undefined,
-                    height: type === "video" ? Number(hotspotVideoHeight?.value || 210) : type === "door" ? Number(hotspotDoorHeight?.value || 320) : undefined,
+                    width: type === "video" ? Number(hotspotVideoWidth?.value || 360) : type === "door" ? Number(hotspotDoorWidth?.value || 180) : type === "floor" ? 94 : undefined,
+                    height: type === "video" ? Number(hotspotVideoHeight?.value || 210) : type === "door" ? Number(hotspotDoorHeight?.value || 320) : type === "floor" ? 94 : undefined,
                     reference_fov: ["video", "door", "floor"].includes(type) ? getSurfaceReferenceFovDeg() : undefined,
                     rotation: Number(hotspotRotation?.value || 0),
                     offset_x: Number(hotspotOffsetX?.value || 0),

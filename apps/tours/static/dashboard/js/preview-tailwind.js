@@ -509,6 +509,54 @@ document.addEventListener("DOMContentLoaded", () => {
         return activeLayerKey === "A" ? "B" : "A";
     }
 
+    function blurFocusedElementInside(element) {
+        const focused = document.activeElement;
+        if (!element || !focused || !element.contains(focused)) return;
+        try { focused.blur?.(); } catch (_) {}
+    }
+
+    function restoreFocusSafely(element) {
+        requestAnimationFrame(() => {
+            if (!element || !document.contains(element) || typeof element.focus !== "function") return;
+            try { element.focus({ preventScroll: true }); }
+            catch (_) { try { element.focus(); } catch (_) {} }
+        });
+    }
+
+    function setLayerAccessibility(layerKey, isActive) {
+        const layer = getLayerEl(layerKey);
+        if (!layer) return;
+
+        if (isActive) {
+            layer.removeAttribute("inert");
+            try { layer.inert = false; } catch (_) {}
+            layer.setAttribute("aria-hidden", "false");
+            return;
+        }
+
+        // Focus must leave the layer before it becomes hidden/inert.
+        blurFocusedElementInside(layer);
+        layer.setAttribute("aria-hidden", "true");
+        layer.setAttribute("inert", "");
+        try { layer.inert = true; } catch (_) {}
+    }
+
+    function prepareLayersForTransition(outgoingKey, incomingKey) {
+        // Both layers are visible during the cinematic crossfade.
+        [outgoingKey, incomingKey].forEach((key) => {
+            const layer = getLayerEl(key);
+            if (!layer) return;
+            layer.removeAttribute("inert");
+            try { layer.inert = false; } catch (_) {}
+            layer.setAttribute("aria-hidden", "false");
+        });
+    }
+
+    function syncLayerAccessibility(activeKey = activeLayerKey) {
+        setLayerAccessibility("A", activeKey === "A");
+        setLayerAccessibility("B", activeKey === "B");
+    }
+
     function getSceneKeys(scene) {
         return [scene?.id, scene?.scene_id, scene?.uuid, scene?.slug]
             .filter((value) => value !== undefined && value !== null && value !== "")
@@ -884,6 +932,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const incomingEl = getLayerEl(incomingKey);
         if (!outgoingEl || !incomingEl) return false;
 
+        closeAllFloorPopovers(null, { restoreFocus: false });
+        prepareLayersForTransition(outgoingKey, incomingKey);
+
         incomingEl.classList.remove("standby-layer", "layer-incoming", "layer-outgoing");
         outgoingEl.classList.remove("layer-incoming", "layer-outgoing");
         incomingEl.classList.add("quality-upgrade-incoming");
@@ -909,6 +960,7 @@ document.addEventListener("DOMContentLoaded", () => {
         incomingEl.style.opacity = "1";
 
         activeLayerKey = incomingKey;
+        syncLayerAccessibility(activeLayerKey);
         updateAllViewerSizes();
         syncZoomButtonsState();
 
@@ -1549,10 +1601,9 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaModal?.classList.remove("open");
         previewMediaModal?.setAttribute("inert", "");
         previewMediaModal?.setAttribute("aria-hidden", "true");
-        if (mediaModalPreviousFocus && typeof mediaModalPreviousFocus.focus === "function") {
-            requestAnimationFrame(() => mediaModalPreviousFocus.focus({ preventScroll: true }));
-        }
+        const focusTarget = mediaModalPreviousFocus;
         mediaModalPreviousFocus = null;
+        restoreFocusSafely(focusTarget);
     }
 
     document.querySelectorAll("[data-media-close]").forEach(el => {
@@ -2005,57 +2056,166 @@ document.addEventListener("DOMContentLoaded", () => {
         requestAnimationFrame(refresh);
     }
 
+    function closeAllFloorPopovers(exceptNode = null, { restoreFocus = false } = {}) {
+        document.querySelectorAll(".preview-floor-portal-hotspot.is-open").forEach((node) => {
+            if (node === exceptNode) return;
+
+            const trigger = node.querySelector(".preview-floor-portal-trigger");
+            const popover = node.querySelector(".preview-floor-portal-popover");
+            const focused = document.activeElement;
+            const hadFocus = !!(focused && node.contains(focused));
+
+            if (hadFocus) {
+                try { focused.blur?.(); } catch (_) {}
+            }
+
+            node.classList.remove("is-open");
+            trigger?.setAttribute("aria-expanded", "false");
+            popover?.setAttribute("aria-hidden", "true");
+            popover?.setAttribute("inert", "");
+            try { if (popover) popover.inert = true; } catch (_) {}
+
+            if (restoreFocus && hadFocus) restoreFocusSafely(trigger);
+        });
+    }
+
     function buildFloorCardNode(hotspot, sceneData) {
         const display = hotspot.payload?.display || {};
-        const floorHotspots = (sceneData?.hotspots || []).filter((h) => h.type === "floor");
+        const floorHotspots = (sceneData?.hotspots || []).filter((item) => item.type === "floor");
+
+        // A single premium floor hotspot groups every available destination.
         if (floorHotspots[0] && String(floorHotspots[0].id) !== String(hotspot.id)) {
             const hidden = document.createElement("div");
             hidden.style.display = "none";
             return hidden;
         }
+
         const floors = collectFloorDestinations();
+        const content = hotspot.payload?.content || {};
         const node = document.createElement("div");
-        const width = Math.max(220, Math.min(520, Number(display.width || 310)));
+
+        // Old versions stored a 310px card width. Convert those values to a compact marker.
+        const storedWidth = Number(display.width || display.size || 94);
+        const markerWidth = storedWidth > 160 ? 94 : clamp(storedWidth, 76, 124);
+        const markerHeight = clamp(Number(display.height || markerWidth), 76, 124);
         const referenceFov = Number(display.reference_fov || sceneData?.hfov_default || 100);
-        node.className = "preview-hotspot preview-surface-hotspot preview-floor-card-hotspot";
-        node.style.width = `${width}px`;
+        const direction = String(content.direction || "up").toLowerCase();
+        const directionArrow = direction === "down" ? "↓" : direction === "same" ? "→" : "↑";
+
+        node.className = "preview-hotspot preview-surface-hotspot preview-floor-portal-hotspot";
+        node.style.width = `${markerWidth}px`;
+        node.style.height = `${markerHeight}px`;
         node.dataset.referenceFov = String(referenceFov);
+        node.dataset.hotspotType = "floor";
+
         node.innerHTML = `
             <div class="preview-surface-scale-wrap">
-            <div class="preview-floor-card">
-                <button type="button" class="preview-floor-card-head" aria-expanded="true" aria-label="Collapse or expand floors">
-                    <span>⌂</span>
-                    <div><small>PROPERTY LEVELS</small><strong>${escapeAttr(hotspot.title || hotspot.label || "Choose a floor")}</strong></div>
-                    <b class="preview-floor-card-chevron">⌃</b>
+                <button type="button"
+                        class="preview-floor-portal-trigger"
+                        aria-expanded="false"
+                        aria-label="Open floor navigation">
+                    <span class="preview-floor-portal-ring" aria-hidden="true"></span>
+                    <span class="preview-floor-portal-icon" aria-hidden="true">
+                        <i></i><i></i><i></i>
+                    </span>
+                    <span class="preview-floor-portal-direction" aria-hidden="true">${directionArrow}</span>
+                    <strong>Floors</strong>
                 </button>
-                <div class="preview-floor-card-list"></div>
-            </div>
+
+                <section class="preview-floor-portal-popover"
+                         role="dialog"
+                         aria-label="Property floors"
+                         aria-hidden="true"
+                         inert>
+                    <header>
+                        <div>
+                            <small>PROPERTY LEVELS</small>
+                            <strong>${escapeAttr(hotspot.title || hotspot.label || "Choose a floor")}</strong>
+                        </div>
+                        <button type="button" class="preview-floor-portal-close" aria-label="Close floor navigation">×</button>
+                    </header>
+                    <div class="preview-floor-portal-list"></div>
+                </section>
             </div>`;
-        const card = node.querySelector(".preview-floor-card");
-        const head = node.querySelector(".preview-floor-card-head");
-        const list = node.querySelector(".preview-floor-card-list");
-        head?.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            const collapsed = card.classList.toggle("is-collapsed");
-            head.setAttribute("aria-expanded", collapsed ? "false" : "true");
-        });
+
+        const trigger = node.querySelector(".preview-floor-portal-trigger");
+        const closeButton = node.querySelector(".preview-floor-portal-close");
+        const list = node.querySelector(".preview-floor-portal-list");
+
         floors.forEach((floor) => {
             const button = document.createElement("button");
             button.type = "button";
-            button.innerHTML = `<span>${escapeAttr(floor.number)}</span><div><strong>${escapeAttr(floor.name)}</strong><small>${escapeAttr(floor.description)}</small></div><b>→</b>`;
+            button.className = "preview-floor-portal-item";
+            button.innerHTML = `
+                <span>${escapeAttr(floor.number)}</span>
+                <div>
+                    <strong>${escapeAttr(floor.name)}</strong>
+                    <small>${escapeAttr(floor.description || "Open this level")}</small>
+                </div>
+                <b aria-hidden="true">→</b>`;
+
             button.addEventListener("click", (event) => {
+                event.preventDefault();
                 event.stopPropagation();
                 const target = findScene(floor.target);
                 if (!target || isTransitioning) return;
+                const popover = node.querySelector(".preview-floor-portal-popover");
+                try { document.activeElement?.blur?.(); } catch (_) {}
+                node.classList.remove("is-open");
+                trigger?.setAttribute("aria-expanded", "false");
+                popover?.setAttribute("aria-hidden", "true");
+                popover?.setAttribute("inert", "");
+                try { if (popover) popover.inert = true; } catch (_) {}
                 showFloorTransitionLabel(floor.hotspot);
+                stopAutorotate({ suppress: true });
                 goToSceneWithWalk(target);
             });
             list.appendChild(button);
         });
+
+        trigger?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const willOpen = !node.classList.contains("is-open");
+            closeAllFloorPopovers(willOpen ? node : null);
+            const popover = node.querySelector(".preview-floor-portal-popover");
+            node.classList.toggle("is-open", willOpen);
+            trigger.setAttribute("aria-expanded", willOpen ? "true" : "false");
+            if (willOpen) {
+                popover?.removeAttribute("inert");
+                popover?.setAttribute("aria-hidden", "false");
+                try { if (popover) popover.inert = false; } catch (_) {}
+                stopAutorotate({ suppress: true });
+            } else {
+                blurFocusedElementInside(popover);
+                popover?.setAttribute("aria-hidden", "true");
+                popover?.setAttribute("inert", "");
+                try { if (popover) popover.inert = true; } catch (_) {}
+            }
+        });
+
+        closeButton?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const popover = node.querySelector(".preview-floor-portal-popover");
+            try { document.activeElement?.blur?.(); } catch (_) {}
+            node.classList.remove("is-open");
+            trigger?.setAttribute("aria-expanded", "false");
+            popover?.setAttribute("aria-hidden", "true");
+            popover?.setAttribute("inert", "");
+            try { if (popover) popover.inert = true; } catch (_) {}
+            restoreFocusSafely(trigger);
+        });
+
         stopTouchAndScrollEventPropagation(node);
         return node;
     }
+
+    document.addEventListener("click", (event) => {
+        if (!event.target?.closest?.(".preview-floor-portal-hotspot")) {
+            closeAllFloorPopovers();
+        }
+    });
 
     function renderWallVideo(node, hotspot, display) {
         const c = hotspot.payload?.content || {};
@@ -2381,6 +2541,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!outgoingEl || !incomingEl) {
             activeLayerKey = incomingKey;
+            syncLayerAccessibility(activeLayerKey);
             currentSceneId = targetScene.id;
             setSceneLoadingPreview(targetScene, false);
             isTransitioning = false;
@@ -2421,6 +2582,9 @@ document.addEventListener("DOMContentLoaded", () => {
         outgoingEl.classList.add("active-layer");
         incomingEl.classList.add("layer-incoming");
 
+        closeAllFloorPopovers(null, { restoreFocus: false });
+        prepareLayersForTransition(outgoingKey, incomingKey);
+
         outgoingEl.style.opacity = "1";
         incomingEl.style.opacity = "1";
 
@@ -2451,6 +2615,7 @@ document.addEventListener("DOMContentLoaded", () => {
             previewViewer?.classList.remove("is-cinematic-transition", "transitioning", "is-walk-transition");
             closeMediaHotspot();
             activeLayerKey = incomingKey;
+            syncLayerAccessibility(activeLayerKey);
             isTransitioning = false;
             updateAllViewerSizes();
             syncZoomButtonsState();
@@ -2970,6 +3135,7 @@ document.addEventListener("DOMContentLoaded", () => {
             imageUrl: firstEntry?.url || "",
             quality: firstEntry?.quality || "preferred"
         });
+        syncLayerAccessibility(activeLayerKey);
         updateSceneMeta(initialScene);
         syncSceneInUrl(initialScene);
 
