@@ -4590,3 +4590,279 @@ body.preview-has-loaded .preview-intro-overlay.is-hidden + * {
     }
     .preview-floor-portal-list { max-height: min(38dvh, 360px) !important; }
 }
+
+/* =====================================================================
+   FLOOR DIRECTORY — RESPONSIVE BODY PORTAL FINAL
+   The trigger remains inside Marzipano. The directory is moved to body,
+   so it never inherits panorama scale, clipping or perspective.
+===================================================================== */
+.preview-floor-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 144;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 50% 18%, rgba(34, 211, 238, .10), transparent 32%),
+        rgba(2, 6, 23, .58);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: opacity .24s ease, visibility .24s ease;
+}
+
+.preview-floor-modal-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+body > .preview-floor-portal-popover {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: 145 !important;
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+    width: min(470px, calc(100vw - 40px)) !important;
+    max-width: 470px !important;
+    max-height: min(76dvh, 680px) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate(-50%, -46%) scale(.94) !important;
+    transform-origin: center center !important;
+    border: 1px solid rgba(255, 255, 255, .18) !important;
+    border-radius: 30px !important;
+    background:
+        radial-gradient(circle at 8% 0%, rgba(34, 211, 238, .18), transparent 31%),
+        radial-gradient(circle at 100% 100%, rgba(59, 130, 246, .15), transparent 38%),
+        linear-gradient(155deg, rgba(15, 23, 42, .985), rgba(2, 6, 23, .995)) !important;
+    box-shadow:
+        0 42px 120px rgba(0, 0, 0, .64),
+        inset 0 1px 0 rgba(255, 255, 255, .10) !important;
+    backdrop-filter: blur(24px) saturate(145%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(145%) !important;
+    transition:
+        opacity .24s ease,
+        visibility .24s ease,
+        transform .32s cubic-bezier(.22, 1, .36, 1) !important;
+}
+
+body > .preview-floor-portal-popover.is-open,
+body > .preview-floor-portal-popover[aria-hidden="false"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translate(-50%, -50%) scale(1) !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-header {
+    grid-template-columns: 54px minmax(0, 1fr) 40px !important;
+    gap: 13px !important;
+    padding: 18px 18px 15px !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-heading-icon {
+    width: 54px !important;
+    height: 54px !important;
+    border-radius: 18px !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-heading-copy small {
+    font-size: 9px !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-heading-copy strong {
+    display: block !important;
+    margin-top: 5px !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    font-size: 19px !important;
+    line-height: 1.12 !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-heading-copy span {
+    margin-top: 5px !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-current {
+    margin: 12px 15px 4px !important;
+    padding: 12px 14px !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-current strong {
+    max-width: 62% !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    text-align: right !important;
+    text-overflow: clip !important;
+    line-height: 1.35 !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-list {
+    display: grid !important;
+    gap: 10px !important;
+    min-height: 0 !important;
+    max-height: min(46dvh, 430px) !important;
+    padding: 11px 14px 15px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(103, 232, 249, .28) transparent;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-item {
+    grid-template-columns: 50px minmax(0, 1fr) 38px !important;
+    gap: 12px !important;
+    min-height: 78px !important;
+    margin: 0 !important;
+    padding: 11px 12px !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-level-number {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 17px !important;
+    font-size: 16px !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-item div {
+    min-width: 0 !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-item strong {
+    display: block !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+    overflow-wrap: anywhere !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-item small {
+    display: block !important;
+    margin-top: 5px !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    color: #a9b8c9 !important;
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+    overflow-wrap: anywhere !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-level-action {
+    width: 36px !important;
+    height: 36px !important;
+}
+
+body > .preview-floor-portal-popover .preview-floor-portal-footer {
+    padding: 12px 16px 15px !important;
+    font-size: 10px !important;
+    line-height: 1.45 !important;
+}
+
+/* The sphere marker remains compact and never contains the large directory. */
+.preview-floor-portal-hotspot {
+    overflow: visible !important;
+}
+
+.preview-floor-portal-trigger {
+    min-width: 84px !important;
+    min-height: 84px !important;
+}
+
+@media (max-width: 768px), (pointer: coarse) {
+    .preview-floor-modal-backdrop {
+        background: rgba(2, 6, 23, .50);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    body > .preview-floor-portal-popover {
+        left: 8px !important;
+        right: 8px !important;
+        top: auto !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 76px) !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: min(68dvh, 590px) !important;
+        border-radius: 25px !important;
+        transform: translateY(28px) scale(.97) !important;
+        transform-origin: bottom center !important;
+    }
+
+    body > .preview-floor-portal-popover.is-open,
+    body > .preview-floor-portal-popover[aria-hidden="false"] {
+        transform: translateY(0) scale(1) !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-header {
+        grid-template-columns: 46px minmax(0, 1fr) 38px !important;
+        gap: 10px !important;
+        padding: 14px 14px 12px !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-heading-icon {
+        width: 46px !important;
+        height: 46px !important;
+        border-radius: 15px !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-heading-copy strong {
+        font-size: 16px !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-heading-copy span {
+        font-size: 10px !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-current {
+        margin: 8px 9px 2px !important;
+        padding: 10px 11px !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-list {
+        max-height: min(42dvh, 390px) !important;
+        gap: 8px !important;
+        padding: 8px 9px 11px !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-item {
+        grid-template-columns: 44px minmax(0, 1fr) 34px !important;
+        gap: 9px !important;
+        min-height: 70px !important;
+        padding: 9px 10px !important;
+        border-radius: 16px !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-level-number {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 14px !important;
+        font-size: 14px !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-item strong {
+        font-size: 14px !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-item small {
+        margin-top: 3px !important;
+        font-size: 10.5px !important;
+        line-height: 1.35 !important;
+    }
+
+    body > .preview-floor-portal-popover .preview-floor-portal-footer {
+        padding: 10px 12px 12px !important;
+    }
+}

@@ -2159,26 +2159,51 @@ document.addEventListener("DOMContentLoaded", () => {
         requestAnimationFrame(refresh);
     }
 
+    function getFloorPortalForNode(node) {
+        const owner = String(node?.dataset?.floorOwner || "");
+        if (!owner) return null;
+        return [...document.querySelectorAll(".preview-floor-portal-popover[data-floor-owner]")]
+            .find((item) => String(item.dataset.floorOwner || "") === owner) || null;
+    }
+
+    function getFloorBackdropForNode(node) {
+        const owner = String(node?.dataset?.floorOwner || "");
+        if (!owner) return null;
+        return [...document.querySelectorAll(".preview-floor-modal-backdrop[data-floor-owner]")]
+            .find((item) => String(item.dataset.floorOwner || "") === owner) || null;
+    }
+
+    function closeFloorPortalNode(node, { restoreFocus = false } = {}) {
+        if (!node) return;
+        const trigger = node.querySelector(".preview-floor-portal-trigger");
+        const popover = getFloorPortalForNode(node);
+        const backdrop = getFloorBackdropForNode(node);
+        const focused = document.activeElement;
+        const hadFocus = !!(
+            focused &&
+            (node.contains(focused) || popover?.contains(focused))
+        );
+
+        if (hadFocus) {
+            try { focused.blur?.(); } catch (_) {}
+        }
+
+        node.classList.remove("is-open");
+        trigger?.setAttribute("aria-expanded", "false");
+        popover?.classList.remove("is-open");
+        popover?.setAttribute("aria-hidden", "true");
+        popover?.setAttribute("inert", "");
+        backdrop?.classList.remove("is-open");
+        backdrop?.setAttribute("aria-hidden", "true");
+        try { if (popover) popover.inert = true; } catch (_) {}
+
+        if (restoreFocus && hadFocus) restoreFocusSafely(trigger);
+    }
+
     function closeAllFloorPopovers(exceptNode = null, { restoreFocus = false } = {}) {
         document.querySelectorAll(".preview-floor-portal-hotspot.is-open").forEach((node) => {
             if (node === exceptNode) return;
-
-            const trigger = node.querySelector(".preview-floor-portal-trigger");
-            const popover = node.querySelector(".preview-floor-portal-popover");
-            const focused = document.activeElement;
-            const hadFocus = !!(focused && node.contains(focused));
-
-            if (hadFocus) {
-                try { focused.blur?.(); } catch (_) {}
-            }
-
-            node.classList.remove("is-open");
-            trigger?.setAttribute("aria-expanded", "false");
-            popover?.setAttribute("aria-hidden", "true");
-            popover?.setAttribute("inert", "");
-            try { if (popover) popover.inert = true; } catch (_) {}
-
-            if (restoreFocus && hadFocus) restoreFocusSafely(trigger);
+            closeFloorPortalNode(node, { restoreFocus });
         });
     }
 
@@ -2265,8 +2290,22 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>`;
 
         const trigger = node.querySelector(".preview-floor-portal-trigger");
-        const closeButton = node.querySelector(".preview-floor-portal-close");
-        const list = node.querySelector(".preview-floor-portal-list");
+        const popover = node.querySelector(".preview-floor-portal-popover");
+        const closeButton = popover?.querySelector(".preview-floor-portal-close");
+        const list = popover?.querySelector(".preview-floor-portal-list");
+        const ownerId = `floor-${String(hotspot.id || sceneData?.id || Date.now())}`;
+        node.dataset.floorOwner = ownerId;
+
+        // The directory must not inherit Marzipano's perspective scale.
+        // Move it to document.body and keep only the compact trigger in the sphere.
+        document.querySelectorAll(`.preview-floor-portal-popover[data-floor-owner="${ownerId}"], .preview-floor-modal-backdrop[data-floor-owner="${ownerId}"]`).forEach((item) => item.remove());
+        const backdrop = document.createElement("div");
+        backdrop.className = "preview-floor-modal-backdrop";
+        backdrop.dataset.floorOwner = ownerId;
+        backdrop.setAttribute("aria-hidden", "true");
+        popover.dataset.floorOwner = ownerId;
+        document.body.appendChild(backdrop);
+        document.body.appendChild(popover);
 
         floors.forEach((floor) => {
             const button = document.createElement("button");
@@ -2287,13 +2326,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 event.stopPropagation();
                 const target = findScene(floor.target);
                 if (!target || isTransitioning) return;
-                const popover = node.querySelector(".preview-floor-portal-popover");
                 try { document.activeElement?.blur?.(); } catch (_) {}
-                node.classList.remove("is-open");
-                trigger?.setAttribute("aria-expanded", "false");
-                popover?.setAttribute("aria-hidden", "true");
-                popover?.setAttribute("inert", "");
-                try { if (popover) popover.inert = true; } catch (_) {}
+                closeFloorPortalNode(node);
                 showFloorTransitionLabel(floor.hotspot);
                 stopAutorotate({ suppress: true });
                 goToSceneWithWalk(target);
@@ -2306,41 +2340,44 @@ document.addEventListener("DOMContentLoaded", () => {
             event.stopPropagation();
             const willOpen = !node.classList.contains("is-open");
             closeAllFloorPopovers(willOpen ? node : null);
-            const popover = node.querySelector(".preview-floor-portal-popover");
             node.classList.toggle("is-open", willOpen);
             trigger.setAttribute("aria-expanded", willOpen ? "true" : "false");
             if (willOpen) {
                 popover?.removeAttribute("inert");
                 popover?.setAttribute("aria-hidden", "false");
+                popover?.classList.add("is-open");
+                backdrop?.classList.add("is-open");
+                backdrop?.setAttribute("aria-hidden", "false");
                 try { if (popover) popover.inert = false; } catch (_) {}
                 stopAutorotate({ suppress: true });
+                requestAnimationFrame(() => {
+                    popover?.querySelector(".preview-floor-portal-item, .preview-floor-portal-close")?.focus?.({ preventScroll: true });
+                });
             } else {
-                blurFocusedElementInside(popover);
-                popover?.setAttribute("aria-hidden", "true");
-                popover?.setAttribute("inert", "");
-                try { if (popover) popover.inert = true; } catch (_) {}
+                closeFloorPortalNode(node, { restoreFocus: true });
             }
         });
 
         closeButton?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
-            const popover = node.querySelector(".preview-floor-portal-popover");
             try { document.activeElement?.blur?.(); } catch (_) {}
-            node.classList.remove("is-open");
-            trigger?.setAttribute("aria-expanded", "false");
-            popover?.setAttribute("aria-hidden", "true");
-            popover?.setAttribute("inert", "");
-            try { if (popover) popover.inert = true; } catch (_) {}
-            restoreFocusSafely(trigger);
+            closeFloorPortalNode(node, { restoreFocus: true });
+        });
+
+        backdrop.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            closeFloorPortalNode(node, { restoreFocus: true });
         });
 
         stopTouchAndScrollEventPropagation(node);
+        stopTouchAndScrollEventPropagation(popover);
         return node;
     }
 
     document.addEventListener("click", (event) => {
-        if (!event.target?.closest?.(".preview-floor-portal-hotspot")) {
+        if (!event.target?.closest?.(".preview-floor-portal-hotspot, .preview-floor-portal-popover")) {
             closeAllFloorPopovers();
         }
     });
