@@ -115,6 +115,7 @@ services:
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/var:/var/lib/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
+      - ./nginx/mime.types:/etc/nginx/mime.types:ro
     depends_on:
       django:
         condition: service_started
