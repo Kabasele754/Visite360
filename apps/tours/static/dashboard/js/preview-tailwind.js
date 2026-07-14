@@ -1598,13 +1598,24 @@ document.addEventListener("DOMContentLoaded", () => {
         return "";
     }
 
+    function isSamsungInternet() {
+        const ua = String(navigator.userAgent || "").toLowerCase();
+        return ua.includes("samsungbrowser");
+    }
+
+    function shouldDisablePdfWorker() {
+        // Samsung Internet and some Android WebViews are more stable
+        // when PDF.js parses the document on the main thread.
+        return isSamsungInternet() || isMobileViewport();
+    }
+
     function waitForPdfContainer(element, timeoutMs = 3000) {
         return new Promise((resolve, reject) => {
             const startedAt = performance.now();
 
             const inspect = () => {
                 if (!element || !document.body.contains(element)) {
-                    reject(new Error("Le conteneur PDF a été retiré."));
+                    reject(new Error("The PDF container was removed."));
                     return;
                 }
 
@@ -1622,7 +1633,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 if (performance.now() - startedAt >= timeoutMs) {
-                    reject(new Error("Le lecteur PDF n'a pas reçu une taille visible."));
+                    reject(new Error("The PDF reader did not receive a visible size."));
                     return;
                 }
 
@@ -1637,8 +1648,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const ratio = Number(window.devicePixelRatio || 1);
         // Un téléphone physique ne doit pas créer des dizaines de canvas 2x/3x.
         return isMobileViewport()
-            ? Math.min(Math.max(ratio, 1), 1.25)
-            : Math.min(Math.max(ratio, 1), 1.65);
+            ? 1
+            : Math.min(Math.max(ratio, 1), 1.5);
     }
 
     async function renderPdfPage({ pdf, pageNumber, shell, pagesRoot, token }) {
@@ -1655,7 +1666,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 260,
                 Math.min(
                     rootRect.width - (isMobileViewport() ? 12 : 30),
-                    isMobileViewport() ? window.innerWidth - 16 : 920
+                    isMobileViewport() ? Math.min(window.innerWidth - 20, 720) : 920
                 )
             );
             const cssScale = clamp(availableWidth / baseViewport.width, 0.55, 2.2);
@@ -1673,7 +1684,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 alpha: false,
                 willReadFrequently: false,
             });
-            if (!context) throw new Error("Canvas 2D indisponible");
+            if (!context) throw new Error("Canvas 2D is unavailable");
 
             shell.innerHTML = "";
             shell.appendChild(canvas);
@@ -1692,7 +1703,7 @@ document.addEventListener("DOMContentLoaded", () => {
             delete shell.dataset.rendering;
         } catch (error) {
             delete shell.dataset.rendering;
-            shell.innerHTML = `<div class="preview-pdf-page-error">Page ${pageNumber} indisponible</div>`;
+            shell.innerHTML = `<div class="preview-pdf-page-error">Page ${pageNumber} unavailable</div>`;
             console.error("PDF_PAGE_RENDER_FAILED", { pageNumber, error });
         }
     }
@@ -1721,8 +1732,8 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="preview-pdf-reader is-rendering" data-pdf-reader>
                 <div class="preview-pdf-loading">
                     <span></span>
-                    <strong>Chargement du document…</strong>
-                    <small>Préparation de la première page</small>
+                    <strong>Loading document…</strong>
+                    <small>Preparing the first page</small>
                 </div>
                 <div class="preview-pdf-pages" data-pdf-pages></div>
             </div>`;
@@ -1754,19 +1765,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const contentType = String(response.headers.get("content-type") || "").toLowerCase();
             if (contentType && !contentType.includes("application/pdf") && !contentType.includes("octet-stream")) {
-                throw new Error(`Réponse PDF invalide : ${contentType}`);
+                throw new Error(`Invalid PDF response: ${contentType}`);
             }
 
             const pdfBytes = new Uint8Array(await response.arrayBuffer());
-            if (!pdfBytes.length) throw new Error("Le fichier PDF est vide.");
+            if (!pdfBytes.length) throw new Error("The PDF file is empty.");
+
+            const signature = String.fromCharCode(...pdfBytes.slice(0, 5));
+            if (signature !== "%PDF-") {
+                throw new Error("The server response is not a valid PDF file.");
+            }
             if (token !== activePdfRenderToken) return;
+
+            const disableWorker = shouldDisablePdfWorker();
 
             activePdfLoadingTask = pdfjsLib.getDocument({
                 data: pdfBytes,
                 isEvalSupported: false,
-                disableAutoFetch: false,
-                disableStream: false,
+                disableWorker,
+                disableAutoFetch: isMobileViewport(),
+                disableStream: true,
                 useWorkerFetch: false,
+                verbosity: 0,
+            });
+
+            console.info("[PDF.js] document task created", {
+                disableWorker,
+                samsungInternet: isSamsungInternet(),
+                mobile: isMobileViewport(),
+                bytes: pdfBytes.length,
             });
 
             const pdf = await activePdfLoadingTask.promise;
@@ -1820,10 +1847,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             previewMediaBody.innerHTML = `
                 <div class="preview-pdf-fallback">
-                    <strong>Impossible de lire ce PDF dans la visite.</strong>
-                    <p>${escapeAttr(error?.message || "Le lecteur PDF n'a pas pu démarrer.")}</p>
+                    <strong>Unable to display this PDF inside the tour.</strong>
+                    <p>${escapeAttr(error?.message || "The PDF reader could not start.")}</p>
                     <button type="button" class="preview-media-action preview-media-action-primary" data-pdf-retry>
-                        Réessayer
+                        Try again
                     </button>
                 </div>`;
 
@@ -1853,9 +1880,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 previewMediaBody.innerHTML = `<div class="preview-media-empty">PDF unavailable</div>`;
             } else {
                 previewMediaFooter.innerHTML = `
-                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Recharger</button>
-                    <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">Plein écran</a>
-                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${escapeAttr(url)}" download>Télécharger</a>`}`;
+                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Reload</button>
+                    <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">Full screen</a>
+                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${escapeAttr(url)}" download>Download</a>`}`;
 
                 previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
                     renderPdfInsideDialog(url);
@@ -1906,7 +1933,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const b=document.createElement("button"); b.type="button"; b.innerHTML=`<span>${escapeAttr(floor.number)}</span><div><strong>${escapeAttr(floor.name)}</strong><small>${escapeAttr(floor.description)}</small></div>`;
             b.addEventListener("click", (e)=>{e.stopPropagation(); panel.classList.remove("open"); const t=findScene(floor.target); if(t){showFloorTransitionLabel(floor.hotspot); goToSceneWithWalk(t);}}); panel.appendChild(b);
         });
-        wrap.querySelector("#floorDockToggle").addEventListener("click", (e)=>{e.stopPropagation(); panel.classList.toggle("open");});
+        const floorToggle = wrap.querySelector("#floorDockToggle");
+        floorToggle.setAttribute("aria-expanded", "false");
+        floorToggle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const opened = panel.classList.toggle("open");
+            floorToggle.setAttribute("aria-expanded", opened ? "true" : "false");
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!wrap.contains(event.target)) {
+                panel.classList.remove("open");
+                floorToggle.setAttribute("aria-expanded", "false");
+            }
+        });
         document.addEventListener("click", ()=>panel.classList.remove("open"));
     }
 
@@ -1936,6 +1976,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function buildFloorCardNode(hotspot, sceneData) {
+        // On physical mobile, keep floor navigation in the fixed dock panel.
+        // A panorama-attached card moves with Marzipano and can drift upward.
+        if (isMobileViewport()) return null;
+
         const floorHotspots = (sceneData?.hotspots || []).filter((h) => h.type === "floor");
         if (floorHotspots[0] && String(floorHotspots[0].id) !== String(hotspot.id)) {
             const hidden = document.createElement("div");
@@ -1947,7 +1991,7 @@ document.addEventListener("DOMContentLoaded", () => {
         node.className = "preview-hotspot preview-floor-card-hotspot";
         node.innerHTML = `
             <div class="preview-floor-card">
-                <button type="button" class="preview-floor-card-head" aria-expanded="true" aria-label="Réduire ou afficher les étages">
+                <button type="button" class="preview-floor-card-head" aria-expanded="true" aria-label="Collapse or expand floors">
                     <span>⌂</span>
                     <div><small>PROPERTY LEVELS</small><strong>${escapeAttr(hotspot.title || hotspot.label || "Choose a floor")}</strong></div>
                     <b class="preview-floor-card-chevron">⌃</b>
@@ -2214,6 +2258,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         (sceneData.hotspots || []).forEach((hotspot) => {
             const node = buildHotspotNode(hotspot, sceneData);
+            if (!node) return;
             marzipanoScenes[layerKey].hotspotContainer().createHotspot(node, {
                 yaw: Number(hotspot.yaw || 0),
                 pitch: Number(hotspot.pitch || 0)

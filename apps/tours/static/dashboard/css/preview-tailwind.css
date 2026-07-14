@@ -3856,3 +3856,74 @@ body.preview-has-loaded .preview-intro-overlay.is-hidden + * {
         width: 100% !important;
     }
 }
+
+/* =====================================================================
+   FINAL MOBILE FIX — SAMSUNG PDF + STABLE FLOOR NAVIGATION
+===================================================================== */
+@media (max-width: 768px), (pointer: coarse) {
+    /* The panorama-attached floor card is hidden on physical mobile.
+       Floor navigation remains available from the control dock. */
+    .preview-floor-card-hotspot {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    .floor-dock-wrap {
+        position: static !important;
+    }
+
+    .floor-dock-panel {
+        position: fixed !important;
+        left: 8px !important;
+        right: 8px !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+        top: auto !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: min(42dvh, 340px) !important;
+        overflow-y: auto !important;
+        transform: translate3d(0, 18px, 0) scale(.98) !important;
+        transform-origin: bottom center !important;
+        border-radius: 22px !important;
+        z-index: 125 !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+    }
+
+    .floor-dock-panel.open {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: translate3d(0, 0, 0) scale(1) !important;
+    }
+
+    .floor-dock-panel button {
+        min-height: 54px !important;
+        grid-template-columns: 40px minmax(0, 1fr) !important;
+        padding: 8px 10px !important;
+    }
+
+    .floor-dock-panel strong {
+        font-size: 13px !important;
+    }
+
+    .floor-dock-panel small {
+        font-size: 10px !important;
+        white-space: normal !important;
+        line-height: 1.35 !important;
+    }
+
+    .preview-pdf-reader {
+        contain: layout paint !important;
+    }
+
+    .preview-pdf-canvas {
+        image-rendering: auto !important;
+        transform: translateZ(0) !important;
+        backface-visibility: hidden !important;
+    }
+
+    .preview-pdf-page {
+        box-shadow: 0 4px 14px rgba(15, 23, 42, .16) !important;
+    }
+}
