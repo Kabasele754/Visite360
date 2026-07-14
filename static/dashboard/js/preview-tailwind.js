@@ -2173,6 +2173,72 @@ document.addEventListener("DOMContentLoaded", () => {
             .find((item) => String(item.dataset.floorOwner || "") === owner) || null;
     }
 
+    function stopFloorPortalTracking(node) {
+        if (!node) return;
+        if (node.__floorPortalFrame) {
+            cancelAnimationFrame(node.__floorPortalFrame);
+            node.__floorPortalFrame = null;
+        }
+    }
+
+    function positionFloorPortal(node) {
+        const popover = getFloorPortalForNode(node);
+        const trigger = node?.querySelector?.(".preview-floor-portal-trigger");
+        if (!popover || !trigger || !previewViewer) return;
+
+        // On mobile the CSS pins the panel above the control dock.
+        if (isMobileViewport()) {
+            popover.classList.remove("opens-left", "opens-above");
+            popover.style.removeProperty("left");
+            popover.style.removeProperty("top");
+            return;
+        }
+
+        const viewerRect = previewViewer.getBoundingClientRect();
+        const triggerRect = trigger.getBoundingClientRect();
+        const panelRect = popover.getBoundingClientRect();
+        const margin = 16;
+        const dockSpace = 82;
+
+        const triggerLeft = triggerRect.left - viewerRect.left;
+        const triggerRight = triggerRect.right - viewerRect.left;
+        const triggerCenterY = triggerRect.top - viewerRect.top + triggerRect.height / 2;
+
+        let left = triggerRight + margin;
+        let top = triggerCenterY - panelRect.height / 2;
+        let opensLeft = false;
+
+        const availableRight = viewerRect.width - triggerRight;
+        const availableLeft = triggerLeft;
+        if (availableRight < panelRect.width + margin && availableLeft >= panelRect.width + margin) {
+            left = triggerLeft - panelRect.width - margin;
+            opensLeft = true;
+        }
+
+        const maxLeft = Math.max(margin, viewerRect.width - panelRect.width - margin);
+        const maxTop = Math.max(margin, viewerRect.height - panelRect.height - dockSpace);
+        left = Math.max(margin, Math.min(left, maxLeft));
+        top = Math.max(margin, Math.min(top, maxTop));
+
+        popover.classList.toggle("opens-left", opensLeft);
+        popover.classList.toggle("opens-above", top < triggerCenterY - panelRect.height / 2);
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+    }
+
+    function startFloorPortalTracking(node) {
+        stopFloorPortalTracking(node);
+        const tick = () => {
+            if (!node?.classList?.contains("is-open") || !document.contains(node)) {
+                stopFloorPortalTracking(node);
+                return;
+            }
+            positionFloorPortal(node);
+            node.__floorPortalFrame = requestAnimationFrame(tick);
+        };
+        node.__floorPortalFrame = requestAnimationFrame(tick);
+    }
+
     function closeFloorPortalNode(node, { restoreFocus = false } = {}) {
         if (!node) return;
         const trigger = node.querySelector(".preview-floor-portal-trigger");
@@ -2188,6 +2254,7 @@ document.addEventListener("DOMContentLoaded", () => {
             try { focused.blur?.(); } catch (_) {}
         }
 
+        stopFloorPortalTracking(node);
         node.classList.remove("is-open");
         trigger?.setAttribute("aria-expanded", "false");
         popover?.classList.remove("is-open");
@@ -2296,16 +2363,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const ownerId = `floor-${String(hotspot.id || sceneData?.id || Date.now())}`;
         node.dataset.floorOwner = ownerId;
 
-        // The directory must not inherit Marzipano's perspective scale.
-        // Move it to document.body and keep only the compact trigger in the sphere.
+        // Keep the directory visually inside the 360 viewer, but outside the
+        // Marzipano hotspot transform so it remains sharp and readable.
         document.querySelectorAll(`.preview-floor-portal-popover[data-floor-owner="${ownerId}"], .preview-floor-modal-backdrop[data-floor-owner="${ownerId}"]`).forEach((item) => item.remove());
         const backdrop = document.createElement("div");
         backdrop.className = "preview-floor-modal-backdrop";
         backdrop.dataset.floorOwner = ownerId;
         backdrop.setAttribute("aria-hidden", "true");
         popover.dataset.floorOwner = ownerId;
-        document.body.appendChild(backdrop);
-        document.body.appendChild(popover);
+        previewViewer.appendChild(backdrop);
+        previewViewer.appendChild(popover);
 
         floors.forEach((floor) => {
             const button = document.createElement("button");
@@ -2351,6 +2418,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 try { if (popover) popover.inert = false; } catch (_) {}
                 stopAutorotate({ suppress: true });
                 requestAnimationFrame(() => {
+                    positionFloorPortal(node);
+                    startFloorPortalTracking(node);
                     popover?.querySelector(".preview-floor-portal-item, .preview-floor-portal-close")?.focus?.({ preventScroll: true });
                 });
             } else {

@@ -4866,3 +4866,178 @@ body > .preview-floor-portal-popover .preview-floor-portal-footer {
         padding: 10px 12px 12px !important;
     }
 }
+
+/* =====================================================================
+   FLOOR DIRECTORY — VIEWER-ANCHORED PROFESSIONAL PORTAL FINAL
+   The compact trigger remains in the 360 sphere. The directory is mounted
+   directly under #previewViewer, so it stays inside the image while avoiding
+   Marzipano perspective scaling and clipping.
+===================================================================== */
+#previewViewer > .preview-floor-modal-backdrop,
+.preview-viewer > .preview-floor-modal-backdrop {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 143 !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    background: rgba(2, 6, 23, .24);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    transition: opacity .22s ease, visibility .22s ease;
+}
+
+#previewViewer > .preview-floor-modal-backdrop.is-open,
+.preview-viewer > .preview-floor-modal-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+#previewViewer > .preview-floor-portal-popover,
+.preview-viewer > .preview-floor-portal-popover {
+    position: absolute !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: 145 !important;
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+    width: min(390px, calc(100% - 28px)) !important;
+    max-width: 390px !important;
+    max-height: min(72dvh, 620px) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate3d(0, 12px, 0) scale(.965) !important;
+    transform-origin: left center !important;
+    border: 1px solid rgba(255,255,255,.20) !important;
+    border-radius: 27px !important;
+    background:
+        radial-gradient(circle at 8% 0%, rgba(34,211,238,.20), transparent 31%),
+        radial-gradient(circle at 100% 100%, rgba(59,130,246,.16), transparent 38%),
+        linear-gradient(155deg, rgba(15,23,42,.97), rgba(2,6,23,.99)) !important;
+    box-shadow: 0 30px 90px rgba(0,0,0,.56), inset 0 1px 0 rgba(255,255,255,.11) !important;
+    backdrop-filter: blur(22px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(150%) !important;
+    transition: opacity .22s ease, visibility .22s ease, transform .30s cubic-bezier(.22,1,.36,1) !important;
+}
+
+#previewViewer > .preview-floor-portal-popover.is-open,
+#previewViewer > .preview-floor-portal-popover[aria-hidden="false"],
+.preview-viewer > .preview-floor-portal-popover.is-open,
+.preview-viewer > .preview-floor-portal-popover[aria-hidden="false"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translate3d(0,0,0) scale(1) !important;
+}
+
+#previewViewer > .preview-floor-portal-popover.opens-left,
+.preview-viewer > .preview-floor-portal-popover.opens-left {
+    transform-origin: right center !important;
+}
+
+#previewViewer > .preview-floor-portal-popover::before,
+.preview-viewer > .preview-floor-portal-popover::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    z-index: -1;
+    border-left: 1px solid rgba(255,255,255,.18);
+    border-bottom: 1px solid rgba(255,255,255,.18);
+    background: rgba(8,18,38,.98);
+    transform: translateY(-50%) rotate(45deg);
+}
+
+#previewViewer > .preview-floor-portal-popover.opens-left::before,
+.preview-viewer > .preview-floor-portal-popover.opens-left::before {
+    left: auto;
+    right: -8px;
+    transform: translateY(-50%) rotate(225deg);
+}
+
+#previewViewer > .preview-floor-portal-popover .preview-floor-portal-header,
+.preview-viewer > .preview-floor-portal-popover .preview-floor-portal-header {
+    grid-template-columns: 52px minmax(0,1fr) 40px !important;
+    gap: 12px !important;
+    padding: 17px 17px 14px !important;
+}
+
+#previewViewer > .preview-floor-portal-popover .preview-floor-portal-heading-copy strong,
+#previewViewer > .preview-floor-portal-popover .preview-floor-portal-heading-copy span,
+#previewViewer > .preview-floor-portal-popover .preview-floor-portal-current strong,
+#previewViewer > .preview-floor-portal-popover .preview-floor-portal-item strong,
+#previewViewer > .preview-floor-portal-popover .preview-floor-portal-item small,
+.preview-viewer > .preview-floor-portal-popover .preview-floor-portal-heading-copy strong,
+.preview-viewer > .preview-floor-portal-popover .preview-floor-portal-heading-copy span,
+.preview-viewer > .preview-floor-portal-popover .preview-floor-portal-current strong,
+.preview-viewer > .preview-floor-portal-popover .preview-floor-portal-item strong,
+.preview-viewer > .preview-floor-portal-popover .preview-floor-portal-item small {
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
+}
+
+#previewViewer > .preview-floor-portal-popover .preview-floor-portal-list,
+.preview-viewer > .preview-floor-portal-popover .preview-floor-portal-list {
+    min-height: 0 !important;
+    max-height: min(43dvh, 390px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    touch-action: pan-y !important;
+}
+
+@media (max-width: 768px), (pointer: coarse) {
+    #previewViewer > .preview-floor-modal-backdrop,
+    .preview-viewer > .preview-floor-modal-backdrop {
+        background: rgba(2,6,23,.20);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+    }
+
+    #previewViewer > .preview-floor-portal-popover,
+    .preview-viewer > .preview-floor-portal-popover {
+        left: 8px !important;
+        right: 8px !important;
+        top: auto !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 76px) !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: min(61dvh, 540px) !important;
+        border-radius: 24px !important;
+        transform: translate3d(0,24px,0) scale(.975) !important;
+        transform-origin: bottom center !important;
+    }
+
+    #previewViewer > .preview-floor-portal-popover.is-open,
+    #previewViewer > .preview-floor-portal-popover[aria-hidden="false"],
+    .preview-viewer > .preview-floor-portal-popover.is-open,
+    .preview-viewer > .preview-floor-portal-popover[aria-hidden="false"] {
+        transform: translate3d(0,0,0) scale(1) !important;
+    }
+
+    #previewViewer > .preview-floor-portal-popover::before,
+    .preview-viewer > .preview-floor-portal-popover::before {
+        display: none !important;
+    }
+
+    #previewViewer > .preview-floor-portal-popover .preview-floor-portal-header,
+    .preview-viewer > .preview-floor-portal-popover .preview-floor-portal-header {
+        grid-template-columns: 46px minmax(0,1fr) 38px !important;
+        gap: 10px !important;
+        padding: 14px 14px 12px !important;
+    }
+
+    #previewViewer > .preview-floor-portal-popover .preview-floor-portal-list,
+    .preview-viewer > .preview-floor-portal-popover .preview-floor-portal-list {
+        max-height: min(36dvh, 350px) !important;
+        padding: 8px 9px 11px !important;
+    }
+}
