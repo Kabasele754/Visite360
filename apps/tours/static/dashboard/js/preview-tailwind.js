@@ -2101,6 +2101,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const referenceFov = Number(display.reference_fov || sceneData?.hfov_default || 100);
         const direction = String(content.direction || "up").toLowerCase();
         const directionArrow = direction === "down" ? "↓" : direction === "same" ? "→" : "↑";
+        const floorIconUrl =
+            hotspot.icon_url ||
+            hotspot.selected_icon_url ||
+            resolveIcon(hotspot.selected_icon || hotspot.icon || "floor") ||
+            "";
+        const currentFloorName = content.floor_name || hotspot.title || hotspot.label || "Floors";
+        const floorsCount = floors.length;
 
         node.className = "preview-hotspot preview-surface-hotspot preview-floor-portal-hotspot";
         node.style.width = `${markerWidth}px`;
@@ -2116,25 +2123,41 @@ document.addEventListener("DOMContentLoaded", () => {
                         aria-label="Open floor navigation">
                     <span class="preview-floor-portal-ring" aria-hidden="true"></span>
                     <span class="preview-floor-portal-icon" aria-hidden="true">
-                        <i></i><i></i><i></i>
+                        ${floorIconUrl ? `<img src="${escapeAttr(floorIconUrl)}" alt="" draggable="false">` : `
+                        <svg viewBox="0 0 64 64" focusable="false" aria-hidden="true">
+                            <path d="M12 52h40M17 52V22l15-9 15 9v30M24 29h5M35 29h5M24 38h5M35 38h5M29 52V44h6v8"/>
+                        </svg>`}
                     </span>
                     <span class="preview-floor-portal-direction" aria-hidden="true">${directionArrow}</span>
-                    <strong>Floors</strong>
+                    <strong>${escapeAttr(currentFloorName)}</strong>
+                    <small>${floorsCount} level${floorsCount === 1 ? "" : "s"}</small>
                 </button>
 
                 <section class="preview-floor-portal-popover"
                          role="dialog"
+                         aria-modal="false"
                          aria-label="Property floors"
                          aria-hidden="true"
                          inert>
-                    <header>
-                        <div>
-                            <small>PROPERTY LEVELS</small>
-                            <strong>${escapeAttr(hotspot.title || hotspot.label || "Choose a floor")}</strong>
+                    <header class="preview-floor-portal-header">
+                        <div class="preview-floor-portal-heading-icon" aria-hidden="true">
+                            <svg viewBox="0 0 64 64" focusable="false"><path d="M12 52h40M17 52V22l15-9 15 9v30M24 29h5M35 29h5M24 38h5M35 38h5M29 52V44h6v8"/></svg>
+                        </div>
+                        <div class="preview-floor-portal-heading-copy">
+                            <small>PROPERTY DIRECTORY</small>
+                            <strong>Explore every level</strong>
+                            <span>${floorsCount} available level${floorsCount === 1 ? "" : "s"}</span>
                         </div>
                         <button type="button" class="preview-floor-portal-close" aria-label="Close floor navigation">×</button>
                     </header>
+                    <div class="preview-floor-portal-current">
+                        <span>Current location</span>
+                        <strong>${escapeAttr(currentFloorName)}</strong>
+                    </div>
                     <div class="preview-floor-portal-list"></div>
+                    <footer class="preview-floor-portal-footer">
+                        <span>Tap a level to continue the virtual tour</span>
+                    </footer>
                 </section>
             </div>`;
 
@@ -2146,13 +2169,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "preview-floor-portal-item";
+            const floorDirection = String(floor.hotspot?.payload?.content?.direction || "same").toLowerCase();
+            const floorArrow = floorDirection === "up" ? "↑" : floorDirection === "down" ? "↓" : "→";
             button.innerHTML = `
-                <span>${escapeAttr(floor.number)}</span>
+                <span class="preview-floor-level-number">${escapeAttr(floor.number)}</span>
                 <div>
                     <strong>${escapeAttr(floor.name)}</strong>
                     <small>${escapeAttr(floor.description || "Open this level")}</small>
                 </div>
-                <b aria-hidden="true">→</b>`;
+                <b class="preview-floor-level-action" aria-hidden="true">${floorArrow}</b>`;
 
             button.addEventListener("click", (event) => {
                 event.preventDefault();

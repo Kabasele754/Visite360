@@ -4342,3 +4342,203 @@ body.preview-has-loaded .preview-intro-overlay.is-hidden + * {
         max-height: min(390px, 52dvh) !important;
     }
 }
+
+/* =====================================================================
+   FLOOR HOTSPOT — PREMIUM ICON + DIRECTORY POPOVER
+===================================================================== */
+.preview-floor-portal-trigger {
+    grid-template-rows: 1fr auto auto !important;
+    padding: 12px 10px 9px !important;
+}
+
+.preview-floor-portal-icon {
+    width: 44% !important;
+    height: 44% !important;
+    display: grid !important;
+    place-items: center !important;
+    margin-top: -2px;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,.28));
+}
+.preview-floor-portal-icon img,
+.preview-floor-portal-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.preview-floor-portal-icon svg,
+.preview-floor-portal-heading-icon svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.preview-floor-portal-trigger > strong {
+    position: static !important;
+    width: 100%;
+    margin-top: 4px;
+    font-size: 9px !important;
+    letter-spacing: .10em !important;
+}
+.preview-floor-portal-trigger > small {
+    display: block;
+    width: 100%;
+    margin-top: 3px;
+    color: rgba(207,250,254,.78);
+    font-size: 7px;
+    line-height: 1;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.preview-floor-portal-popover {
+    width: min(360px, 84vw) !important;
+    max-height: min(500px, 68dvh) !important;
+    grid-template-rows: auto auto minmax(0,1fr) auto !important;
+    border-radius: 28px !important;
+    border-color: rgba(255,255,255,.42) !important;
+    background:
+        radial-gradient(circle at 15% 0%, rgba(34,211,238,.24), transparent 38%),
+        radial-gradient(circle at 100% 100%, rgba(59,130,246,.20), transparent 34%),
+        linear-gradient(155deg, rgba(2,6,23,.985), rgba(8,29,52,.975)) !important;
+    box-shadow:
+        0 36px 110px rgba(0,0,0,.60),
+        0 0 0 1px rgba(255,255,255,.07) inset !important;
+}
+.preview-floor-portal-header {
+    display: grid !important;
+    grid-template-columns: 48px minmax(0,1fr) 36px;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 15px !important;
+    background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+}
+.preview-floor-portal-heading-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 17px;
+    color: #082032;
+    background: linear-gradient(145deg, #ecfeff, #a5f3fc);
+    box-shadow: 0 14px 30px rgba(34,211,238,.16);
+}
+.preview-floor-portal-heading-icon svg { width: 29px; height: 29px; }
+.preview-floor-portal-heading-copy { min-width: 0; }
+.preview-floor-portal-heading-copy small {
+    color: #67e8f9 !important;
+    font-size: 8px !important;
+    letter-spacing: .20em !important;
+}
+.preview-floor-portal-heading-copy strong {
+    margin-top: 4px !important;
+    font-size: 17px !important;
+    letter-spacing: -.025em;
+}
+.preview-floor-portal-heading-copy span {
+    display: block;
+    margin-top: 3px;
+    color: #a9bdd2;
+    font-size: 10px;
+    font-weight: 750;
+}
+.preview-floor-portal-close {
+    width: 36px !important;
+    height: 36px !important;
+    background: rgba(255,255,255,.07) !important;
+    transition: transform .18s ease, background .18s ease;
+}
+.preview-floor-portal-close:hover { transform: rotate(6deg); background: rgba(255,255,255,.14) !important; }
+
+.preview-floor-portal-current {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 10px 10px 2px;
+    padding: 10px 12px;
+    border-radius: 15px;
+    border: 1px solid rgba(103,232,249,.14);
+    background: rgba(103,232,249,.065);
+}
+.preview-floor-portal-current span {
+    color: #9db0c7;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+.preview-floor-portal-current strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #dffbff;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-floor-portal-list { padding: 8px 10px 10px !important; }
+.preview-floor-portal-item {
+    grid-template-columns: 44px minmax(0,1fr) 34px !important;
+    min-height: 64px;
+    margin-bottom: 7px;
+    padding: 9px 10px !important;
+    border: 1px solid rgba(255,255,255,.08) !important;
+    border-radius: 18px !important;
+    background: linear-gradient(135deg, rgba(255,255,255,.055), rgba(255,255,255,.018)) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.055);
+}
+.preview-floor-portal-item:hover,
+.preview-floor-portal-item:active {
+    border-color: rgba(103,232,249,.35) !important;
+    background: linear-gradient(135deg, rgba(103,232,249,.12), rgba(59,130,246,.07)) !important;
+    transform: translateX(3px) !important;
+}
+.preview-floor-level-number {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 15px !important;
+    background: linear-gradient(145deg, #ffffff, #cffafe) !important;
+    box-shadow: 0 10px 22px rgba(0,0,0,.18);
+}
+.preview-floor-portal-item strong { font-size: 13px !important; }
+.preview-floor-portal-item small { margin-top: 4px !important; font-size: 10px !important; color: #9db0c7 !important; }
+.preview-floor-level-action {
+    width: 31px;
+    height: 31px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    color: #07111f;
+    background: rgba(255,255,255,.92);
+    font-size: 15px !important;
+    box-shadow: 0 8px 18px rgba(0,0,0,.18);
+}
+.preview-floor-portal-footer {
+    padding: 10px 14px 12px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    color: #8195aa;
+    font-size: 9px;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: .06em;
+}
+
+@media (max-width:768px), (pointer:coarse) {
+    .preview-floor-portal-popover {
+        width: min(330px, calc(100vw - 22px)) !important;
+        max-height: min(470px, 62dvh) !important;
+        border-radius: 24px !important;
+    }
+    .preview-floor-portal-header {
+        grid-template-columns: 44px minmax(0,1fr) 34px;
+        padding: 13px !important;
+    }
+    .preview-floor-portal-heading-icon { width: 44px; height: 44px; border-radius: 15px; }
+    .preview-floor-portal-heading-copy strong { font-size: 15px !important; }
+    .preview-floor-portal-current { margin: 8px 8px 1px; }
+    .preview-floor-portal-list { padding: 7px 8px 8px !important; }
+    .preview-floor-portal-item { min-height: 60px; margin-bottom: 6px; border-radius: 16px !important; }
+}
