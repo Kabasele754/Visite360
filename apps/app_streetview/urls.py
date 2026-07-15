@@ -17,15 +17,28 @@ urlpatterns = [
     path("source/tours/<int:tour_id>/", canonical_views.source_tour_detail, name="source_tour_detail"),
     path("source/tours/<int:tour_id>/apply-place-gps/", canonical_views.source_apply_place_gps, name="source_apply_place_gps"),
     path("source/tours/<int:tour_id>/auto-link/", canonical_views.source_auto_link, name="source_auto_link"),
+    path("source/tours/<int:tour_id>/quality-check/", canonical_views.source_quality_check, name="source_quality_check"),
+    path("source/tours/<int:tour_id>/smart-link/", canonical_views.source_smart_link, name="source_smart_link"),
+    path("source/tours/<int:tour_id>/smart-link/apply/", canonical_views.source_apply_smart_link, name="source_apply_smart_link"),
+    path("source/tours/<int:tour_id>/history/", canonical_views.source_history, name="source_history"),
+    path("source/tours/<int:tour_id>/analytics/", canonical_views.source_analytics, name="source_analytics"),
     path("source/tours/<int:tour_id>/connections/", canonical_views.source_connections, name="source_connections"),
     path("source/tours/<int:tour_id>/connections/add/", canonical_views.source_add_connection, name="source_add_connection"),
     path("source/tours/<int:tour_id>/connections/<int:hotspot_id>/delete/", canonical_views.source_delete_connection, name="source_delete_connection"),
     path("source/tours/<int:tour_id>/publish/", canonical_views.source_publish_tour, name="source_publish_tour"),
+    path("source/tours/<int:tour_id>/publish/background/", canonical_views.source_publish_tour_background, name="source_publish_tour_background"),
+    path("source/publish-jobs/<uuid:job_public_id>/", canonical_views.source_publish_job_status, name="source_publish_job_status"),
     path("source/tours/<int:tour_id>/retry-connections/", canonical_views.source_retry_connections, name="source_retry_connections"),
     path("source/tours/<int:tour_id>/share-links/", canonical_views.source_share_links, name="source_share_links"),
     path("source/scenes/<int:source_scene_id>/state/", canonical_views.source_scene_state_update, name="source_scene_state_update"),
     path("source/scenes/<int:source_scene_id>/mark-published/", canonical_views.source_mark_scene_published, name="source_mark_scene_published"),
     path("source/scenes/<int:source_scene_id>/delete-google-photo/", canonical_views.source_delete_google_photo, name="source_delete_google_photo"),
+
+    # Google published photo library for connected account
+    path("published/google-photos/", canonical_views.google_published_photos, name="google_published_photos"),
+    path("published/google-photos/delete/", canonical_views.google_delete_published_photo, name="google_delete_published_photo"),
+    path("published/google-photos/link-scene/", canonical_views.google_link_photo_to_scene, name="google_link_photo_to_scene"),
+    path("published/google-photos/update-pose/", canonical_views.google_update_published_photo_pose, name="google_update_published_photo_pose"),
 
     # Config / Google OAuth
     path("config/", views.streetview_config, name="config"),

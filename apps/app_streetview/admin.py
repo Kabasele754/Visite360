@@ -129,3 +129,30 @@ class StreetViewSourcePublishJobAdmin(admin.ModelAdmin):
     list_filter = ("status", "created_at")
     search_fields = ("publication__source_tour__title", "user__username", "user__email")
     readonly_fields = ("public_id", "created_at", "updated_at", "finished_at", "log")
+
+
+try:
+    from .models import StreetViewQualityReport, StreetViewHistoryEvent, StreetViewAnalyticsEvent
+
+    @admin.register(StreetViewQualityReport)
+    class StreetViewQualityReportAdmin(admin.ModelAdmin):
+        list_display = ("public_id", "publication", "user", "status", "score", "blockers", "warnings", "created_at")
+        list_filter = ("status", "created_at")
+        search_fields = ("publication__source_tour__title", "user__username", "user__email")
+        readonly_fields = ("public_id", "created_at", "report")
+
+    @admin.register(StreetViewHistoryEvent)
+    class StreetViewHistoryEventAdmin(admin.ModelAdmin):
+        list_display = ("publication", "action", "source_scene", "user", "created_at")
+        list_filter = ("action", "created_at")
+        search_fields = ("publication__source_tour__title", "message", "source_scene__title", "user__username", "user__email")
+        readonly_fields = ("created_at", "metadata")
+
+    @admin.register(StreetViewAnalyticsEvent)
+    class StreetViewAnalyticsEventAdmin(admin.ModelAdmin):
+        list_display = ("publication", "event_type", "source_scene", "user", "created_at")
+        list_filter = ("event_type", "created_at")
+        search_fields = ("publication__source_tour__title", "source_scene__title", "user__username", "user__email")
+        readonly_fields = ("created_at", "metadata")
+except admin.sites.AlreadyRegistered:
+    pass

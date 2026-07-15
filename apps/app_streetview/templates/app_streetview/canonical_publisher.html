@@ -1,10 +1,10 @@
 {% load static %}
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Street View Publisher — Tours existants</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Street View Publisher — GPS & Camera Editor</title>
   <link rel="stylesheet" href="{% static 'app_streetview/css/canonical_publisher.css' %}">
   <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
 </head>
@@ -15,138 +15,257 @@
         <div class="brand-mark">360</div>
         <div>
           <h1>Street View Publisher</h1>
-          <p>Organisation → Place → Tour existant → Publication Google</p>
+          <p>Organization → Place → Tour → GPS, camera, Google connections</p>
         </div>
       </div>
-      <div class="google-status" id="googleStatus">Google: vérification...</div>
+      <div class="top-actions">
+        <button id="openLibraryTopBtn" class="btn btn-soft small">🖼️ Google account library</button>
+        <button id="runQualityTopBtn" class="btn btn-soft small">✅ Quality</button>
+        <button id="quickPublishBtn" class="btn btn-primary small">Publish / continue</button>
+        <div class="google-status" id="googleStatus">Google: checking...</div>
+      </div>
     </header>
 
     <main class="layout">
       <aside class="left-panel">
-        <section class="panel">
-          <div class="panel-title">1. Organisations</div>
+        <section class="panel compact-panel">
+          <div class="panel-title">1. Organizations</div>
           <div id="organizationsList" class="stack small-list"></div>
         </section>
-        <section class="panel">
+
+        <section class="panel compact-panel">
           <div class="panel-title">2. Places</div>
-          <div id="placesList" class="stack small-list muted-box">Choisis d’abord une organisation.</div>
+          <div id="placesList" class="stack small-list muted-box">Select an organization first.</div>
         </section>
-        <section class="panel flex-fill">
-          <div class="panel-title">3. Tours existants</div>
-          <div id="toursList" class="stack small-list muted-box">Choisis un place.</div>
+
+        <section class="panel compact-panel flex-fill">
+          <div class="panel-title">3. Existing tours</div>
+          <div id="toursList" class="stack small-list muted-box">Select a place.</div>
         </section>
       </aside>
 
       <section class="main-panel">
+
+        <div class="publisher-main-tabs panel mini-tabs-panel">
+          <button id="prepareTabBtn" class="main-tab active" type="button">🛠️ Edit a tour</button>
+          <button id="libraryTabBtn" class="main-tab" type="button">🖼️ Google account photos</button>
+        </div>
+
+        <div id="googleLibraryWorkspace" class="google-library hidden">
+          <section class="panel library-hero">
+            <div>
+              <div class="eyebrow">Connected Google account</div>
+              <h2>All photos owned by this Google Street View account</h2>
+              <p class="help">This list comes directly from Google Street View Publish API. It includes photos published outside TwinScopes when they belong to the same connected Gmail.</p>
+            </div>
+            <div class="actions library-actions">
+              <button id="refreshGooglePhotosBtn" class="btn btn-soft">↻ Refresh</button>
+              <button id="loadMoreGooglePhotosBtn" class="btn btn-soft hidden">Load more</button>
+            </div>
+          </section>
+
+          <section class="panel library-toolbar-panel">
+            <div class="library-search-wrap">
+              <input id="googlePhotoSearch" class="library-search" type="search" placeholder="Search Google Photo ID, status, GPS, linked tour, scene...">
+            </div>
+            <div class="library-filter-tabs">
+              <button class="library-filter active" data-google-filter="all" type="button">All account photos <span id="googleStatTotal">0</span></button>
+              <button class="library-filter" data-google-filter="matched" type="button">Linked to TwinScopes <span id="googleStatMatched">0</span></button>
+              <button class="library-filter" data-google-filter="unmatched" type="button">Only on Google <span id="googleStatUnmatched">0</span></button>
+              <button class="library-filter" data-google-filter="rejected" type="button">Rejected <span id="googleStatRejected">0</span></button>
+            </div>
+          </section>
+
+          <section class="panel google-library-panel">
+            <div id="googlePhotoGrid" class="google-photo-grid muted-box">Click “Refresh” to load all photos from the connected Google account.</div>
+          </section>
+        </div>
+
         <div id="emptyState" class="empty-state">
-          <div class="empty-icon">🗺️</div>
-          <h2>Sélectionne un tour existant</h2>
-          <p>On ne recrée plus les images 360. On lit directement tes Organization, Place, Tour et Scene360 déjà présents dans ton application.</p>
+          <div class="empty-card">
+            <div class="empty-icon">🗺️</div>
+            <h2>Select an existing tour</h2>
+            <p>This module uses your existing 360 images. Here you only adjust GPS position, camera direction, and Street View connections.</p>
+          </div>
         </div>
 
         <div id="workspace" class="workspace hidden">
-          <div class="tour-header panel">
-            <div>
-              <div class="eyebrow" id="breadcrumb">Organisation / Place</div>
+          <section class="tour-header panel">
+            <div class="tour-title-block">
+              <div class="eyebrow" id="breadcrumb">Organization / Place</div>
               <h2 id="tourTitle">Tour</h2>
               <p id="tourMeta">—</p>
             </div>
-            <div class="actions">
-              <button id="applyPlaceGpsBtn" class="btn btn-soft">Appliquer GPS du place</button>
-              <button id="autoLinkBtn" class="btn btn-soft">Auto-lier aller/retour</button>
-              <button id="publishBtn" class="btn btn-primary">Publier / continuer</button>
+            <div class="tour-stats" id="tourStats"></div>
+            <div class="actions header-actions">
+              <button id="applyPlaceGpsBtn" class="btn btn-soft" title="Apply tour/place GPS to scenes without GPS">📍 Missing GPS</button>
+              <button id="qualityBtn" class="btn btn-soft" title="Run quality check before publishing">✅ Check</button>
+              <button id="smartLinkBtn" class="btn btn-soft" title="Suggest smarter connections">✨ Smart link</button>
+              <button id="autoLinkBtn" class="btn btn-soft" title="Automatically create forward/back links">🔗 Auto-link</button>
+              <button id="publishBtn" class="btn btn-primary" title="Publish unpublished scenes and continue connections">🚀 Publish</button>
             </div>
-          </div>
+          </section>
 
-          <div class="content-grid">
-            <section class="panel">
-              <div class="panel-head">
+          <div class="studio-grid">
+            <section class="panel scene-panel">
+              <div class="panel-head slim">
                 <div>
-                  <div class="panel-title">Images du tour</div>
-                  <p class="help">Liste compacte des scènes 360 existantes. Clique pour préparer et prévisualiser.</p>
+                  <div class="panel-title">Images</div>
+                  <p class="help">Click a scene to edit its position and camera.</p>
                 </div>
-                <span class="badge" id="sceneCounter">0 scène</span>
+                <span class="badge" id="sceneCounter">0</span>
               </div>
               <div id="sceneList" class="scene-list"></div>
             </section>
 
-            <aside class="panel right-panel">
-              <div class="panel-title">Logique simple</div>
-              <div class="logic-steps">
-                <div><b>1</b><span>Choisis Organisation → Place → Tour.</span></div>
-                <div><b>2</b><span>Vérifie les images et le GPS.</span></div>
-                <div><b>3</b><span>Auto-lie les scènes ou utilise tes hotspots Navigate.</span></div>
-                <div><b>4</b><span>Publie seulement ce qui n’est pas encore sur Google.</span></div>
+            <section class="panel editor-panel">
+              <div class="panel-head editor-head">
+                <div>
+                  <div class="panel-title">Map + 360 editor</div>
+                  <h3 id="sceneTitle">No scene selected</h3>
+                  <p id="editorHelp" class="help">Move the point on the map and rotate the 360 image to set the heading.</p>
+                </div>
+                <div class="actions icon-actions">
+                  <button id="focusMapBtn" class="icon-action" title="Center scene on map">⌖</button>
+                  <button id="fitScenesBtn" class="icon-action" title="Fit all scenes on map">⛶</button>
+                  <button id="saveSceneBtn" class="icon-action primary" title="Save GPS and camera">✓</button>
+                </div>
               </div>
-              <hr>
-              <div class="panel-title">Connexion manuelle</div>
-              <div class="manual-connect">
-                <label>Depuis<select id="manualFromScene"></select></label>
-                <label>Vers<select id="manualToScene"></select></label>
-                <label>Label<input id="manualConnectionLabel" type="text" placeholder="Ex: Entrer / Retour"></label>
-                <button id="addManualConnectionBtn" class="btn btn-soft btn-full">Ajouter liaison manuelle</button>
-                <button id="retryConnectionsBtn" class="btn btn-soft btn-full">Envoyer/Réessayer connexions Google</button>
-                <div id="manualConnectionsList" class="connection-list muted-box">Aucune liaison.</div>
+
+              <div id="sceneDetailEmpty" class="muted-box">Click an image in the list.</div>
+
+              <div id="sceneDetail" class="editor-body hidden">
+                <div class="split-view">
+                  <div class="pano-pane">
+                    <div id="viewer" class="viewer"></div>
+                    <div class="viewer-overlay top-left">
+                      <span id="cameraReadout">heading 0°</span>
+                    </div>
+                    <div class="viewer-overlay top-right">
+                      <button id="reloadViewerBtn" class="circle-btn" title="Reload 360 image">↻</button>
+                      <button id="captureCameraBtn" class="circle-btn" title="Capture current view">◎</button>
+                    </div>
+                    <div class="viewer-overlay bottom-center">
+                      <label class="toggle-chip" title="When you rotate the 360 view, the map arrow updates">
+                        <input id="liveCameraToggle" type="checkbox" checked>
+                        <span>live camera</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="map-pane">
+                    <div id="streetEditorMap" class="street-editor-map"></div>
+                    <div class="map-tools">
+                      <button id="satelliteToggleBtn" class="map-chip">Satellite</button>
+                      <button id="placeSearchBtn" class="map-chip">Search</button>
+                    </div>
+                    <div id="mapSearchBox" class="map-search hidden">
+                      <input id="mapSearchInput" type="text" placeholder="Search une adresse ou un lieu...">
+                      <button id="closeMapSearchBtn">×</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="edit-form">
+                  <label>Latitude<input id="sceneLat" type="number" step="0.0000001"></label>
+                  <label>Longitude<input id="sceneLng" type="number" step="0.0000001"></label>
+                  <label>Heading<input id="sceneHeading" type="number" step="0.01" min="0" max="359.99"></label>
+                  <label>Pitch<input id="scenePitch" type="number" step="0.01" min="-90" max="90"></label>
+                  <label>Roll<input id="sceneRoll" type="number" step="0.01" min="-180" max="180"></label>
+                  <label>FOV<input id="sceneFov" type="number" step="0.01" min="10" max="120"></label>
+                </div>
               </div>
-              <hr>
-              <div class="panel-title">Liens Google</div>
-              <div id="shareLinks" class="share-list muted-box">Aucun lien publié pour le moment.</div>
-              <button id="copyAllLinksBtn" class="btn btn-soft btn-full">Copier tous les liens</button>
+            </section>
+
+            <aside class="right-stack">
+              <section class="panel flow-panel">
+                <div class="panel-title">Navigation</div>
+                <div class="mode-tabs">
+                  <button id="autoModeTab" class="mode-tab active" type="button">Auto</button>
+                  <button id="manualModeTab" class="mode-tab" type="button">Manual</button>
+                </div>
+
+                <div id="autoModePanel" class="mode-panel">
+                  <p class="help">Create a natural walk: scene 1 ↔ scene 2 ↔ scene 3.</p>
+                  <button id="autoLinkBtnSide" class="btn btn-soft btn-full">🔗 Auto-link aller/retour</button>
+                </div>
+
+                <div id="manualModePanel" class="mode-panel hidden">
+                  <div class="manual-connect">
+                    <label>From<select id="manualFromScene"></select></label>
+                    <label>To<select id="manualToScene"></select></label>
+                    <label>Label<input id="manualConnectionLabel" type="text" placeholder="Ex: Enter / Back"></label>
+                    <div class="manual-grid">
+                      <button id="alignToTargetBtn" class="btn btn-soft">🧭 Align</button>
+                      <button id="addManualConnectionBtn" class="btn btn-primary">Add</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="manualConnectionsList" class="connection-list muted-box">No connection yet.</div>
+                <button id="retryConnectionsBtn" class="btn btn-soft btn-full">↻ Retry Google connections</button>
+              </section>
+
+              <section class="panel publish-panel">
+                <div class="panel-title">Publishing</div>
+                <button id="publishBtnSide" class="btn btn-primary btn-full">🚀 Publish in background</button>
+                <button id="deleteGooglePhotoBtn" class="btn btn-danger btn-full">Delete from Google</button>
+                <div id="jobProgress" class="job-progress muted-box">No background job yet.</div>
+              </section>
+
+              <section class="panel quality-panel">
+                <div class="panel-title">Quality check</div>
+                <button id="qualityBtnSide" class="btn btn-soft btn-full">✅ Run quality check</button>
+                <div id="qualitySummary" class="quality-summary muted-box">Run a check before publishing.</div>
+              </section>
+
+              <section class="panel smart-panel">
+                <div class="panel-title">Smart link</div>
+                <button id="smartLinkBtnSide" class="btn btn-soft btn-full">✨ Suggest links</button>
+                <div id="smartLinkSuggestions" class="smart-suggestions muted-box">No suggestion yet.</div>
+                <button id="applySmartLinksBtn" class="btn btn-primary btn-full">Apply recommended</button>
+              </section>
+
+              <section class="panel analytics-panel">
+                <div class="panel-title">Analytics</div>
+                <div id="analyticsSummary" class="analytics-summary muted-box">No analytics yet.</div>
+              </section>
+
+              <section class="panel history-panel">
+                <div class="panel-title">History</div>
+                <div id="historyList" class="history-list muted-box">No history yet.</div>
+              </section>
+
+              <section class="panel links-panel">
+                <div class="panel-title">Google links</div>
+                <div id="shareLinks" class="share-list muted-box">No published link yet.</div>
+                <button id="copyAllLinksBtn" class="btn btn-soft btn-full">Copy all links</button>
+              </section>
+
+              <section class="panel logs-panel">
+                <div class="panel-title">Logs</div>
+                <pre id="publishLogs" class="logs">No logs yet.</pre>
+              </section>
             </aside>
           </div>
-
-          <section class="panel detail-panel">
-            <div class="panel-head">
-              <div>
-                <div class="panel-title">Préparer la scène</div>
-                <h3 id="sceneTitle">Aucune scène sélectionnée</h3>
-              </div>
-              <div class="actions">
-                <button id="openViewerBtn" class="btn btn-soft">Voir 360</button>
-                <button id="deleteGooglePhotoBtn" class="btn btn-danger">Effacer de Google</button>
-                <button id="saveSceneBtn" class="btn btn-primary">Sauvegarder caméra/GPS</button>
-              </div>
-            </div>
-            <div id="sceneDetailEmpty" class="muted-box">Clique sur une image dans la liste.</div>
-            <div id="sceneDetail" class="detail-grid hidden">
-              <img id="scenePreview" class="preview-img" alt="preview">
-              <div class="form-grid">
-                <label>Latitude<input id="sceneLat" type="number" step="0.000001"></label>
-                <label>Longitude<input id="sceneLng" type="number" step="0.000001"></label>
-                <label>Heading<input id="sceneHeading" type="number" step="0.1"></label>
-                <label>Pitch<input id="scenePitch" type="number" step="0.1"></label>
-                <label>Roll<input id="sceneRoll" type="number" step="0.1"></label>
-                <label>FOV<input id="sceneFov" type="number" step="1"></label>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-title">Logs publication</div>
-            <pre id="publishLogs" class="logs">Aucun log.</pre>
-          </section>
         </div>
       </section>
     </main>
   </div>
 
-  <div id="viewerModal" class="modal hidden">
-    <div class="modal-card">
-      <div class="modal-head">
-        <div>
-          <div class="eyebrow">Preview 360</div>
-          <h3 id="viewerTitle">Scène</h3>
-        </div>
-        <div class="actions">
-          <button id="captureCameraBtn" class="btn btn-soft">Définir comme vue principale</button>
-          <button id="closeViewerBtn" class="btn btn-danger">Fermer</button>
-        </div>
-      </div>
-      <div id="viewer" class="viewer"></div>
-    </div>
-  </div>
-
   <div id="toastBox" class="toast-box"></div>
+
+  <script>
+    window.STREETVIEW_MAP_CONFIG = {
+      apiKey: "{{ google_maps_api_key|default:''|escapejs }}",
+      mapId: "{{ google_maps_map_id|default:'DEMO_MAP_ID'|escapejs }}"
+    };
+  </script>
   <script src="{% static 'app_streetview/js/canonical_publisher.js' %}"></script>
+  {% if google_maps_api_key %}
+    <script async src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&loading=async&v=weekly&libraries=places,geometry,marker&callback=initCanonicalPublisherPage"></script>
+  {% else %}
+    <script>window.initCanonicalPublisherPage && window.initCanonicalPublisherPage();</script>
+  {% endif %}
 </body>
 </html>

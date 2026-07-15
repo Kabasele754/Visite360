@@ -460,3 +460,97 @@ class StreetViewSourcePublishJob(models.Model):
         current.append(entry)
         self.log = current
         self.save(update_fields=["log", "updated_at"])
+
+
+class StreetViewQualityReport(models.Model):
+    class Status(models.TextChoices):
+        READY = "ready", "Ready"
+        NEEDS_ATTENTION = "needs_attention", "Needs attention"
+        BLOCKED = "blocked", "Blocked"
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    publication = models.ForeignKey(StreetViewSourcePublication, on_delete=models.CASCADE, related_name="quality_reports")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="streetview_quality_reports")
+    status = models.CharField(max_length=32, choices=Status.choices, default=Status.NEEDS_ATTENTION)
+    score = models.PositiveSmallIntegerField(default=0)
+    blockers = models.PositiveIntegerField(default=0)
+    warnings = models.PositiveIntegerField(default=0)
+    report = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["publication", "created_at"], name="sv_quality_pub_created_idx"),
+            models.Index(fields=["status"], name="sv_quality_status_idx"),
+        ]
+
+    def __str__(self):
+        return f"Quality report {self.public_id} - {self.status}"
+
+
+class StreetViewHistoryEvent(models.Model):
+    class Action(models.TextChoices):
+        QUALITY_CHECK = "quality_check", "Quality check"
+        SMART_LINK = "smart_link", "Smart link"
+        AUTO_LINK = "auto_link", "Auto link"
+        MANUAL_LINK = "manual_link", "Manual link"
+        SCENE_UPDATE = "scene_update", "Scene update"
+        PUBLISH_STARTED = "publish_started", "Publish started"
+        PUBLISH_FINISHED = "publish_finished", "Publish finished"
+        PUBLISH_FAILED = "publish_failed", "Publish failed"
+        CONNECTIONS_RETRIED = "connections_retried", "Connections retried"
+        GOOGLE_PHOTO_DELETED = "google_photo_deleted", "Google photo deleted"
+        GOOGLE_PHOTO_LINKED = "google_photo_linked", "Google photo linked"
+        OTHER = "other", "Other"
+
+    publication = models.ForeignKey(StreetViewSourcePublication, on_delete=models.CASCADE, related_name="history_events")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="streetview_history_events")
+    source_scene = models.ForeignKey("tours.Scene360", null=True, blank=True, on_delete=models.SET_NULL, related_name="streetview_history_events")
+    job = models.ForeignKey(StreetViewSourcePublishJob, null=True, blank=True, on_delete=models.SET_NULL, related_name="history_events")
+    action = models.CharField(max_length=48, choices=Action.choices, default=Action.OTHER)
+    message = models.CharField(max_length=255, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["publication", "created_at"], name="sv_hist_pub_created_idx"),
+            models.Index(fields=["action"], name="sv_hist_action_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.action} - {self.publication_id}"
+
+
+class StreetViewAnalyticsEvent(models.Model):
+    class Type(models.TextChoices):
+        TOUR_OPENED = "tour_opened", "Tour opened"
+        SCENE_SELECTED = "scene_selected", "Scene selected"
+        CAMERA_SAVED = "camera_saved", "Camera saved"
+        QUALITY_CHECK = "quality_check", "Quality check"
+        SMART_LINK_APPLIED = "smart_link_applied", "Smart link applied"
+        PUBLISH_STARTED = "publish_started", "Publish started"
+        PUBLISH_SUCCEEDED = "publish_succeeded", "Publish succeeded"
+        PUBLISH_FAILED = "publish_failed", "Publish failed"
+        GOOGLE_LIBRARY_OPENED = "google_library_opened", "Google library opened"
+        GOOGLE_PHOTO_OPENED = "google_photo_opened", "Google photo opened"
+        OTHER = "other", "Other"
+
+    publication = models.ForeignKey(StreetViewSourcePublication, on_delete=models.CASCADE, related_name="analytics_events")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="streetview_analytics_events")
+    source_scene = models.ForeignKey("tours.Scene360", null=True, blank=True, on_delete=models.SET_NULL, related_name="streetview_analytics_events")
+    event_type = models.CharField(max_length=48, choices=Type.choices, default=Type.OTHER)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["publication", "created_at"], name="sv_analytics_pub_created_idx"),
+            models.Index(fields=["event_type"], name="sv_analytics_type_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.event_type} - {self.publication_id}"

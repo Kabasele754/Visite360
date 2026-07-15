@@ -161,6 +161,83 @@ class StreetViewPublishClient:
         self._raise_for_response(response, "Impossible de créer la photo Street View")
         return response.json()
 
+
+    def list_photos(self, page_size: int = 50, page_token: str = "", view: str = "INCLUDE_DOWNLOAD_URL") -> Dict:
+        """List photos that belong to the connected Google account.
+
+        Street View Publish API returns recently indexed photos only; just-created
+        photos can be absent for a short time, so the frontend also merges local
+        StreetViewSourceSceneState records when available.
+        """
+        try:
+            page_size = int(page_size)
+        except (TypeError, ValueError):
+            page_size = 50
+        page_size = max(1, min(page_size, 100))
+        params = {"pageSize": page_size, "view": view or "INCLUDE_DOWNLOAD_URL"}
+        if page_token:
+            params["pageToken"] = page_token
+        response = self.session.get(
+            self._url("/v1/photos"),
+            params=params,
+            headers=self.auth_headers,
+            timeout=self.timeout,
+        )
+        self._raise_for_response(response, "Impossible de récupérer les photos publiées Street View")
+        return response.json()
+
+    def list_all_photos(self, *, page_size: int = 100, max_pages: int = 20, view: str = "INCLUDE_DOWNLOAD_URL") -> Dict:
+        photos = []
+        next_token = ""
+        pages = 0
+        while pages < max_pages:
+            data = self.list_photos(page_size=page_size, page_token=next_token, view=view)
+            photos.extend(data.get("photos") or [])
+            next_token = data.get("nextPageToken") or ""
+            pages += 1
+            if not next_token:
+                break
+        return {"photos": photos, "nextPageToken": next_token, "pages": pages}
+
+
+    def list_photo_sequences(self, page_size: int = 100, page_token: str = "", filter_expr: str = "") -> Dict:
+        """List photo sequences that belong to the connected Google account.
+
+        Street View Studio/video uploads can appear as photo sequences. This
+        complements photos.list, which returns individual photo resources.
+        """
+        try:
+            page_size = int(page_size)
+        except (TypeError, ValueError):
+            page_size = 100
+        page_size = max(1, min(page_size, 100))
+        params = {"pageSize": page_size}
+        if page_token:
+            params["pageToken"] = page_token
+        if filter_expr:
+            params["filter"] = filter_expr
+        response = self.session.get(
+            self._url("/v1/photoSequences"),
+            params=params,
+            headers=self.auth_headers,
+            timeout=self.timeout,
+        )
+        self._raise_for_response(response, "Impossible de récupérer les séquences Street View")
+        return response.json()
+
+    def list_all_photo_sequences(self, *, page_size: int = 100, max_pages: int = 20, filter_expr: str = "") -> Dict:
+        sequences = []
+        next_token = ""
+        pages = 0
+        while pages < max_pages:
+            data = self.list_photo_sequences(page_size=page_size, page_token=next_token, filter_expr=filter_expr)
+            sequences.extend(data.get("photoSequences") or data.get("photo_sequences") or [])
+            next_token = data.get("nextPageToken") or data.get("next_page_token") or ""
+            pages += 1
+            if not next_token:
+                break
+        return {"photoSequences": sequences, "nextPageToken": next_token, "pages": pages}
+
     def get_photo(self, photo_id: str, view: str = "BASIC") -> Dict:
         response = self.session.get(
             self._url(f"/v1/photo/{photo_id}"),
