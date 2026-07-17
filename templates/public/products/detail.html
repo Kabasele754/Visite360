@@ -1,0 +1,325 @@
+{% load static vendor_cart %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>{{ product.name }} | Twinscopes</title>
+    <meta name="description" content="{{ product.short_description|default:product.description|striptags|truncatechars:155 }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <meta property="og:type" content="product">
+    <meta property="og:site_name" content="Twinscopes">
+    <meta property="og:title" content="{{ product.name }}">
+    <meta property="og:description" content="{{ product.short_description|default:product.description|striptags|truncatechars:180 }}">
+    <meta property="og:url" content="{{ canonical_url }}">
+    {% if product_image_absolute_url %}
+    <meta property="og:image" content="{{ product_image_absolute_url }}">
+    <meta property="og:image:secure_url" content="{{ product_image_absolute_url }}">
+    <meta property="og:image:alt" content="{{ product.name }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    {% endif %}
+    <meta name="twitter:card" content="{% if product_image_absolute_url %}summary_large_image{% else %}summary{% endif %}">
+    <meta name="twitter:title" content="{{ product.name }}">
+    <meta name="twitter:description" content="{{ product.short_description|default:product.description|striptags|truncatechars:180 }}">
+    {% if product_image_absolute_url %}<meta name="twitter:image" content="{{ product_image_absolute_url }}">{% endif %}
+    <script type="application/ld+json">{{ product_schema_json|safe }}</script>
+    <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">
+    <link rel="stylesheet" href="{% static 'public/css/vendor-commerce-v13.css' %}">
+<script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0891b2">
+<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+<link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+</head>
+<body class="market-page-body market-flow-no-mobile-nav" data-organization-id="{{ product.organization_id }}" data-product-id="{{ product.id }}" data-growth-page-event="product_viewed">
+{% include 'public/partials/loader_3d_global.html' %}
+{% product_is_in_cart product as detail_in_cart %}
+{% product_cart_quantity product as detail_cart_quantity %}
+    {% include 'public/products/_nav.html' with active_market_nav='products' mobile_back=True %}
+
+    <main class="market-page-shell market-detail-shell">
+        <nav class="market-breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Home</a><span>›</span><a href="{% url 'vendors:product_list' %}">Products</a><span>›</span><strong>{{ product.name }}</strong>
+        </nav>
+
+        <section class="market-detail-layout">
+            <div class="market-detail-gallery">
+                <div class="market-detail-main-media">
+                    {% if product.cover_image %}<img id="marketMainProductImage" src="{{ product.cover_image.url }}" alt="{{ product.name }}">{% else %}<div class="market-product-placeholder"><span>▣</span><small>Product image</small></div>{% endif %}
+                    <div class="market-detail-badges">
+                        {% if product.is_featured %}<span>Featured</span>{% endif %}
+                        <span class="{% if product.in_stock %}is-stock{% else %}is-out{% endif %}">{% if product.in_stock %}In stock{% else %}Out of stock{% endif %}</span>
+                    </div>
+                </div>
+
+                {% if product.gallery.all %}
+                <div class="market-detail-thumbs">
+                    {% if product.cover_image %}<button type="button" class="is-active" data-product-image="{{ product.cover_image.url }}"><img src="{{ product.cover_image.url }}" alt="{{ product.name }}"></button>{% endif %}
+                    {% for media in product.gallery.all %}<button type="button" data-product-image="{{ media.image.url }}"><img src="{{ media.image.url }}" alt="{{ media.alt_text|default:product.name }}"></button>{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="market-detail-info">
+                <div class="market-detail-vendor">
+                    <span class="market-detail-vendor-logo">{{ product.organization.name|first|upper }}</span>
+                    <div><small>Sold by verified organization</small><strong>{{ product.organization.name }}</strong></div>
+                </div>
+
+                <p class="market-eyebrow market-eyebrow-dark">{{ product.category.name|default:'Product' }}</p>
+                <h1>{{ product.name }}</h1>
+                <p class="market-detail-lead">{{ product.short_description|default:product.description }}</p>
+
+                <div class="market-detail-price-row">
+                    <div>
+                        {% if product.compare_at_price and product.compare_at_price > product.price %}<del>{{ product.currency }} {{ product.compare_at_price }}</del>{% endif %}
+                        <strong>{{ product.currency }} {{ product.price }}</strong>
+                    </div>
+                    <span>Secure order request</span>
+                </div>
+
+                <div class="market-detail-service-grid">
+                    {% if product.delivery_available %}<div><span>↗</span><strong>Delivery available</strong><small>Estimated in {{ product.estimated_delivery_days }} day{{ product.estimated_delivery_days|pluralize }}</small></div>{% endif %}
+                    {% if product.pickup_available %}<div><span>⌂</span><strong>Pickup available</strong><small>Collect from the vendor</small></div>{% endif %}
+                    <div><span>✓</span><strong>Organization verified</strong><small>Connected to Twinscopes</small></div>
+                </div>
+
+                <form method="post"
+                      action="{% url 'vendors:cart_add' product.id %}"
+                      class="market-detail-order-form"
+                      data-product-cart-form
+                      data-detail-cart-form
+                      data-add-url="{% url 'vendors:cart_add' product.id %}"
+                      data-update-url="{% url 'vendors:cart_update' product.id %}"
+                      data-is-in-cart="{% if detail_in_cart %}true{% else %}false{% endif %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <label>
+                        <span>Quantity</span>
+                        <div class="market-quantity-control">
+                            <button type="button" data-qty-minus>−</button>
+                            <input id="marketQuantity"
+                                   type="number"
+                                   name="quantity"
+                                   value="{% if detail_in_cart %}{{ detail_cart_quantity }}{% else %}1{% endif %}"
+                                   min="1"
+                                   max="{% if product.track_inventory %}{{ product.stock_quantity }}{% else %}99{% endif %}"
+                                   data-stock-max="{% if product.track_inventory %}{{ product.stock_quantity }}{% else %}99{% endif %}">
+                            <button type="button" data-qty-plus>＋</button>
+                        </div>
+                        {% if product.track_inventory %}
+                        <small class="market-stock-feedback" data-stock-feedback>
+                            {{ product.stock_quantity }} available
+                        </small>
+                        {% endif %}
+                    </label>
+                    <div class="market-detail-cart-actions">
+                        <button type="submit"
+                                class="market-detail-order-button{% if detail_in_cart %} is-in-cart{% endif %}"
+                                data-detail-cart-button
+                                {% if not product.in_stock %}disabled{% endif %}>
+                            {% if product.in_stock %}
+                                <span data-detail-cart-label>
+                                    {% if detail_in_cart %}Update cart · {{ detail_cart_quantity }}{% else %}Add to cart{% endif %}
+                                </span>
+                                <strong data-detail-cart-icon aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M3.5 5h2l1.8 9.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H7"/><circle cx="9.5" cy="19" r="1.2"/><circle cx="17.5" cy="19" r="1.2"/></svg>
+                                </strong>
+                            {% else %}
+                                <span>Currently unavailable</span>
+                            {% endif %}
+                        </button>
+                        <button type="button" class="market-detail-view-cart" data-mini-cart-open>
+                            <svg viewBox="0 0 24 24"><path d="M3.5 5h2l1.8 9.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H7"/><circle cx="9.5" cy="19" r="1.2"/><circle cx="17.5" cy="19" r="1.2"/></svg>
+                            <span>View cart</span>
+                            <b data-cart-count {% if not detail_in_cart %}hidden{% endif %}>1</b>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="market-detail-assurance"><span>Direct vendor order</span><span>Delivery or pickup</span><span>Detailed tracking</span></div>
+            </div>
+        </section>
+
+        
+<section class="market-detail-content-grid">
+            <article class="market-detail-description"><p class="market-eyebrow market-eyebrow-dark">Product overview</p><h2>Everything you need to know</h2><div class="market-rich-copy">{{ product.description|linebreaks }}</div></article>
+            <aside class="market-detail-specs"><h2>Product details</h2>{% if product.specifications %}<dl>{% for key,value in product.specifications.items %}<div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>{% else %}<p>Ask the organization for additional technical information.</p>{% endif %}<div class="market-detail-metrics"><span><strong>{{ product.view_count }}</strong> views</span><span><strong>{{ product.order_count }}</strong> ordered</span>{% if product.track_inventory %}<span><strong>{{ product.stock_quantity }}</strong> available</span>{% endif %}</div></aside>
+        </section>
+
+        {% if related_products %}
+        <section class="market-related-section">
+            <div class="market-section-top"><div><p class="market-eyebrow market-eyebrow-dark">More from this organization</p><h2>You may also like</h2></div><a href="{% url 'vendors:product_list' %}?q={{ product.organization.name|urlencode }}">View all →</a></div>
+            <div class="market-related-grid">{% for related in related_products %}{% include 'public/products/_card.html' with product=related compact=True %}{% endfor %}</div>
+        </section>
+        {% endif %}
+
+{% if similar_products %}
+<section class="market-related-section market-similar-section">
+    <div class="market-section-top">
+        <div><p class="market-eyebrow market-eyebrow-dark">Similar products</p><h2>More products you may like</h2></div>
+        <a href="{% url 'vendors:product_list' %}{% if product.category %}?category={{ product.category.slug }}{% endif %}">Explore similar →</a>
+    </div>
+    <div class="market-related-grid">
+        {% for similar in similar_products %}
+            {% include 'public/products/_card.html' with product=similar compact=True %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+    
+<section class="market-product-reviews">
+  <div class="section-head">
+    <div><p class="market-eyebrow market-eyebrow-dark">Verified buyers</p><h2>Customer reviews</h2></div>
+    <p>{% if review_summary.total %}{{ review_summary.average|floatformat:1 }} / 5 from {{ review_summary.total }} review{{ review_summary.total|pluralize }}{% else %}No reviews yet{% endif %}</p>
+  </div>
+  <div class="market-review-grid">
+    {% for review in reviews %}
+      <article class="market-review-card">
+        <div><strong>{{ review.rating }} / 5</strong><small>Verified purchase · {{ review.created_at|date:"M j, Y" }}</small></div>
+        <p>{{ review.comment }}</p>
+        {% if review.images.all %}<div class="market-review-images">{% for image in review.images.all %}<img src="{{ image.image.url }}" alt="{{ image.alt_text|default:'Review photo' }}" loading="lazy">{% endfor %}</div>{% endif %}
+        {% if review.vendor_response %}<blockquote><strong>Vendor response</strong><p>{{ review.vendor_response }}</p></blockquote>{% endif %}
+      </article>
+    {% empty %}
+      <div class="market-review-empty">Delivered buyers can publish the first verified review.</div>
+    {% endfor %}
+  </div>
+</section>
+
+
+        {% if company_tours or similar_tours %}
+        <button type="button" class="market-tour-floating-trigger" data-market-tour-sheet-open aria-controls="marketTourBottomSheet" aria-expanded="false">
+            <span class="market-tour-floating-trigger__icon">360°</span>
+            <span class="market-tour-floating-trigger__copy"><strong>Visit in 360°</strong><small>Explore before buying</small></span>
+        </button>
+
+        <div id="marketTourBottomSheet" class="market-tour-sheet" aria-hidden="true" inert>
+            <button type="button" class="market-tour-sheet__backdrop" data-market-tour-sheet-close aria-label="Close"></button>
+            <section class="market-tour-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="marketTourSheetTitle">
+                <div class="market-tour-sheet__handle"></div>
+                <header class="market-tour-sheet__header market-tour-sheet__header--compact">
+                    <div>
+                        <p class="market-eyebrow market-eyebrow-dark">360° visits</p>
+                        <h2 id="marketTourSheetTitle">Explore the place</h2>
+                        <p>Tour the company or discover a similar immersive place.</p>
+                    </div>
+                    <button type="button" class="market-tour-sheet__close" data-market-tour-sheet-close aria-label="Close">×</button>
+                </header>
+                <div class="market-tour-sheet__content app-scrollbar">
+                    {% if company_tours %}
+                    <section class="market-tour-sheet__group">
+                        <div class="market-tour-sheet__group-title"><div><small>Same verified company</small><h3>{{ product.organization.name }}</h3></div><span>{{ company_tours|length }} visit{{ company_tours|length|pluralize }}</span></div>
+                        <div class="market-tour-flip-grid" data-tour-horizontal-rail tabindex="0" aria-label="Scrollable virtual tour cards">
+                            {% for tour in company_tours %}
+                            {% url 'tour-preview-public' organization_slug=tour.organization.slug tour_id=tour.id as tour_url %}
+                            {% include "public/products/partials/tour_flip_card.html" with tour=tour tour_url=tour_url badge="Same company" badge_class="" back_label="Why this visit?" %}
+                            {% endfor %}
+                        </div>
+                    </section>
+                    {% endif %}
+                    {% if similar_tours %}
+                    <section class="market-tour-sheet__group">
+                        <div class="market-tour-sheet__group-title"><div><small>Based on product similarity</small><h3>Recommended immersive visits</h3></div><span>Smart match</span></div>
+                        <div class="market-tour-flip-grid" data-tour-horizontal-rail tabindex="0" aria-label="Scrollable virtual tour cards">
+                            {% for tour in similar_tours %}
+                            {% url 'tour-preview-public' organization_slug=tour.organization.slug tour_id=tour.id as tour_url %}
+                            {% include "public/products/partials/tour_flip_card.html" with tour=tour tour_url=tour_url badge="Smart match" badge_class="market-tour-flip-card__badge--smart" back_label="Smart recommendation" %}
+                            {% endfor %}
+                        </div>
+                    </section>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+        {% endif %}
+
+        
+<div class="market-contact-floating-stack market-contact-floating-stack--product"
+     aria-label="Seller contact shortcuts"
+     data-floating-contact-stack>
+    <button type="button"
+            class="market-contact-floating-main"
+            data-floating-contact-toggle
+            aria-expanded="true"
+            aria-label="Toggle contact shortcuts">
+        <span>+</span>
+    </button>
+
+    <div class="market-contact-floating-actions">
+        <a class="market-contact-floating-button"
+           href="mailto:{{ marketplace_contact_email|default:'contact@twinscopes.com' }}?subject={{ product.name|urlencode }}"
+           aria-label="Email about {{ product.name }}"
+           data-contact-tooltip="Email">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M3.5 6.5h17v11h-17z" stroke="currentColor" stroke-width="1.8"/><path d="m4.5 7.5 7.5 6 7.5-6" stroke="currentColor" stroke-width="1.8"/></svg>
+        </a>
+
+        <a class="market-contact-floating-button"
+           href="{% if marketplace_contact_phone %}tel:{{ marketplace_contact_phone }}{% else %}{% url 'public_contact' %}?subject={{ product.name|urlencode }}{% endif %}"
+           aria-label="Call about {{ product.name }}"
+           data-contact-tooltip="Phone">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M7.1 3.5 10 7.8 8.2 9.5c1.4 2.8 3.5 4.9 6.3 6.3l1.7-1.8 4.3 2.9-.6 3.1c-.2.9-1 1.5-1.9 1.5C9.4 21.5 2.5 14.6 2.5 6c0-.9.6-1.7 1.5-1.9l3.1-.6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </a>
+
+        <a class="market-contact-floating-button market-contact-floating-button--whatsapp"
+           href="{% if marketplace_whatsapp %}https://wa.me/{{ marketplace_whatsapp }}?text={{ 'Hello, I am interested in '|add:product.name|urlencode }}{% else %}{% url 'public_contact' %}?subject={{ product.name|urlencode }}{% endif %}"
+           {% if marketplace_whatsapp %}target="_blank" rel="noopener"{% endif %}
+           aria-label="WhatsApp about {{ product.name }}"
+           data-contact-tooltip="WhatsApp">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.6 7.5L3.5 20.5l1.4-4.2A8.5 8.5 0 1 1 20.5 11.6Z" stroke="currentColor" stroke-width="1.7"/><path d="M8.5 7.7c.3-.4.7-.4 1-.1l1.1 1.4c.2.3.2.6 0 .9l-.7.8c.8 1.6 2 2.8 3.6 3.6l.8-.7c.3-.2.6-.2.9 0l1.4 1.1c.3.3.3.7-.1 1-1 .7-2.2.9-3.3.4-3.1-1.3-5.5-3.7-6.8-6.8-.5-1.1-.3-2.3.4-3.3Z" fill="currentColor"/></svg>
+        </a>
+
+        <a class="market-contact-floating-button market-contact-floating-button--gps"
+           href="{% if marketplace_maps_url %}{{ marketplace_maps_url }}{% else %}https://www.google.com/maps/search/?api=1&query={{ product.organization.name|urlencode }}{% endif %}"
+           target="_blank"
+           rel="noopener"
+           aria-label="Open location"
+           data-contact-tooltip="GPS">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>
+        </a>
+    </div>
+</div>
+
+
+</main>
+
+<script>
+(function () {
+    const main = document.getElementById('marketMainProductImage');
+    document.querySelectorAll('[data-product-image]').forEach((button) => button.addEventListener('click', () => {
+        if (main) main.src = button.dataset.productImage;
+        document.querySelectorAll('[data-product-image]').forEach((item) => item.classList.toggle('is-active', item === button));
+    }));
+    const input = document.getElementById('marketQuantity');
+    const refreshStockFeedback = () => {
+        if (!input) return;
+        const max = Number(input.max || 99);
+        input.value = Math.max(1, Math.min(max, Number(input.value || 1)));
+        const feedback = document.querySelector('[data-stock-feedback]');
+        if (feedback) {
+            const remaining = Math.max(0, max - Number(input.value || 1));
+            feedback.textContent = `${max} available · ${remaining} remaining after selection`;
+            feedback.classList.toggle('is-low', remaining <= 3);
+        }
+    };
+    document.querySelector('[data-qty-minus]')?.addEventListener('click', () => {
+        if (input) input.value = Math.max(1, Number(input.value || 1) - 1);
+        refreshStockFeedback();
+    });
+    document.querySelector('[data-qty-plus]')?.addEventListener('click', () => {
+        if (input) input.value = Math.min(Number(input.max || 99), Number(input.value || 1) + 1);
+        refreshStockFeedback();
+    });
+    input?.addEventListener('change', refreshStockFeedback);
+    refreshStockFeedback();
+})();
+</script>
+    <script src="{% static 'public/js/product-commerce-v9.js' %}"></script>
+<script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
+<script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
+    <script defer src="{% static 'public/js/vendor-product-tour-sheet-v15.js' %}"></script>
+<script src="{% static 'growth_ai/js/tracker.js' %}"></script></body>
+</html>

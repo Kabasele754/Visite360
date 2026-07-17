@@ -17,6 +17,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.organizations.models import Organization, OrganizationMember
 from apps.organizations.selectors import get_user_membership
 from apps.places.models import Place
+from apps.vendors.models import AppointmentType, Product
 from apps.tours.forms import TourForm
 from django.core.cache import cache
 
@@ -1076,6 +1077,8 @@ def tour_preview_view(request, organization_slug, tour_id):
                 "current_organization": organization,
                 "scenes_json": cached_payload["scenes_json"],
                 "scene_list_json": cached_payload["scene_list_json"],
+                "appointment_types": AppointmentType.objects.filter(organization=organization, is_active=True),
+                "tour_products": Product.objects.filter(organization=organization, status=Product.Status.ACTIVE).order_by("-is_featured", "-created_at")[:8],
             },
         )
 
@@ -1121,6 +1124,8 @@ def tour_preview_view(request, organization_slug, tour_id):
             "current_organization": organization,
             "scenes_json": scenes_payload,
             "scene_list_json": scene_list_payload,
+            "appointment_types": AppointmentType.objects.filter(organization=organization, is_active=True),
+            "tour_products": Product.objects.filter(organization=organization, status=Product.Status.ACTIVE).order_by("-is_featured", "-created_at")[:8],
         },
     )
 

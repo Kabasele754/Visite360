@@ -1,0 +1,13 @@
+{% extends "dashboard/base.html" %}{% block title %}Orders Administration{% endblock %}{% block page_title %}Orders{% endblock %}{% block content %}
+<div class="mb-6 flex flex-wrap gap-2">
+<a class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white" href="{% url 'vendors:marketplace_admin_home' %}">Overview</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_products' %}">Products</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_categories' %}">Categories</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_orders' %}">Orders</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_reviews' %}">Reviews</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_system' %}">System & AI</a>
+<a class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black text-cyan-900" href="/admin/">Django Admin</a>
+</div>
+<form method="get" class="mb-5 flex flex-wrap gap-3 rounded-3xl bg-white p-5 shadow-sm"><input class="min-w-64 rounded-xl border p-3" name="q" value="{{ selected_q }}" placeholder="Reference, customer or organization"><select class="rounded-xl border p-3" name="status"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="rounded-xl bg-cyan-300 px-5 font-black">Filter</button></form>
+<section class="rounded-3xl bg-white p-6 shadow-sm">{% for item in orders %}<article class="flex flex-wrap items-center justify-between gap-4 border-b py-4"><div><strong>{{ item.reference }}</strong><p class="text-xs text-slate-500">{{ item.customer_name }} · {{ item.organization.name }}</p></div><div class="text-right"><strong>{{ item.currency }} {{ item.total }}</strong><p class="text-xs text-slate-500">{{ item.get_status_display }} · {{ item.payment_status }}</p></div><a class="rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white" href="{% url 'vendor_dashboard:order_detail' item.organization.slug item.reference %}">Open</a></article>{% empty %}<p>No orders.</p>{% endfor %}</section>
+{% endblock %}

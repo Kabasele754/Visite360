@@ -1,0 +1,140 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Your cart | Twinscopes</title>
+  <link rel="manifest" href="{% url 'vendors:pwa_manifest' %}">
+  <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">
+  <link rel="stylesheet" href="{% static 'public/css/vendor-commerce-v13.css' %}">
+  <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})();</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0891b2">
+<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Twinscopes">
+<meta property="og:title" content="Twinscopes — Explore, Discover & Grow">
+<meta property="og:description" content="Immersive 360° tours, Google Street View, products, bookings and intelligent business growth.">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Twinscopes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Twinscopes — Explore, Discover & Grow">
+<meta name="twitter:description" content="Immersive 360° tours, products and intelligent marketplace services.">
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+</head>
+<body class="market-page-body market-flow-no-mobile-nav" data-growth-page-event="cart_viewed">
+{% include 'public/partials/loader_3d_global.html' %}
+  {% include 'public/products/_nav.html' with active_market_nav='cart' mobile_back=True %}
+
+  <main class="market-cart-shell">
+    <header class="market-cart-header">
+      <div>
+        <p class="market-eyebrow market-eyebrow-dark">Your selection</p>
+        <h1>Shopping cart</h1>
+      </div>
+      <p>{{ cart_rows|length }} product{{ cart_rows|length|pluralize }} · {{ cart_item_count }} item{{ cart_item_count|pluralize }}</p>
+    </header>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="market-cart-empty" style="padding:14px 18px;margin-bottom:14px"><p style="margin:0">{{ message }}</p></div>
+      {% endfor %}
+    {% endif %}
+
+    {% if cart_rows %}
+      <div class="market-cart-layout market-cart-layout--groups">
+        <section class="market-cart-list" aria-label="Cart products">
+          {% for group in cart_groups %}
+            <section class="market-vendor-cart-group" data-vendor-cart-group="{{ group.organization.id }}">
+              <header class="market-vendor-cart-group__header">
+                <div>
+                  <small>Fulfilled by</small>
+                  <h2>{{ group.organization.name }}</h2>
+                </div>
+                <div>
+                  <span>{{ group.product_count }} product{{ group.product_count|pluralize }}</span>
+                  <span>{{ group.item_count }} item{{ group.item_count|pluralize }}</span>
+                </div>
+              </header>
+
+              {% for row in group.rows %}
+                <article class="market-cart-item" data-cart-row="{{ row.product.id }}">
+                  <a class="market-cart-item__media" href="{% url 'vendors:product_detail' row.product.organization.slug row.product.slug %}">
+                    {% if row.product.cover_image %}
+                      <img src="{{ row.product.cover_image.url }}" alt="{{ row.product.name }}" loading="lazy" decoding="async">
+                    {% else %}
+                      <div class="market-product-placeholder"><span>▣</span></div>
+                    {% endif %}
+                  </a>
+                  <div>
+                    <span class="market-cart-item__vendor">{{ row.product.organization.name }}</span>
+                    <h2><a href="{% url 'vendors:product_detail' row.product.organization.slug row.product.slug %}" style="color:inherit;text-decoration:none">{{ row.product.name }}</a></h2>
+                    <p class="market-cart-item__price">
+                      {{ row.product.currency }} {{ row.product.price }} each
+                      {% if row.product.track_inventory %} · {{ row.max_quantity }} available{% endif %}
+                    </p>
+                    <div class="market-cart-item__controls">
+                      <form method="post" action="{% url 'vendors:cart_update' row.product.id %}" data-cart-quantity>
+                        {% csrf_token %}
+                        <div class="market-cart-qty">
+                          <button type="button" data-cart-minus aria-label="Decrease quantity">−</button>
+                          <input name="quantity" type="number" min="1" max="{{ row.max_quantity }}" value="{{ row.quantity }}" aria-label="Quantity">
+                          <button type="button" data-cart-plus aria-label="Increase quantity">＋</button>
+                        </div>
+                      </form>
+                      <form method="post" action="{% url 'vendors:cart_remove' row.product.id %}">
+                        {% csrf_token %}
+                        <button class="market-cart-remove" type="submit">Remove</button>
+                      </form>
+                    </div>
+                  </div>
+                  <div class="market-cart-item__total">
+                    <small>Line total</small>
+                    <strong data-line-total>{{ row.product.currency }} {{ row.line_total }}</strong>
+                  </div>
+                </article>
+              {% endfor %}
+
+              <footer class="market-vendor-cart-group__footer">
+                <div><span>Vendor subtotal</span><strong data-vendor-subtotal>{{ group.currency }} {{ group.subtotal }}</strong></div>
+                <a href="{% url 'vendors:checkout_vendor' group.organization.slug %}">Checkout this vendor <span>→</span></a>
+              </footer>
+            </section>
+          {% endfor %}
+
+          <a href="{% url 'vendors:product_list' %}" class="home-products-all-link" style="align-self:flex-start">← Continue shopping</a>
+        </section>
+
+        <aside class="market-order-summary">
+          <p class="market-eyebrow" style="color:#67e8f9">Cart overview</p>
+          <h2>Multiple vendors supported</h2>
+          <p class="market-order-summary__vendor">{{ cart_groups|length }} vendor{{ cart_groups|length|pluralize }}</p>
+          <div class="market-order-summary__line"><span>Products</span><strong>{{ cart_rows|length }}</strong></div>
+          <div class="market-order-summary__line"><span>Items</span><strong>{{ cart_item_count }}</strong></div>
+          <div class="market-order-summary__line market-order-summary__total"><span>Combined subtotal</span><strong data-cart-subtotal>{{ subtotal }}</strong></div>
+          <p style="margin:14px 0 0;color:rgba(255,255,255,.58);font-size:9px;line-height:1.6">
+            Each vendor creates a separate order, payment and delivery calculation.
+          </p>
+        </aside>
+      </div>
+    {% else %}
+      <section class="market-cart-empty">
+        <span>▣</span>
+        <h2>Your cart is empty</h2>
+        <p>Discover products from verified organizations and add your favorites here.</p>
+        <a class="home-products-all-link" href="{% url 'vendors:product_list' %}">Explore products <span>→</span></a>
+      </section>
+    {% endif %}
+  </main>
+
+  <script src="{% static 'public/js/product-commerce-v9.js' %}"></script>
+  <script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
+<script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
+<script src="{% static 'growth_ai/js/tracker.js' %}"></script></body>
+</html>

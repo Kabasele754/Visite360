@@ -1,0 +1,88 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Order {{ order.reference }} | Twinscopes</title>
+  <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">
+  <link rel="stylesheet" href="{% static 'public/css/vendor-commerce-v9.css' %}">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0891b2">
+<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Twinscopes">
+<meta property="og:title" content="Twinscopes — Explore, Discover & Grow">
+<meta property="og:description" content="Immersive 360° tours, Google Street View, products, bookings and intelligent business growth.">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Twinscopes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Twinscopes — Explore, Discover & Grow">
+<meta name="twitter:description" content="Immersive 360° tours, products and intelligent marketplace services.">
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+</head>
+<body class="market-page-body">
+{% include 'public/partials/loader_3d_global.html' %}
+{% include 'public/products/_nav.html' with active_market_nav='account' mobile_back=True %}
+<main class="market-account-shell">
+  <header class="market-order-tracking-hero">
+    <p class="market-eyebrow">Order tracking</p>
+    <h1>{{ order.reference }}</h1>
+    <div><span>{{ order.organization.name }}</span><strong>{{ order.get_status_display }}</strong></div>
+  </header>
+
+  {% if messages %}{% for message in messages %}<div class="market-order-message">{{ message }}</div>{% endfor %}{% endif %}
+
+  <section class="market-order-timeline">
+    {% for event in order.status_history.all %}
+      {% if event.customer_visible %}
+      <article class="market-order-timeline__event">
+        <i></i>
+        <div>
+          <small>{{ event.created_at|date:"M j, Y · H:i" }}</small>
+          <h2>{{ event.title }}</h2>
+          {% if event.note %}<p>{{ event.note }}</p>{% endif %}
+        </div>
+      </article>
+      {% endif %}
+    {% empty %}
+      <article class="market-order-timeline__event"><i></i><div><small>{{ order.created_at|date:"M j, Y · H:i" }}</small><h2>Order placed</h2></div></article>
+    {% endfor %}
+  </section>
+
+  <section class="market-order-items-review">
+    <h2>Products</h2>
+    {% for item in order.items.all %}
+      <article>
+        <div>
+          <strong>{{ item.product_name }}</strong>
+          <small>{{ item.quantity }} × {{ item.order.currency }} {{ item.unit_price }}</small>
+        </div>
+        {% if order.status == "delivered" %}
+          {% if item.verified_review %}
+            <span class="market-reviewed-badge">Reviewed · {{ item.verified_review.rating }}/5</span>
+          {% else %}
+            <details>
+              <summary>Write a verified review</summary>
+              <form method="post" enctype="multipart/form-data" action="{% url 'vendors:product_review_create' item.id %}">
+                {% csrf_token %}
+                <label>Rating<select name="rating" required><option value="5">5 / 5</option><option value="4">4 / 5</option><option value="3">3 / 5</option><option value="2">2 / 5</option><option value="1">1 / 5</option></select></label>
+                <label>Comment<textarea name="comment" required></textarea></label>
+                <label>Photos<input type="file" name="images" accept="image/*" multiple></label>
+                <button type="submit">Publish verified review</button>
+              </form>
+            </details>
+          {% endif %}
+        {% endif %}
+      </article>
+    {% endfor %}
+  </section>
+</main>
+<script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
+<script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
+</body>
+</html>

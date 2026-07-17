@@ -1,0 +1,114 @@
+{% load static vendor_cart %}
+{% cart_product_count as shell_cart_product_count %}
+<link rel="stylesheet" href="{% static 'public/css/twinscopes-public-shell-v12.css' %}">
+
+<header id="desktopHeader" class="ts-site-header is-scroll-visible" data-ts-shell data-public-shell-version="scroll-dark-v2">
+  <div class="ts-site-header__inner">
+    <a href="/" class="ts-brand" aria-label="Twinscopes home">
+      <span class="ts-brand__mark" aria-hidden="true">
+        <img src="{% static 'public/branding/twinscopes-logo.png' %}" alt="">
+      </span>
+      <span class="ts-brand__copy"><strong>Twinscopes</strong><small>Explore · Discover · Grow</small></span>
+    </a>
+
+    <nav class="ts-desktop-nav" aria-label="Primary navigation">
+      <a href="/" class="{% if active_public_nav == 'home' %}is-active{% endif %}">Home</a>
+      <a href="/?content=tours#allExplore" class="{% if active_public_nav == 'tours' %}is-active{% endif %}">Virtual tours</a>
+      <a href="{% url 'vendors:product_list' %}" class="{% if active_public_nav == 'products' %}is-active{% endif %}">Products</a>
+      <a href="{% url 'public_services' %}" class="{% if active_public_nav == 'services' %}is-active{% endif %}">Services</a>
+      <a href="{% url 'public_about' %}" class="{% if active_public_nav == 'about' %}is-active{% endif %}">About</a>
+      <a href="/contact/" class="{% if active_public_nav == 'contact' %}is-active{% endif %}">Contact</a>
+    </nav>
+
+    <div class="ts-header-actions">
+      {% if search_mode == 'home' %}
+      <button type="button" class="ts-icon-button search-trigger" aria-label="Search virtual tours">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      </button>
+      {% elif search_mode == 'products' %}
+      <button type="button" class="ts-icon-button" data-market-filter-open aria-label="Search and filter products">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      </button>
+      {% endif %}
+      <button type="button" class="ts-icon-button" data-ts-theme-toggle aria-label="Switch color theme" aria-pressed="false">
+        <svg class="ts-theme-sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2M12 19.5v2M21.5 12h-2M4.5 12h-2M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4M18.7 18.7l-1.4-1.4M6.7 6.7 5.3 5.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="ts-theme-moon" viewBox="0 0 24 24" fill="none"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" data-mini-cart-open class="ts-icon-button ts-cart-button {% if active_public_nav == 'cart' %}is-active{% endif %}" aria-label="Open shopping cart">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3.5 5h2l1.8 9.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19" r="1.2" fill="currentColor"/><circle cx="17.5" cy="19" r="1.2" fill="currentColor"/></svg>
+        <span class="ts-cart-count" data-cart-count {% if not shell_cart_product_count %}hidden{% endif %}>{{ shell_cart_product_count }}</span>
+      </button>
+      {% if request.user.is_authenticated %}
+      <a href="{% url 'vendors:account_entry' %}" class="ts-account-button">Account</a>
+      {% else %}
+      <a href="/accounts/login/?next={{ request.path|urlencode }}" class="ts-account-button">Sign in</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<div id="mobileTopActions" class="ts-mobile-top-actions is-scroll-visible">
+  <a href="/" class="ts-mobile-brand" aria-label="Twinscopes home">
+    <img src="{% static 'public/branding/twinscopes-logo.png' %}" alt="">
+  </a>
+  <div class="ts-mobile-top-actions__right">
+    {% if mobile_back %}<button type="button" class="ts-icon-button ts-mobile-header-back" data-market-back aria-label="Go back"><svg viewBox="0 0 24 24" fill="none"><path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>{% endif %}
+    {% if search_mode == 'home' %}<button type="button" class="ts-icon-button search-trigger" aria-label="Search virtual tours"><svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>{% elif search_mode == 'products' %}<button type="button" class="ts-icon-button" data-market-filter-open aria-label="Search and filter products"><svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>{% endif %}
+    <button type="button" class="ts-icon-button" data-ts-theme-toggle aria-label="Switch color theme"><svg class="ts-theme-sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2M12 19.5v2M21.5 12h-2M4.5 12h-2M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4M18.7 18.7l-1.4-1.4M6.7 6.7 5.3 5.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><svg class="ts-theme-moon" viewBox="0 0 24 24" fill="none"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<nav id="mobileBottomNav" class="ts-mobile-nav is-scroll-visible" aria-label="Mobile navigation">
+  <a href="/" class="{% if active_public_nav == 'home' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><small>Home</small></a>
+  <a href="/?content=tours#allExplore" class="{% if active_public_nav == 'tours' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9 4.9-2.1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><small>Tours</small></a>
+  <a href="{% url 'vendors:product_list' %}" class="{% if active_public_nav == 'products' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5 12 4l8 4.5v9L12 22l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4 8.5 8 4.5 8-4.5M12 13v9" stroke="currentColor" stroke-width="1.8"/></svg><small>Products</small></a>
+  <a href="{% url 'public_services' %}" class="{% if active_public_nav == 'services' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5h16v11H4z" stroke="currentColor" stroke-width="1.8"/><path d="M8 6.5V4h8v2.5M9 11h6M9 14.5h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><small>Services</small></a>
+  <button type="button" class="ts-mobile-more {% if active_public_nav == 'about' or active_public_nav == 'contact' or active_public_nav == 'cart' %}is-active{% endif %}" data-ts-more-toggle aria-expanded="false" aria-controls="tsMobileMoreSheet">
+    <svg viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg>
+    <small>More</small>
+    <b class="ts-mobile-more-count" data-cart-count {% if not shell_cart_product_count %}hidden{% endif %}>{{ shell_cart_product_count }}</b>
+  </button>
+</nav>
+<div id="tsMobileMoreSheet" class="ts-mobile-more-sheet" aria-hidden="true" inert>
+  <button type="button" class="ts-more-backdrop" data-ts-more-close aria-label="Close menu"></button>
+  <section class="ts-more-card" aria-label="More navigation">
+    <header><div><small>Twinscopes</small><strong>More</strong></div><button type="button" data-ts-more-close aria-label="Close">×</button></header>
+    <div class="ts-more-grid">
+      <a href="{% url 'public_about' %}"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 10.8v5M12 7.4h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><span><strong>About</strong><small>Our vision and platform</small></span></a>
+      <a href="/contact/"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16v12H8l-4 3V5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m5 6 7 6 7-6" stroke="currentColor" stroke-width="1.7"/></svg><span><strong>Contact</strong><small>Talk to our team</small></span></a>
+      <button type="button" class="ts-more-cart-link" data-mini-cart-open>
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3.5 5h2l1.8 9.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H7" stroke="currentColor" stroke-width="1.8"/><circle cx="9.5" cy="19" r="1.2" fill="currentColor"/><circle cx="17.5" cy="19" r="1.2" fill="currentColor"/></svg>
+        <span><strong>Cart</strong><small>Review your order</small></span>
+        <b class="ts-more-cart-count" data-cart-count {% if not shell_cart_product_count %}hidden{% endif %}>{{ shell_cart_product_count }}</b>
+      </button>
+      <a href="{% if request.user.is_authenticated %}/dashboard/{% else %}/{% endif %}"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M5 21a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.8"/></svg><span><strong>{% if request.user.is_authenticated %}Account{% else %}Sign in{% endif %}</strong><small>Manage your experience</small></span></a>
+    </div>
+    <button type="button" class="ts-more-theme" data-ts-theme-toggle><span>Appearance</span><strong>Light / Dark</strong></button>
+  </section>
+</div>
+
+<div id="tsMiniCart" class="ts-mini-cart" aria-hidden="true" inert>
+  <button type="button" class="ts-mini-cart__backdrop" data-mini-cart-close aria-label="Close cart"></button>
+  <section class="ts-mini-cart__panel" aria-label="Shopping cart preview">
+    <header>
+      <div><small>Twinscopes marketplace</small><strong>Your cart</strong></div>
+      <button type="button" data-mini-cart-close aria-label="Close">×</button>
+    </header>
+    <div class="ts-mini-cart__summary">
+      <span><b data-mini-cart-product-count>{{ shell_cart_product_count }}</b> products</span>
+      <span><b data-mini-cart-item-count>0</b> items</span>
+    </div>
+    <div class="ts-mini-cart__items" data-mini-cart-items>
+      <p class="ts-mini-cart__loading">Loading your cart…</p>
+    </div>
+    <footer>
+      <div><span>Subtotal</span><strong data-mini-cart-subtotal>—</strong></div>
+      <a href="{% url 'vendors:cart_detail' %}">View full cart</a>
+    </footer>
+  </section>
+</div>
+
+
+
+
+<script src="{% static 'public/js/twinscopes-public-shell-v12.js' %}"></script>

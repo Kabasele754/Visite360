@@ -1,0 +1,28 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Marketplace Administration{% endblock %}
+{% block page_title %}Marketplace Administration{% endblock %}
+{% block content %}
+<div class="ts-role-banner"><div><small>Administrator workspace</small><strong>Marketplace-wide governance, intelligence and moderation</strong></div><span>Admin</span></div>
+<div class="mb-6 flex flex-wrap gap-2">
+<a class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white" href="{% url 'vendors:marketplace_admin_home' %}">Overview</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_products' %}">Products</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_categories' %}">Categories</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_orders' %}">Orders</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_reviews' %}">Reviews</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_system' %}">System & AI</a>
+<a class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black text-cyan-900" href="/admin/">Django Admin</a>
+</div>
+<section class="rounded-[32px] bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-900 p-8 text-white shadow-2xl">
+<p class="text-xs font-black uppercase tracking-[.28em] text-cyan-200">Twinscopes control center</p>
+<h1 class="mt-3 text-4xl font-black">Global marketplace administration</h1>
+<p class="mt-3 max-w-3xl text-white/65">Monitor products, organizations, orders, reviews, inventory, delivery, recommendations and performance from one workspace.</p>
+</section>
+<div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+{% for key,value in stats.items %}<article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-slate-400">{{ key|title }}</p><p class="mt-2 text-3xl font-black">{{ value }}</p></article>{% endfor %}
+</div>
+<div class="mt-7 grid gap-6 xl:grid-cols-3">
+<section class="rounded-3xl bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Latest products</h2>{% for item in latest_products %}<div class="mt-4 border-b pb-3"><strong>{{ item.name }}</strong><br><small class="text-slate-500">{{ item.organization.name }} · {{ item.get_status_display }}</small></div>{% empty %}<p>No products.</p>{% endfor %}</section>
+<section class="rounded-3xl bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Latest orders</h2>{% for item in latest_orders %}<div class="mt-4 flex justify-between border-b pb-3"><span><strong>{{ item.reference }}</strong><br><small class="text-slate-500">{{ item.organization.name }}</small></span><strong>{{ item.currency }} {{ item.total }}</strong></div>{% empty %}<p>No orders.</p>{% endfor %}</section>
+<section class="rounded-3xl bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Latest reviews</h2>{% for item in latest_reviews %}<div class="mt-4 border-b pb-3"><strong>{{ item.product.name }} · {{ item.rating }}/5</strong><br><small class="text-slate-500">{{ item.get_status_display }}</small></div>{% empty %}<p>No reviews.</p>{% endfor %}</section>
+</div>
+{% endblock %}

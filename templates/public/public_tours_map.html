@@ -38,7 +38,7 @@
         }
     </script>
 
-    <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
+    <link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
 
     <style>
         html,
@@ -1442,6 +1442,23 @@
             }
         }
     </style>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0891b2">
+<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Twinscopes">
+<meta property="og:title" content="Twinscopes — Explore, Discover & Grow">
+<meta property="og:description" content="Immersive 360° tours, Google Street View, products, bookings and intelligent business growth.">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Twinscopes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Twinscopes — Explore, Discover & Grow">
+<meta name="twitter:description" content="Immersive 360° tours, products and intelligent marketplace services.">
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
 </head>
 
 <body class="min-h-screen antialiased">
@@ -1484,7 +1501,7 @@
                     <a href="/contact/" class="nav-link">Contact</a>
 
                     {% if request.user.is_authenticated %}
-                        <a href="/dashboard/" class="nav-link">Account</a>
+                        <a href="{% url 'vendors:account_entry' %}" class="nav-link">Account</a>
                     {% else %}
                         <a href="/accounts/login/?next=/explorer/" class="nav-link">Account</a>
                     {% endif %}
@@ -1585,7 +1602,7 @@
                     </a>
 
                     {% if request.user.is_authenticated %}
-                        <a href="/dashboard/" class="mobile-menu-link" data-menu-link>
+                        <a href="{% url 'vendors:account_entry' %}" class="mobile-menu-link" data-menu-link>
                             <span>Account</span>
                             <span>→</span>
                         </a>
@@ -1819,7 +1836,7 @@
 
     {{ tours_map_data|json_script:"tours-map-data" }}
 
-    <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
+    <script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
 
     <script>
         const TOURS_DATA = JSON.parse(document.getElementById("tours-map-data").textContent || "[]");
@@ -2884,5 +2901,6 @@
         src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&loading=async&v=weekly&libraries=places,geometry,marker&callback=initToursExplorerMap">
     </script>
 
+<script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
 </body>
 </html>

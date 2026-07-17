@@ -1,0 +1,22 @@
+{% load static %}<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Order received | Twinscopes</title><link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}"><link rel="stylesheet" href="{% static 'public/css/vendor-commerce-v13.css' %}"><script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();</script><link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0891b2">
+<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Twinscopes">
+<meta property="og:title" content="Twinscopes — Explore, Discover & Grow">
+<meta property="og:description" content="Immersive 360° tours, Google Street View, products, bookings and intelligent business growth.">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Twinscopes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Twinscopes — Explore, Discover & Grow">
+<meta name="twitter:description" content="Immersive 360° tours, products and intelligent marketplace services.">
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+</head><body class="market-page-body">
+{% include 'public/partials/loader_3d_global.html' %}{% include 'public/products/_nav.html' with active_market_nav='cart' active_public_nav='cart' %}<main class="market-page-shell market-success-shell">{% include 'public/products/_mobile_back.html' with label='Products' %}<section class="market-success-card"><span class="market-success-icon"><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><p class="market-eyebrow market-eyebrow-dark">Order received</p><h1>Thank you</h1><p>Your reference is <strong>{{ order.reference }}</strong>.</p><p>{{ order.organization.name }} will contact you to confirm payment and delivery.</p><a class="market-checkout-submit" href="{% url 'vendors:product_list' %}"><span>Continue shopping</span><strong>→</strong></a></section></main><script src="{% static 'public/js/product-commerce-v9.js' %}"></script><script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
+<script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
+</body></html>

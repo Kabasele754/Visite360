@@ -1,0 +1,17 @@
+{% extends "dashboard/base.html" %}{% block title %}Marketplace System{% endblock %}{% block page_title %}System & AI{% endblock %}{% block content %}
+<div class="ts-role-banner"><div><small>Administrator workspace</small><strong>AI recommendations, inventory signals and performance health</strong></div><span>System & AI</span></div>
+<div class="mb-6 flex flex-wrap gap-2">
+<a class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white" href="{% url 'vendors:marketplace_admin_home' %}">Overview</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_products' %}">Products</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_categories' %}">Categories</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_orders' %}">Orders</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_reviews' %}">Reviews</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_system' %}">System & AI</a>
+<a class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black text-cyan-900" href="/admin/">Django Admin</a>
+</div>
+<div class="grid gap-6 xl:grid-cols-2">
+<section class="rounded-3xl bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Product recommendations</h2>{% for item in recommendations %}<div class="mt-4 border-b pb-3"><strong>{{ item.title }}</strong><p class="text-xs text-slate-500">{{ item.organization.name }} · {{ item.get_kind_display }} · score {{ item.score }}</p></div>{% empty %}<p class="mt-4">No recommendations.</p>{% endfor %}</section>
+<section class="rounded-3xl bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Agent recommendations</h2>{% for item in agent_recommendations %}<div class="mt-4 border-b pb-3"><strong>{{ item.title }}</strong><p class="text-xs text-slate-500">{{ item.organization.name }} · {{ item.status }}</p></div>{% empty %}<p class="mt-4">No agent recommendations.</p>{% endfor %}</section>
+<section class="rounded-3xl bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Stock reservations</h2>{% for item in stock_reservations %}<div class="mt-4 flex justify-between border-b pb-3"><span>{{ item.product.name }} × {{ item.quantity }}</span><strong>{{ item.status }}</strong></div>{% empty %}<p class="mt-4">No reservations.</p>{% endfor %}</section>
+<section class="rounded-3xl bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Web Vitals averages</h2>{% for item in web_vitals %}<div class="mt-4 flex justify-between border-b pb-3"><span>{{ item.name }}</span><strong>{{ item.average|floatformat:2 }} ({{ item.total }})</strong></div>{% empty %}<p class="mt-4">No measurements.</p>{% endfor %}</section>
+</div>{% endblock %}

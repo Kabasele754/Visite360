@@ -59,6 +59,18 @@ google-auth-httplib2>=0.2.0
 google-api-python-client>=2.130.0
 requests-oauthlib>=2.0.0
 
+google-analytics-data
+
 # 360 Images / EXIF / GPS / XMP
 exifread>=3.0.0
 piexif>=1.1.3
+
+# =========================
+# AI Photo Enhancement
+# =========================
+python-dotenv
+openai==2.38.0
+google-genai
+
+pytrends>=4.9.2
+

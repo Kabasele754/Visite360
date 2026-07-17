@@ -15,6 +15,9 @@ urlpatterns = [
     path("", include("apps.organizations.dashboard_urls")),
     path("", include("apps.places.dashboard_urls")),
     path("", include("apps.tours.dashboard_urls")),
+    path("", include("apps.vendors.urls")),
+    path("", include("apps.vendors.dashboard_urls")),
+    path("", include("apps.growth_ai.urls")),
 
     path("api/", include("apps.users.urls")),
     path("api/", include("apps.organizations.urls")),

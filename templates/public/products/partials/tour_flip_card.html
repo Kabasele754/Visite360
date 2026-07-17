@@ -1,0 +1,230 @@
+<article class="product-home-tour-card" data-tour-flip-card role="button" tabindex="0" aria-pressed="false" aria-label="{{ tour.title }}. Activate to flip the card.">
+    <div class="product-home-tour-card__3d">
+        <!-- FRONT: same visual language as Home -->
+        <section class="product-home-tour-face product-home-tour-front">
+            <div class="product-home-tour-image">
+                {% if tour.thumbnail_source %}
+                    <img src="{{ tour.thumbnail_source.url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image
+                         onerror="this.onerror=null;{% if tour.thumbnail_image %}this.src='{{ tour.thumbnail_image.url }}';{% elif tour.thumbnail_image_mobile %}this.src='{{ tour.thumbnail_image_mobile.url }}';{% elif tour.safe_place_cover_image_url %}this.src='{{ tour.safe_place_cover_image_url }}';{% endif %}">
+                {% elif tour.thumbnail_image %}
+                    <img src="{{ tour.thumbnail_image.url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image
+                         onerror="this.onerror=null;{% if tour.thumbnail_image_mobile %}this.src='{{ tour.thumbnail_image_mobile.url }}';{% elif tour.safe_place_cover_image_url %}this.src='{{ tour.safe_place_cover_image_url }}';{% endif %}">
+                {% elif tour.thumbnail_image_mobile %}
+                    <img src="{{ tour.thumbnail_image_mobile.url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image>
+                {% elif tour.safe_thumbnail_source_url %}
+                    <img src="{{ tour.safe_thumbnail_source_url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image>
+                {% elif tour.safe_thumbnail_image_url %}
+                    <img src="{{ tour.safe_thumbnail_image_url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image>
+                {% elif tour.safe_thumbnail_image_mobile_url %}
+                    <img src="{{ tour.safe_thumbnail_image_mobile_url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image>
+                {% elif tour.safe_place_cover_image_url %}
+                    <img src="{{ tour.safe_place_cover_image_url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image>
+                {% elif tour.ordered_scenes.0.thumbnail_image %}
+                    <img src="{{ tour.ordered_scenes.0.thumbnail_image.url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image>
+                {% elif tour.ordered_scenes.0.safe_thumbnail_url %}
+                    <img src="{{ tour.ordered_scenes.0.safe_thumbnail_url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image>
+                {% elif tour.ordered_scenes.0.safe_image_360_preview_url %}
+                    <img src="{{ tour.ordered_scenes.0.safe_image_360_preview_url }}"
+                         alt="{{ tour.title }}"
+                         loading="lazy"
+                         decoding="async"
+                         data-tour-image>
+                {% else %}
+                    <div class="product-home-tour-placeholder">No preview</div>
+                {% endif %}
+            </div>
+
+            <div class="product-home-tour-overlay"></div>
+
+            <div class="product-home-tour-topbar">
+                <span class="product-home-tour-badge">
+                    <span></span>
+                    {{ badge|default:"360°" }}
+                </span>
+                <button type="button"
+                        class="product-home-tour-flip-button"
+                        data-tour-flip
+                        aria-label="Show company and place details">
+                    ↻
+                </button>
+            </div>
+
+            <div class="product-home-tour-front-content">
+                <span class="product-home-tour-kicker">
+                    {% if tour.place %}{{ tour.place.get_category_display }}{% else %}Premium visit{% endif %}
+                </span>
+
+                <h3>{{ tour.title }}</h3>
+
+                <div class="product-home-tour-stats">
+                    <span>◉ {{ tour.view_count|default:0 }}</span>
+                    <span>{{ tour.scenes.all|length }} scene{{ tour.scenes.all|length|pluralize }}</span>
+                    {% if tour.rating %}<span>★ {{ tour.rating }}</span>{% endif %}
+                </div>
+
+                <div class="product-home-tour-actions">
+                    <a href="{{ tour_url }}"
+                       class="product-home-tour-start" data-tour-card-link
+                       aria-label="Start {{ tour.title }}">
+                        Start visit <span>→</span>
+                    </a>
+                    <button type="button"
+                            class="product-home-tour-more"
+                            data-tour-flip
+                            aria-label="Show details">
+                        ↻
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- BACK: organization + place + tour information -->
+        <section class="product-home-tour-face product-home-tour-back">
+            <div class="product-home-tour-watermark" aria-hidden="true">
+                {% if tour.organization.logo %}
+                    <img src="{{ tour.organization.logo.url }}" alt="">
+                {% else %}
+                    <span>{{ tour.organization.name|first|upper }}</span>
+                {% endif %}
+            </div>
+
+            <header class="product-home-tour-back-header">
+                <div>
+                    <span class="product-home-tour-back-label">{{ back_label|default:"Company & place" }}</span>
+                    <h3>{{ tour.title }}</h3>
+                </div>
+                <button type="button"
+                        class="product-home-tour-close"
+                        data-tour-flip
+                        aria-label="Return to tour image">
+                    ↩
+                </button>
+            </header>
+
+            <div class="product-home-tour-company">
+                <div class="product-home-tour-company-logo">
+                    {% if tour.organization.logo %}
+                        <img src="{{ tour.organization.logo.url }}" alt="{{ tour.organization.name }}">
+                    {% else %}
+                        <span>{{ tour.organization.name|first|upper }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <small>Organization</small>
+                    <strong>{{ tour.organization.name }}</strong>
+                </div>
+            </div>
+
+            <p class="product-home-tour-description">
+                {% if tour.description %}
+                    {{ tour.description|striptags|truncatechars:430 }}
+                {% elif tour.place.description %}
+                    {{ tour.place.description|striptags|truncatechars:430 }}
+                {% else %}
+                    Explore this immersive 360° visit and discover the place before going there.
+                {% endif %}
+            </p>
+
+            <div class="product-home-tour-information">
+                {% if tour.place %}
+                    <div>
+                        <span class="product-home-tour-info-icon">⌂</span>
+                        <p><small>Place</small><strong>{{ tour.place.name }}</strong></p>
+                    </div>
+                    <div>
+                        <span class="product-home-tour-info-icon">◆</span>
+                        <p><small>Category</small><strong>{{ tour.place.get_category_display }}</strong></p>
+                    </div>
+                    {% if tour.place.address_line or tour.place.city or tour.place.country %}
+                    <div>
+                        <span class="product-home-tour-info-icon">⌖</span>
+                        <p>
+                            <small>Location</small>
+                            <strong>
+                                {{ tour.place.address_line }}
+                                {% if tour.place.city %}{% if tour.place.address_line %}, {% endif %}{{ tour.place.city }}{% endif %}
+                                {% if tour.place.country %}{% if tour.place.address_line or tour.place.city %}, {% endif %}{{ tour.place.country }}{% endif %}
+                            </strong>
+                        </p>
+                    </div>
+                    {% endif %}
+                {% elif tour.location %}
+                    <div>
+                        <span class="product-home-tour-info-icon">⌖</span>
+                        <p><small>Location</small><strong>{{ tour.location }}</strong></p>
+                    </div>
+                {% endif %}
+
+                <div>
+                    <span class="product-home-tour-info-icon">360°</span>
+                    <p><small>Experience</small><strong>{{ tour.scenes.all|length }} immersive scene{{ tour.scenes.all|length|pluralize }}</strong></p>
+                </div>
+
+                {% if tour.contact_email %}
+                <div>
+                    <span class="product-home-tour-info-icon">✉</span>
+                    <p><small>Tour contact</small><strong>{{ tour.contact_email }}</strong></p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="product-home-tour-back-actions">
+                {% if tour.place.latitude and tour.place.longitude %}
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ tour.place.latitude }},{{ tour.place.longitude }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="product-home-tour-location" data-tour-card-link>
+                        Location
+                    </a>
+                {% elif tour.lat and tour.lng %}
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ tour.lat }},{{ tour.lng }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="product-home-tour-location" data-tour-card-link>
+                        Location
+                    </a>
+                {% endif %}
+
+                <a href="{{ tour_url }}" class="product-home-tour-open" data-tour-card-link>
+                    Start visit <span>→</span>
+                </a>
+            </div>
+        </section>
+    </div>
+</article>

@@ -1,0 +1,26 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Order {{ order.reference }}{% endblock %}
+{% block page_title %}Order {{ order.reference }}{% endblock %}
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
+<section class="rounded-3xl bg-white p-6 shadow-sm">
+<p class="text-xs font-black uppercase tracking-[.15em] text-cyan-700">{{ order.organization.name }}</p>
+<h1 class="mt-2 text-3xl font-black">{{ order.reference }}</h1>
+<div class="mt-6 space-y-4">
+{% for event in order.status_history.all %}
+<article class="border-l-2 border-cyan-400 pl-4"><small class="text-slate-400">{{ event.created_at }}</small><h2 class="font-black">{{ event.title }}</h2>{% if event.note %}<p class="text-sm text-slate-500">{{ event.note }}</p>{% endif %}</article>
+{% empty %}<p class="text-slate-500">No tracking events yet.</p>{% endfor %}
+</div>
+</section>
+<aside class="rounded-3xl bg-slate-950 p-6 text-white">
+<h2 class="text-xl font-black">Update status</h2>
+<form method="post" action="{% url 'vendor_dashboard:order_status_update' organization.slug order.reference %}" class="mt-5 grid gap-4">
+{% csrf_token %}
+<label class="grid gap-2"><span class="text-xs font-black">Status</span><select name="status" class="rounded-xl bg-white p-3 text-slate-950">{% for value,label in status_choices %}<option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+<label class="grid gap-2"><span class="text-xs font-black">Customer note</span><textarea name="note" rows="4" class="rounded-xl bg-white p-3 text-slate-950"></textarea></label>
+<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="customer_visible" checked> Visible to customer</label>
+<button class="rounded-xl bg-cyan-300 px-4 py-3 font-black text-slate-950">Save and notify</button>
+</form>
+</aside>
+</div>
+{% endblock %}

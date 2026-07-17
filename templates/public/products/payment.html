@@ -1,0 +1,138 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>Secure payment | Twinscopes</title>
+    <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">
+    <link rel="stylesheet" href="{% static 'public/css/vendor-commerce-v13.css' %}">
+    <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();</script>
+    {% if stripe_enabled %}<script src="https://js.stripe.com/v3/"></script>{% endif %}
+    {% if paypal_enabled %}<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id|urlencode }}&currency={{ order.currency|upper }}&components=buttons"></script>{% endif %}
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0891b2">
+<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Twinscopes">
+<meta property="og:title" content="Twinscopes — Explore, Discover & Grow">
+<meta property="og:description" content="Immersive 360° tours, Google Street View, products, bookings and intelligent business growth.">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Twinscopes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Twinscopes — Explore, Discover & Grow">
+<meta name="twitter:description" content="Immersive 360° tours, products and intelligent marketplace services.">
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+</head>
+<body class="market-page-body" data-marketplace-payment-version="embedded-page-v2"
+      data-payment-reference="{{ order.reference }}"
+      data-selected-provider="{{ selected_provider }}"
+      data-stripe-public-key="{{ stripe_publishable_key }}"
+      data-stripe-session-url="{% url 'vendors:stripe_embedded_session' order.reference %}"
+      data-paypal-create-url="{% url 'vendors:paypal_create_order_api' order.reference %}"
+      data-paypal-capture-url="{% url 'vendors:paypal_capture_order_api' order.reference %}">
+{% include 'public/partials/loader_3d_global.html' %}
+{% include 'public/products/_nav.html' with active_market_nav='cart' mobile_back=True %}
+
+<main class="market-checkout-shell">
+    <div class="market-payment-layout market-payment-layout--enhanced">
+        <section class="market-checkout-card market-payment-card">
+            <div class="market-payment-heading">
+                <span class="market-payment-lock" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3"/><rect x="4" y="10" width="16" height="11" rx="3"/></svg>
+                </span>
+                <div>
+                    <p class="market-eyebrow">Secure payment</p>
+                    <h1>Complete your order</h1>
+                </div>
+            </div>
+
+            <p class="market-payment-lead">
+                Order <strong>{{ order.reference }}</strong> is ready. Payment stays inside Twinscopes.
+            </p>
+
+            {% if messages %}{% for message in messages %}<div class="market-payment-alert">{{ message }}</div>{% endfor %}{% endif %}
+            {% if order.payment_error %}
+                <div class="market-payment-alert market-payment-alert--technical">
+                    <strong>Last payment attempt</strong><span>{{ order.payment_error }}</span>
+                </div>
+            {% endif %}
+
+            <div class="market-payment-options market-payment-options--cards">
+                {% if stripe_enabled %}
+                <button type="button" class="market-payment-option market-payment-option--stripe"
+                        data-open-payment-sheet="stripe">
+                    <span class="market-payment-option__brand" aria-hidden="true">
+                        <svg viewBox="0 0 48 32"><rect x="1" y="1" width="46" height="30" rx="7"/><path d="M10 11h28M10 17h12M10 23h18"/></svg>
+                    </span>
+                    <span class="market-payment-option__copy">
+                        <strong>Card payment</strong>
+                        <small>Complete Stripe Checkout without leaving the site.</small>
+                        <em>Recommended</em>
+                    </span>
+                    <b>Pay <span>→</span></b>
+                </button>
+                {% endif %}
+
+                {% if paypal_enabled %}
+                <button type="button" class="market-payment-option market-payment-option--paypal"
+                        data-open-payment-sheet="paypal">
+                    <span class="market-payment-option__brand market-payment-option__brand--paypal">P</span>
+                    <span class="market-payment-option__copy">
+                        <strong>PayPal</strong>
+                        <small>Approve with the PayPal secure component.</small>
+                    </span>
+                    <b>Pay <span>→</span></b>
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="market-payment-trust">
+                <span>Encrypted payment</span><span>Server verified</span><span>No card details stored</span>
+            </div>
+
+            <a href="{% url 'vendors:product_list' %}" class="market-continue-shopping">← Continue shopping</a>
+        </section>
+
+        <aside class="market-checkout-card market-payment-summary">
+            <p class="market-eyebrow">Order summary</p>
+            <h2>{{ order.organization.name }}</h2>
+            {% for item in order.items.all %}
+            <div class="market-checkout-summary-row">
+                <span>{{ item.quantity }} × {{ item.product_name }}</span>
+                <strong>{{ order.currency }} {{ item.line_total }}</strong>
+            </div>
+            {% endfor %}
+            <div class="market-checkout-summary-row"><span>Delivery</span><strong>{{ order.currency }} {{ order.delivery_fee }}</strong></div>
+            <div class="market-checkout-summary-row market-checkout-summary-total"><span>Total</span><strong>{{ order.currency }} {{ order.total }}</strong></div>
+            <p class="market-checkout-note">Receipt: {{ order.customer_email|default:"your customer account" }}</p>
+        </aside>
+    </div>
+</main>
+
+<div id="marketPaymentBackdrop" class="market-payment-sheet-backdrop" hidden data-payment-sheet-close></div>
+<section id="marketPaymentSheet" class="market-payment-sheet" aria-hidden="true" inert>
+    <div class="market-payment-sheet__handle"></div>
+    <header class="market-payment-sheet__header">
+        <div>
+            <small id="marketPaymentSheetEyebrow">Secure payment</small>
+            <h2 id="marketPaymentSheetTitle">Payment</h2>
+        </div>
+        <button type="button" data-payment-sheet-close aria-label="Close payment">×</button>
+    </header>
+    <div id="marketPaymentStatus" class="market-payment-sheet__status" role="status" aria-live="polite"></div>
+    <div id="marketStripeEmbedded" class="market-payment-sheet__provider" hidden></div>
+    <div id="marketPayPalButtons" class="market-payment-sheet__provider" hidden></div>
+</section>
+
+<script src="{% static 'public/js/product-commerce-v9.js' %}"></script>
+<script src="{% static 'public/js/market-payment-sheet-v2.js' %}"></script>
+<script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
+<script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
+</body>
+</html>

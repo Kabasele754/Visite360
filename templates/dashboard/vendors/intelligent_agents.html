@@ -1,0 +1,61 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Intelligent agents{% endblock %}
+{% block page_title %}Intelligent agents{% endblock %}
+{% block content %}
+<div class="rounded-[32px] bg-gradient-to-br from-slate-950 via-indigo-950 to-cyan-900 p-8 text-white shadow-2xl">
+  <p class="text-xs font-black uppercase tracking-[.25em] text-cyan-200">Gemini / Vertex AI</p>
+  <h1 class="mt-3 text-4xl font-black">Intelligent agent workspace</h1>
+  <p class="mt-3 max-w-3xl text-white/65">Specialized agents analyse real Twinscopes data. They never need to invent business metrics and every recommendation remains reviewable by your team.</p>
+</div>
+
+<section class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+  {% for agent in agents %}
+  <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <p class="text-xs font-black uppercase tracking-[.14em] text-cyan-700">{{ agent.role }}</p>
+    <h2 class="mt-2 text-xl font-black">{{ agent.name }}</h2>
+    <p class="mt-3 text-sm leading-6 text-slate-500">{{ agent.description }}</p>
+    <form method="post" action="{% url 'vendor_dashboard:intelligent_agent_run' organization.slug agent.code %}" class="mt-5">
+      {% csrf_token %}
+      <button class="w-full rounded-2xl bg-slate-950 px-4 py-3 font-black text-white">Run analysis</button>
+    </form>
+  </article>
+  {% empty %}
+  <p class="text-slate-500">Run <code>python manage.py seed_intelligent_agents</code> first.</p>
+  {% endfor %}
+</section>
+
+<div class="mt-8 grid gap-6 xl:grid-cols-[1fr_1.5fr]">
+  <section class="rounded-3xl bg-white p-6 shadow-sm">
+    <h2 class="text-xl font-black">Recent runs</h2>
+    {% for run in runs %}
+    <div class="mt-4 border-b border-slate-100 pb-4">
+      <div class="flex justify-between gap-3"><strong>{{ run.agent.name }}</strong><span class="text-xs font-black uppercase text-slate-400">{{ run.status }}</span></div>
+      <small class="text-slate-400">{{ run.created_at }}</small>
+      {% if run.error %}<p class="mt-2 text-xs text-amber-700">Fallback used: {{ run.error|truncatechars:130 }}</p>{% endif %}
+    </div>
+    {% empty %}<p class="mt-4 text-slate-500">No agent run yet.</p>{% endfor %}
+  </section>
+
+  <section class="rounded-3xl bg-white p-6 shadow-sm">
+    <h2 class="text-xl font-black">Recommendations</h2>
+    {% for item in recommendations %}
+    <article class="mt-4 rounded-2xl border border-slate-200 p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div><small class="font-black uppercase tracking-wider text-cyan-700">{{ item.run.agent.name }} · Priority {{ item.priority }}</small><h3 class="mt-1 font-black">{{ item.title }}</h3></div>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-black">{{ item.status }}</span>
+      </div>
+      <p class="mt-3 text-sm text-slate-500">{{ item.rationale }}</p>
+      <p class="mt-3 text-sm font-semibold text-slate-800">{{ item.action }}</p>
+      <div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">Impact {{ item.impact }}</span><span class="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Effort {{ item.effort }}</span></div>
+      <form method="post" action="{% url 'vendor_dashboard:intelligent_recommendation_status' organization.slug item.id %}" class="mt-4 flex gap-2">
+        {% csrf_token %}
+        <select name="status" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+          <option value="new" {% if item.status == "new" %}selected{% endif %}>New</option><option value="accepted" {% if item.status == "accepted" %}selected{% endif %}>Accepted</option><option value="in_progress" {% if item.status == "in_progress" %}selected{% endif %}>In progress</option><option value="completed" {% if item.status == "completed" %}selected{% endif %}>Completed</option><option value="dismissed" {% if item.status == "dismissed" %}selected{% endif %}>Dismissed</option>
+        </select>
+        <button class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white">Update</button>
+      </form>
+    </article>
+    {% empty %}<p class="mt-4 text-slate-500">Run an agent to generate prioritized recommendations.</p>{% endfor %}
+  </section>
+</div>
+{% endblock %}

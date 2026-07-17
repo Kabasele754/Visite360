@@ -28,19 +28,21 @@
                         {{ current_organization.name|slice:":2"|upper }}
                     </div>
                 {% else %}
-                    <div class="global-page-loader__logo global-page-loader__logo--fallback">
-                        VT
-                    </div>
+                    <img
+                        src="{% static 'public/branding/twinscopes-logo.png' %}"
+                        alt="Twinscopes"
+                        class="global-page-loader__logo global-page-loader__logo--twinscopes"
+                    >
                 {% endif %}
             </div>
 
-            <p class="global-page-loader__kicker">Virtual Tour Experience</p>
+            <p class="global-page-loader__kicker">Twinscopes Experience</p>
 
             <h2 class="global-page-loader__title">
                 {% if current_organization %}
                     {{ current_organization.name }}
                 {% else %}
-                    Virtual Tour
+                    Twinscopes
                 {% endif %}
             </h2>
 
@@ -48,7 +50,7 @@
                 {% if tour %}
                     {{ tour.title }}
                 {% else %}
-                    Preparing your 360° experience...
+                    Preparing your immersive experience...
                 {% endif %}
             </p>
 

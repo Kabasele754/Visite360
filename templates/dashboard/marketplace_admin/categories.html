@@ -1,0 +1,15 @@
+{% extends "dashboard/base.html" %}{% block title %}Product Categories{% endblock %}{% block page_title %}Product Categories{% endblock %}{% block content %}
+<div class="mb-6 flex flex-wrap gap-2">
+<a class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white" href="{% url 'vendors:marketplace_admin_home' %}">Overview</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_products' %}">Products</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_categories' %}">Categories</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_orders' %}">Orders</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_reviews' %}">Reviews</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_system' %}">System & AI</a>
+<a class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black text-cyan-900" href="/admin/">Django Admin</a>
+</div>
+<div class="grid gap-6 xl:grid-cols-[1fr_360px]">
+<section class="rounded-3xl bg-white p-6 shadow-sm"><div class="flex items-center justify-between"><h2 class="text-xl font-black">Categories</h2><a class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white" href="{% url 'vendors:marketplace_admin_category_create' %}">New category</a></div>
+{% for item in categories %}<article class="mt-4 flex items-center justify-between border-b pb-4"><div><strong>{{ item.icon }} {{ item.name }}</strong><p class="text-xs text-slate-500">{{ item.slug }} · {{ item.product_total }} products</p></div><a class="rounded-lg border px-3 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_category_edit' item.id %}">Edit</a></article>{% empty %}<p class="mt-4">No categories.</p>{% endfor %}</section>
+<aside class="rounded-3xl bg-white p-6 shadow-sm"><h2 class="text-xl font-black">{% if editing %}Edit category{% else %}Create category{% endif %}</h2><form method="post" class="mt-5 grid gap-4">{% csrf_token %}<input class="rounded-xl border p-3" name="name" value="{{ editing.name|default:'' }}" placeholder="Name" required><input class="rounded-xl border p-3" name="slug" value="{{ editing.slug|default:'' }}" placeholder="Slug"><input class="rounded-xl border p-3" name="icon" value="{{ editing.icon|default:'' }}" placeholder="Icon"><textarea class="rounded-xl border p-3" name="description" rows="4" placeholder="Description">{{ editing.description|default:'' }}</textarea><label class="flex gap-2"><input type="checkbox" name="is_active" {% if not editing or editing.is_active %}checked{% endif %}> Active</label><button class="rounded-xl bg-cyan-300 p-3 font-black">Save category</button></form></aside>
+</div>{% endblock %}

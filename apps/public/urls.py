@@ -1,8 +1,14 @@
 from django.urls import path
 
+from apps.public.seo import product_sitemap, robots_txt, sitemap_index, static_sitemap, tour_sitemap
 from apps.public.views import PublicAboutView, PublicContactView, PublicHomeView, PublicServicesView, PublicTourEngagementView, public_tours_map_view, test_view
 
 urlpatterns = [
+    path("sitemap.xml", sitemap_index, name="sitemap-index"),
+    path("sitemap-static.xml", static_sitemap, name="sitemap-static"),
+    path("sitemap-products.xml", product_sitemap, name="sitemap-products"),
+    path("sitemap-tours.xml", tour_sitemap, name="sitemap-tours"),
+    path("robots.txt", robots_txt, name="robots-txt"),
     path("", PublicHomeView.as_view(), name="public_home"),
      path(
         "explorer/",

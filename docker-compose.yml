@@ -3,223 +3,346 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: visite360_app
     restart: unless-stopped
+
     command: >
       sh -c "daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+
     volumes:
       - static-data:/app/staticfiles
       - media-data:/app/media
+
     env_file:
       - .env
+
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+
+      DEBUG: "0"
+
       DB_HOST: db
+      DB_PORT: "5432"
       DB_NAME: elevateaidb
       DB_USER: elevateaiuser
       DB_PASS_FILE: /run/secrets/db_password
-      DB_PORT: 5432
-      DEBUG: 0
+
       REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_PORT: "6379"
       REDIS_PASSWORD: ""
+
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google_adc_json
+      GOOGLE_GENAI_USE_VERTEXAI: "true"
+      GOOGLE_CLOUD_PROJECT: ziarama-wedding-akk
+      GOOGLE_CLOUD_LOCATION: us-central1
+      GOOGLE_TEXT_MODEL: gemini-2.5-flash
+      GOOGLE_IMAGE_MODEL: imagen-4.0-generate-001
+      DEFAULT_AI_IMAGE_PROVIDER: GOOGLE_VERTEX
+
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+
     networks:
       - my_network
+
     secrets:
       - db_password
+      - google_adc_json
+
 
   celery_worker:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: visite360_celery_worker
     restart: unless-stopped
+
     command: >
-      sh -c "celery -A config worker -l info"
+      sh -c "celery -A config worker -l info --concurrency=2 --hostname=twinscopes-worker@%h"
+
     volumes:
       - media-data:/app/media
+
     env_file:
       - .env
+
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+
+      DEBUG: "0"
+
       DB_HOST: db
+      DB_PORT: "5432"
       DB_NAME: elevateaidb
       DB_USER: elevateaiuser
       DB_PASS_FILE: /run/secrets/db_password
-      DB_PORT: 5432
-      DEBUG: 0
+
       REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_PORT: "6379"
       REDIS_PASSWORD: ""
+
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google_adc_json
+      GOOGLE_GENAI_USE_VERTEXAI: "true"
+      GOOGLE_CLOUD_PROJECT: ziarama-wedding-akk
+      GOOGLE_CLOUD_LOCATION: us-central1
+      GOOGLE_TEXT_MODEL: gemini-2.5-flash
+      GOOGLE_IMAGE_MODEL: imagen-4.0-generate-001
+      DEFAULT_AI_IMAGE_PROVIDER: GOOGLE_VERTEX
+
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+
     networks:
       - my_network
+
     secrets:
       - db_password
+      - google_adc_json
+
 
   celery_beat:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: visite360_celery_beat
     restart: unless-stopped
+
     command: >
-      sh -c "celery -A config beat -l info"
+      sh -c "celery -A config beat -l info --schedule=/var/run/celery/celerybeat-schedule"
+
     volumes:
       - media-data:/app/media
+      - celery-beat-data:/var/run/celery
+
     env_file:
       - .env
+
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+
+      DEBUG: "0"
+
       DB_HOST: db
+      DB_PORT: "5432"
       DB_NAME: elevateaidb
       DB_USER: elevateaiuser
       DB_PASS_FILE: /run/secrets/db_password
-      DB_PORT: 5432
-      DEBUG: 0
+
       REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_PORT: "6379"
       REDIS_PASSWORD: ""
+
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google_adc_json
+      GOOGLE_GENAI_USE_VERTEXAI: "true"
+      GOOGLE_CLOUD_PROJECT: ziarama-wedding-akk
+      GOOGLE_CLOUD_LOCATION: us-central1
+      GOOGLE_TEXT_MODEL: gemini-2.5-flash
+      GOOGLE_IMAGE_MODEL: imagen-4.0-generate-001
+      DEFAULT_AI_IMAGE_PROVIDER: GOOGLE_VERTEX
+
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+
     networks:
       - my_network
+
     secrets:
       - db_password
+      - google_adc_json
+
 
   nginx:
     build:
       context: ./nginx
       dockerfile: Dockerfile.nginx
+
     container_name: visite360_nginx
+    restart: unless-stopped
+
     ports:
       - "80:80"
       - "443:443"
-    restart: unless-stopped
+
     volumes:
       - static-data:/app/staticfiles:ro
       - media-data:/app/media:ro
+
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/var:/var/lib/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
+
     depends_on:
       django:
         condition: service_started
       pgadmin:
         condition: service_started
+
     networks:
       - my_network
 
+
   certbot:
-    image: certbot/certbot
+    image: certbot/certbot:latest
+
     container_name: visite360_certbot
+
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/var:/var/lib/letsencrypt
       - ./certbot/www:/var/www/certbot
-      - ./nginx/openssl.cnf:/etc/ssl/openssl.cnf
+      - ./nginx/openssl.cnf:/etc/ssl/openssl.cnf:ro
+
     command: >
-      certonly --webroot -w /var/www/certbot
-      -d twinscopes.com
-      -d www.twinscopes.com
-      -d pgadmin.twinscopes.com
-      -d api.twinscopes.com
+      certonly
+      --webroot
+      --webroot-path=/var/www/certbot
+      --domain twinscopes.com
+      --domain www.twinscopes.com
+      --domain pgadmin.twinscopes.com
+      --domain api.twinscopes.com
       --email pepexykabasele@gmail.com
       --agree-tos
       --non-interactive
+      --keep-until-expiring
+
     networks:
       - my_network
 
+
   certbot-renew:
-    image: certbot/certbot
+    image: certbot/certbot:latest
+
     container_name: visite360_certbot_renew
     restart: unless-stopped
+
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/var:/var/lib/letsencrypt
       - ./certbot/www:/var/www/certbot
-    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h; done;'
+
+    entrypoint: >
+      /bin/sh -c "
+      trap exit TERM;
+      while :;
+      do
+        certbot renew --webroot --webroot-path=/var/www/certbot;
+        sleep 12h;
+      done
+      "
+
     networks:
       - my_network
+
 
   redis:
     image: redis:7-alpine
+
     container_name: visite360_redis
     restart: unless-stopped
+
+    command: >
+      redis-server
+      --appendonly yes
+
     volumes:
       - redis-data:/data
+
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        - CMD
+        - redis-cli
+        - ping
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+
     networks:
       - my_network
+
 
   db:
     image: postgres:16-alpine
+
     container_name: visite360_postgres_db
     restart: unless-stopped
+
     volumes:
       - dev-db-data:/var/lib/postgresql/data
+
     environment:
-      DJANGO_SETTINGS_MODULE: config.settings.prod
       POSTGRES_DB: elevateaidb
       POSTGRES_USER: elevateaiuser
-      POSTGRES_PASSWORD: elevateaipass
-      # POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U elevateaiuser -d elevateaidb -h localhost -p 5432"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U elevateaiuser -d elevateaidb -h localhost -p 5432
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 20s
+
     networks:
       - my_network
+
     secrets:
       - db_password
 
+
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest
+
     container_name: pgadmin_server
-    ports:
-      - "5051:80"
     restart: unless-stopped
+
     environment:
-      PGADMIN_DEFAULT_EMAIL: user@domain.com
-      PGADMIN_DEFAULT_PASSWORD: SuperSecret
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "True"
+
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
     depends_on:
       db:
         condition: service_healthy
+
     networks:
       - my_network
+
 
 volumes:
   dev-db-data:
   static-data:
   media-data:
-  certbot-etc:
-  certbot-var:
   redis-data:
+  pgadmin-data:
+  celery-beat-data:
+
 
 networks:
   my_network:
     driver: bridge
 
+
 secrets:
   db_password:
     file: ./secrets/db_password.txt
 
-
-    
+  google_adc_json:
+    file: ./secrets/google_adc.json

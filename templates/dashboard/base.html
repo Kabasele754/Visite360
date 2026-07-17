@@ -4,6 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function () {
+            try {
+                const saved = localStorage.getItem("twinscopes-dashboard-theme")
+                    || localStorage.getItem("twinscopes-market-theme")
+                    || "light";
+                document.documentElement.dataset.dashboardTheme = saved === "dark" ? "dark" : "light";
+                document.documentElement.style.colorScheme = saved === "dark" ? "dark" : "light";
+            } catch (_) {}
+        })();
+    </script>
     <title>{% block title %}Dashboard{% endblock %}</title>
 
     <!-- Tailwind CDN -->
@@ -61,24 +72,34 @@
     {% block extra_css %}{% endblock %}
 </head>
 
-<body class="h-full bg-slate-50 text-slate-900 antialiased">
+<body class="h-full bg-slate-50 text-slate-900 antialiased" data-dashboard-role="{% if request.user.is_staff and not current_organization %}admin{% elif current_organization %}vendor{% else %}customer{% endif %}">
+    <button type="button" id="dashboardThemeToggle" class="ts-dashboard-theme-toggle" aria-label="Toggle dashboard theme">◐</button>
     <div class="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.10),transparent_32%),linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)]">
 
         <!-- DESKTOP SIDEBAR -->
         <aside class="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-slate-200/80 bg-white/85 backdrop-blur-xl lg:flex lg:flex-col">
             <div class="flex h-20 items-center gap-3 border-b border-slate-200/80 px-6">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-400 text-lg font-black text-white shadow-lg shadow-blue-500/25">
-                    V
+                <div class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-200">
+                    <img src="{% static 'public/branding/twinscopes-logo.png' %}" alt="Twinscopes" class="h-full w-full object-contain p-1.5">
                 </div>
                 <div>
-                    <h2 class="text-lg font-black tracking-tight text-slate-950">Visite360</h2>
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Studio Dashboard</p>
+                    <h2 class="text-lg font-black tracking-tight text-slate-950 dark-text-primary">Twinscopes</h2>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {% if request.user.is_staff and not current_organization %}Administration Center{% elif current_organization %}Vendor Studio{% else %}Customer Center{% endif %}
+                    </p>
                 </div>
             </div>
 
             <div class="flex-1 overflow-y-auto px-4 py-5 app-scrollbar">
                 {% with current_url=request.resolver_match.url_name %}
                 <nav class="space-y-2">
+                    {% if request.user.is_staff %}
+                    <a href="{% url 'vendors:marketplace_admin_home' %}"
+                       class="group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-100">🛒</span>
+                        <span class="font-bold">Marketplace Admin</span>
+                    </a>
+                    {% endif %}
 
                     {% url 'dashboard-organizations-list' as organizations_url %}
                     {% if organizations_url %}
@@ -114,6 +135,9 @@
                             <span class="font-bold">Places</span>
                         </a>
                         {% endif %}
+
+                        {% url 'vendor_dashboard:home' current_organization.slug as vendor_url %}
+                        <a href="{{ vendor_url }}" class="group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100">🛍</span><span class="font-bold">Vendor Studio</span></a>
 
                         {% url 'dashboard-tours-list' current_organization.slug as tours_url %}
                         {% if tours_url %}
@@ -342,5 +366,97 @@
     </script>
 
     {% block extra_js %}{% endblock %}
+
+<style>
+:root {
+    --dash-bg:#f5f7fb;
+    --dash-surface:#ffffff;
+    --dash-surface-soft:#f8fafc;
+    --dash-border:rgba(15,23,42,.09);
+    --dash-text:#0f172a;
+    --dash-muted:#64748b;
+    --dash-accent:#0891b2;
+}
+html[data-dashboard-theme="dark"] {
+    --dash-bg:#070d18;
+    --dash-surface:#0f172a;
+    --dash-surface-soft:#111c2e;
+    --dash-border:rgba(148,163,184,.17);
+    --dash-text:#f8fafc;
+    --dash-muted:#94a3b8;
+    --dash-accent:#22d3ee;
+}
+html[data-dashboard-theme="dark"] body { background:var(--dash-bg)!important; color:var(--dash-text)!important; }
+html[data-dashboard-theme="dark"] .bg-white,
+html[data-dashboard-theme="dark"] [class*="bg-white/"] { background-color:var(--dash-surface)!important; }
+html[data-dashboard-theme="dark"] .bg-slate-50,
+html[data-dashboard-theme="dark"] .bg-slate-100 { background-color:var(--dash-surface-soft)!important; }
+html[data-dashboard-theme="dark"] .text-slate-950,
+html[data-dashboard-theme="dark"] .text-slate-900,
+html[data-dashboard-theme="dark"] .text-slate-800 { color:var(--dash-text)!important; }
+html[data-dashboard-theme="dark"] .text-slate-700,
+html[data-dashboard-theme="dark"] .text-slate-600,
+html[data-dashboard-theme="dark"] .text-slate-500 { color:var(--dash-muted)!important; }
+html[data-dashboard-theme="dark"] .border-slate-200,
+html[data-dashboard-theme="dark"] [class*="border-slate-200/"] { border-color:var(--dash-border)!important; }
+html[data-dashboard-theme="dark"] input,
+html[data-dashboard-theme="dark"] select,
+html[data-dashboard-theme="dark"] textarea {
+    background:#0b1220!important; color:#f8fafc!important; border-color:var(--dash-border)!important;
+}
+.ts-dashboard-theme-toggle {
+    position:fixed; right:18px; bottom:18px; z-index:80;
+    width:46px; height:46px; border:1px solid var(--dash-border); border-radius:15px;
+    background:var(--dash-surface); color:var(--dash-text);
+    box-shadow:0 16px 40px rgba(15,23,42,.18); font-size:1.25rem; cursor:pointer;
+}
+body[data-dashboard-role="admin"] { --role-accent:#06b6d4; }
+body[data-dashboard-role="vendor"] { --role-accent:#2563eb; }
+body[data-dashboard-role="customer"] { --role-accent:#7c3aed; }
+.ts-role-banner {
+    display:flex; justify-content:space-between; align-items:center; gap:16px;
+    margin-bottom:22px; padding:18px 22px; border:1px solid var(--dash-border);
+    border-left:5px solid var(--role-accent); border-radius:22px;
+    background:var(--dash-surface); box-shadow:0 12px 32px rgba(15,23,42,.06);
+}
+.ts-role-banner small { color:var(--dash-muted); text-transform:uppercase; letter-spacing:.08em; font-weight:900; }
+.ts-role-banner strong { display:block; margin-top:3px; color:var(--dash-text); font-size:1.1rem; }
+.ts-product-thumb {
+    width:54px; height:54px; overflow:hidden; border-radius:14px;
+    background:var(--dash-surface-soft); border:1px solid var(--dash-border); flex:none;
+}
+.ts-product-thumb img { width:100%; height:100%; object-fit:cover; }
+.ts-product-thumb span { display:grid; place-items:center; width:100%; height:100%; color:var(--dash-muted); font-weight:900; }
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const button = document.getElementById("dashboardThemeToggle");
+    const apply = (theme) => {
+        const value = theme === "dark" ? "dark" : "light";
+        document.documentElement.dataset.dashboardTheme = value;
+        document.documentElement.style.colorScheme = value;
+        localStorage.setItem("twinscopes-dashboard-theme", value);
+        localStorage.setItem("twinscopes-market-theme", value);
+        if (button) button.textContent = value === "dark" ? "☀" : "◐";
+    };
+    if (button) {
+        apply(document.documentElement.dataset.dashboardTheme);
+        button.addEventListener("click", () => {
+            apply(document.documentElement.dataset.dashboardTheme === "dark" ? "light" : "dark");
+        });
+    }
+});
+</script>
+
+
+<style>
+html[data-dashboard-theme="dark"] .shadow-sm,html[data-dashboard-theme="dark"] .shadow-soft,html[data-dashboard-theme="dark"] .shadow-card{box-shadow:0 16px 42px rgba(0,0,0,.26)!important}
+html[data-dashboard-theme="dark"] table thead{background:#111c2e!important;color:#94a3b8!important}
+html[data-dashboard-theme="dark"] table tbody tr{border-color:rgba(148,163,184,.14)!important}
+html[data-dashboard-theme="dark"] a[class*="bg-slate-950"]{background:#e2e8f0!important;color:#0f172a!important}
+html[data-dashboard-theme="dark"] .ts-role-banner{background:linear-gradient(145deg,#0f172a,#111c2e)}
+html[data-dashboard-theme="dark"] .ts-product-thumb{background:#111c2e}
+</style>
+
 </body>
 </html>

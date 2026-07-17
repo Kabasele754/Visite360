@@ -1,0 +1,26 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Delivery zone{% endblock %}
+{% block page_title %}Delivery zone{% endblock %}
+{% block content %}
+<form method="post" class="mx-auto max-w-4xl rounded-[32px] bg-white p-7 shadow-sm">
+  {% csrf_token %}
+  <p class="text-xs font-black uppercase tracking-[.2em] text-cyan-700">{{ organization.name }}</p>
+  <h1 class="mt-2 text-3xl font-black">{% if zone %}Edit {{ zone.name }}{% else %}Create a delivery zone{% endif %}</h1>
+  <p class="mt-2 text-slate-500">Start with South Africa (country code ZA), then define cities, fees and timing.</p>
+  <div class="mt-7 grid gap-5 md:grid-cols-2">
+    {% for field in form %}
+    <label class="grid gap-2 {% if field.name == 'cities_text' or field.name == 'postal_codes_text' %}md:col-span-2{% endif %}">
+      <span class="text-sm font-black text-slate-600">{{ field.label }}</span>
+      {{ field }}
+      {% if field.help_text %}<small class="text-slate-400">{{ field.help_text }}</small>{% endif %}
+      {% if field.errors %}<small class="text-red-600">{{ field.errors }}</small>{% endif %}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="mt-7 flex gap-3">
+    <button class="rounded-2xl bg-blue-600 px-6 py-3 font-black text-white">Save zone</button>
+    <a class="rounded-2xl border border-slate-200 px-6 py-3 font-black" href="{% url 'vendor_dashboard:delivery_zones' organization.slug %}">Cancel</a>
+  </div>
+</form>
+<style>input,select,textarea{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:14px}input[type=checkbox]{width:auto}</style>
+{% endblock %}

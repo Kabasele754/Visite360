@@ -38,7 +38,8 @@
         }
     </script>
 
-    <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
+    <link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+    <link rel="stylesheet" href="{% static 'public/css/vendor-commerce-v9.css' %}">
 
     <style>
         html,
@@ -539,7 +540,8 @@
         .hero-shell {
             position: relative;
             overflow: hidden;
-            min-height: 860px;
+            min-height: clamp(600px, 82svh, 760px);
+            max-height: 820px;
             background: #06111f;
         }
 
@@ -1140,7 +1142,6 @@
             background: #67e8f9;
             border-color: #67e8f9;
         }
-
         /* ========================= FILTER SHEET ========================= */
 
         .sheet-backdrop {
@@ -1595,7 +1596,8 @@
             }
 
             .hero-shell {
-                min-height: 760px;
+                min-height: clamp(610px, 84svh, 740px);
+                max-height: 760px;
             }
 
             .hero-grid {
@@ -4819,143 +4821,204 @@
     }
 }
 
-</style>
+        @media (min-width: 1024px) {
+            .hero-shell {
+                min-height: clamp(620px, 78svh, 740px) !important;
+                max-height: 760px !important;
+            }
+            .hero-panorama-viewer {
+                touch-action: pan-y !important;
+            }
+        }
+        @media (max-height: 760px) and (min-width: 900px) {
+            .hero-shell {
+                min-height: 600px !important;
+                height: 78svh !important;
+            }
+        }
+    
+/* Compact immersive hero V5 */
+@media (min-width: 769px) {
+    .hero-grid {
+        padding-top: clamp(72px, 9vh, 94px) !important;
+        padding-bottom: clamp(48px, 6vh, 70px) !important;
+    }
+
+    .hero-kicker {
+        margin-bottom: 14px !important;
+        padding: 7px 12px !important;
+        font-size: 9px !important;
+        letter-spacing: .18em !important;
+    }
+
+    .hero-title {
+        max-width: 610px !important;
+        font-size: clamp(38px, 4.7vw, 58px) !important;
+        line-height: .95 !important;
+    }
+
+    .hero-text {
+        max-width: 590px !important;
+        margin-top: 16px !important;
+        font-size: clamp(13px, 1.25vw, 16px) !important;
+        line-height: 1.55 !important;
+    }
+
+    .hero-actions {
+        margin-top: 20px !important;
+        gap: 9px !important;
+    }
+
+    .hero-actions a {
+        min-height: 44px !important;
+        padding: 0 18px !important;
+        font-size: 11px !important;
+        border-radius: 14px !important;
+    }
+
+    .hero-stats {
+        margin-top: 20px !important;
+        gap: 9px !important;
+    }
+
+    .hero-mini-panel {
+        min-height: 74px !important;
+        padding: 11px 13px !important;
+        border-radius: 15px !important;
+    }
+
+    .hero-mini-panel p:first-child {
+        font-size: 18px !important;
+        line-height: 1 !important;
+    }
+
+    .hero-mini-panel p:last-child {
+        margin-top: 5px !important;
+        font-size: 8px !important;
+        letter-spacing: .10em !important;
+    }
+
+    .mobile-soft-hide {
+        margin-top: 14px !important;
+    }
+
+    .mobile-soft-hide span {
+        font-size: 9px !important;
+        letter-spacing: .14em !important;
+    }
+}
+
+@media (min-width: 1024px) and (max-height: 780px) {
+    .hero-shell {
+        min-height: 610px !important;
+        height: min(78svh, 690px) !important;
+    }
+
+    .hero-grid {
+        padding-top: 68px !important;
+        padding-bottom: 38px !important;
+    }
+
+    .hero-title {
+        font-size: clamp(36px, 4.4vw, 52px) !important;
+    }
+
+    .hero-stats {
+        margin-top: 16px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-grid {
+        padding-top: 82px !important;
+        padding-bottom: 52px !important;
+    }
+
+    .hero-title {
+        font-size: clamp(34px, 11vw, 44px) !important;
+    }
+
+    .hero-text {
+        margin-top: 15px !important;
+        font-size: 12px !important;
+        line-height: 1.55 !important;
+    }
+
+    .hero-actions {
+        margin-top: 18px !important;
+    }
+
+    .hero-stats {
+        display: grid !important;
+        margin-top: 17px !important;
+        gap: 7px !important;
+    }
+
+    .hero-mini-panel {
+        padding: 10px 8px !important;
+        border-radius: 14px !important;
+    }
+
+    .hero-mini-panel p:first-child {
+        font-size: 16px !important;
+    }
+
+    .hero-mini-panel p:last-child {
+        font-size: 7px !important;
+        letter-spacing: .06em !important;
+    }
+}
+
+    </style>
 
     
+<script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0891b2">
+<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Twinscopes">
+<meta property="og:title" content="Twinscopes — Explore, Discover & Grow">
+<meta property="og:description" content="Immersive 360° tours, Google Street View, products, bookings and intelligent business growth.">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Twinscopes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Twinscopes — Explore, Discover & Grow">
+<meta name="twitter:description" content="Immersive 360° tours, products and intelligent marketplace services.">
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
 </head>
 
-<body class="antialiased">
+<body class="antialiased ts-shell-enabled">
+
     <script>
         (function () {
-            const savedTheme =
-                localStorage.getItem("twinscopesTheme") ||
-                localStorage.getItem("virtualToursTheme") ||
-                "light";
+            try {
+                const savedTheme =
+                    localStorage.getItem("twinscopes-market-theme") ||
+                    localStorage.getItem("twinscopesTheme") ||
+                    localStorage.getItem("virtualToursTheme") ||
+                    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
-            if (savedTheme === "dark") {
-                document.body.classList.add("theme-dark");
+                const resolvedTheme = savedTheme === "dark" ? "dark" : "light";
+                document.documentElement.dataset.marketTheme = resolvedTheme;
+                document.documentElement.style.colorScheme = resolvedTheme;
+                document.body.classList.toggle("theme-dark", resolvedTheme === "dark");
+
+                // Migrate legacy values to the canonical key.
+                localStorage.setItem("twinscopes-market-theme", resolvedTheme);
+            } catch (error) {
+                console.warn("Theme initialization failed:", error);
             }
         })();
     </script>
 
+    
     {% include 'public/partials/loader_3d_global.html' %}
-
-    <!-- DESKTOP HEADER -->
-    <header id="desktopHeader" class="desktop-header">
-        <div class="desktop-header-shell">
-            <a href="/explorer/" class="brand-link">
-                <span class="brand-mark">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
-                    </svg>
-                </span>
-
-                <span class="min-w-0">
-                    <span class="block truncate text-sm font-black leading-none tracking-tight">Virtual Tours</span>
-                    <span class="mt-1 block truncate text-[10px] font-black uppercase tracking-[0.18em] text-white/60">Explore 360°</span>
-                </span>
-            </a>
-
-            <nav class="desktop-nav">
-                <a href="/" class="desktop-nav-link active">Home</a>
-                <a href="/explorer/" class="desktop-nav-link">Explore</a>
-
-                <div id="serviceDropdown" class="service-dropdown">
-                    <button type="button" class="desktop-nav-link">
-                        Services / About
-                        <span class="ml-1">⌄</span>
-                    </button>
-
-                    <div class="service-dropdown-menu">
-                        <a href="/services/" class="dropdown-link">
-                            <span>Services</span>
-                            <span>→</span>
-                        </a>
-                        <a href="/about/" class="dropdown-link">
-                            <span>About</span>
-                            <span>→</span>
-                        </a>
-                    </div>
-                </div>
-
-                <a href="/contact/" class="desktop-nav-link">Contact</a>
-
-                {% if request.user.is_authenticated %}
-                    <a href="/dashboard/" class="desktop-nav-link">Account</a>
-                {% else %}
-                    <a href="/" class="desktop-nav-link">Account</a>
-                {% endif %}
-            </nav>
-
-            <div class="desktop-actions">
-                <button type="button" class="floating-icon-btn search-trigger" aria-label="Search and filter">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-                    </svg>
-                </button>
-
-                <button type="button" class="floating-icon-btn settings-trigger" aria-label="Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.89 3.31.877 2.42 2.42a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.89 1.543-.877 3.31-2.42 2.42a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.89-3.31-.877-2.42-2.42a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.89-1.543.877-3.31 2.42-2.42.996.575 2.245.047 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- MOBILE TOP ACTIONS -->
-    <div id="mobileTopActions" class="mobile-top-actions">
-        <button type="button" class="floating-icon-btn search-trigger" aria-label="Search and filter">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-            </svg>
-        </button>
-
-        <button type="button" class="floating-icon-btn settings-trigger" aria-label="Settings">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.89 3.31.877 2.42 2.42a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.89 1.543-.877 3.31-2.42 2.42a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.89-3.31-.877-2.42-2.42a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.89-1.543.877-3.31 2.42-2.42.996.575 2.245.047 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        </button>
-    </div>
-
-    <!-- SETTINGS MENU -->
-    <div id="settingsMenu" class="settings-menu">
-        <p class="mb-3 px-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark-text">Settings</p>
-
-        <div class="space-y-2">
-            <div class="setting-row">
-                <span class="text-sm font-black">Language</span>
-                <select id="languageSelect" class="setting-select">
-                    <option value="fr">FR</option>
-                    <option value="en">EN</option>
-                </select>
-            </div>
-
-            <button id="themeToggleBtn" type="button" class="setting-row w-full">
-                <span class="text-sm font-black">Dark mode</span>
-                <span id="themeLabel" class="text-xs font-black uppercase tracking-[0.12em] text-slate-500 dark-text">Off</span>
-            </button>
-
-            {% if request.user.is_authenticated %}
-                <a href="/dashboard/" class="settings-link">
-                    <span>Account</span>
-                    <span>→</span>
-                </a>
-            {% else %}
-                <a href="/" class="settings-link">
-                    <span>Login</span>
-                    <span>→</span>
-                </a>
-            {% endif %}
-
-            <a href="#" class="settings-link">
-                <span>More settings</span>
-                <span>→</span>
-            </a>
-        </div>
-    </div>
+    {% include 'public/partials/site_shell_nav.html' with active_public_nav='home' search_mode='home' %}
 
     <!-- HERO -->
     <section id="heroShell" class="hero-shell">
@@ -5085,7 +5148,7 @@
             <div class="section-head">
                 <div>
                     <h2 class="section-title">Featured visits</h2>
-                    <p class="section-subtitle">Premium spaces to explore now</p>
+                    <p class="section-subtitle">Spaces worth exploring now.</p>
                 </div>
 
                 <div class="featured-head-actions">
@@ -5245,24 +5308,83 @@
             {% endif %}
         </section>
 
-        <!-- ALL TOURS -->
-        <section id="allTours">
+        {% if featured_products %}
+        <section id="featuredProducts" class="home-featured-products">
             <div class="section-head">
                 <div>
-                    <h2 class="section-title">Explore all</h2>
+                    <h2 class="section-title">Featured products</h2>
+                    <p class="section-subtitle">Selected products from trusted organizations.</p>
+                </div>
+                <div class="featured-head-actions">
+                    <span class="home-featured-products__meta">{{ featured_products|length }} curated</span>
+                    <a href="{% url 'vendors:product_list' %}" class="view-link">View all</a>
+                </div>
+            </div>
+            <div class="home-featured-products__rail no-scrollbar" aria-label="Featured products carousel">
+                {% for product in featured_products %}
+                    {% include 'public/products/_card.html' with product=product compact=True %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- EXPLORE ALL: VIRTUAL TOURS / PRODUCTS -->
+        <section id="allExplore" class="home-explore-hub">
+            <div class="section-head home-explore-head">
+                <div>
+                    <h2 class="section-title">Explore</h2>
+                    <p class="section-subtitle">Tours and products in one place.</p>
                     <p id="catalogResultsMeta" class="section-subtitle"></p>
+                    <p id="productResultsMeta" class="section-subtitle hidden">{{ home_products_count }} product{{ home_products_count|pluralize }} available</p>
+                </div>
+
+                <div class="home-content-tabs" role="tablist" aria-label="Explore content">
+                    <button type="button" class="home-content-tab is-active" id="homeToursTab" data-home-content-tab="tours" role="tab" aria-selected="true" aria-controls="homeToursPanel">
+                        <span class="home-content-tab-icon">◉</span>
+                        <span>Virtual tours</span>
+                        <strong>{{ catalog_total_count }}</strong>
+                    </button>
+                    <button type="button" class="home-content-tab" id="homeProductsTab" data-home-content-tab="products" role="tab" aria-selected="false" aria-controls="homeProductsPanel">
+                        <span class="home-content-tab-icon">▣</span>
+                        <span>Products</span>
+                        <strong>{{ home_products_count }}</strong>
+                    </button>
                 </div>
             </div>
 
-            <div id="catalogToursGrid" class="pin-masonry"></div>
+            <div id="homeToursPanel" class="home-content-panel is-active" data-home-content-panel="tours" role="tabpanel" aria-labelledby="homeToursTab">
+                <div id="catalogToursGrid" class="pin-masonry"></div>
 
-            <div id="catalogEmptyState" class="empty-state">
-                <h2 class="text-2xl font-black tracking-tight text-slate-950">No result found</h2>
-                <p class="mt-2 text-sm font-semibold text-slate-500">Try another search, category or city.</p>
+                <div id="catalogEmptyState" class="empty-state">
+                    <h2 class="text-2xl font-black tracking-tight text-slate-950">No result found</h2>
+                    <p class="mt-2 text-sm font-semibold text-slate-500">Try another search, category or city.</p>
+                </div>
+
+                <div id="catalogInfiniteStatus" class="infinite-status" aria-live="polite"></div>
+                <div id="catalogInfiniteSentinel" class="catalog-infinite-sentinel" aria-hidden="true"></div>
             </div>
 
-            <div id="catalogInfiniteStatus" class="infinite-status" aria-live="polite"></div>
-            <div id="catalogInfiniteSentinel" class="catalog-infinite-sentinel" aria-hidden="true"></div>
+            <div id="homeProductsPanel" class="home-content-panel" data-home-content-panel="products" role="tabpanel" aria-labelledby="homeProductsTab" hidden>
+                {% if home_products %}
+                    <div class="home-market-grid">
+                        {% for product in home_products %}
+                            {% include 'public/products/_card.html' with product=product compact=True %}
+                        {% endfor %}
+                    </div>
+                    <div class="home-products-footer">
+                        <div>
+                            <strong>Need more options?</strong>
+                            <span>Browse the complete marketplace and compare products from verified organizations.</span>
+                        </div>
+                        <a href="{% url 'vendors:product_list' %}" class="home-products-all-link">Explore marketplace <span>→</span></a>
+                    </div>
+                {% else %}
+                    <div class="empty-state show">
+                        <h2 class="text-2xl font-black tracking-tight text-slate-950">No products yet</h2>
+                        <p class="mt-2 text-sm font-semibold text-slate-500">Active vendor products will appear here.</p>
+                    </div>
+                {% endif %}
+            </div>
         </section>
     </main>
 
@@ -5312,49 +5434,10 @@
         </div>
     </section>
 
-    <!-- MOBILE BOTTOM NAV -->
-    <nav id="mobileBottomNav" class="mobile-bottom-nav">
-        <a href="/" class="bottom-nav-link active">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.125 1.125 0 011.591 0L21.75 12M4.5 9.75V19.5A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5V9.75" />
-            </svg>
-            <span>Home</span>
-        </a>
-
-        <a href="/explorer/" class="bottom-nav-link">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5M3.75 12h16.5M3.75 18.75h16.5" />
-            </svg>
-            <span>Explore</span>
-        </a>
-
-        <a href="/about/" class="bottom-nav-link">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M12 8.25h.008v.008H12V8.25z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>About</span>
-        </a>
-
-        {% if request.user.is_authenticated %}
-            <a href="/dashboard/" class="bottom-nav-link">
-        {% else %}
-            <a href="/" class="bottom-nav-link">
-        {% endif %}
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 20.25a7.5 7.5 0 0115 0" />
-            </svg>
-            <span>Account</span>
-        </a>
-    </nav>
-
   
   
      <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
-
-    <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
-    <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
+    <script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
 
  <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -6698,5 +6781,56 @@
         setup3DFlipCards(document);
     });
 </script>
+
+<script>
+(function () {
+    const tabs = Array.from(document.querySelectorAll('[data-home-content-tab]'));
+    const panels = Array.from(document.querySelectorAll('[data-home-content-panel]'));
+    const toursMeta = document.getElementById('catalogResultsMeta');
+    const productsMeta = document.getElementById('productResultsMeta');
+
+    function activateExploreTab(name, options = {}) {
+        tabs.forEach((tab) => {
+            const active = tab.dataset.homeContentTab === name;
+            tab.classList.toggle('is-active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            tab.tabIndex = active ? 0 : -1;
+        });
+
+        panels.forEach((panel) => {
+            const active = panel.dataset.homeContentPanel === name;
+            panel.classList.toggle('is-active', active);
+            panel.hidden = !active;
+        });
+
+        if (toursMeta) toursMeta.classList.toggle('hidden', name !== 'tours');
+        if (productsMeta) productsMeta.classList.toggle('hidden', name !== 'products');
+
+        try { sessionStorage.setItem('twinscopesHomeExploreTab', name); } catch (_) {}
+        if (options.scroll) {
+            document.getElementById('allExplore')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => activateExploreTab(tab.dataset.homeContentTab));
+        tab.addEventListener('keydown', (event) => {
+            if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+            event.preventDefault();
+            const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : (index - 1 + tabs.length) % tabs.length;
+            tabs[next].focus();
+            activateExploreTab(tabs[next].dataset.homeContentTab);
+        });
+    });
+
+    const requested = new URLSearchParams(window.location.search).get('content');
+    let saved = '';
+    try { saved = sessionStorage.getItem('twinscopesHomeExploreTab') || ''; } catch (_) {}
+    activateExploreTab(requested === 'products' ? 'products' : (saved === 'products' ? 'products' : 'tours'));
+})();
+</script>
+
+    <script src="{% static 'public/js/product-commerce-v9.js' %}"></script>
+<script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
 </body>
 </html> 

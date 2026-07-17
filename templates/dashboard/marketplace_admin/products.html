@@ -1,0 +1,22 @@
+{% extends "dashboard/base.html" %}{% block title %}Products Administration{% endblock %}{% block page_title %}Products{% endblock %}{% block content %}
+<div class="ts-role-banner"><div><small>Administrator workspace</small><strong>Global control across every seller, product and order</strong></div><span>Admin</span></div>
+<div class="mb-6 flex flex-wrap gap-2">
+<a class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white" href="{% url 'vendors:marketplace_admin_home' %}">Overview</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_products' %}">Products</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_categories' %}">Categories</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_orders' %}">Orders</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_reviews' %}">Reviews</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_system' %}">System & AI</a>
+<a class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black text-cyan-900" href="/admin/">Django Admin</a>
+</div>
+<form method="get" class="mb-5 grid gap-3 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-4">
+<input class="rounded-xl border p-3" name="q" value="{{ selected_q }}" placeholder="Name, SKU or organization">
+<select class="rounded-xl border p-3" name="status"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+<select class="rounded-xl border p-3" name="organization"><option value="">All organizations</option>{% for item in organizations %}<option value="{{ item.slug }}" {% if selected_organization == item.slug %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select>
+<button class="rounded-xl bg-cyan-300 p-3 font-black">Filter</button>
+</form>
+<section class="overflow-hidden rounded-3xl bg-white shadow-sm"><div class="overflow-x-auto"><table class="min-w-full text-sm"><thead class="bg-slate-100 text-left text-xs uppercase text-slate-500"><tr><th class="p-4">Product</th><th class="p-4">Organization</th><th class="p-4">Price</th><th class="p-4">Stock</th><th class="p-4">Status</th><th class="p-4">Actions</th></tr></thead><tbody>
+{% for item in products %}<tr class="border-t"><td class="p-4"><div class="flex items-center gap-3"><div class="ts-product-thumb">{% if item.cover_image %}<img src="{{ item.cover_image.url }}" alt="{{ item.name }}">{% else %}<span>▣</span>{% endif %}</div><div><strong>{{ item.name }}</strong><br><small>{{ item.sku|default:"No SKU" }}</small></div></div></td><td class="p-4">{{ item.organization.name }}</td><td class="p-4">{{ item.currency }} {{ item.price }}</td><td class="p-4">{{ item.stock_quantity }}</td><td class="p-4">{{ item.get_status_display }}{% if item.is_featured %} · Featured{% endif %}</td><td class="p-4"><div class="flex flex-wrap gap-2"><form method="post" action="{% url 'vendors:marketplace_admin_product_action' item.id %}">{% csrf_token %}<input type="hidden" name="action" value="toggle_featured"><button class="rounded-lg border px-3 py-2 text-xs font-black">Featured</button></form><form method="post" action="{% url 'vendors:marketplace_admin_product_action' item.id %}">{% csrf_token %}<select name="action" class="rounded-lg border px-2 py-2 text-xs" onchange="this.form.submit()">{% for value,label in status_choices %}<option value="{{ value }}" {% if item.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></form><a class="rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white" href="{% url 'vendor_dashboard:product_edit' item.organization.slug item.id %}">Edit</a></div></td></tr>
+{% empty %}<tr><td colspan="6" class="p-8 text-center text-slate-500">No products found.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

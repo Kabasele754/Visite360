@@ -135,6 +135,7 @@
                 font-size: 13px !important;
             }
         }
+.tour-shop-panel{position:absolute;inset:0;z-index:104;display:grid;place-items:center;padding:16px;opacity:0;visibility:hidden;pointer-events:none}.tour-shop-panel.open{opacity:1;visibility:visible;pointer-events:auto}.tour-shop-backdrop{position:absolute;inset:0;background:rgba(2,6,23,.58);backdrop-filter:blur(7px)}.tour-shop-card{position:relative;width:min(920px,100%);max-height:82dvh;overflow:auto;padding:28px;border:1px solid rgba(255,255,255,.18);border-radius:30px;color:#fff;background:linear-gradient(145deg,#07152a,#020617);box-shadow:0 34px 100px rgba(0,0,0,.48)}.tour-shop-card h3{margin:9px 0 20px;font-size:30px;font-weight:950}.tour-shop-close{position:absolute;right:16px;top:16px;width:42px;height:42px;border:1px solid rgba(255,255,255,.18);border-radius:50%;color:#fff;background:rgba(255,255,255,.08)}.tour-shop-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.tour-shop-grid article{overflow:hidden;border:1px solid rgba(255,255,255,.1);border-radius:20px;background:rgba(255,255,255,.06)}.tour-shop-grid img{width:100%;aspect-ratio:1/1;object-fit:cover}.tour-shop-grid article div{display:grid;gap:7px;padding:13px}.tour-shop-grid span{color:#67e8f9;font-weight:950}.tour-shop-grid a{padding:10px;border-radius:12px;color:#06111f;background:#67e8f9;text-align:center;font-weight:950;text-decoration:none}@media(max-width:720px){.tour-shop-panel{align-items:end;padding:8px}.tour-shop-card{padding:22px 14px;max-height:78dvh}.tour-shop-grid{grid-template-columns:1fr 1fr}}
 </style>
 
     <title>{{ tour.title }} - Preview</title>
@@ -249,45 +250,22 @@
         }
     </style>
 
-    <link rel="stylesheet" href="{% static 'public/css/loader_3d_global.css' %}">
+    <link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+
+<style>
+.tour-appointment-modal{position:absolute;inset:0;z-index:105;display:grid;place-items:center;padding:18px;opacity:0;visibility:hidden;pointer-events:none;transition:.25s}.tour-appointment-modal.open{opacity:1;visibility:visible;pointer-events:auto}.tour-appointment-backdrop{position:absolute;inset:0;background:rgba(2,6,23,.62);backdrop-filter:blur(8px)}.tour-appointment-card{position:relative;width:min(560px,100%);max-height:min(86dvh,760px);overflow:auto;padding:28px;border:1px solid rgba(255,255,255,.18);border-radius:30px;color:#fff;background:radial-gradient(circle at 8% 0%,rgba(34,211,238,.18),transparent 34%),linear-gradient(145deg,#07152a,#020617);box-shadow:0 34px 100px rgba(0,0,0,.5)}.tour-appointment-close{position:absolute;right:16px;top:16px;width:42px;height:42px;border:1px solid rgba(255,255,255,.18);border-radius:50%;color:#fff;background:rgba(255,255,255,.07)}.tour-appointment-kicker{color:#67e8f9;font-size:10px;font-weight:950;letter-spacing:.24em}.tour-appointment-card h3{margin:10px 0;font-size:30px;font-weight:950}.tour-appointment-card>p{color:rgba(255,255,255,.65)}.tour-appointment-card form{display:grid;gap:13px;margin-top:22px}.tour-appointment-card label{display:grid;gap:7px;color:rgba(255,255,255,.72);font-size:12px;font-weight:850}.tour-appointment-card input,.tour-appointment-card select,.tour-appointment-card textarea{width:100%;padding:12px 13px;border:1px solid rgba(255,255,255,.14);border-radius:14px;color:#fff;background:rgba(255,255,255,.07)}.tour-appointment-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tour-appointment-card button[type=submit]{min-height:48px;border:0;border-radius:16px;color:#05131d;background:linear-gradient(135deg,#67e8f9,#38bdf8);font-weight:950}.tour-appointment-status{min-height:20px;color:#a5f3fc;font-weight:800}@media(max-width:600px){.tour-appointment-modal{align-items:end;padding:8px}.tour-appointment-card{max-height:82dvh;padding:22px 16px;border-radius:26px}.tour-appointment-grid{grid-template-columns:1fr}}
+</style>
 </head>
 
 <body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
     {% include 'public/partials/loader_3d_global.html' %}
-    <script src="{% static 'public/js/loader_3d_global.js' %}"></script>
+    <script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
 
     <div class="preview-page-shell relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_45%,#01040d_100%)]">
         <div class="pointer-events-none absolute inset-0 overflow-hidden">
             <div class="absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl"></div>
             <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl"></div>
             <div class="absolute left-0 top-1/3 h-64 w-64 rounded-full bg-sky-400/5 blur-3xl"></div>
-        </div>
-
-        <div id="previewIntroOverlay" class="preview-intro-overlay">
-            <div class="preview-intro-glow preview-intro-glow-a"></div>
-            <div class="preview-intro-glow preview-intro-glow-b"></div>
-
-            <div class="preview-intro-card">
-                <div class="preview-intro-logo-wrap">
-                    {% if current_organization.logo %}
-                        <img src="{{ current_organization.logo.url }}" alt="{{ current_organization.name }}" class="preview-intro-logo">
-                    {% else %}
-                        <div class="preview-intro-logo preview-intro-logo-fallback">
-                            {{ current_organization.name|slice:":2"|upper }}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="preview-intro-text">
-                    <p class="preview-intro-kicker">Virtual Tour Experience</p>
-                    <h2 class="preview-intro-title">{{ current_organization.name }}</h2>
-                    <p class="preview-intro-subtitle">{{ tour.title }}</p>
-                </div>
-
-                <div class="preview-intro-loader">
-                    <span class="preview-intro-loader-bar"></span>
-                </div>
-            </div>
         </div>
 
         <main class="relative h-full w-full">
@@ -510,12 +488,38 @@
 
                     <button id="autorotateBtn" type="button" class="control-btn" title="Auto rotate" aria-label="Auto rotate">⟳</button>
                     <button id="focusModeBtn" type="button" class="control-btn" title="Mode focus" aria-label="Mode focus">✦</button>
+                    <button id="tourShopBtn" type="button" class="control-btn" title="Shop products" aria-label="Shop products">▣</button>
+                    <button id="appointmentBtn" type="button" class="control-btn" title="Book an appointment" aria-label="Book an appointment">⌁</button>
                     <button id="shareBtn" type="button" class="control-btn" title="Partager" aria-label="Partager">↗</button>
                     <button id="fullscreenBtn" type="button" class="control-btn" title="Plein écran" aria-label="Plein écran">⤢</button>
                 </div>
             </div>
         </div>
 
+
+
+
+        {% if tour_products %}<div id="tourShopPanel" class="tour-shop-panel" aria-hidden="true" inert><div class="tour-shop-backdrop" data-shop-close></div><section class="tour-shop-card"><button class="tour-shop-close" data-shop-close>✕</button><p class="tour-appointment-kicker">SHOP DURING THE TOUR</p><h3>Products from {{ current_organization.name }}</h3><div class="tour-shop-grid">{% for product in tour_products %}<article>{% if product.cover_image %}<img src="{{ product.cover_image.url }}" alt="{{ product.name }}">{% endif %}<div><strong>{{ product.name }}</strong><span>{{ product.currency }} {{ product.price }}</span><a href="{% url 'vendors:product_detail' product.organization.slug product.slug %}" target="_blank" rel="noopener">View & order</a></div></article>{% endfor %}</div></section></div>{% endif %}
+
+        <div id="tourAppointmentModal" class="tour-appointment-modal" aria-hidden="true" inert>
+            <div class="tour-appointment-backdrop" data-appointment-close></div>
+            <section class="tour-appointment-card" role="dialog" aria-modal="true" aria-labelledby="appointmentTitle">
+                <button type="button" class="tour-appointment-close" data-appointment-close>✕</button>
+                <p class="tour-appointment-kicker">BOOK A VISIT</p>
+                <h3 id="appointmentTitle">Schedule an appointment</h3>
+                <p>Send your preferred date and the organization will confirm availability.</p>
+                <form id="tourAppointmentForm" action="{% url 'vendors:tour_appointment_create' tour.id %}" method="post">
+                    {% csrf_token %}
+                    {% if appointment_types %}<label>Service<select name="appointment_type"><option value="">General appointment</option>{% for item in appointment_types %}<option value="{{ item.id }}">{{ item.name }} — {{ item.duration_minutes }} min</option>{% endfor %}</select></label>{% endif %}
+                    <div class="tour-appointment-grid"><label>Full name<input name="full_name" required></label><label>Phone<input name="phone" required></label></div>
+                    <label>Email<input type="email" name="email"></label>
+                    <div class="tour-appointment-grid"><label>Preferred date<input type="date" name="preferred_date"></label><label>Preferred time<input type="time" name="preferred_time"></label></div>
+                    <label>Notes<textarea name="notes" rows="3" placeholder="Tell us what you would like to discuss"></textarea></label>
+                    <button type="submit">Send appointment request</button>
+                    <p id="tourAppointmentStatus" class="tour-appointment-status"></p>
+                </form>
+            </section>
+        </div>
 
         <div id="previewMediaModal" class="preview-media-modal" aria-hidden="true" inert>
             <div class="preview-media-backdrop" data-media-close></div>
@@ -677,6 +681,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     trackPreviewView();
 });
+</script>
+
+<script>
+(() => {
+ const shop=document.getElementById('tourShopPanel'),shopBtn=document.getElementById('tourShopBtn');const closeShop=()=>{document.activeElement?.blur?.();shop?.classList.remove('open');shop?.setAttribute('aria-hidden','true');shop?.setAttribute('inert','');};shopBtn?.addEventListener('click',()=>{shop?.removeAttribute('inert');shop?.setAttribute('aria-hidden','false');shop?.classList.add('open');});shop?.querySelectorAll('[data-shop-close]').forEach(x=>x.addEventListener('click',closeShop));
+ const modal=document.getElementById('tourAppointmentModal'),btn=document.getElementById('appointmentBtn'),form=document.getElementById('tourAppointmentForm'),status=document.getElementById('tourAppointmentStatus');
+ const open=()=>{modal?.removeAttribute('inert');modal?.setAttribute('aria-hidden','false');modal?.classList.add('open');};
+ const close=()=>{document.activeElement?.blur?.();modal?.classList.remove('open');modal?.setAttribute('aria-hidden','true');modal?.setAttribute('inert','');};
+ btn?.addEventListener('click',open);modal?.querySelectorAll('[data-appointment-close]').forEach(x=>x.addEventListener('click',close));
+ form?.addEventListener('submit',async e=>{e.preventDefault();status.textContent='Sending…';const r=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{'X-Requested-With':'XMLHttpRequest'}});const d=await r.json();if(r.ok&&d.ok){status.textContent=d.message;form.reset();setTimeout(close,1400);}else{status.textContent='Please check the form and try again.';}});
+})();
 </script>
 </body>
 </html>

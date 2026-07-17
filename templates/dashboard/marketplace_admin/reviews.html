@@ -1,0 +1,12 @@
+{% extends "dashboard/base.html" %}{% block title %}Reviews Moderation{% endblock %}{% block page_title %}Reviews{% endblock %}{% block content %}
+<div class="mb-6 flex flex-wrap gap-2">
+<a class="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white" href="{% url 'vendors:marketplace_admin_home' %}">Overview</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_products' %}">Products</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_categories' %}">Categories</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_orders' %}">Orders</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_reviews' %}">Reviews</a>
+<a class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black" href="{% url 'vendors:marketplace_admin_system' %}">System & AI</a>
+<a class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black text-cyan-900" href="/admin/">Django Admin</a>
+</div>
+<section class="grid gap-4">{% for item in reviews %}<article class="rounded-3xl bg-white p-6 shadow-sm"><div class="flex flex-wrap justify-between gap-4"><div><p class="text-xs font-black uppercase text-cyan-700">{{ item.product.organization.name }}</p><h2 class="text-xl font-black">{{ item.product.name }} · {{ item.rating }}/5</h2><p class="mt-3 text-sm text-slate-600">{{ item.comment }}</p><small class="text-slate-400">Verified buyer: {{ item.customer.email }}</small></div><form method="post" action="{% url 'vendors:marketplace_admin_review_action' item.id %}">{% csrf_token %}<select name="status" class="rounded-xl border p-3" onchange="this.form.submit()">{% for value,label in status_choices %}<option value="{{ value }}" {% if item.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></form></div></article>{% empty %}<div class="rounded-3xl bg-white p-8">No reviews.</div>{% endfor %}</section>
+{% endblock %}

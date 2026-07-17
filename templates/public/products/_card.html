@@ -1,0 +1,78 @@
+{% load vendor_cart %}
+{% product_is_in_cart product as is_in_cart %}
+{% product_cart_quantity product as cart_quantity %}
+<article class="product-visit-card{% if compact %} product-visit-card--compact{% endif %}{% if is_in_cart %} is-in-cart{% endif %}"
+         data-product-card data-product-id="{{ product.id }}" data-cart-state="{% if is_in_cart %}in-cart{% else %}available{% endif %}">
+    <a href="{% url 'vendors:product_detail' product.organization.slug product.slug %}" class="product-visit-card__media" aria-label="View {{ product.name }}">
+        {% if product.cover_image %}
+            <img src="{{ product.cover_image.url }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+        {% else %}
+            <div class="product-visit-card__placeholder"><span>▣</span><small>Product image</small></div>
+        {% endif %}
+        <span class="product-visit-card__shade" aria-hidden="true"></span>
+
+        <div class="product-visit-card__badges">
+            <span class="product-visit-card__badge product-visit-card__badge--cart"
+                  data-product-cart-badge {% if not is_in_cart %}hidden{% endif %}>
+                In cart{% if cart_quantity %} · {{ cart_quantity }}{% endif %}
+            </span>
+            {% if product.is_featured %}<span class="product-visit-card__badge product-visit-card__badge--featured">Featured</span>{% endif %}
+            <span class="product-visit-card__badge {% if product.in_stock %}product-visit-card__badge--stock{% else %}product-visit-card__badge--out{% endif %}">
+                {% if product.in_stock %}In stock{% else %}Out of stock{% endif %}
+            </span>
+        </div>
+
+        <div class="product-visit-card__quick">
+            <span>{{ product.category.name|default:"Product" }}</span>
+            {% if product.delivery_available %}<span>Delivery</span>{% elif product.pickup_available %}<span>Pickup</span>{% endif %}
+        </div>
+    </a>
+
+    <div class="product-visit-card__body">
+        <div class="product-visit-card__vendor">
+            <span class="product-visit-card__vendor-avatar">{{ product.organization.name|first|upper }}</span>
+            <span class="product-visit-card__vendor-name">{{ product.organization.name }}</span>
+            <span class="product-visit-card__verified" title="Verified organization">✓</span>
+        </div>
+
+        <a class="product-visit-card__title-link" href="{% url 'vendors:product_detail' product.organization.slug product.slug %}">
+            <h3 class="product-visit-card__title">{{ product.name }}</h3>
+        </a>
+
+        <p class="product-visit-card__summary">{{ product.short_description|default:product.description|striptags|truncatechars:110 }}</p>
+
+        <div class="product-visit-card__meta">
+            {% if product.delivery_available %}
+                <span><b>↗</b> {% if product.estimated_delivery_days %}{{ product.estimated_delivery_days }} day{{ product.estimated_delivery_days|pluralize }}{% else %}Delivery{% endif %}</span>
+            {% endif %}
+            {% if product.pickup_available %}<span><b>⌂</b> Pickup</span>{% endif %}
+            {% if product.track_inventory %}<span><b>▦</b> {{ product.stock_quantity }} left</span>{% endif %}
+        </div>
+
+        <div class="product-visit-card__footer">
+            <div class="product-visit-card__price">
+                {% if product.compare_at_price and product.compare_at_price > product.price %}<del>{{ product.currency }} {{ product.compare_at_price }}</del>{% endif %}
+                <strong>{{ product.currency }} {{ product.price }}</strong>
+            </div>
+
+            <div class="product-visit-card__actions">
+                <a href="{% url 'vendors:product_detail' product.organization.slug product.slug %}" class="product-visit-card__view" aria-label="View {{ product.name }}">View <span>→</span></a>
+                <form method="post" action="{% url 'vendors:cart_add' product.id %}" data-product-cart-form>
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit"
+                            class="product-visit-card__cart{% if is_in_cart %} is-in-cart{% endif %}"
+                            {% if not product.in_stock %}disabled{% endif %}
+                            aria-label="{% if is_in_cart %}Add another {{ product.name }}{% else %}Add {{ product.name }} to cart{% endif %}"
+                            data-card-cart-button>
+                        <span data-cart-button-icon>
+                            {% if is_in_cart %}
+                            <svg viewBox="0 0 24 24"><path d="M3.5 5h2l1.8 9.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H7"/><circle cx="9.5" cy="19" r="1.2"/><circle cx="17.5" cy="19" r="1.2"/></svg>
+                            {% else %}＋{% endif %}
+                        </span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</article>

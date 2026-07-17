@@ -325,3 +325,14 @@
         height: 64px;
     }
 }
+
+
+.global-page-loader__logo--twinscopes {
+    width: min(210px, 58vw);
+    height: 92px;
+    padding: 5px 10px;
+    border: 0;
+    border-radius: 18px;
+    object-fit: contain;
+    background: rgba(2, 12, 25, .34);
+}

@@ -24,6 +24,7 @@ from django.views.generic import TemplateView, FormView
 from apps.tours.models import Hotspot, Tour, Scene360, TourUniqueView, TourShare
 from apps.places.models import Place
 from apps.organizations.models import Organization
+from apps.vendors.models import Product
 from .forms import ContactLeadForm
 
 
@@ -657,6 +658,23 @@ class PublicHomeView(TemplateView):
         hero_preview_images = self._get_tour_preview_images(hero_tour)
         global_stats = self._get_global_stats()
 
+        featured_products = list(
+            Product.objects.select_related("organization", "category")
+            .prefetch_related("gallery")
+            .filter(status=Product.Status.ACTIVE, is_featured=True)
+            .order_by("-created_at")[:10]
+        )
+
+        # Products shown inside the Explore all / Products tab.
+        # We keep the queryset deliberately small for a fast home page while
+        # still offering a useful catalogue preview.
+        home_products = list(
+            Product.objects.select_related("organization", "category")
+            .prefetch_related("gallery")
+            .filter(status=Product.Status.ACTIVE, is_featured=False)
+            .order_by("-order_count", "-created_at")[:24]
+        )
+
         context.update(
             {
                 "hero_tour": hero_tour,
@@ -668,6 +686,9 @@ class PublicHomeView(TemplateView):
                 "hero_scene_viewer_mobile_url": hero_preview_images["viewer_mobile"],
 
                 "featured_tours": featured_tours,
+                "featured_products": featured_products,
+                "home_products": home_products,
+                "home_products_count": len(home_products),
                 "latest_tours": latest_tours,
 
                 "top_places": self._get_top_places(),
@@ -1278,6 +1299,7 @@ from django.db.models import Count, Q, Prefetch
 from django.views.generic import TemplateView
 
 from apps.organizations.models import Organization
+from apps.vendors.models import Product
 from apps.places.models import Place
 
 
@@ -1344,13 +1366,70 @@ class PublicContactView(FormView):
     form_class = ContactLeadForm
     success_url = reverse_lazy("public_contact")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            "marketplace_contact_email": getattr(
+                settings,
+                "TWINSCOPE_CONTACT_EMAIL",
+                "contact@twinscopes.com",
+            ),
+            "marketplace_contact_phone": getattr(
+                settings,
+                "TWINSCOPE_CONTACT_PHONE",
+                "",
+            ),
+            "marketplace_whatsapp": str(
+                getattr(settings, "TWINSCOPE_WHATSAPP", "")
+            ).replace("+", "").replace(" ", "").replace("-", ""),
+            "marketplace_maps_url": getattr(
+                settings,
+                "TWINSCOPE_MAPS_URL",
+                "https://www.google.com/maps/search/?api=1&query=Twinscopes",
+            ),
+        })
+        return context
+
+    def _is_ajax(self):
+        return self.request.headers.get("x-requested-with") == "XMLHttpRequest"
+
     def form_valid(self, form):
-        form.save()
-        messages.success(self.request, "Thank you. Your message has been sent successfully.")
+        lead = form.save()
+
+        if self._is_ajax():
+            return JsonResponse(
+                {
+                    "ok": True,
+                    "message": "Thank you. Your message has been sent successfully.",
+                    "lead_id": lead.pk,
+                },
+                status=201,
+            )
+
+        messages.success(
+            self.request,
+            "Thank you. Your message has been sent successfully.",
+        )
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        messages.error(self.request, "Please correct the form errors and try again.")
+        if self._is_ajax():
+            return JsonResponse(
+                {
+                    "ok": False,
+                    "message": "Please correct the highlighted fields.",
+                    "errors": {
+                        field: [str(error) for error in errors]
+                        for field, errors in form.errors.items()
+                    },
+                },
+                status=422,
+            )
+
+        messages.error(
+            self.request,
+            "Please correct the form errors and try again.",
+        )
         return self.render_to_response(self.get_context_data(form=form))
 
 

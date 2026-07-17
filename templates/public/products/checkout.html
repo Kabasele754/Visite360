@@ -1,0 +1,167 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>Checkout | Twinscopes</title>
+    <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">
+    <link rel="stylesheet" href="{% static 'public/css/vendor-commerce-v13.css' %}">
+    <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0891b2">
+<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Twinscopes">
+<meta property="og:title" content="Twinscopes — Explore, Discover & Grow">
+<meta property="og:description" content="Immersive 360° tours, Google Street View, products, bookings and intelligent business growth.">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Twinscopes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Twinscopes — Explore, Discover & Grow">
+<meta name="twitter:description" content="Immersive 360° tours, products and intelligent marketplace services.">
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+</head>
+<body class="market-page-body market-flow-no-mobile-nav" data-growth-page-event="checkout_started">
+{% include 'public/partials/loader_3d_global.html' %}
+{% include 'public/products/_nav.html' with active_market_nav='cart' mobile_back=True %}
+<main class="market-checkout-shell">
+    <nav class="market-breadcrumb" aria-label="Breadcrumb">
+        <a href="{% url 'vendors:cart_detail' %}">Cart</a><span>›</span><strong>Checkout</strong>
+    </nav>
+
+    <form method="post" id="marketCheckoutForm">
+        {% csrf_token %}
+        <div class="market-checkout-layout">
+            <section class="market-checkout-card">
+                <p class="market-eyebrow market-eyebrow-dark">Secure checkout</p>
+                <h1>Delivery & contact</h1>
+
+                {% if request.user.is_authenticated %}
+                    <div class="market-checkout-user">
+                        <span class="market-checkout-user__avatar">{{ request.user.username|first|upper }}</span>
+                        <div>
+                            <strong>Signed in as {{ request.user.get_full_name|default:request.user.username }}</strong>
+                            <p>Your available account details have been prefilled.</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="market-checkout-user">
+                        <span class="market-checkout-user__avatar">◎</span>
+                        <div>
+                            <strong>Guest checkout</strong>
+                            <p>Your customer account can be created after successful payment.</p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if form.non_field_errors %}
+                    <div class="market-form-error">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                {% if not has_delivery_zones %}
+                <div class="market-form-error" style="margin-bottom:16px">
+                    Delivery is not available yet because this vendor has not configured a delivery zone.
+                    Please choose pickup or contact the vendor.
+                </div>
+                {% endif %}
+                <div class="market-form-grid">
+                    {% for field in form %}
+                        {% if field.name != 'payment_method' %}
+                        <div class="market-form-field {% if field.name == 'delivery_address' or field.name == 'customer_notes' %}market-form-field--full{% endif %}"
+                             {% if field.name == 'delivery_zone' or field.name == 'delivery_address' or field.name == 'delivery_city' %}data-delivery-only{% endif %}>
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                            {% for error in field.errors %}<small class="market-field-error">{{ error }}</small>{% endfor %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <section class="market-checkout-payment-section">
+                    <div class="market-checkout-payment-head">
+                        <div>
+                            <small>Payment</small>
+                            <h2>Choose a payment method</h2>
+                        </div>
+                        <span>Secure & encrypted</span>
+                    </div>
+
+                    <div class="market-checkout-payment-choices">
+                        {% if stripe_enabled %}
+                        <label class="market-checkout-pay-choice">
+                            <input type="radio" name="payment_method" value="stripe"
+                                   {% if form.payment_method.value == 'stripe' or not form.payment_method.value %}checked{% endif %}>
+                            <span class="market-checkout-pay-choice__icon">
+                                <svg viewBox="0 0 30 22" aria-hidden="true"><rect x="1" y="1" width="28" height="20" rx="4"/><path d="M4 7h22M5 15h8"/></svg>
+                            </span>
+                            <span>
+                                <strong>Card</strong>
+                                <small>Stripe secure embedded checkout</small>
+                            </span>
+                            <b>Recommended</b>
+                        </label>
+                        {% endif %}
+
+                        {% if paypal_enabled %}
+                        <label class="market-checkout-pay-choice">
+                            <input type="radio" name="payment_method" value="paypal"
+                                   {% if form.payment_method.value == 'paypal' %}checked{% endif %}>
+                            <span class="market-checkout-pay-choice__icon market-checkout-pay-choice__icon--paypal">P</span>
+                            <span>
+                                <strong>PayPal</strong>
+                                <small>PayPal balance or eligible funding source</small>
+                            </span>
+                        </label>
+                        {% endif %}
+
+                        <label class="market-checkout-pay-choice">
+                            <input type="radio" name="payment_method" value="manual"
+                                   {% if form.payment_method.value == 'manual' %}checked{% endif %}>
+                            <span class="market-checkout-pay-choice__icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v11H4zM7 8V5h10v3M8 13h8"/></svg>
+                            </span>
+                            <span>
+                                <strong>Pay on delivery / pickup</strong>
+                                <small>Vendor confirmation required</small>
+                            </span>
+                        </label>
+                    </div>
+                    {% for error in form.payment_method.errors %}<small class="market-field-error">{{ error }}</small>{% endfor %}
+                </section>
+
+                <button class="market-checkout-submit" type="submit">
+                    <span>Review & pay securely</span><strong>→</strong>
+                </button>
+            </section>
+
+            <aside class="market-checkout-card market-order-summary market-checkout-summary-card">
+                <p class="market-eyebrow">Order summary</p>
+                <h2>{{ organization.name }}</h2>
+                {% for row in cart_rows %}
+                    <div class="market-checkout-summary-row">
+                        <span>{{ row.quantity }} × {{ row.product.name }}</span>
+                        <strong>{{ row.product.currency }} {{ row.line_total }}</strong>
+                    </div>
+                {% endfor %}
+                <div class="market-checkout-summary-row market-checkout-summary-total">
+                    <span>Subtotal</span>
+                    <strong>{{ cart_rows.0.product.currency }} {{ subtotal }}</strong>
+                </div>
+                <p class="market-checkout-note">Delivery fees are calculated from the selected delivery zone.</p>
+                <a href="{% url 'vendors:product_list' %}" class="market-continue-shopping">← Continue shopping</a>
+            </aside>
+        </div>
+    </form>
+</main>
+<script src="{% static 'public/js/product-commerce-v9.js' %}"></script>
+<script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
+<script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
+<script src="{% static 'growth_ai/js/tracker.js' %}"></script></body>
+</html>
