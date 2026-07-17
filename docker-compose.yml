@@ -178,7 +178,6 @@ services:
     volumes:
       - static-data:/app/staticfiles:ro
       - media-data:/app/media:ro
-
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/var:/var/lib/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
@@ -310,10 +309,11 @@ services:
     restart: unless-stopped
 
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pepexykabasele@gmail.com}
+      PGADMIN_DEFAULT_PASSWORD_FILE: /run/secrets/pgadmin_password
       PGADMIN_CONFIG_SERVER_MODE: "True"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "True"
+      PGADMIN_LISTEN_PORT: "80"
 
     volumes:
       - pgadmin-data:/var/lib/pgadmin
@@ -324,6 +324,9 @@ services:
 
     networks:
       - my_network
+
+    secrets:
+      - pgadmin_password
 
 
 volumes:
@@ -346,3 +349,6 @@ secrets:
 
   google_adc_json:
     file: ./secrets/google_adc.json
+  
+  pgadmin_password:
+    file: ./secrets/pgadmin_password.txt

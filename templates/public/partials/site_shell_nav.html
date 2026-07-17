@@ -13,7 +13,7 @@
 
     <nav class="ts-desktop-nav" aria-label="Primary navigation">
       <a href="/" class="{% if active_public_nav == 'home' %}is-active{% endif %}">Home</a>
-      <a href="/?content=tours#allExplore" class="{% if active_public_nav == 'tours' %}is-active{% endif %}">Virtual tours</a>
+      <a href="/explorer/" class="{% if active_public_nav == 'tours' %}is-active{% endif %}">Virtual tours</a>
       <a href="{% url 'vendors:product_list' %}" class="{% if active_public_nav == 'products' %}is-active{% endif %}">Products</a>
       <a href="{% url 'public_services' %}" class="{% if active_public_nav == 'services' %}is-active{% endif %}">Services</a>
       <a href="{% url 'public_about' %}" class="{% if active_public_nav == 'about' %}is-active{% endif %}">About</a>
@@ -60,7 +60,7 @@
 
 <nav id="mobileBottomNav" class="ts-mobile-nav is-scroll-visible" aria-label="Mobile navigation">
   <a href="/" class="{% if active_public_nav == 'home' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><small>Home</small></a>
-  <a href="/?content=tours#allExplore" class="{% if active_public_nav == 'tours' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9 4.9-2.1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><small>Tours</small></a>
+  <a href="/explorer/" class="{% if active_public_nav == 'tours' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9 4.9-2.1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><small>Tours</small></a>
   <a href="{% url 'vendors:product_list' %}" class="{% if active_public_nav == 'products' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5 12 4l8 4.5v9L12 22l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4 8.5 8 4.5 8-4.5M12 13v9" stroke="currentColor" stroke-width="1.8"/></svg><small>Products</small></a>
   <a href="{% url 'public_services' %}" class="{% if active_public_nav == 'services' %}is-active{% endif %}"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5h16v11H4z" stroke="currentColor" stroke-width="1.8"/><path d="M8 6.5V4h8v2.5M9 11h6M9 14.5h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><small>Services</small></a>
   <button type="button" class="ts-mobile-more {% if active_public_nav == 'about' or active_public_nav == 'contact' or active_public_nav == 'cart' %}is-active{% endif %}" data-ts-more-toggle aria-expanded="false" aria-controls="tsMobileMoreSheet">
