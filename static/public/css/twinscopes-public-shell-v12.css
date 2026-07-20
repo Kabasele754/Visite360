@@ -55,9 +55,8 @@ html[data-market-theme="dark"] .ts-site-header.is-scrolled .ts-site-header__inne
     opacity:1;
     visibility:visible;
   }
-  body.ts-public-chrome-hidden{
-    --ts-bottom-h:0px;
-  }
+  /* Keep the reserved bottom safe-area stable while the bar is hidden.
+     Changing --ts-bottom-h here caused the page to jump during scrolling. */
 }
 @media(prefers-reduced-motion:reduce){
   .ts-site-header,.ts-mobile-top-actions,.ts-mobile-nav{

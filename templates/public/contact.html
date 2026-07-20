@@ -1,7 +1,7 @@
 {% load static %}
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Contact | Twinscopes</title><meta name="description" content="Contact Twinscopes for virtual tours, Google Street View, commerce, delivery, appointments and intelligent growth.">
+<title>Contact Twinscopes | Business Enquiries</title><meta name="description" content="Contact Twinscopes for professional 360° virtual tours, Google Street View, digital commerce, bookings, payments and business growth solutions.">
 <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">
 <link rel="stylesheet" href="{% static 'public/css/twinscopes-content-pages-v10.css' %}">
 <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})();</script>
@@ -29,26 +29,27 @@
 {% include 'public/partials/site_shell_nav.html' with active_public_nav='contact' show_search=False %}
 <main class="ts-content-main">
 <section class="ts-content-hero"><div class="ts-content-hero__grid"><div>
-<span class="ts-content-kicker">Contact Twinscopes</span>
-<h1>Tell us what you want customers to explore, book or buy.</h1>
-<p>We can help structure the virtual experience, commercial journey, delivery policy, Google Street View publishing and intelligent follow-up around your organization.</p>
+<span class="ts-content-kicker">Business enquiries</span>
+<h1>Let us discuss what your company wants customers to explore, book or buy.</h1>
+<p>Share your business objective, location and current digital challenges. Our team will help you identify the most practical path—from an immersive 360° experience to commerce, bookings, payments and measurable growth.</p>
+<div class="ts-content-actions"><a href="#contactForm" class="ts-content-btn ts-content-btn--primary">Send a project enquiry</a><a href="mailto:{{ marketplace_contact_email|default:'business@twinscopes.com' }}" class="ts-content-btn ts-content-btn--secondary">Email us directly</a></div>
 </div><div class="ts-content-visual">
-<div class="ts-content-stat"><strong>Virtual tours</strong><small>Planning, production and interactive hotspots.</small></div>
-<div class="ts-content-stat"><strong>Street View</strong><small>Connected scenes and publishing support.</small></div>
-<div class="ts-content-stat"><strong>Marketplace</strong><small>Products, payment and delivery setup.</small></div>
-<div class="ts-content-stat"><strong>Growth</strong><small>Analytics and Gemini recommendations.</small></div>
+<div class="ts-content-stat"><strong>New business</strong><small>Project consultations, demonstrations and implementation planning.</small></div>
+<div class="ts-content-stat"><strong>Partnerships</strong><small>Technology, creative, property, tourism and commercial partnerships.</small></div>
+<div class="ts-content-stat"><strong>Client support</strong><small>Platform, publishing, payment and operational assistance.</small></div>
+<div class="ts-content-stat"><strong>Professional response</strong><small>Clear next steps based on your organization’s actual requirements.</small></div>
 </div></div></section>
 
 <section class="ts-content-section">
 <div class="ts-contact-grid">
-<aside class="ts-contact-card"><span class="ts-content-kicker" style="color:var(--content-accent);border-color:var(--content-line);background:var(--content-soft)">Start a conversation</span><h2 style="margin-top:18px;font-size:30px">A clear brief is enough.</h2><p style="color:var(--content-muted);line-height:1.75">Share the organization, location, objective and the action you want visitors to take. We will help organize the next step.</p>
-<div class="ts-contact-method"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg><div><strong>Email</strong><small>Use the form and receive a structured response.</small></div></div>
-<div class="ts-contact-method"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h6"/></svg><div><strong>Project information</strong><small>Include website, social links and existing tour/product assets.</small></div></div>
-<div class="ts-contact-method"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg><div><strong>Response planning</strong><small>We identify the most useful implementation sequence.</small></div></div>
+<aside class="ts-contact-card"><span class="ts-content-kicker" style="color:var(--content-accent);border-color:var(--content-line);background:var(--content-soft)">Contact our team</span><h2 style="margin-top:18px;font-size:30px">A clear brief is enough to begin.</h2><p style="color:var(--content-muted);line-height:1.75">Tell us who you are, what your company does and the result you want to achieve. We will help structure the next step professionally.</p>
+<div class="ts-contact-method"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg><div><strong>Professional email</strong><small><a class="ts-contact-link" href="mailto:{{ marketplace_contact_email|default:'business@twinscopes.com' }}">{{ marketplace_contact_email|default:'business@twinscopes.com' }}</a></small></div></div>
+<div class="ts-contact-method"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h6"/></svg><div><strong>What to include</strong><small>Company name, location, website, objectives, timeline and any existing visual assets.</small></div></div>
+<div class="ts-contact-method"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg><div><strong>Business hours</strong><small>Monday to Friday. Enquiries are reviewed and answered as soon as possible.</small></div></div><div class="ts-contact-method"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg><div><strong>Partnerships and proposals</strong><small>Use the same email for strategic partnerships, agencies and enterprise opportunities.</small></div></div>
 </aside>
 <form id="contactForm" method="post" action="{% url 'public_contact' %}" class="ts-contact-form" data-contact-form novalidate>
 {% csrf_token %}
-<h2 style="margin:0 0 22px;font-size:28px">Project enquiry</h2>
+<span class="ts-section-eyebrow">Tell us about your project</span><h2 style="margin:8px 0 10px;font-size:28px">Request a professional consultation</h2><p class="ts-contact-form-intro">Complete the form below and provide as much context as possible. This helps our team prepare a more relevant response.</p>
 <div class="ts-contact-feedback" data-contact-feedback aria-live="polite" hidden></div>
 
 {% if messages %}
@@ -111,7 +112,7 @@
   </label>
 
   <div class="ts-field ts-field--full">
-    <button class="ts-contact-submit" type="submit">Send project enquiry →</button>
+    <button class="ts-contact-submit" type="submit">Submit business enquiry →</button>
   </div>
 </div>
 </form>

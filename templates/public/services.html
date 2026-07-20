@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Services | Twinscopes</title>
-<meta name="description" content="Virtual tours, Google Street View, marketplace, delivery, bookings and intelligent business growth services from Twinscopes.">
+<title>Business Services | Twinscopes</title>
+<meta name="description" content="Twinscopes helps companies create immersive 360° experiences, publish to Google Street View, sell online, accept bookings and payments, and improve growth with actionable analytics.">
 <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">
 <link rel="stylesheet" href="{% static 'public/css/twinscopes-content-pages-v10.css' %}">
 <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})();</script>
@@ -13,19 +13,12 @@
 <meta name="theme-color" content="#0891b2">
 <link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
 <link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Twinscopes">
-<meta property="og:title" content="Twinscopes — Explore, Discover & Grow">
-<meta property="og:description" content="Immersive 360° tours, Google Street View, products, bookings and intelligent business growth.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Twinscopes">
+<meta property="og:title" content="Twinscopes Business Services">
+<meta property="og:description" content="Immersive digital experiences, commerce, bookings, payments and intelligent business growth in one connected platform.">
 <meta property="og:url" content="{{ request.build_absolute_uri }}">
 <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Twinscopes">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Twinscopes — Explore, Discover & Grow">
-<meta name="twitter:description" content="Immersive 360° tours, products and intelligent marketplace services.">
-<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
 <link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
 </head>
 <body class="ts-content-body ts-shell-enabled">
@@ -35,46 +28,73 @@
 <section class="ts-content-hero">
   <div class="ts-content-hero__grid">
     <div>
-      <span class="ts-content-kicker">Twinscopes services</span>
-      <h1>One platform for immersive discovery and measurable business growth.</h1>
-      <p>Build virtual experiences, publish to Google Street View, sell products, accept secure payments, organize delivery, capture appointments and turn customer behavior into practical decisions.</p>
-      <div class="ts-content-actions"><a href="/contact/" class="ts-content-btn ts-content-btn--primary">Start a project</a><a href="/?content=tours#allExplore" class="ts-content-btn ts-content-btn--secondary">Explore virtual tours</a></div>
+      <span class="ts-content-kicker">Digital growth solutions for modern companies</span>
+      <h1>Turn every digital visit into a clear business opportunity.</h1>
+      <p>Twinscopes helps organizations present their spaces, products and services through immersive 360° experiences—then connects that attention to enquiries, appointments, purchases, delivery and measurable growth.</p>
+      <div class="ts-content-actions">
+        <a href="/contact/" class="ts-content-btn ts-content-btn--primary">Request a business consultation</a>
+        <a href="/?content=tours#allExplore" class="ts-content-btn ts-content-btn--secondary">View live experiences</a>
+      </div>
+      <div class="ts-inline-proof" aria-label="Twinscopes service advantages">
+        <span>Mobile-first delivery</span><span>Secure payments</span><span>Measurable customer journeys</span>
+      </div>
     </div>
     <div class="ts-content-visual">
-      <div class="ts-content-stat"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16"/></svg><strong>360° experiences</strong><small>Web, mobile and shareable previews.</small></div>
-      <div class="ts-content-stat"><svg viewBox="0 0 24 24"><path d="M4 18V8l8-4 8 4v10l-8 3-8-3Z"/><path d="m4 8 8 4 8-4M12 12v9"/></svg><strong>Commerce</strong><small>Products, cart, payments and delivery.</small></div>
-      <div class="ts-content-stat"><svg viewBox="0 0 24 24"><path d="M4 19V5h16v14H4Z"/><path d="M8 15l3-3 2 2 3-4"/></svg><strong>Analytics</strong><small>Funnel, engagement and growth signals.</small></div>
-      <div class="ts-content-stat"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg><strong>AI agents</strong><small>Actionable Gemini recommendations.</small></div>
+      <div class="ts-content-stat"><strong>Showcase</strong><small>Immersive 360° experiences that communicate quality before the first visit.</small></div>
+      <div class="ts-content-stat"><strong>Convert</strong><small>Products, bookings, enquiries and payments connected to customer intent.</small></div>
+      <div class="ts-content-stat"><strong>Operate</strong><small>Delivery, inventory, customer records and organization dashboards.</small></div>
+      <div class="ts-content-stat"><strong>Grow</strong><small>Analytics and AI-assisted recommendations built from real platform activity.</small></div>
     </div>
   </div>
 </section>
 
 <section class="ts-content-section">
-  <div class="ts-content-section-head"><div><h2>Everything your organization can activate</h2><p>Services are designed to work together, so a tour can lead to a product, an appointment, a delivery or a measurable follow-up.</p></div></div>
+  <div class="ts-content-section-head"><div><span class="ts-section-eyebrow">What we deliver</span><h2>A connected digital ecosystem—not a collection of isolated tools.</h2><p>Each service can be launched independently, but the strongest results come when discovery, engagement and conversion work together.</p></div></div>
   <div class="ts-service-grid">
-    {% include "public/partials/service_card_v3.html" with icon="tour" title="Professional virtual tours" description="High-performance 360° tours optimized for mobile and desktop." item1="Progressive image quality" item2="Cinematic scene transitions" item3="Shareable public links" %}
-    {% include "public/partials/service_card_v3.html" with icon="street" title="Google Street View publishing" description="Prepare, connect and publish approved panoramas to Google Street View." item1="OAuth connection" item2="Scene connectivity" item3="Publish status tracking" %}
-    {% include "public/partials/service_card_v3.html" with icon="studio" title="Interactive 360 studio" description="Create rich scenes without rebuilding the tour from scratch." item1="Door and floor navigation" item2="PDF, image and video hotspots" item3="YouTube and wall media" %}
-    {% include "public/partials/service_card_v3.html" with icon="market" title="Vendor marketplace" description="Give organizations a complete product catalogue connected to their tours." item1="Products and categories" item2="Featured merchandising" item3="Inventory and stock limits" %}
-    {% include "public/partials/service_card_v3.html" with icon="payment" title="Secure embedded payments" description="Accept card and PayPal payments while the client remains inside Twinscopes." item1="Stripe Embedded Checkout" item2="PayPal capture" item3="Webhook verification" %}
-    {% include "public/partials/service_card_v3.html" with icon="delivery" title="Delivery and pickup" description="Configure location-based fees, thresholds and estimated times." item1="South Africa delivery zones" item2="ZAR and multiple currencies" item3="Pickup availability" %}
-    {% include "public/partials/service_card_v3.html" with icon="booking" title="Appointments and reservations" description="Convert high-intent tour visitors into scheduled conversations." item1="Tour appointment CTA" item2="Preferred date and time" item3="Vendor request dashboard" %}
-    {% include "public/partials/service_card_v3.html" with icon="analytics" title="Customer journey analytics" description="Understand how people move from discovery to conversion." item1="Product views and carts" item2="Checkout and purchase events" item3="Tour-to-booking funnel" %}
-    {% include "public/partials/service_card_v3.html" with icon="ai" title="Gemini intelligent agents" description="Specialized agents analyse real platform data and recommend next actions." item1="Growth strategist" item2="Inventory and delivery agents" item3="Campaign recommendations" %}
-    {% include "public/partials/service_card_v3.html" with icon="map" title="Maps and place discovery" description="Connect organizations, places, tours and geographic exploration." item1="Address and GPS search" item2="Public map explorer" item3="Place-level organization" %}
-    {% include "public/partials/service_card_v3.html" with icon="lead" title="Lead and customer management" description="Capture enquiries and keep commercial opportunities connected to context." item1="Contact requests" item2="Appointment follow-up" item3="Customer order dashboard" %}
-    {% include "public/partials/service_card_v3.html" with icon="seo" title="SEO and structured discovery" description="Help products, tours and public pages become easier to discover." item1="Product and tour sitemaps" item2="robots.txt" item3="Structured product metadata" %}
+    {% include "public/partials/service_card_v3.html" with icon="tour" title="Professional 360° virtual tours" description="Present hotels, venues, offices, stores, properties, campuses and facilities through smooth, responsive immersive experiences." item1="Progressive quality for mobile and desktop" item2="Branded public sharing experience" item3="Cinematic navigation between spaces" %}
+    {% include "public/partials/service_card_v3.html" with icon="street" title="Google Street View publishing" description="Extend your physical visibility through connected, correctly prepared panoramas published to your verified Google presence." item1="Secure Google OAuth connection" item2="Scene connection and validation" item3="Publishing status and error tracking" %}
+    {% include "public/partials/service_card_v3.html" with icon="studio" title="Interactive experience design" description="Transform a simple tour into a guided customer journey with contextual information and clear calls to action." item1="Floor, doorway and scene navigation" item2="PDF, image, video and YouTube hotspots" item3="Product, booking and enquiry links" %}
+    {% include "public/partials/service_card_v3.html" with icon="market" title="Digital marketplace and catalogues" description="Give your organization a professional online catalogue that connects products and services directly to immersive content." item1="Products, categories and featured collections" item2="Inventory and availability controls" item3="Organization-branded storefronts" %}
+    {% include "public/partials/service_card_v3.html" with icon="payment" title="Secure online payments" description="Create a trusted checkout experience that keeps customers focused and provides verified payment records." item1="Stripe embedded checkout" item2="PayPal payment capture" item3="Server-side webhook verification" %}
+    {% include "public/partials/service_card_v3.html" with icon="booking" title="Appointments and reservations" description="Convert high-intent visitors into scheduled consultations, venue visits, demonstrations or service appointments." item1="Preferred date and time capture" item2="Context-aware booking requests" item3="Vendor follow-up dashboard" %}
+    {% include "public/partials/service_card_v3.html" with icon="delivery" title="Delivery and pickup operations" description="Configure practical fulfilment rules around location, order value, service area and customer preference." item1="Delivery zones and fee rules" item2="Estimated fulfilment times" item3="Pickup and local delivery options" %}
+    {% include "public/partials/service_card_v3.html" with icon="analytics" title="Customer journey analytics" description="Understand which experiences attract attention and where customers continue, hesitate or convert." item1="Tour, product and engagement events" item2="Cart, checkout and purchase funnels" item3="Channel and campaign attribution" %}
+    {% include "public/partials/service_card_v3.html" with icon="ai" title="Growth AI and business insights" description="Use real platform signals to produce practical recommendations for visibility, conversion and operational improvement." item1="Executive growth summaries" item2="SEO and conversion opportunities" item3="Prioritized next actions" %}
+    {% include "public/partials/service_card_v3.html" with icon="map" title="Maps and place discovery" description="Help customers find organizations, locations and immersive experiences through structured geographic discovery." item1="Address and GPS search" item2="Public map exploration" item3="Place-level organization" %}
+    {% include "public/partials/service_card_v3.html" with icon="lead" title="Lead and customer management" description="Keep enquiries, appointments, purchases and customer communication connected to the original business context." item1="Structured contact requests" item2="Commercial follow-up history" item3="Customer account dashboards" %}
+    {% include "public/partials/service_card_v3.html" with icon="seo" title="SEO and structured visibility" description="Improve how public pages, products and virtual experiences are understood by search engines and shared online." item1="Structured metadata" item2="Sitemaps and robots controls" item3="Search-ready public content" %}
   </div>
 </section>
 
 <section class="ts-content-section">
-  <div class="ts-content-split">
-    <article class="ts-content-panel"><h2>Designed as one ecosystem</h2><p>A visitor can enter through Google, open a virtual tour, discover a relevant product, add it to the cart, pay securely, select delivery and return later to a customer dashboard.</p></article>
-    <article class="ts-content-panel"><h2>Built for controlled growth</h2><p>Twinscopes agents propose actions, but your team remains in control of pricing, campaigns, stock, delivery policies and customer communication.</p></article>
+  <div class="ts-content-section-head"><div><span class="ts-section-eyebrow">Who we serve</span><h2>Built for organizations where trust, presentation and customer action matter.</h2></div></div>
+  <div class="ts-industry-grid">
+    <article class="ts-industry-card"><strong>Hospitality & venues</strong><p>Hotels, restaurants, wedding venues, conference facilities and event spaces.</p></article>
+    <article class="ts-industry-card"><strong>Retail & showrooms</strong><p>Fashion, furniture, automotive, electronics and specialist product businesses.</p></article>
+    <article class="ts-industry-card"><strong>Property & construction</strong><p>Real estate, developments, apartments, offices and commercial properties.</p></article>
+    <article class="ts-industry-card"><strong>Health & professional services</strong><p>Clinics, practices, training centres, studios and customer-facing service companies.</p></article>
+    <article class="ts-industry-card"><strong>Education & institutions</strong><p>Schools, universities, campuses, museums and public-facing organizations.</p></article>
+    <article class="ts-industry-card"><strong>Tourism & destinations</strong><p>Attractions, resorts, cultural spaces and destination marketing organizations.</p></article>
+  </div>
+</section>
+
+<section class="ts-content-section">
+  <div class="ts-content-section-head"><div><span class="ts-section-eyebrow">How we work</span><h2>A clear, professional path from idea to measurable launch.</h2></div></div>
+  <div class="ts-process-grid">
+    <article class="ts-process-card"><span>01</span><h3>Discover</h3><p>We clarify your audience, objectives, locations, products and the actions customers should take.</p></article>
+    <article class="ts-process-card"><span>02</span><h3>Design</h3><p>We structure the experience, customer journey, content hierarchy and conversion points.</p></article>
+    <article class="ts-process-card"><span>03</span><h3>Build & connect</h3><p>We configure tours, commerce, bookings, payments, delivery and analytics around your organization.</p></article>
+    <article class="ts-process-card"><span>04</span><h3>Launch & improve</h3><p>We validate the experience, monitor activity and identify practical opportunities for improvement.</p></article>
+  </div>
+</section>
+
+<section class="ts-content-section">
+  <div class="ts-cta-band">
+    <div><span class="ts-section-eyebrow">Ready to strengthen your digital presence?</span><h2>Let us build a customer experience that represents your company professionally.</h2><p>Tell us what your organization wants to showcase, sell or improve. We will recommend a practical implementation path.</p></div>
+    <div class="ts-content-actions"><a href="/contact/" class="ts-content-btn ts-content-btn--primary">Discuss your project</a><a href="mailto:{{ marketplace_contact_email|default:'business@twinscopes.com' }}" class="ts-content-btn ts-content-btn--secondary">Email our team</a></div>
   </div>
 </section>
 </main>
 <script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
 <script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
-</body>
-</html>
+</body></html>

@@ -1,0 +1,215 @@
+/* ========================================================================== 
+   Twinscopes Professional Theme V1
+   Light: clean brand-led whites and cyan accents.
+   Dark: true neutral black / graphite surfaces without navy-blue cast.
+   ========================================================================== */
+:root {
+  color-scheme: light;
+  --ts-brand-50:#f0fdff;
+  --ts-brand-100:#ccfbff;
+  --ts-brand-300:#67e8f9;
+  --ts-brand-400:#22d3ee;
+  --ts-brand-500:#06b6d4;
+  --ts-brand-600:#0891b2;
+  --ts-brand-700:#0e7490;
+  --ts-pro-bg:#f8fbfc;
+  --ts-pro-bg-soft:#f1f7f9;
+  --ts-pro-surface:#ffffff;
+  --ts-pro-surface-2:#f7fafb;
+  --ts-pro-elevated:#ffffff;
+  --ts-pro-text:#0b1220;
+  --ts-pro-text-2:#334155;
+  --ts-pro-muted:#64748b;
+  --ts-pro-border:rgba(15,23,42,.11);
+  --ts-pro-border-strong:rgba(8,145,178,.24);
+  --ts-pro-shadow:0 20px 60px rgba(15,23,42,.10);
+  --ts-pro-shadow-soft:0 10px 32px rgba(15,23,42,.07);
+  --ts-pro-focus:0 0 0 3px rgba(34,211,238,.22);
+}
+
+html[data-market-theme="dark"],
+html.dark,
+body.theme-dark {
+  color-scheme: dark;
+  --ts-pro-bg:#050506;
+  --ts-pro-bg-soft:#0a0a0c;
+  --ts-pro-surface:#0d0d0f;
+  --ts-pro-surface-2:#121215;
+  --ts-pro-elevated:#17171a;
+  --ts-pro-text:#f7f7f8;
+  --ts-pro-text-2:#d4d4d8;
+  --ts-pro-muted:#9a9aa1;
+  --ts-pro-border:rgba(255,255,255,.10);
+  --ts-pro-border-strong:rgba(103,232,249,.26);
+  --ts-pro-shadow:0 28px 80px rgba(0,0,0,.58);
+  --ts-pro-shadow-soft:0 14px 42px rgba(0,0,0,.42);
+  --ts-pro-focus:0 0 0 3px rgba(34,211,238,.20);
+  --ts-shell-bg:rgba(10,10,11,.94);
+  --ts-shell-bg-solid:#0a0a0b;
+  --ts-shell-text:#f5f5f5;
+  --ts-shell-muted:#a1a1aa;
+  --ts-shell-border:rgba(255,255,255,.10);
+  --market-bg:#050506;
+  --market-surface:#0d0d0f;
+  --market-surface-soft:#121215;
+  --market-text:#f5f5f5;
+  --market-text-soft:#a1a1aa;
+  --market-muted:#a1a1aa;
+  --market-border:rgba(255,255,255,.10);
+  --content-bg:#050506;
+  --content-surface:#0d0d0f;
+  --content-soft:#121215;
+  --content-text:#f5f5f5;
+  --content-muted:#a1a1aa;
+  --content-line:rgba(255,255,255,.10);
+}
+
+/* Global page canvas */
+html[data-market-theme="dark"] body,
+body.theme-dark {
+  color:var(--ts-pro-text) !important;
+  background:
+    radial-gradient(circle at 12% -8%, rgba(34,211,238,.075), transparent 27%),
+    radial-gradient(circle at 92% 4%, rgba(255,255,255,.035), transparent 24%),
+    linear-gradient(180deg,#050506 0%,#080809 48%,#050506 100%) !important;
+}
+
+html[data-market-theme="dark"] body::before,
+html[data-market-theme="dark"] body::after,
+body.theme-dark::before,
+body.theme-dark::after {
+  opacity:.18 !important;
+  filter:blur(22px) !important;
+}
+
+/* Header, mobile chrome and sheets */
+html[data-market-theme="dark"] .ts-site-header__inner,
+html[data-market-theme="dark"] .ts-mobile-top-actions,
+html[data-market-theme="dark"] .ts-mobile-nav,
+html[data-market-theme="dark"] .ts-more-card,
+html[data-market-theme="dark"] .ts-mini-cart__panel,
+body.theme-dark .ts-site-header__inner,
+body.theme-dark .ts-mobile-top-actions,
+body.theme-dark .ts-mobile-nav,
+body.theme-dark .ts-more-card,
+body.theme-dark .ts-mini-cart__panel {
+  color:var(--ts-pro-text) !important;
+  border-color:var(--ts-pro-border) !important;
+  background:rgba(10,10,11,.94) !important;
+  box-shadow:var(--ts-pro-shadow-soft) !important;
+  backdrop-filter:blur(22px) saturate(115%) !important;
+  -webkit-backdrop-filter:blur(22px) saturate(115%) !important;
+}
+
+html[data-market-theme="dark"] .ts-icon-button,
+html[data-market-theme="dark"] .ts-account-button,
+html[data-market-theme="dark"] .ts-more-theme,
+html[data-market-theme="dark"] .ts-more-card>header button,
+body.theme-dark .ts-icon-button,
+body.theme-dark .ts-account-button,
+body.theme-dark .ts-more-theme,
+body.theme-dark .ts-more-card>header button {
+  color:var(--ts-pro-text) !important;
+  border-color:var(--ts-pro-border) !important;
+  background:#141416 !important;
+}
+html[data-market-theme="dark"] .ts-icon-button:hover,
+html[data-market-theme="dark"] .ts-account-button:hover,
+body.theme-dark .ts-icon-button:hover,
+body.theme-dark .ts-account-button:hover {
+  border-color:rgba(103,232,249,.34) !important;
+  background:#1b1b1e !important;
+}
+
+/* Cards, panels, dialogs and commerce surfaces */
+html[data-market-theme="dark"] :is(
+  .pin-card,.tour-card-face,.tour-card-back,.category-pill,.section-head,.empty-state,
+  .filter-sheet,.settings-menu,.service-dropdown-menu,.hero-mini-panel,
+  .market-card,.market-product-card,.market-panel,.market-cart-card,.market-summary-card,
+  .market-checkout-card,.market-checkout-summary,.market-payment-option,.market-account-order,
+  .market-activation-card,.market-payment-sheet,.market-checkout-pay-choice,
+  .ts-service-card,.ts-value-card,.ts-content-panel,.ts-contact-card,.ts-contact-form,
+  .auth-dialog__panel,.ts-auth-card
+),
+body.theme-dark :is(
+  .pin-card,.tour-card-face,.tour-card-back,.category-pill,.section-head,.empty-state,
+  .filter-sheet,.settings-menu,.service-dropdown-menu,.hero-mini-panel,
+  .market-card,.market-product-card,.market-panel,.market-cart-card,.market-summary-card,
+  .market-checkout-card,.market-checkout-summary,.market-payment-option,.market-account-order,
+  .market-activation-card,.market-payment-sheet,.market-checkout-pay-choice,
+  .ts-service-card,.ts-value-card,.ts-content-panel,.ts-contact-card,.ts-contact-form,
+  .auth-dialog__panel,.ts-auth-card
+) {
+  color:var(--ts-pro-text) !important;
+  border-color:var(--ts-pro-border) !important;
+  background:var(--ts-pro-surface) !important;
+  box-shadow:var(--ts-pro-shadow-soft) !important;
+}
+
+html[data-market-theme="dark"] :is(input,select,textarea,.search-field,.setting-select,.market-input,.market-select),
+body.theme-dark :is(input,select,textarea,.search-field,.setting-select,.market-input,.market-select) {
+  color:var(--ts-pro-text) !important;
+  border-color:var(--ts-pro-border) !important;
+  background:#121215 !important;
+  caret-color:var(--ts-brand-300);
+}
+html[data-market-theme="dark"] :is(input,select,textarea):focus,
+body.theme-dark :is(input,select,textarea):focus {
+  border-color:var(--ts-brand-500) !important;
+  box-shadow:var(--ts-pro-focus) !important;
+  outline:0 !important;
+}
+html[data-market-theme="dark"] ::placeholder,
+body.theme-dark ::placeholder { color:#71717a !important; opacity:1; }
+
+/* Typography: neutral professional hierarchy */
+html[data-market-theme="dark"] :is(h1,h2,h3,h4,h5,h6,strong,.section-title,.pin-title,.tour-back-title),
+body.theme-dark :is(h1,h2,h3,h4,h5,h6,strong,.section-title,.pin-title,.tour-back-title) {
+  color:#fafafa !important;
+}
+html[data-market-theme="dark"] :is(p,small,.section-subtitle,.pin-description,.tour-back-text,.dark-text),
+body.theme-dark :is(p,small,.section-subtitle,.pin-description,.tour-back-text,.dark-text) {
+  color:var(--ts-pro-muted) !important;
+}
+
+/* Keep the cyan identity as an accent only, never as the dark canvas. */
+html[data-market-theme="dark"] :is(a:hover,.is-active,.active,[aria-current="page"]),
+body.theme-dark :is(a:hover,.is-active,.active,[aria-current="page"]) {
+  --tw-text-opacity:1;
+}
+html[data-market-theme="dark"] .ts-desktop-nav a.is-active,
+html[data-market-theme="dark"] .ts-mobile-nav a.is-active,
+html[data-market-theme="dark"] .ts-mobile-more.is-active,
+body.theme-dark .ts-desktop-nav a.is-active,
+body.theme-dark .ts-mobile-nav a.is-active,
+body.theme-dark .ts-mobile-more.is-active {
+  color:var(--ts-brand-300) !important;
+  background:rgba(34,211,238,.075) !important;
+}
+
+/* Light mode refinement: brand palette, clean white surfaces. */
+html:not([data-market-theme="dark"]) .ts-site-header__inner,
+body:not(.theme-dark) .ts-site-header__inner {
+  border-color:rgba(8,145,178,.14);
+  background:rgba(255,255,255,.91);
+  box-shadow:0 14px 42px rgba(14,116,144,.08);
+}
+html:not([data-market-theme="dark"]) .ts-mobile-nav,
+body:not(.theme-dark) .ts-mobile-nav {
+  border-color:rgba(8,145,178,.14);
+  background:rgba(255,255,255,.96);
+}
+html:not([data-market-theme="dark"]) :is(.pin-card,.ts-service-card,.ts-value-card,.ts-content-panel),
+body:not(.theme-dark) :is(.pin-card,.ts-service-card,.ts-value-card,.ts-content-panel) {
+  border-color:rgba(8,145,178,.12);
+  background:#fff;
+  box-shadow:0 16px 44px rgba(14,116,144,.075);
+}
+
+/* Accessible selection and focus */
+::selection { color:#05202a; background:var(--ts-brand-300); }
+:focus-visible { outline:2px solid var(--ts-brand-400); outline-offset:3px; }
+
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto !important; }
+}

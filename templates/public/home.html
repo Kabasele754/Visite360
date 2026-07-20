@@ -40,6 +40,7 @@
 
     <link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
     <link rel="stylesheet" href="{% static 'public/css/vendor-commerce-v9.css' %}">
+    <link rel="stylesheet" href="{% static 'public/css/twinscopes-professional-theme-v1.css' %}">
 
     <style>
         html,
@@ -4969,7 +4970,63 @@
     }
 }
 
-    </style>
+
+        /* Featured heading belongs visually to the page, not to a floating card. */
+        #featured .section-head {
+            padding-left: 2px !important;
+            padding-right: 2px !important;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        #featured,
+        #allTours {
+            scroll-margin-top: 18px;
+        }
+
+        @media (max-width: 640px) {
+            #featured .section-head {
+                margin-top: 18px !important;
+                margin-bottom: 12px !important;
+                padding: 0 2px !important;
+            }
+        }
+
+    
+        /* Homepage sections are part of the page canvas, not floating bordered cards. */
+        .feed-shell .section-head {
+            padding-left: 2px !important;
+            padding-right: 2px !important;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        .category-section { border-bottom: 0 !important; box-shadow: none !important; }
+        .category-strip[hidden] { display: none !important; }
+        .category-pill small {
+            min-width: 20px; height: 20px; display: inline-grid; place-items: center;
+            margin-left: 3px; padding: 0 6px; border-radius: 999px;
+            background: rgba(15,23,42,.08); font-size: 9px; font-weight: 950;
+        }
+        .category-pill.active small { background: rgba(255,255,255,.18); }
+        body.theme-dark .category-pill small,
+        html[data-market-theme="dark"] .category-pill small { background: rgba(255,255,255,.10); }
+        .home-product-filter-item[hidden] { display: none !important; }
+        .home-product-filter-item { min-width: 0; }
+        .home-product-filter-item > * { height: 100%; }
+
+        @media (max-width: 640px) {
+            .feed-shell .section-head { padding: 0 2px !important; }
+        }
+</style>
 
     
 <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();</script>
@@ -5130,12 +5187,23 @@
         </div>
     </section>
 
-    <!-- CATEGORIES -->
-    <section class="category-section">
-        <div class="category-strip no-scrollbar">
-            <button type="button" data-category-pill="" class="category-pill active">All</button>
+    <!-- CONTEXT-AWARE CATEGORIES -->
+    <section class="category-section" aria-label="Explore categories">
+        <div class="category-strip no-scrollbar" data-category-mode="tours">
+            <button type="button" data-tour-category-pill="" class="category-pill active">All visits</button>
             {% for value, label in category_choices %}
-                <button type="button" data-category-pill="{{ value }}" class="category-pill">{{ label }}</button>
+                <button type="button" data-tour-category-pill="{{ value }}" class="category-pill">{{ label }}</button>
+            {% endfor %}
+        </div>
+
+        <div class="category-strip no-scrollbar" data-category-mode="products" hidden>
+            <button type="button" data-product-category-pill="" class="category-pill active">All products</button>
+            {% for category in product_categories %}
+                <button type="button" data-product-category-pill="{{ category.slug }}" class="category-pill">
+                    {% if category.icon %}<span aria-hidden="true">{{ category.icon }}</span>{% endif %}
+                    {{ category.name }}
+                    <small>{{ category.active_product_count }}</small>
+                </button>
             {% endfor %}
         </div>
     </section>
@@ -5368,8 +5436,14 @@
                 {% if home_products %}
                     <div class="home-market-grid">
                         {% for product in home_products %}
-                            {% include 'public/products/_card.html' with product=product compact=True %}
+                            <div class="home-product-filter-item" data-product-category="{% if product.category %}{{ product.category.slug }}{% endif %}" data-product-name="{{ product.name|lower }}">
+                                {% include 'public/products/_card.html' with product=product compact=True %}
+                            </div>
                         {% endfor %}
+                    </div>
+                    <div id="homeProductsFilteredEmpty" class="empty-state" aria-live="polite">
+                        <h2 class="text-2xl font-black tracking-tight text-slate-950">No product found</h2>
+                        <p class="mt-2 text-sm font-semibold text-slate-500">Choose another product category.</p>
                     </div>
                     <div class="home-products-footer">
                         <div>
@@ -5462,7 +5536,7 @@
         const closeFilterSheetBtn = document.getElementById("closeFilterSheetBtn");
         const catalogFilterForm = document.getElementById("catalogFilterForm");
         const resetFiltersBtn = document.getElementById("resetFiltersBtn");
-        const categoryPills = Array.from(document.querySelectorAll("[data-category-pill]"));
+        const categoryPills = Array.from(document.querySelectorAll("[data-tour-category-pill]"));
 
         const catalogDataNode = document.getElementById("catalogToursData");
         const catalogGrid = document.getElementById("catalogToursGrid");
@@ -5914,7 +5988,7 @@
 
         function syncCategoryPills() {
             categoryPills.forEach((pill) => {
-                const active = (pill.dataset.categoryPill || "") === catalogState.category;
+                const active = (pill.dataset.tourCategoryPill || "") === catalogState.category;
                 pill.classList.toggle("active", active);
             });
         }
@@ -6595,8 +6669,8 @@
         async function loadCatalogPage(page = 1, options = {}) {
             const reset = !!options.reset;
 
-            if (catalogState.isLoading) return;
-            if (!reset && !catalogState.hasMore) return;
+            if (catalogState.isLoading) return false;
+            if (!reset && !catalogState.hasMore) return false;
 
             setCatalogLoading(true);
 
@@ -6628,6 +6702,7 @@
                 catalogState.hasMore = Boolean(data.has_more);
 
                 appendCatalogItems(results, reset);
+                return true;
             } catch (error) {
                 console.error("Catalog infinite scroll error:", error);
 
@@ -6638,6 +6713,7 @@
                         </span>
                     `;
                 }
+                return false;
             } finally {
                 setCatalogLoading(false);
             }
@@ -6697,7 +6773,22 @@
             appendCatalogItems(catalogItems, true);
         }
 
-        catalogFilterForm?.addEventListener("submit", (event) => {
+        function scrollToVisits() {
+            const section = document.getElementById("allTours");
+            if (!section) return;
+
+            const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+            const top = Math.max(0, section.getBoundingClientRect().top + window.scrollY - 14);
+
+            window.requestAnimationFrame(() => {
+                window.scrollTo({
+                    top,
+                    behavior: reducedMotion ? "auto" : "smooth",
+                });
+            });
+        }
+
+        catalogFilterForm?.addEventListener("submit", async (event) => {
             event.preventDefault();
 
             const data = new FormData(catalogFilterForm);
@@ -6707,73 +6798,37 @@
             catalogState.city = String(data.get("city") || "").trim();
             catalogState.page = 1;
 
-            loadCatalogPage(1, { reset: true });
             closeSheet();
-
-            document.getElementById("allTours")?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
+            await loadCatalogPage(1, { reset: true });
+            scrollToVisits();
         });
 
         categoryPills.forEach((pill) => {
-            pill.addEventListener("click", () => {
-                catalogState.category = pill.dataset.categoryPill || "";
+            pill.addEventListener("click", async () => {
+                catalogState.category = pill.dataset.tourCategoryPill || "";
                 catalogState.page = 1;
+                syncCategoryPills();
+                syncForm();
 
-                loadCatalogPage(1, { reset: true });
-
-                document.getElementById("allTours")?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                });
+                await loadCatalogPage(1, { reset: true });
+                scrollToVisits();
             });
         });
 
-        resetFiltersBtn?.addEventListener("click", () => {
+        resetFiltersBtn?.addEventListener("click", async () => {
             catalogState.q = "";
             catalogState.category = "";
             catalogState.city = "";
             catalogState.page = 1;
+            syncCategoryPills();
+            syncForm();
 
-            loadCatalogPage(1, { reset: true });
             closeSheet();
+            await loadCatalogPage(1, { reset: true });
+            scrollToVisits();
         });
 
-        /* ========================= SCROLL BEHAVIOR ========================= */
-
-        let lastScrollY = window.scrollY;
-        let ticking = false;
-
-        function syncBarsOnScroll() {
-            const currentY = window.scrollY;
-            const scrollingDown = currentY > lastScrollY && currentY > 120;
-            const scrollingUp = currentY < lastScrollY;
-
-            desktopHeader?.classList.toggle("is-solid", currentY > 90);
-
-            if (scrollingDown) {
-                desktopHeader?.classList.add("is-hidden");
-                mobileTopActions?.classList.add("is-hidden");
-                mobileBottomNav?.classList.add("is-hidden");
-            }
-
-            if (scrollingUp || currentY < 80) {
-                desktopHeader?.classList.remove("is-hidden");
-                mobileTopActions?.classList.remove("is-hidden");
-                mobileBottomNav?.classList.remove("is-hidden");
-            }
-
-            lastScrollY = currentY;
-            ticking = false;
-        }
-
-        window.addEventListener("scroll", () => {
-            if (!ticking) {
-                window.requestAnimationFrame(syncBarsOnScroll);
-                ticking = true;
-            }
-        }, { passive: true });
+        /* Scroll chrome is managed globally by twinscopes-public-shell-v12.js. */
 
         renderInitialCatalog();
         setupProgressiveTourImages(document);
@@ -6786,34 +6841,82 @@
 (function () {
     const tabs = Array.from(document.querySelectorAll('[data-home-content-tab]'));
     const panels = Array.from(document.querySelectorAll('[data-home-content-panel]'));
+    const categoryModes = Array.from(document.querySelectorAll('[data-category-mode]'));
+    const productPills = Array.from(document.querySelectorAll('[data-product-category-pill]'));
+    const productItems = Array.from(document.querySelectorAll('.home-product-filter-item'));
+    const productEmpty = document.getElementById('homeProductsFilteredEmpty');
     const toursMeta = document.getElementById('catalogResultsMeta');
     const productsMeta = document.getElementById('productResultsMeta');
+    const allExplore = document.getElementById('allExplore');
+    let activeProductCategory = '';
+
+    function scrollToExplore() {
+        if (!allExplore) return;
+        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+        const top = Math.max(0, allExplore.getBoundingClientRect().top + window.scrollY - 14);
+        requestAnimationFrame(() => window.scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' }));
+    }
+
+    function filterProducts(category, options = {}) {
+        activeProductCategory = category || '';
+        let visible = 0;
+
+        productItems.forEach((item) => {
+            const matches = !activeProductCategory || item.dataset.productCategory === activeProductCategory;
+            item.hidden = !matches;
+            if (matches) visible += 1;
+        });
+
+        productPills.forEach((pill) => {
+            pill.classList.toggle('active', (pill.dataset.productCategoryPill || '') === activeProductCategory);
+        });
+
+        if (productEmpty) productEmpty.classList.toggle('show', visible === 0);
+        if (productsMeta) {
+            const label = visible === 1 ? 'product available' : 'products available';
+            productsMeta.textContent = `${visible} ${label}`;
+        }
+
+        try { sessionStorage.setItem('twinscopesHomeProductCategory', activeProductCategory); } catch (_) {}
+        if (options.scroll) scrollToExplore();
+    }
 
     function activateExploreTab(name, options = {}) {
+        const normalized = name === 'products' ? 'products' : 'tours';
+
         tabs.forEach((tab) => {
-            const active = tab.dataset.homeContentTab === name;
+            const active = tab.dataset.homeContentTab === normalized;
             tab.classList.toggle('is-active', active);
             tab.setAttribute('aria-selected', active ? 'true' : 'false');
             tab.tabIndex = active ? 0 : -1;
         });
 
         panels.forEach((panel) => {
-            const active = panel.dataset.homeContentPanel === name;
+            const active = panel.dataset.homeContentPanel === normalized;
             panel.classList.toggle('is-active', active);
             panel.hidden = !active;
         });
 
-        if (toursMeta) toursMeta.classList.toggle('hidden', name !== 'tours');
-        if (productsMeta) productsMeta.classList.toggle('hidden', name !== 'products');
+        categoryModes.forEach((rail) => {
+            rail.hidden = rail.dataset.categoryMode !== normalized;
+        });
 
-        try { sessionStorage.setItem('twinscopesHomeExploreTab', name); } catch (_) {}
-        if (options.scroll) {
-            document.getElementById('allExplore')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        if (toursMeta) toursMeta.classList.toggle('hidden', normalized !== 'tours');
+        if (productsMeta) productsMeta.classList.toggle('hidden', normalized !== 'products');
+
+        try { sessionStorage.setItem('twinscopesHomeExploreTab', normalized); } catch (_) {}
+        if (options.scroll) scrollToExplore();
     }
 
+    productPills.forEach((pill) => {
+        pill.addEventListener('click', () => {
+            activateExploreTab('products');
+            filterProducts(pill.dataset.productCategoryPill || '', { scroll: true });
+        });
+    });
+
     tabs.forEach((tab, index) => {
-        tab.addEventListener('click', () => activateExploreTab(tab.dataset.homeContentTab));
+        tab.addEventListener('click', () => activateExploreTab(tab.dataset.homeContentTab, { scroll: false }));
         tab.addEventListener('keydown', (event) => {
             if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
             event.preventDefault();
@@ -6824,9 +6927,15 @@
     });
 
     const requested = new URLSearchParams(window.location.search).get('content');
-    let saved = '';
-    try { saved = sessionStorage.getItem('twinscopesHomeExploreTab') || ''; } catch (_) {}
-    activateExploreTab(requested === 'products' ? 'products' : (saved === 'products' ? 'products' : 'tours'));
+    let savedTab = '';
+    let savedProductCategory = '';
+    try {
+        savedTab = sessionStorage.getItem('twinscopesHomeExploreTab') || '';
+        savedProductCategory = sessionStorage.getItem('twinscopesHomeProductCategory') || '';
+    } catch (_) {}
+
+    filterProducts(savedProductCategory);
+    activateExploreTab(requested === 'products' ? 'products' : (savedTab === 'products' ? 'products' : 'tours'));
 })();
 </script>
 

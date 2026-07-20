@@ -247,18 +247,94 @@
     refreshMiniCart().catch(() => {});
   });
 
-  // Simple smart scroll without hiding active overlays.
-  let lastY = scrollY;
-  addEventListener("scroll", () => {
-    const current = scrollY;
-    const overlayOpen = body.classList.contains("ts-more-open") ||
-      body.classList.contains("ts-mini-cart-open") ||
-      body.classList.contains("market-filter-open");
-    const hide = !overlayOpen && current > 110 && current > lastY + 6;
-    document.querySelectorAll("#desktopHeader,#mobileTopActions,#mobileBottomNav").forEach(el => {
-      el.classList.toggle("is-scroll-hidden", hide);
-      el.classList.toggle("is-scroll-visible", !hide);
+  // Stable Instagram-style scroll chrome. One controller for every public page.
+  const chromeElements = [
+    document.getElementById("desktopHeader"),
+    document.getElementById("mobileTopActions"),
+    document.getElementById("mobileBottomNav"),
+  ].filter(Boolean);
+
+  let lastY = Math.max(0, window.scrollY || 0);
+  let direction = 0;
+  let distance = 0;
+  let framePending = false;
+  let chromeHidden = false;
+
+  const overlayIsOpen = () =>
+    body.classList.contains("ts-more-open") ||
+    body.classList.contains("ts-mini-cart-open") ||
+    body.classList.contains("market-filter-open");
+
+  const setChromeHidden = hidden => {
+    if (chromeHidden === hidden) return;
+    chromeHidden = hidden;
+    body.classList.toggle("ts-public-chrome-hidden", hidden);
+    chromeElements.forEach(element => {
+      element.classList.toggle("is-scroll-hidden", hidden);
+      element.classList.toggle("is-scroll-visible", !hidden);
+      element.setAttribute("aria-hidden", hidden ? "true" : "false");
     });
-    lastY = current;
+  };
+
+  const updateScrollChrome = () => {
+    framePending = false;
+
+    const currentY = Math.max(0, window.scrollY || 0);
+    const delta = currentY - lastY;
+    const nextDirection = delta > 0 ? 1 : delta < 0 ? -1 : 0;
+
+    document.getElementById("desktopHeader")
+      ?.classList.toggle("is-scrolled", currentY > 24);
+
+    // Ignore browser bounce, tiny trackpad noise and layout shifts.
+    if (Math.abs(delta) < 2) {
+      lastY = currentY;
+      return;
+    }
+
+    if (nextDirection !== direction) {
+      direction = nextDirection;
+      distance = 0;
+    }
+    distance += Math.abs(delta);
+
+    // The chrome must always stay visible near the top and while a sheet/dialog is open.
+    if (currentY <= 72 || overlayIsOpen()) {
+      setChromeHidden(false);
+      distance = 0;
+    } else if (direction === 1 && distance >= 28) {
+      // Require a deliberate downward gesture before hiding.
+      setChromeHidden(true);
+      distance = 0;
+    } else if (direction === -1 && distance >= 12) {
+      // Reappear quickly, but not because of one-pixel jitter.
+      setChromeHidden(false);
+      distance = 0;
+    }
+
+    lastY = currentY;
+  };
+
+  addEventListener("scroll", () => {
+    if (framePending) return;
+    framePending = true;
+    requestAnimationFrame(updateScrollChrome);
   }, {passive:true});
+
+  // Keep navigation available after returning to the tab, rotating the device,
+  // opening a dialog, or using keyboard navigation.
+  addEventListener("pageshow", () => {
+    lastY = Math.max(0, window.scrollY || 0);
+    if (lastY <= 72) setChromeHidden(false);
+  });
+  addEventListener("resize", () => {
+    direction = 0;
+    distance = 0;
+    if (window.scrollY <= 72) setChromeHidden(false);
+  }, {passive:true});
+  document.addEventListener("focusin", event => {
+    if (event.target.closest("#desktopHeader,#mobileTopActions,#mobileBottomNav")) {
+      setChromeHidden(false);
+    }
+  });
 })();

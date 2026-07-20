@@ -24,7 +24,7 @@ from django.views.generic import TemplateView, FormView
 from apps.tours.models import Hotspot, Tour, Scene360, TourUniqueView, TourShare
 from apps.places.models import Place
 from apps.organizations.models import Organization
-from apps.vendors.models import Product
+from apps.vendors.models import Product, ProductCategory
 from .forms import ContactLeadForm
 
 
@@ -675,6 +675,17 @@ class PublicHomeView(TemplateView):
             .order_by("-order_count", "-created_at")[:24]
         )
 
+        product_categories = list(
+            ProductCategory.objects.filter(
+                is_active=True,
+                products__status=Product.Status.ACTIVE,
+            )
+            .annotate(active_product_count=Count("products", filter=Q(products__status=Product.Status.ACTIVE)))
+            .filter(active_product_count__gt=0)
+            .order_by("name")
+            .distinct()
+        )
+
         context.update(
             {
                 "hero_tour": hero_tour,
@@ -689,6 +700,7 @@ class PublicHomeView(TemplateView):
                 "featured_products": featured_products,
                 "home_products": home_products,
                 "home_products_count": len(home_products),
+                "product_categories": product_categories,
                 "latest_tours": latest_tours,
 
                 "top_places": self._get_top_places(),
@@ -1299,7 +1311,7 @@ from django.db.models import Count, Q, Prefetch
 from django.views.generic import TemplateView
 
 from apps.organizations.models import Organization
-from apps.vendors.models import Product
+from apps.vendors.models import Product, ProductCategory
 from apps.places.models import Place
 
 

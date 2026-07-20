@@ -336,3 +336,219 @@
     object-fit: contain;
     background: rgba(2, 12, 25, .34);
 }
+
+
+/* =====================================================================
+   TWINSCOPE PROFESSIONAL THEME — GLOBAL 3D LOADER
+   Light mode keeps the brand cyan palette. Dark mode uses neutral black,
+   graphite surfaces and controlled cyan accents.
+===================================================================== */
+.global-page-loader {
+    --loader-bg: #f7fdff;
+    --loader-bg-deep: #eafcff;
+    --loader-surface: rgba(255, 255, 255, 0.88);
+    --loader-surface-soft: rgba(255, 255, 255, 0.66);
+    --loader-border: rgba(8, 145, 178, 0.16);
+    --loader-grid: rgba(8, 145, 178, 0.075);
+    --loader-title: #102a35;
+    --loader-text: #365766;
+    --loader-muted: #5f7d89;
+    --loader-accent: #06b6d4;
+    --loader-accent-bright: #67e8f9;
+    --loader-accent-deep: #0891b2;
+    --loader-shadow: rgba(14, 116, 144, 0.16);
+
+    color-scheme: light;
+    background:
+        radial-gradient(circle at 18% 8%, rgba(34, 211, 238, 0.18), transparent 30%),
+        radial-gradient(circle at 86% 90%, rgba(6, 182, 212, 0.13), transparent 28%),
+        linear-gradient(180deg, var(--loader-bg) 0%, #f0fdff 52%, var(--loader-bg-deep) 100%);
+}
+
+html[data-market-theme="dark"] .global-page-loader,
+html[data-theme="dark"] .global-page-loader,
+body.theme-dark .global-page-loader,
+.dark .global-page-loader {
+    --loader-bg: #050506;
+    --loader-bg-deep: #09090b;
+    --loader-surface: rgba(13, 13, 15, 0.92);
+    --loader-surface-soft: rgba(23, 23, 26, 0.76);
+    --loader-border: rgba(255, 255, 255, 0.10);
+    --loader-grid: rgba(255, 255, 255, 0.038);
+    --loader-title: #f7f7f8;
+    --loader-text: #d4d4d8;
+    --loader-muted: #9a9aa1;
+    --loader-accent: #22d3ee;
+    --loader-accent-bright: #67e8f9;
+    --loader-accent-deep: #0891b2;
+    --loader-shadow: rgba(0, 0, 0, 0.58);
+
+    color-scheme: dark;
+    background:
+        radial-gradient(circle at 50% 5%, rgba(34, 211, 238, 0.105), transparent 27%),
+        radial-gradient(circle at 88% 88%, rgba(8, 145, 178, 0.075), transparent 25%),
+        linear-gradient(180deg, #050506 0%, #09090b 52%, #050506 100%);
+}
+
+.global-page-loader__grid {
+    background-image:
+        linear-gradient(var(--loader-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--loader-grid) 1px, transparent 1px);
+}
+
+.global-page-loader__bg::before {
+    background: color-mix(in srgb, var(--loader-accent-bright) 18%, transparent);
+}
+
+.global-page-loader__bg::after {
+    background: color-mix(in srgb, var(--loader-accent-deep) 13%, transparent);
+}
+
+.global-page-loader__inner {
+    border-color: var(--loader-border);
+    background: linear-gradient(180deg, var(--loader-surface), var(--loader-surface-soft));
+    box-shadow:
+        0 28px 80px var(--loader-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+html[data-market-theme="dark"] .global-page-loader__inner,
+html[data-theme="dark"] .global-page-loader__inner,
+body.theme-dark .global-page-loader__inner,
+.dark .global-page-loader__inner {
+    box-shadow:
+        0 30px 90px rgba(0, 0, 0, 0.64),
+        inset 0 1px 0 rgba(255, 255, 255, 0.075);
+}
+
+.global-page-loader__inner::before {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--loader-accent-bright) 14%, transparent), transparent 44%);
+}
+
+.loader-3d--back {
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--loader-accent) 18%, transparent),
+        color-mix(in srgb, var(--loader-accent-deep) 10%, transparent));
+    border-color: var(--loader-border);
+}
+
+.loader-3d--mid {
+    background: linear-gradient(135deg, var(--loader-surface-soft), color-mix(in srgb, var(--loader-surface) 54%, transparent));
+    border-color: var(--loader-border);
+}
+
+.loader-3d--front {
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--loader-surface) 94%, #ffffff 6%),
+        color-mix(in srgb, var(--loader-surface-soft) 96%, transparent));
+    border-color: var(--loader-border);
+    box-shadow: 0 24px 50px var(--loader-shadow);
+}
+
+html[data-market-theme="dark"] .loader-3d--front,
+html[data-theme="dark"] .loader-3d--front,
+body.theme-dark .loader-3d--front,
+.dark .loader-3d--front {
+    background: linear-gradient(180deg, #17171a, #0d0d0f);
+}
+
+.loader-3d__ring {
+    border-color: color-mix(in srgb, var(--loader-accent-bright) 20%, transparent);
+    border-top-color: var(--loader-accent-bright);
+    border-right-color: var(--loader-accent);
+}
+
+.loader-3d__core {
+    background: linear-gradient(135deg, var(--loader-accent-bright), var(--loader-accent-deep));
+    box-shadow: 0 0 28px color-mix(in srgb, var(--loader-accent) 46%, transparent);
+}
+
+.loader-3d__glow {
+    background: radial-gradient(circle, color-mix(in srgb, var(--loader-accent) 24%, transparent), transparent 68%);
+}
+
+.global-page-loader__logo {
+    border-color: var(--loader-border);
+    background: var(--loader-surface-soft);
+    box-shadow: 0 14px 34px var(--loader-shadow);
+}
+
+.global-page-loader__logo--fallback {
+    color: var(--loader-title);
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--loader-accent-bright) 24%, var(--loader-surface)),
+        color-mix(in srgb, var(--loader-accent) 18%, var(--loader-surface)));
+}
+
+.global-page-loader__kicker {
+    color: var(--loader-accent-deep);
+}
+
+html[data-market-theme="dark"] .global-page-loader__kicker,
+html[data-theme="dark"] .global-page-loader__kicker,
+body.theme-dark .global-page-loader__kicker,
+.dark .global-page-loader__kicker {
+    color: var(--loader-accent-bright);
+}
+
+.global-page-loader__title {
+    color: var(--loader-title);
+}
+
+.global-page-loader__subtitle {
+    color: var(--loader-text);
+}
+
+.global-page-loader__status {
+    color: var(--loader-muted);
+}
+
+.global-page-loader__progress {
+    background: color-mix(in srgb, var(--loader-title) 9%, transparent);
+    border: 1px solid var(--loader-border);
+}
+
+.global-page-loader__progress-bar {
+    background: linear-gradient(90deg,
+        var(--loader-accent-deep),
+        var(--loader-accent-bright),
+        var(--loader-accent));
+    box-shadow: 0 0 18px color-mix(in srgb, var(--loader-accent) 28%, transparent);
+}
+
+@media (max-width: 640px) {
+    .global-page-loader {
+        padding: 14px;
+    }
+
+    .global-page-loader__inner {
+        width: min(100%, 430px);
+        padding: 24px 18px 21px;
+        border-radius: 27px;
+    }
+
+    .global-page-loader__scene {
+        width: 168px;
+        height: 146px;
+        margin-bottom: 6px;
+        transform: scale(.9);
+    }
+
+    .global-page-loader__logo {
+        width: 62px;
+        height: 62px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .global-page-loader,
+    .loader-3d,
+    .loader-3d__ring,
+    .loader-3d__core,
+    .loader-3d__glow,
+    .global-page-loader__progress-bar {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.15s !important;
+    }
+}

@@ -1,59 +1,65 @@
 {% load static %}
-<!doctype html><html lang="en"><head>
+<!doctype html>
+<html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>About | Twinscopes</title><meta name="description" content="About Twinscopes, the platform connecting immersive discovery, commerce and intelligent business growth.">
+<title>About Twinscopes | Immersive Business Technology</title>
+<meta name="description" content="Twinscopes is a connected business platform that combines immersive 360° experiences, commerce, bookings, payments, analytics and responsible AI.">
 <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}">
 <link rel="stylesheet" href="{% static 'public/css/twinscopes-content-pages-v10.css' %}">
 <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})();</script>
-<link rel="manifest" href="/manifest.webmanifest">
-<meta name="theme-color" content="#0891b2">
-<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
-<link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Twinscopes">
-<meta property="og:title" content="Twinscopes — Explore, Discover & Grow">
-<meta property="og:description" content="Immersive 360° tours, Google Street View, products, bookings and intelligent business growth.">
-<meta property="og:url" content="{{ request.build_absolute_uri }}">
-<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Twinscopes">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Twinscopes — Explore, Discover & Grow">
-<meta name="twitter:description" content="Immersive 360° tours, products and intelligent marketplace services.">
-<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
-<link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0891b2">
+<link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}"><link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Twinscopes"><meta property="og:title" content="About Twinscopes"><meta property="og:description" content="We connect immersive discovery to real customer action and measurable business growth."><meta property="og:url" content="{{ request.build_absolute_uri }}"><meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'public/branding/twinscopes-social-card.jpg' %}">
+<meta name="twitter:card" content="summary_large_image"><link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
 </head><body class="ts-content-body ts-shell-enabled">
 {% include 'public/partials/loader_3d_global.html' %}
 {% include 'public/partials/site_shell_nav.html' with active_public_nav='about' show_search=False %}
 <main class="ts-content-main">
 <section class="ts-content-hero"><div class="ts-content-hero__grid"><div>
 <span class="ts-content-kicker">About Twinscopes</span>
-<h1>We turn digital exploration into useful customer action.</h1>
-<p>Twinscopes began with immersive 360° experiences and has evolved into a connected platform for discovery, products, appointments, delivery, payments, analytics and responsible artificial intelligence.</p>
-<div class="ts-content-actions"><a href="/services/" class="ts-content-btn ts-content-btn--primary">Explore services</a><a href="/contact/" class="ts-content-btn ts-content-btn--secondary">Work with us</a></div>
+<h1>We help companies turn digital attention into meaningful customer action.</h1>
+<p>Twinscopes is an immersive business technology platform created to help organizations present themselves professionally, simplify customer journeys and make better growth decisions from real data.</p>
+<div class="ts-content-actions"><a href="/services/" class="ts-content-btn ts-content-btn--primary">Explore our solutions</a><a href="/contact/" class="ts-content-btn ts-content-btn--secondary">Partner with Twinscopes</a></div>
 </div><div class="ts-content-visual">
-<div class="ts-content-stat"><strong>Immersive first</strong><small>Experiences that feel immediate and easy to navigate.</small></div>
-<div class="ts-content-stat"><strong>Commerce ready</strong><small>Products and services connected to real customer intent.</small></div>
-<div class="ts-content-stat"><strong>Data informed</strong><small>Every recommendation begins with measurable platform signals.</small></div>
-<div class="ts-content-stat"><strong>Human controlled</strong><small>AI proposes actions; organizations remain responsible for decisions.</small></div>
+<div class="ts-content-stat"><strong>Immersive by design</strong><small>Digital experiences that help customers understand places, products and services.</small></div>
+<div class="ts-content-stat"><strong>Business connected</strong><small>Discovery linked directly to enquiries, bookings, sales and fulfilment.</small></div>
+<div class="ts-content-stat"><strong>Data informed</strong><small>Decisions supported by measurable behavior rather than assumptions.</small></div>
+<div class="ts-content-stat"><strong>Human controlled</strong><small>AI assists the organization while people remain responsible for every decision.</small></div>
 </div></div></section>
 
-<section class="ts-content-section"><div class="ts-content-section-head"><div><h2>Our mission</h2><p>Help organizations present what they do beautifully, make it easy for customers to act, and understand what improves results.</p></div></div>
+<section class="ts-content-section">
+<div class="ts-content-section-head"><div><span class="ts-section-eyebrow">Our purpose</span><h2>Make advanced digital experiences practical for real organizations.</h2><p>Many businesses have websites, social pages and disconnected tools, but customers still struggle to understand the offer or know what to do next. Twinscopes brings the entire journey together.</p></div></div>
 <div class="ts-content-split">
-<article class="ts-content-panel"><h2>From place to possibility</h2><p>A virtual tour should do more than display a room. It should answer questions, reveal products, open documents, show videos, connect floors and invite the visitor to book or buy.</p></article>
-<article class="ts-content-panel"><h2>One customer journey</h2><p>We bring places, tours, products, orders, delivery, appointments and insights together so teams do not have to manage disconnected experiences.</p></article>
+<article class="ts-content-panel"><h2>Our mission</h2><p>To help organizations showcase their value through immersive, accessible and commercially useful digital experiences—then connect those experiences to measurable business outcomes.</p></article>
+<article class="ts-content-panel"><h2>Our vision</h2><p>To become a trusted platform where companies can manage how customers discover, explore, engage and transact with their business across physical and digital environments.</p></article>
 </div></section>
 
-<section class="ts-content-section"><div class="ts-content-section-head"><div><h2>Principles that guide the platform</h2></div></div>
+<section class="ts-content-section">
+<div class="ts-story-panel">
+  <div><span class="ts-section-eyebrow">Our story</span><h2>From virtual tours to a complete customer-experience platform.</h2></div>
+  <div><p>Twinscopes began with a simple idea: a virtual tour should do more than show a room. It should answer questions, reveal opportunities and help a visitor take the next step.</p><p>That idea grew into a connected system where immersive tours, Google Street View, products, bookings, payments, delivery, customer records and analytics work together. Today, Twinscopes is being built as a practical growth platform for companies that want a stronger digital presence without losing control of their brand or operations.</p></div>
+</div>
+</section>
+
+<section class="ts-content-section"><div class="ts-content-section-head"><div><span class="ts-section-eyebrow">What makes us different</span><h2>Technology designed around the full customer journey.</h2></div></div>
 <div class="ts-value-grid">
-<article class="ts-value-card"><strong>Useful over decorative</strong><p>Every interaction must help the visitor understand, decide or continue.</p></article>
-<article class="ts-value-card"><strong>Fast by default</strong><p>Progressive imagery, responsive interfaces and caching keep experiences practical on real devices.</p></article>
-<article class="ts-value-card"><strong>Trust and control</strong><p>Payments are verified server-side and intelligent agents operate with reviewable recommendations.</p></article>
-<article class="ts-value-card"><strong>Organization ownership</strong><p>Products, delivery policies, content and customer relationships remain connected to the organization.</p></article>
-<article class="ts-value-card"><strong>Accessible discovery</strong><p>Mobile navigation, dark mode, semantic structure and careful focus management are part of the design.</p></article>
-<article class="ts-value-card"><strong>Measured improvement</strong><p>We prefer clear funnel signals and before/after results over invented performance claims.</p></article>
+<article class="ts-value-card"><strong>Experience before complexity</strong><p>We make advanced technology feel clear and useful for both the customer and the organization.</p></article>
+<article class="ts-value-card"><strong>One connected journey</strong><p>Places, products, bookings, payments, delivery and insights remain connected instead of becoming separate systems.</p></article>
+<article class="ts-value-card"><strong>Performance on real devices</strong><p>Progressive imagery, responsive interfaces and practical caching support mobile and desktop use.</p></article>
+<article class="ts-value-card"><strong>Trust by architecture</strong><p>Secure integrations, verified payments and clear organizational ownership are core design principles.</p></article>
+<article class="ts-value-card"><strong>Responsible intelligence</strong><p>AI produces reviewable recommendations and never replaces the organization’s judgment or accountability.</p></article>
+<article class="ts-value-card"><strong>Measurable improvement</strong><p>We focus on useful signals, customer behavior and real conversion steps—not invented performance claims.</p></article>
 </div></section>
-</main><script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
-<script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
+
+<section class="ts-content-section"><div class="ts-content-section-head"><div><span class="ts-section-eyebrow">Our commitment</span><h2>Professional delivery, long-term thinking and respect for every organization.</h2></div></div>
+<div class="ts-commitment-grid">
+<article><h3>We listen first</h3><p>Every project begins with the organization’s objective, audience, environment and operational reality.</p></article>
+<article><h3>We build for growth</h3><p>Solutions are structured so they can evolve from a first tour or catalogue into a broader digital ecosystem.</p></article>
+<article><h3>We protect clarity</h3><p>Customers should always understand what they are viewing, what they can do next and who they are dealing with.</p></article>
+<article><h3>We remain accountable</h3><p>We prefer transparent recommendations, controlled implementation and realistic expectations.</p></article>
+</div></section>
+
+<section class="ts-content-section"><div class="ts-cta-band"><div><span class="ts-section-eyebrow">Build with us</span><h2>Let us help your company create a digital presence that feels credible, modern and useful.</h2><p>Whether you need a first immersive tour or a connected commerce and analytics platform, we can structure the right next step.</p></div><div class="ts-content-actions"><a href="/contact/" class="ts-content-btn ts-content-btn--primary">Start a conversation</a><a href="/services/" class="ts-content-btn ts-content-btn--secondary">View our services</a></div></div></section>
+</main>
+<script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script><script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
 </body></html>

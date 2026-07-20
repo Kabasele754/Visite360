@@ -1,6 +1,7 @@
 {% load static vendor_cart %}
 {% cart_product_count as shell_cart_product_count %}
 <link rel="stylesheet" href="{% static 'public/css/twinscopes-public-shell-v12.css' %}">
+<link rel="stylesheet" href="{% static 'public/css/twinscopes-professional-theme-v1.css' %}">
 
 <header id="desktopHeader" class="ts-site-header is-scroll-visible" data-ts-shell data-public-shell-version="scroll-dark-v2">
   <div class="ts-site-header__inner">
@@ -112,4 +113,5 @@
 
 
 <script src="{% static 'public/js/twinscopes-public-shell-v12.js' %}"></script>
+<script defer src="{% static 'growth_ai/js/tracker.js' %}"></script>
 {% if not request.user.is_authenticated %}{% include "public/partials/auth_dialog.html" %}{% endif %}
