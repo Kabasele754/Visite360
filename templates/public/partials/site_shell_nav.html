@@ -41,7 +41,7 @@
       {% if request.user.is_authenticated %}
       <a href="{% url 'vendors:account_entry' %}" class="ts-account-button">Account</a>
       {% else %}
-      <a href="/accounts/login/?next={{ request.path|urlencode }}" class="ts-account-button">Sign in</a>
+      <button type="button" class="ts-account-button" data-auth-open="welcome">Sign in</button>
       {% endif %}
     </div>
   </div>
@@ -81,7 +81,7 @@
         <span><strong>Cart</strong><small>Review your order</small></span>
         <b class="ts-more-cart-count" data-cart-count {% if not shell_cart_product_count %}hidden{% endif %}>{{ shell_cart_product_count }}</b>
       </button>
-      <a href="{% if request.user.is_authenticated %}/dashboard/{% else %}/{% endif %}"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M5 21a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.8"/></svg><span><strong>{% if request.user.is_authenticated %}Account{% else %}Sign in{% endif %}</strong><small>Manage your experience</small></span></a>
+      <a href="{% if request.user.is_authenticated %}/dashboard/{% else %}#{% endif %}" {% if not request.user.is_authenticated %}data-auth-open="welcome"{% endif %}><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M5 21a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.8"/></svg><span><strong>{% if request.user.is_authenticated %}Account{% else %}Sign in{% endif %}</strong><small>Manage your experience</small></span></a>
     </div>
     <button type="button" class="ts-more-theme" data-ts-theme-toggle><span>Appearance</span><strong>Light / Dark</strong></button>
   </section>
@@ -112,3 +112,4 @@
 
 
 <script src="{% static 'public/js/twinscopes-public-shell-v12.js' %}"></script>
+{% if not request.user.is_authenticated %}{% include "public/partials/auth_dialog.html" %}{% endif %}

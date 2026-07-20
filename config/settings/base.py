@@ -305,3 +305,18 @@ GROWTH_AI_CREDENTIALS = {
 # Feature-specific settings
 from .growth_ai import *  # noqa: F401,F403,E402
 from .celery_schedule import *  # noqa: F401,F403,E402
+
+# Public account authentication (email/password + Google OpenID Connect)
+LOGIN_URL = "/?auth=signin"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+
+GOOGLE_AUTH_CLIENT_ID = config("GOOGLE_AUTH_CLIENT_ID", default=config("GOOGLE_GROWTH_CLIENT_ID", default=""))
+GOOGLE_AUTH_CLIENT_SECRET = read_secret(
+    "GOOGLE_AUTH_CLIENT_SECRET",
+    config("GOOGLE_GROWTH_CLIENT_SECRET", default=""),
+)
+GOOGLE_AUTH_REDIRECT_URI = config(
+    "GOOGLE_AUTH_REDIRECT_URI",
+    default=f"{config('SITE_URL', default='http://localhost:8000').rstrip('/')}/accounts/google/callback/",
+)

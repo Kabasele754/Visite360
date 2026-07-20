@@ -33,7 +33,7 @@ def collect_event(request):
     except Exception: return JsonResponse({'detail':'Invalid JSON'},status=400)
     name=str(payload.get('event_name',''))[:80]
     if not name: return JsonResponse({'detail':'event_name required'},status=400)
-    allowed={'page_view','tour_opened','tour_completed','hotspot_clicked','product_viewed','add_to_cart','cart_viewed','checkout_started','purchase_completed','whatsapp_clicked','phone_clicked','email_clicked','gps_clicked','search_performed','share_clicked'}
+    allowed={'page_view','tour_opened','tour_completed','hotspot_clicked','product_viewed','add_to_cart','remove_from_cart','cart_viewed','checkout_started','stripe_checkout_opened','paypal_checkout_opened','payment_success','payment_failed','purchase_completed','whatsapp_clicked','phone_clicked','email_clicked','gps_clicked','search_performed','share_clicked','login','register','google_login','google_account_created','logout'}
     if name not in allowed: return JsonResponse({'detail':'Unsupported event'},status=400)
     org=None
     if payload.get('organization_id'): org=Organization.objects.filter(pk=payload['organization_id']).first()

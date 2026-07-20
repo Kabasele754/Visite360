@@ -20,6 +20,7 @@ urlpatterns = [
     path("", include("apps.growth_ai.urls")),
 
     path("api/", include("apps.users.urls")),
+    path("accounts/", include("apps.users.account_urls")),
     path("api/", include("apps.organizations.urls")),
     path("api/", include("apps.places.urls")),
     path("api/", include("apps.tours.urls")),
