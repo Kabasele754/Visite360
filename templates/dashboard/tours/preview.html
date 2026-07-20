@@ -693,5 +693,6 @@ document.addEventListener("DOMContentLoaded", function () {
  form?.addEventListener('submit',async e=>{e.preventDefault();status.textContent='Sending…';const r=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{'X-Requested-With':'XMLHttpRequest'}});const d=await r.json();if(r.ok&&d.ok){status.textContent=d.message;form.reset();setTimeout(close,1400);}else{status.textContent='Please check the form and try again.';}});
 })();
 </script>
+    {% include "dashboard/tours/partials/tour_ai_agent.html" %}
 </body>
 </html>

@@ -18,6 +18,7 @@ urlpatterns = [
     path("", include("apps.vendors.urls")),
     path("", include("apps.vendors.dashboard_urls")),
     path("", include("apps.growth_ai.urls")),
+    path("api/tour-ai/", include("apps.tour_ai_agent.urls")),
 
     path("api/", include("apps.users.urls")),
     path("accounts/", include("apps.users.account_urls")),

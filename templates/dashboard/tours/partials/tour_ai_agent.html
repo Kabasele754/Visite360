@@ -1,0 +1,18 @@
+{% load static %}
+<div id="tourAiAgent" class="tour-ai-agent" data-tour-id="{{ tour.id }}" data-initial-scene-id="{% if scenes_json %}{{ scenes_json.0.id }}{% endif %}" aria-live="polite">
+  <button class="tour-ai-launcher" type="button" aria-expanded="false" aria-controls="tourAiPanel"><span class="tour-ai-pulse"></span><span>AI</span></button>
+  <div class="tour-ai-nudge" hidden><button type="button" data-ai-open>Need help exploring this space?</button><button type="button" data-ai-dismiss aria-label="Dismiss">×</button></div>
+  <section id="tourAiPanel" class="tour-ai-panel" hidden aria-label="Twinscopes AI assistant">
+    <header><div><strong>Twinscopes AI</strong><small>Virtual tour sales assistant</small></div><button type="button" data-ai-close aria-label="Close">×</button></header>
+    <div class="tour-ai-messages" data-ai-messages></div>
+    <div class="tour-ai-quick" data-ai-quick>
+      <button type="button" data-ai-prompt="I want to book an appointment">Book appointment</button>
+      <button type="button" data-ai-prompt="Show me products related to this scene">Related products</button>
+      <button type="button" data-ai-prompt="I want to contact the business">Contact</button>
+    </div>
+    <form data-ai-form><input data-ai-input maxlength="1000" placeholder="Ask about this space…" autocomplete="off"><button type="submit">Send</button></form>
+  </section>
+</div>
+<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=1">
+<script>window.TOUR_AI_CONFIG={tourId:{{ tour.id }},bootstrapUrl:"{% url 'tour_ai_agent:bootstrap' %}",messageUrl:"{% url 'tour_ai_agent:message' %}",signalUrl:"{% url 'tour_ai_agent:signal' %}",actionUrl:"{% url 'tour_ai_agent:action' %}",locale:"{{ request.LANGUAGE_CODE|default:'en' }}"};</script>
+<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=1"></script>

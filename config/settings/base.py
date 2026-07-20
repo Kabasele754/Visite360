@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "apps.app_streetview",
     "apps.vendors",
     "apps.growth_ai.apps.GrowthAIConfig",
+    "apps.tour_ai_agent.apps.TourAIAgentConfig",
 ]
 
 MIDDLEWARE = [
@@ -320,3 +321,15 @@ GOOGLE_AUTH_REDIRECT_URI = config(
     "GOOGLE_AUTH_REDIRECT_URI",
     default=f"{config('SITE_URL', default='http://localhost:8000').rstrip('/')}/accounts/google/callback/",
 )
+
+
+# Tour AI Agent
+TOUR_AI_ENABLED = config("TOUR_AI_ENABLED", default=True, cast=bool)
+OPENAI_API_KEY = read_secret("OPENAI_API_KEY", "")
+OPENAI_TOUR_AGENT_MODEL = config("OPENAI_TOUR_AGENT_MODEL", default="gpt-5-mini")
+GEMINI_TOUR_VISION_MODEL = config("GEMINI_TOUR_VISION_MODEL", default="gemini-2.5-flash")
+TOUR_AI_YOLO_MODEL_PATH = str(BASE_DIR / "apps" / "tour_ai_agent" / "model_weights" / "yolo11n.pt")
+TOUR_AI_FRAME_SIZE = config("TOUR_AI_FRAME_SIZE", default=640, cast=int)
+TOUR_AI_DETECTION_CONFIDENCE = config("TOUR_AI_DETECTION_CONFIDENCE", default=0.35, cast=float)
+TOUR_AI_AUTO_PROMPT_DELAY_SECONDS = config("TOUR_AI_AUTO_PROMPT_DELAY_SECONDS", default=15, cast=int)
+TOUR_AI_ANONYMOUS_RETENTION_DAYS = config("TOUR_AI_ANONYMOUS_RETENTION_DAYS", default=30, cast=int)
