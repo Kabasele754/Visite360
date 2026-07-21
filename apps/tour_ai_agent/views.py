@@ -47,7 +47,7 @@ def _conversation(request, payload):
 def bootstrap(request):
     payload = _json(request)
     conversation, tour, scene, visitor_id = _conversation(request, payload)
-    context = get_scene_context(scene) if scene else {"scene": {}, "products": []}
+    context = get_scene_context(scene, tour=tour) if scene else {"organization": {"id": tour.organization_id, "name": tour.organization.name}, "place": {}, "scene": {}, "products": [], "catalogue_status": {}}
     opening = "Need help exploring this space?"
     if scene and hasattr(scene, "tour_ai_profile"):
         opening = scene.tour_ai_profile.suggested_opening_message or opening
@@ -74,7 +74,7 @@ def message(request):
         return JsonResponse({"ok": False, "error": "Message is required"}, status=400)
     conversation, tour, scene, visitor_id = _conversation(request, payload)
     add_message(conversation, "user", text, {"scene_id": scene.id if scene else None})
-    context = get_scene_context(scene) if scene else {"scene": {}, "products": []}
+    context = get_scene_context(scene, tour=tour) if scene else {"organization": {"id": tour.organization_id, "name": tour.organization.name}, "place": {}, "scene": {}, "products": [], "catalogue_status": {}}
     context.update({
         "tour": {"id": tour.id, "title": tour.title, "organization": tour.organization.name},
         "locale": conversation.locale,

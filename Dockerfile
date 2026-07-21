@@ -1,13 +1,29 @@
 FROM python:3.12-slim
 
+# =============================================================================
+# PYTHON
+# =============================================================================
+
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /app
+
+
+# =============================================================================
+# DEPENDENCIES SYSTÈME
+# =============================================================================
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
+    g++ \
+    git \
+    curl \
+    wget \
+    pkg-config \
     libpq-dev \
     libffi-dev \
     libcairo2-dev \
@@ -15,51 +31,76 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdk-pixbuf-2.0-dev \
     libjpeg62-turbo-dev \
     zlib1g-dev \
-    pkg-config \
+    libgl1 \
+    libglib2.0-0 \
+    ffmpeg \
     shared-mime-info \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /app/
 
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# =============================================================================
+# PIP
+# =============================================================================
+
+RUN python -m pip install --upgrade \
+    pip \
+    setuptools \
+    wheel
+
+
+# =============================================================================
+# REQUIREMENTS DU PROJET
+# =============================================================================
+
+COPY requirements.txt /app/requirements.txt
+
+RUN python -m pip install \
+    --no-cache-dir \
+    -r /app/requirements.txt
+
+
+# =============================================================================
+# PYTORCH CPU
+# =============================================================================
+
+RUN python -m pip install \
+    --no-cache-dir \
+    --index-url https://download.pytorch.org/whl/cpu \
+    torch \
+    torchvision
+
+
+# =============================================================================
+# ULTRALYTICS
+# =============================================================================
+
+RUN python -m pip install \
+    --no-cache-dir \
+    ultralytics \
+    opencv-python-headless
+
+
+# =============================================================================
+# CODE DU PROJET
+# =============================================================================
 
 COPY . /app/
 
-RUN mkdir -p /app/static /app/media
+
+# =============================================================================
+# DOSSIERS
+# =============================================================================
+
+RUN mkdir -p \
+    /app/staticfiles \
+    /app/media \
+    /app/model_weights \
+    /app/logs \
+    /var/run/celery
+
+
+# =============================================================================
+# PORT
+# =============================================================================
 
 EXPOSE 8000
-
-# FROM python:3.11-slim
-
-# ENV PYTHONUNBUFFERED=1
-# ENV PYTHONDONTWRITEBYTECODE=1
-
-# WORKDIR /app
-
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     build-essential \
-#     gcc \
-#     libpq-dev \
-#     libffi-dev \
-#     libcairo2-dev \
-#     libpango1.0-dev \
-#     libgdk-pixbuf-2.0-dev \
-#     libjpeg62-turbo-dev \
-#     zlib1g-dev \
-#     pkg-config \
-#     shared-mime-info \
-#     && rm -rf /var/lib/apt/lists/*
-
-# COPY requirements.txt /app/
-
-# RUN pip install --upgrade pip && \
-#     pip install --no-cache-dir -r requirements.txt
-
-# COPY . /app/
-
-# RUN mkdir -p /app/static /app/media
-
-# EXPOSE 8000
-
-# CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]

@@ -1,174 +1,274 @@
+# =============================================================================
+# TWINSCOPE / VISITE360
+# Docker Compose Production
+# Django + Daphne + Celery + PostgreSQL + Redis
+# Gemini Vertex AI + OpenAI optionnel + Ultralytics YOLO
+# =============================================================================
+
+
+# =============================================================================
+# ENVIRONNEMENT COMMUN DE L’APPLICATION
+# =============================================================================
+
+x-app-environment: &app-environment
+  DJANGO_SETTINGS_MODULE: config.settings.prod
+  DEBUG: "0"
+
+  # ---------------------------------------------------------------------------
+  # DATABASE
+  # ---------------------------------------------------------------------------
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_NAME: elevateaidb
+  DB_USER: elevateaiuser
+  DB_PASS_FILE: /run/secrets/db_password
+
+  # ---------------------------------------------------------------------------
+  # REDIS
+  # ---------------------------------------------------------------------------
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ""
+
+  # ---------------------------------------------------------------------------
+  # AI ENGINE
+  # Gemini est le fournisseur principal.
+  # OpenAI reste désactivé jusqu’à ce qu’une clé valide soit configurée.
+  # ---------------------------------------------------------------------------
+  AI_PRIMARY_TEXT_PROVIDER: gemini
+  AI_FALLBACK_TEXT_PROVIDER: ""
+
+  AI_ENABLE_GEMINI: "true"
+  AI_ENABLE_GEMINI_VISION: "true"
+  AI_ENABLE_OPENAI: "false"
+  AI_ENABLE_ULTRALYTICS: "true"
+
+  AI_DEFAULT_TEXT_PROVIDER: GEMINI
+  AI_DEFAULT_IMAGE_PROVIDER: GOOGLE_VERTEX
+  AI_DEFAULT_VISION_PROVIDER: ULTRALYTICS
+
+  # ---------------------------------------------------------------------------
+  # GOOGLE VERTEX AI / GEMINI
+  # ---------------------------------------------------------------------------
+  GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google_adc_json
+  GOOGLE_GENAI_USE_VERTEXAI: "true"
+
+  GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-ziarama-wedding-akk}
+  GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-us-central1}
+
+  GOOGLE_TEXT_MODEL: ${GOOGLE_TEXT_MODEL:-gemini-2.5-flash}
+  GEMINI_TOUR_VISION_MODEL: ${GEMINI_TOUR_VISION_MODEL:-gemini-2.5-flash}
+
+  GOOGLE_IMAGE_MODEL: ${GOOGLE_IMAGE_MODEL:-imagen-4.0-generate-001}
+  DEFAULT_AI_IMAGE_PROVIDER: ${DEFAULT_AI_IMAGE_PROVIDER:-GOOGLE_VERTEX}
+
+  AI_TEXT_TEMPERATURE: ${AI_TEXT_TEMPERATURE:-0.3}
+  AI_TEXT_MAX_TOKENS: ${AI_TEXT_MAX_TOKENS:-1400}
+
+  # ---------------------------------------------------------------------------
+  # OPENAI
+  # La clé peut rester vide tant que AI_ENABLE_OPENAI=false.
+  # ---------------------------------------------------------------------------
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_TEXT_MODEL: ${OPENAI_TEXT_MODEL:-gpt-4.1-mini}
+  OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-1}
+  OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+
+  # ---------------------------------------------------------------------------
+  # ULTRALYTICS / YOLO
+  # ---------------------------------------------------------------------------
+  TOUR_AI_YOLO_MODEL_PATH: /app/model_weights/yolo11n.pt
+  TOUR_AI_YOLO_DEVICE: ${TOUR_AI_YOLO_DEVICE:-cpu}
+  TOUR_AI_YOLO_CONFIDENCE: ${TOUR_AI_YOLO_CONFIDENCE:-0.35}
+  TOUR_AI_YOLO_IOU: ${TOUR_AI_YOLO_IOU:-0.45}
+  TOUR_AI_YOLO_IMAGE_SIZE: ${TOUR_AI_YOLO_IMAGE_SIZE:-640}
+  TOUR_AI_YOLO_VERBOSE: ${TOUR_AI_YOLO_VERBOSE:-false}
+
+  YOLO_MODEL: /app/model_weights/yolo11n.pt
+  YOLO_DEVICE: ${TOUR_AI_YOLO_DEVICE:-cpu}
+  YOLO_CONFIDENCE: ${TOUR_AI_YOLO_CONFIDENCE:-0.35}
+  YOLO_IOU: ${TOUR_AI_YOLO_IOU:-0.45}
+  YOLO_VERBOSE: ${TOUR_AI_YOLO_VERBOSE:-false}
+
+
+# =============================================================================
+# CONFIGURATION COMMUNE DJANGO / CELERY
+# =============================================================================
+
+x-app-common: &app-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+  restart: unless-stopped
+
+  env_file:
+    - .env
+
+  environment:
+    <<: *app-environment
+
+  networks:
+    - my_network
+
+  secrets:
+    - db_password
+    - google_adc_json
+
+  depends_on:
+    db:
+      condition: service_healthy
+
+    redis:
+      condition: service_healthy
+
+
+# =============================================================================
+# SERVICES
+# =============================================================================
+
 services:
+
+  # ---------------------------------------------------------------------------
+  # DJANGO / DAPHNE
+  # ---------------------------------------------------------------------------
   django:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *app-common
 
     container_name: visite360_app
-    restart: unless-stopped
 
     command: >
-      sh -c "daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+      sh -c "
+      python manage.py migrate --noinput &&
+      python manage.py collectstatic --noinput &&
+      daphne -b 0.0.0.0 -p 8000 config.asgi:application
+      "
 
     volumes:
       - static-data:/app/staticfiles
       - media-data:/app/media
+      - ai-models:/app/model_weights
 
-    env_file:
-      - .env
-
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.prod
-
-      DEBUG: "0"
-
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_NAME: elevateaidb
-      DB_USER: elevateaiuser
-      DB_PASS_FILE: /run/secrets/db_password
-
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ""
-
-      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google_adc_json
-      GOOGLE_GENAI_USE_VERTEXAI: "true"
-      GOOGLE_CLOUD_PROJECT: ziarama-wedding-akk
-      GOOGLE_CLOUD_LOCATION: us-central1
-      GOOGLE_TEXT_MODEL: gemini-2.5-flash
-      GOOGLE_IMAGE_MODEL: imagen-4.0-generate-001
-      DEFAULT_AI_IMAGE_PROVIDER: GOOGLE_VERTEX
-
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-    networks:
-      - my_network
-
-    secrets:
-      - db_password
-      - google_adc_json
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          python -c "
+          import socket;
+          s = socket.socket();
+          s.settimeout(5);
+          s.connect(('127.0.0.1', 8000));
+          s.close()
+          "
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 
+  # ---------------------------------------------------------------------------
+  # CELERY WORKER
+  # ---------------------------------------------------------------------------
   celery_worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *app-common
 
     container_name: visite360_celery_worker
-    restart: unless-stopped
 
     command: >
-      sh -c "celery -A config worker -l info --concurrency=2 --hostname=twinscopes-worker@%h"
+      sh -c "
+      celery -A config worker
+      --loglevel=info
+      --concurrency=2
+      --hostname=twinscopes-worker@%h
+      "
 
     volumes:
       - media-data:/app/media
-
-    env_file:
-      - .env
-
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.prod
-
-      DEBUG: "0"
-
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_NAME: elevateaidb
-      DB_USER: elevateaiuser
-      DB_PASS_FILE: /run/secrets/db_password
-
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ""
-
-      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google_adc_json
-      GOOGLE_GENAI_USE_VERTEXAI: "true"
-      GOOGLE_CLOUD_PROJECT: ziarama-wedding-akk
-      GOOGLE_CLOUD_LOCATION: us-central1
-      GOOGLE_TEXT_MODEL: gemini-2.5-flash
-      GOOGLE_IMAGE_MODEL: imagen-4.0-generate-001
-      DEFAULT_AI_IMAGE_PROVIDER: GOOGLE_VERTEX
+      - ai-models:/app/model_weights
 
     depends_on:
+      django:
+        condition: service_started
+
       db:
         condition: service_healthy
+
       redis:
         condition: service_healthy
 
-    networks:
-      - my_network
 
-    secrets:
-      - db_password
-      - google_adc_json
-
-
+  # ---------------------------------------------------------------------------
+  # CELERY BEAT
+  # ---------------------------------------------------------------------------
   celery_beat:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *app-common
 
     container_name: visite360_celery_beat
-    restart: unless-stopped
 
     command: >
-      sh -c "celery -A config beat -l info --schedule=/var/run/celery/celerybeat-schedule"
+      sh -c "
+      celery -A config beat
+      --loglevel=info
+      --schedule=/var/run/celery/celerybeat-schedule
+      "
 
     volumes:
       - media-data:/app/media
+      - ai-models:/app/model_weights
       - celery-beat-data:/var/run/celery
 
-    env_file:
-      - .env
+    depends_on:
+      django:
+        condition: service_started
 
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.prod
+      db:
+        condition: service_healthy
 
-      DEBUG: "0"
+      redis:
+        condition: service_healthy
 
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_NAME: elevateaidb
-      DB_USER: elevateaiuser
-      DB_PASS_FILE: /run/secrets/db_password
 
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ""
+  # ---------------------------------------------------------------------------
+  # INITIALISATION DES MODÈLES IA
+  #
+  # Ce service est lancé manuellement pour télécharger YOLO.
+  # Il partage le volume ai-models avec Django et Celery.
+  # ---------------------------------------------------------------------------
+  ai_model_init:
+    <<: *app-common
 
-      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google_adc_json
-      GOOGLE_GENAI_USE_VERTEXAI: "true"
-      GOOGLE_CLOUD_PROJECT: ziarama-wedding-akk
-      GOOGLE_CLOUD_LOCATION: us-central1
-      GOOGLE_TEXT_MODEL: gemini-2.5-flash
-      GOOGLE_IMAGE_MODEL: imagen-4.0-generate-001
-      DEFAULT_AI_IMAGE_PROVIDER: GOOGLE_VERTEX
+    container_name: visite360_ai_model_init
+
+    restart: "no"
+
+    command: >
+      sh -c "
+      mkdir -p /app/model_weights &&
+      python manage.py download_tour_ai_models
+      --model yolo11n.pt
+      "
+
+    volumes:
+      - ai-models:/app/model_weights
 
     depends_on:
       db:
         condition: service_healthy
+
       redis:
         condition: service_healthy
 
-    networks:
-      - my_network
 
-    secrets:
-      - db_password
-      - google_adc_json
-
-
+  # ---------------------------------------------------------------------------
+  # NGINX
+  # ---------------------------------------------------------------------------
   nginx:
     build:
       context: ./nginx
       dockerfile: Dockerfile.nginx
 
     container_name: visite360_nginx
+
     restart: unless-stopped
 
     ports:
@@ -178,13 +278,15 @@ services:
     volumes:
       - static-data:/app/staticfiles:ro
       - media-data:/app/media:ro
+
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/var:/var/lib/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
 
     depends_on:
       django:
-        condition: service_started
+        condition: service_healthy
+
       pgadmin:
         condition: service_started
 
@@ -192,10 +294,15 @@ services:
       - my_network
 
 
+  # ---------------------------------------------------------------------------
+  # CERTBOT INITIAL
+  # ---------------------------------------------------------------------------
   certbot:
     image: certbot/certbot:latest
 
     container_name: visite360_certbot
+
+    restart: "no"
 
     volumes:
       - ./certbot/conf:/etc/letsencrypt
@@ -220,10 +327,14 @@ services:
       - my_network
 
 
+  # ---------------------------------------------------------------------------
+  # CERTBOT RENEW
+  # ---------------------------------------------------------------------------
   certbot-renew:
     image: certbot/certbot:latest
 
     container_name: visite360_certbot_renew
+
     restart: unless-stopped
 
     volumes:
@@ -236,7 +347,9 @@ services:
       trap exit TERM;
       while :;
       do
-        certbot renew --webroot --webroot-path=/var/www/certbot;
+        certbot renew
+        --webroot
+        --webroot-path=/var/www/certbot;
         sleep 12h;
       done
       "
@@ -245,10 +358,14 @@ services:
       - my_network
 
 
+  # ---------------------------------------------------------------------------
+  # REDIS
+  # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
 
     container_name: visite360_redis
+
     restart: unless-stopped
 
     command: >
@@ -263,6 +380,7 @@ services:
         - CMD
         - redis-cli
         - ping
+
       interval: 10s
       timeout: 5s
       retries: 5
@@ -272,10 +390,14 @@ services:
       - my_network
 
 
+  # ---------------------------------------------------------------------------
+  # POSTGRESQL
+  # ---------------------------------------------------------------------------
   db:
     image: postgres:16-alpine
 
     container_name: visite360_postgres_db
+
     restart: unless-stopped
 
     volumes:
@@ -290,6 +412,7 @@ services:
       test:
         - CMD-SHELL
         - pg_isready -U elevateaiuser -d elevateaidb -h localhost -p 5432
+
       interval: 10s
       timeout: 5s
       retries: 5
@@ -302,15 +425,20 @@ services:
       - db_password
 
 
+  # ---------------------------------------------------------------------------
+  # PGADMIN
+  # ---------------------------------------------------------------------------
   pgadmin:
     image: dpage/pgadmin4:latest
 
     container_name: pgadmin_server
+
     restart: unless-stopped
 
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pepexykabasele@gmail.com}
       PGADMIN_DEFAULT_PASSWORD_FILE: /run/secrets/pgadmin_password
+
       PGADMIN_CONFIG_SERVER_MODE: "True"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "True"
       PGADMIN_LISTEN_PORT: "80"
@@ -329,6 +457,10 @@ services:
       - pgadmin_password
 
 
+# =============================================================================
+# VOLUMES
+# =============================================================================
+
 volumes:
   dev-db-data:
   static-data:
@@ -336,12 +468,21 @@ volumes:
   redis-data:
   pgadmin-data:
   celery-beat-data:
+  ai-models:
 
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
 
 networks:
   my_network:
     driver: bridge
 
+
+# =============================================================================
+# SECRETS
+# =============================================================================
 
 secrets:
   db_password:
@@ -349,6 +490,6 @@ secrets:
 
   google_adc_json:
     file: ./secrets/google_adc.json
-  
+
   pgadmin_password:
     file: ./secrets/pgadmin_password.txt
