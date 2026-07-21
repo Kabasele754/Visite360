@@ -141,7 +141,7 @@ services:
       sh -c "
       python manage.py migrate --noinput &&
       python manage.py collectstatic --noinput &&
-      daphne -b 0.0.0.0 -p 8000 config.asgi:application
+      exec daphne -b 0.0.0.0 -p 8000 config.asgi:application
       "
 
     volumes:
@@ -152,18 +152,11 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - >
-          python -c "
-          import socket;
-          s = socket.socket();
-          s.settimeout(5);
-          s.connect(('127.0.0.1', 8000));
-          s.close()
-          "
-      interval: 30s
+        - curl -fsS http://127.0.0.1:8000/health/ > /dev/null || exit 1
+      interval: 20s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      start_period: 150s
 
 
   # ---------------------------------------------------------------------------
@@ -176,7 +169,7 @@ services:
 
     command: >
       sh -c "
-      celery -A config worker
+      exec celery -A config worker
       --loglevel=info
       --concurrency=2
       --hostname=twinscopes-worker@%h
@@ -188,7 +181,7 @@ services:
 
     depends_on:
       django:
-        condition: service_started
+        condition: service_healthy
 
       db:
         condition: service_healthy
@@ -207,7 +200,7 @@ services:
 
     command: >
       sh -c "
-      celery -A config beat
+      exec celery -A config beat
       --loglevel=info
       --schedule=/var/run/celery/celerybeat-schedule
       "
@@ -219,7 +212,7 @@ services:
 
     depends_on:
       django:
-        condition: service_started
+        condition: service_healthy
 
       db:
         condition: service_healthy

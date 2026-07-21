@@ -305,6 +305,7 @@ GROWTH_AI_CREDENTIALS = {
 
 # Feature-specific settings
 from .growth_ai import *  # noqa: F401,F403,E402
+from .ai import *  # noqa: F401,F403,E402
 from .celery_schedule import *  # noqa: F401,F403,E402
 
 # Public account authentication (email/password + Google OpenID Connect)
