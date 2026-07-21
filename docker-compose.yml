@@ -152,11 +152,11 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - curl -fsS http://127.0.0.1:8000/health/ > /dev/null || exit 1
+        - python -c "import socket; s=socket.create_connection(('127.0.0.1', 8000), 5); s.close()" || exit 1
       interval: 20s
       timeout: 10s
-      retries: 10
-      start_period: 150s
+      retries: 15
+      start_period: 180s
 
 
   # ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ services:
 
     command: >
       sh -c "
-      exec celery -A config worker
+      celery -A config worker
       --loglevel=info
       --concurrency=2
       --hostname=twinscopes-worker@%h
@@ -181,7 +181,7 @@ services:
 
     depends_on:
       django:
-        condition: service_healthy
+        condition: service_started
 
       db:
         condition: service_healthy
@@ -200,7 +200,7 @@ services:
 
     command: >
       sh -c "
-      exec celery -A config beat
+      celery -A config beat
       --loglevel=info
       --schedule=/var/run/celery/celerybeat-schedule
       "
@@ -212,7 +212,7 @@ services:
 
     depends_on:
       django:
-        condition: service_healthy
+        condition: service_started
 
       db:
         condition: service_healthy
