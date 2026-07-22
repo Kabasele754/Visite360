@@ -561,8 +561,11 @@
                 phone: "{% static 'dashboard/icons/business/phone.png' %}",
                 website: "{% static 'dashboard/icons/business/website.png' %}"
             },
+            locale: "{{ request.LANGUAGE_CODE|default:'en'|escapejs }}",
             pdfJsModuleUrl: "{% static 'public/vendor/pdfjs/build/pdf.mjs' %}",
             pdfJsWorkerUrl: "{% static 'public/vendor/pdfjs/build/pdf.worker.mjs' %}",
+            pdfJsLegacyModuleUrl: "{% static 'public/vendor/pdfjs/legacy/build/pdf.mjs' %}",
+            pdfJsLegacyWorkerUrl: "{% static 'public/vendor/pdfjs/legacy/build/pdf.worker.mjs' %}",
             engagementUrl: "/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/",
             initialViews: "{{ tour.unique_views_count|default:tour.view_count|default:0 }}",
             initialShares: "{{ tour.share_count|default:tour.shares.count|default:0 }}"
@@ -573,7 +576,7 @@
     {{ scene_list_json|json_script:"preview-scene-list-data" }}
 
     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
-    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=vision-longpress-6"></script>
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=friendly-errors-pdf-8"></script>
     <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-sharp-20260698"></script>
 
 

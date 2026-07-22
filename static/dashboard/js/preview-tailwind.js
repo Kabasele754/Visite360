@@ -1672,6 +1672,140 @@ document.addEventListener("DOMContentLoaded", () => {
         return isIOSWebKit() || isSamsungInternet() || isMobileViewport();
     }
 
+
+    function previewLocaleIsFrench() {
+        return String(config.locale || document.documentElement.lang || "en")
+            .toLowerCase()
+            .startsWith("fr");
+    }
+
+    function publicErrorReference(prefix = "DOC") {
+        const seed = globalThis.crypto?.randomUUID?.().replaceAll("-", "").slice(0, 8)
+            || Math.random().toString(36).slice(2, 10);
+        return `${prefix}-${String(seed).toUpperCase()}`;
+    }
+
+    function classifyPdfPublicError(error) {
+        const raw = String(error?.message || error || "").toLowerCase();
+        const fr = previewLocaleIsFrench();
+
+        if (raw.includes("pdf http 401") || raw.includes("pdf http 403")) {
+            return {
+                title: fr ? "Ce document est protégé" : "This document is protected",
+                message: fr
+                    ? "L’accès à ce document n’est pas autorisé depuis cette visite."
+                    : "This document cannot be accessed from the tour.",
+            };
+        }
+        if (raw.includes("pdf http 404")) {
+            return {
+                title: fr ? "Document introuvable" : "Document not found",
+                message: fr
+                    ? "Ce document n’est plus disponible. L’organisation pourra vérifier le fichier."
+                    : "This document is no longer available. The organization can verify the file.",
+            };
+        }
+        if (raw.includes("not a valid pdf") || raw.includes("invalid pdf") || raw.includes("file is empty")) {
+            return {
+                title: fr ? "Document non compatible" : "Unsupported document",
+                message: fr
+                    ? "Le fichier reçu ne semble pas être un document PDF valide."
+                    : "The received file does not appear to be a valid PDF document.",
+            };
+        }
+        if (
+            raw.includes("worker") ||
+            raw.includes("dynamically imported module") ||
+            raw.includes("module import") ||
+            raw.includes("failed to fetch")
+        ) {
+            return {
+                title: fr ? "Lecture simplifiée du document" : "Simplified document view",
+                message: fr
+                    ? "Le lecteur avancé n’a pas démarré. Le document peut toujours être ouvert avec le lecteur du navigateur."
+                    : "The enhanced reader did not start. The document can still be opened with your browser’s reader.",
+                nativeFallback: true,
+            };
+        }
+        if (!navigator.onLine || raw.includes("network") || raw.includes("load failed")) {
+            return {
+                title: fr ? "Connexion interrompue" : "Connection interrupted",
+                message: fr
+                    ? "Vérifiez votre connexion, puis réessayez."
+                    : "Check your connection and try again.",
+            };
+        }
+        return {
+            title: fr ? "Document temporairement indisponible" : "Document temporarily unavailable",
+            message: fr
+                ? "Le document ne peut pas être affiché ici pour le moment. Vous pouvez réessayer ou l’ouvrir directement."
+                : "The document cannot be displayed here right now. You can retry or open it directly.",
+        };
+    }
+
+    function reportPreviewTechnicalError(code, error, context = {}) {
+        const reference = publicErrorReference(code);
+        console.error(`[Twinscopes ${reference}]`, {
+            message: error?.message || String(error || "Unknown error"),
+            name: error?.name || "Error",
+            stack: error?.stack || "",
+            context,
+        });
+        return reference;
+    }
+
+    function renderFriendlyPdfFailure(url, error) {
+        const publicState = classifyPdfPublicError(error);
+        const reference = reportPreviewTechnicalError("PDF", error, {
+            url,
+            moduleUrl: config.pdfJsModuleUrl || "",
+            workerUrl: config.pdfJsWorkerUrl || "",
+            online: navigator.onLine,
+            userAgent: navigator.userAgent,
+        });
+        const fr = previewLocaleIsFrench();
+        const escapedUrl = escapeAttr(url);
+
+        if (publicState.nativeFallback && !isMobileViewport() && !isIOSWebKit()) {
+            previewMediaBody.innerHTML = `
+                <div class="preview-pdf-native-shell">
+                    <div class="preview-pdf-native-note" role="status">
+                        <span class="preview-error-icon" aria-hidden="true">✓</span>
+                        <div>
+                            <strong>${escapeAttr(publicState.title)}</strong>
+                            <small>${escapeAttr(publicState.message)}</small>
+                        </div>
+                    </div>
+                    <iframe
+                        class="preview-pdf-native-frame"
+                        src="${escapedUrl}#toolbar=1&navpanes=0&view=FitH"
+                        title="${fr ? "Document PDF" : "PDF document"}"
+                    ></iframe>
+                </div>`;
+            return;
+        }
+
+        previewMediaBody.innerHTML = `
+            <div class="preview-pdf-fallback preview-friendly-error" role="alert">
+                <span class="preview-error-icon" aria-hidden="true">!</span>
+                <strong>${escapeAttr(publicState.title)}</strong>
+                <p>${escapeAttr(publicState.message)}</p>
+                <div class="preview-friendly-error-actions">
+                    <button type="button" class="preview-media-action preview-media-action-primary" data-pdf-retry>
+                        ${fr ? "Réessayer" : "Try again"}
+                    </button>
+                    <a class="preview-media-action preview-media-action-secondary" href="${escapedUrl}" target="_blank" rel="noopener">
+                        ${fr ? "Ouvrir le document" : "Open document"}
+                    </a>
+                </div>
+                <small class="preview-error-reference">${fr ? "Référence" : "Reference"}: ${reference}</small>
+            </div>`;
+
+        previewMediaBody.querySelector("[data-pdf-retry]")?.addEventListener("click", () => {
+            renderPdfInsideDialog(url);
+        });
+    }
+
     async function importPdfJsModule(primaryUrl) {
         const legacyUrl = String(
             config.pdfJsLegacyModuleUrl ||
@@ -1803,8 +1937,8 @@ document.addEventListener("DOMContentLoaded", () => {
             delete shell.dataset.rendering;
         } catch (error) {
             delete shell.dataset.rendering;
-            shell.innerHTML = `<div class="preview-pdf-page-error">Page ${pageNumber} unavailable</div>`;
-            console.error("PDF_PAGE_RENDER_FAILED", { pageNumber, error });
+            const reference = reportPreviewTechnicalError("PDF-PAGE", error, { pageNumber });
+            shell.innerHTML = `<div class="preview-pdf-page-error">${previewLocaleIsFrench() ? "Cette page ne peut pas être affichée." : "This page could not be displayed."}<small>${previewLocaleIsFrench() ? "Référence" : "Reference"}: ${reference}</small></div>`;
         }
     }
 
@@ -1950,26 +2084,8 @@ document.addEventListener("DOMContentLoaded", () => {
             shells.slice(1).forEach(shell => activePdfObserver.observe(shell));
             console.info("[PDF.js] first page ready", { pages: pdf.numPages, url });
         } catch (error) {
-            console.error("PDF_RENDER_FAILED", error);
             if (token !== activePdfRenderToken) return;
-
-            previewMediaBody.innerHTML = `
-                <div class="preview-pdf-fallback">
-                    <strong>Unable to display this PDF inside the tour.</strong>
-                    <p>${escapeAttr(
-                        error?.message ||
-                        (isIOSWebKit()
-                            ? "The iPhone PDF reader could not start. Please try again."
-                            : "The PDF reader could not start.")
-                    )}</p>
-                    <button type="button" class="preview-media-action preview-media-action-primary" data-pdf-retry>
-                        Try again
-                    </button>
-                </div>`;
-
-            previewMediaBody.querySelector("[data-pdf-retry]")?.addEventListener("click", () => {
-                renderPdfInsideDialog(url);
-            });
+            renderFriendlyPdfFailure(url, error);
         }
     }
 
@@ -1990,7 +2106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (hotspot.type === "pdf") {
             const url = c.document_url || hotspot.media_file_url || "";
             if (!url) {
-                previewMediaBody.innerHTML = `<div class="preview-media-empty">PDF unavailable</div>`;
+                previewMediaBody.innerHTML = `<div class="preview-media-empty">${previewLocaleIsFrench() ? "Ce document n’est pas disponible." : "This document is not available."}</div>`;
             } else {
                 previewMediaFooter.innerHTML = `
                     <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Reload</button>
@@ -2014,7 +2130,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (url) {
                 previewMediaBody.innerHTML = `<video class="preview-video-player" controls playsinline preload="metadata" ${c.autoplay ? "autoplay" : ""} ${c.muted ? "muted" : ""} ${c.loop ? "loop" : ""} poster="${escapeAttr(c.poster_url || hotspot.poster_image_url || "")}"><source src="${escapeAttr(url)}"></video>`;
             } else {
-                previewMediaBody.innerHTML = `<div class="preview-media-empty">Video unavailable</div>`;
+                previewMediaBody.innerHTML = `<div class="preview-media-empty">${previewLocaleIsFrench() ? "Cette vidéo n’est pas disponible." : "This video is not available."}</div>`;
             }
         }
 

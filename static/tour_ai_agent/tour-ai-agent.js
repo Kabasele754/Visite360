@@ -69,6 +69,26 @@
   }
 
   function text(value) { return String(value ?? ""); }
+  function localeIsFrench() { return text(cfg.locale || document.documentElement.lang || "en").toLowerCase().startsWith("fr"); }
+  function publicErrorReference(prefix = "AI") {
+    const seed = globalThis.crypto?.randomUUID?.().replaceAll("-", "").slice(0, 8) || Math.random().toString(36).slice(2, 10);
+    return `${prefix}-${String(seed).toUpperCase()}`;
+  }
+  function reportTechnicalError(prefix, error, context = {}) {
+    const reference = publicErrorReference(prefix);
+    console.error(`[Twinscopes ${reference}]`, {
+      message: error?.message || text(error) || "Unknown error",
+      name: error?.name || "Error",
+      stack: error?.stack || "",
+      context,
+    });
+    return reference;
+  }
+  function friendlyRequestFailure(reference) {
+    return localeIsFrench()
+      ? `Nous n’avons pas pu terminer cette demande pour le moment. Réessayez dans quelques instants. Référence : ${reference}`
+      : `We could not complete this request right now. Please try again in a moment. Reference: ${reference}`;
+  }
   function cardText(value, maxLength = 360) {
     let valueText = text(value).replaceAll("```json", " ").replaceAll("```", " ").replace(/\s+/g, " ").trim();
     if (!valueText || valueText.startsWith("{") || valueText.startsWith("[")) return "";
@@ -172,7 +192,15 @@
   }
 
   async function sendSignal(signalType, data = {}) { try { await post(cfg.signalUrl, payload({signal_type: signalType, payload: data})); } catch (_) {} }
-  async function openPanel() { await bootstrap().catch(() => {}); isOpen = true; panel.hidden = false; nudge.hidden = true; launcher.setAttribute("aria-expanded", "true"); updateMobileOffset(); input?.focus(); sendSignal("ai_agent_opened"); }
+  async function openPanel() {
+    try {
+      await bootstrap();
+    } catch (error) {
+      const reference = reportTechnicalError("AI-START", error, {tourId: cfg.tourId, sceneId: currentSceneId});
+      if (!messages.children.length) addMessage(friendlyRequestFailure(reference), "assistant", {degraded: true, provider: "local"});
+    }
+    isOpen = true; panel.hidden = false; nudge.hidden = true; launcher.setAttribute("aria-expanded", "true"); updateMobileOffset(); input?.focus(); sendSignal("ai_agent_opened");
+  }
   function closePanel() { isOpen = false; panel.hidden = true; launcher.setAttribute("aria-expanded", "false"); }
 
   async function sendMessage(value, options = {}) {
@@ -189,7 +217,11 @@
       conversationId = data.conversation_id || conversationId; stopThinking(); renderReasoningSummary(thinking, data.reasoning_steps || []);
       await new Promise((resolve) => setTimeout(resolve, 320)); thinking.remove();
       addMessage(data.text || "I’m here to help.", "assistant", data); addProductCards(data.products || []);
-    } catch (_) { stopThinking(); thinking.remove(); addMessage("I could not answer right now. Please try again.", "assistant", {degraded: true, provider: "local"}); }
+    } catch (error) {
+      stopThinking(); thinking.remove();
+      const reference = reportTechnicalError("AI-MSG", error, {tourId: cfg.tourId, sceneId: currentSceneId});
+      addMessage(friendlyRequestFailure(reference), "assistant", {degraded: true, provider: "local"});
+    }
     finally { setBusy(false); input.focus(); }
   }
 
@@ -261,7 +293,13 @@
       });
     } catch (error) {
       if (error.name === "AbortError") return;
-      renderVision({title: "Visual insight unavailable", description: "Twinscopes could not read this part of the scene right now."});
+      const reference = reportTechnicalError("VISION", error, {tourId: cfg.tourId, sceneId: currentSceneId, point});
+      renderVision({
+        title: localeIsFrench() ? "Analyse visuelle temporairement indisponible" : "Visual insight temporarily unavailable",
+        description: localeIsFrench()
+          ? `Cette partie de la scène ne peut pas être analysée maintenant. Réessayez dans un instant. Référence : ${reference}`
+          : `This part of the scene cannot be analyzed right now. Please try again shortly. Reference: ${reference}`,
+      });
     } finally {
       if (insightRequest === controller) insightRequest = null;
     }

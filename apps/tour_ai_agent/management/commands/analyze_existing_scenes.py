@@ -5,8 +5,9 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.db.models import OuterRef, Subquery
 
-from apps.tours.models import PipelineStatus, Scene360
+from apps.tours.models import Scene360
 from apps.vision_ai.models import VisionAnalysis
 from apps.vision_ai.services.queueing import (
     analysis_status_payload,
@@ -55,10 +56,19 @@ class Command(BaseCommand):
             qs = qs.filter(tour_id=options["tour"])
         if options["scene"]:
             qs = qs.filter(pk__in=options["scene"])
+        latest_vision_status = VisionAnalysis.objects.filter(
+            scene_id=OuterRef("pk")
+        ).order_by("-created_at", "-id").values("status")[:1]
+        qs = qs.annotate(latest_vision_status=Subquery(latest_vision_status))
+
         if options["retry_failed"]:
-            qs = qs.filter(ai_analysis_status__in=[PipelineStatus.FAILED, "error"])
+            qs = qs.filter(latest_vision_status=VisionAnalysis.Status.FAILED)
         elif not options["force"] and not options["status_only"]:
-            qs = qs.exclude(ai_analysis_status__in=[PipelineStatus.READY, "done"])
+            # The legacy Scene360.ai_analysis_status can already be "ready"
+            # even when no Enterprise VisionAnalysis exists. Selection must
+            # therefore be based on the latest VisionAnalysis, not on the
+            # old scene pipeline status.
+            qs = qs.filter(latest_vision_status__isnull=True)
         if options["limit"]:
             qs = qs[: options["limit"]]
 
