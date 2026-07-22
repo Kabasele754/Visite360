@@ -23,7 +23,7 @@
   <aside class="tour-ai-vision-sheet" data-vision-sheet hidden aria-modal="true" role="dialog" aria-label="Visual scene insight">
     <button class="tour-ai-vision-close" type="button" data-vision-close aria-label="Close visual insight">×</button>
     <div class="tour-ai-vision-loading" data-vision-loading hidden>
-      <span class="tour-ai-vision-scan"></span><strong>Reading this part of the scene…</strong><small>Objects, labels and visual context</small>
+      <span class="tour-ai-vision-scan"></span><strong>Preparing visual details…</strong><small>This will update automatically</small>
     </div>
     <div data-vision-content hidden>
       <figure class="tour-ai-vision-figure" data-vision-figure hidden><img data-vision-image alt="Detected scene detail"></figure>
@@ -33,7 +33,7 @@
         <p data-vision-description></p>
         <blockquote data-vision-text hidden></blockquote>
         <div class="tour-ai-vision-attributes" data-vision-attributes></div>
-        <div class="tour-ai-vision-sources" data-vision-sources></div>
+        <div class="tour-ai-vision-sources" data-vision-sources hidden></div>
         <div class="tour-ai-vision-actions">
           <button type="button" class="primary" data-vision-ask>Ask Twinscopes AI</button>
           <button type="button" data-vision-dismiss>Close</button>
@@ -42,6 +42,6 @@
     </div>
   </aside>
 </div>
-<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=vision-7">
+<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=vision-9">
 <script>window.TOUR_AI_CONFIG={tourId:{{ tour.id }},bootstrapUrl:"{% url 'tour_ai_agent:bootstrap' %}",messageUrl:"{% url 'tour_ai_agent:message' %}",signalUrl:"{% url 'tour_ai_agent:signal' %}",actionUrl:"{% url 'tour_ai_agent:action' %}",inspectUrl:"{% url 'tour_ai_agent:inspect-point' %}",locale:"{{ request.LANGUAGE_CODE|default:'en' }}",longPressMs:650};</script>
-<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=friendly-errors-8"></script>
+<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=public-errors-9"></script>

@@ -2,12 +2,14 @@
 .git
 .gitignore
 .github
-
+.env
+.env.local.example
 
 
 secrets/
 certbot/conf/
 certbot/var/
+
 
 .venv/
 venv/

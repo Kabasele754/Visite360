@@ -84,10 +84,10 @@
     });
     return reference;
   }
-  function friendlyRequestFailure(reference) {
+  function friendlyRequestFailure() {
     return localeIsFrench()
-      ? `Nous n’avons pas pu terminer cette demande pour le moment. Réessayez dans quelques instants. Référence : ${reference}`
-      : `We could not complete this request right now. Please try again in a moment. Reference: ${reference}`;
+      ? "Nous n’avons pas pu terminer cette demande pour le moment. Réessayez dans quelques instants."
+      : "We could not complete this request right now. Please try again in a moment.";
   }
   function cardText(value, maxLength = 360) {
     let valueText = text(value).replaceAll("```json", " ").replaceAll("```", " ").replace(/\s+/g, " ").trim();
@@ -143,14 +143,16 @@
   function createThinkingIndicator() {
     const box = element("div", "tour-ai-thinking");
     box.setAttribute("role", "status");
-    box.innerHTML = '<div class="tour-ai-thinking-head"><span class="tour-ai-avatar">AI</span><div><strong>Twinscopes AI is working</strong><small data-thinking-label>Understanding your request</small></div></div><div class="tour-ai-dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="tour-ai-thinking-steps" data-thinking-steps></div>';
+    box.innerHTML = `<div class="tour-ai-thinking-head"><span class="tour-ai-avatar">AI</span><div><strong>${localeIsFrench() ? "Twinscopes prépare votre réponse" : "Twinscopes is preparing your answer"}</strong><small data-thinking-label>${localeIsFrench() ? "Un instant…" : "Just a moment…"}</small></div></div><div class="tour-ai-dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="tour-ai-thinking-steps" data-thinking-steps></div>`;
     messages.appendChild(box); messages.scrollTop = messages.scrollHeight; return box;
   }
 
   function animateThinking(box) {
-    const labels = ["Understanding your request", "Analyzing the current 360° scene", "Checking verified organization data", "Comparing products and services", "Preparing a reliable answer"];
+    const labels = localeIsFrench()
+      ? ["Un instant…", "Recherche des informations utiles", "Préparation d’une réponse claire"]
+      : ["Just a moment…", "Finding useful information", "Preparing a clear answer"];
     let index = 0; const label = box.querySelector("[data-thinking-label]");
-    const timer = setInterval(() => { index = Math.min(index + 1, labels.length - 1); if (label) label.textContent = labels[index]; }, 1100);
+    const timer = setInterval(() => { index = Math.min(index + 1, labels.length - 1); if (label) label.textContent = labels[index]; }, 1300);
     return () => clearInterval(timer);
   }
 
@@ -197,7 +199,7 @@
       await bootstrap();
     } catch (error) {
       const reference = reportTechnicalError("AI-START", error, {tourId: cfg.tourId, sceneId: currentSceneId});
-      if (!messages.children.length) addMessage(friendlyRequestFailure(reference), "assistant", {degraded: true, provider: "local"});
+      if (!messages.children.length) addMessage(friendlyRequestFailure(), "assistant", {degraded: true, provider: "local"});
     }
     isOpen = true; panel.hidden = false; nudge.hidden = true; launcher.setAttribute("aria-expanded", "true"); updateMobileOffset(); input?.focus(); sendSignal("ai_agent_opened");
   }
@@ -220,13 +222,9 @@
     } catch (error) {
       stopThinking(); thinking.remove();
       const reference = reportTechnicalError("AI-MSG", error, {tourId: cfg.tourId, sceneId: currentSceneId});
-      addMessage(friendlyRequestFailure(reference), "assistant", {degraded: true, provider: "local"});
+      addMessage(friendlyRequestFailure(), "assistant", {degraded: true, provider: "local"});
     }
     finally { setBusy(false); input.focus(); }
-  }
-
-  function sourceLabel(provider) {
-    return ({yolo: "Object detection", paddleocr: "Text recognition", gemini: "Semantic verification", openai: "Semantic fallback", florence2: "Detailed captioning"})[text(provider).toLowerCase()] || "Visual analysis";
   }
 
   function openVisionLoading() {
@@ -241,11 +239,23 @@
   function renderVision(data) {
     vision.loading.hidden = true; vision.content.hidden = false; activeInsight = data.insight || null;
     const item = data.insight || data;
-    vision.kind.textContent = data.status === "no_object" ? "Point inspection" : item.kind === "text" ? "Text recognized" : item.kind === "object" ? "Object detected" : "Scene analysis";
+    vision.kind.textContent = data.status === "no_object"
+      ? (localeIsFrench() ? "Zone sélectionnée" : "Selected area")
+      : item.kind === "text"
+        ? (localeIsFrench() ? "Texte visible" : "Visible text")
+        : item.kind === "object"
+          ? (localeIsFrench() ? "Élément identifié" : "Identified item")
+          : (localeIsFrench() ? "Détail de la scène" : "Scene detail");
     const score = Number(item.confidence_percent ?? data.confidence_percent ?? 0);
-    vision.confidence.textContent = score > 0 ? `${score}% confidence` : data.status === "no_object" ? "No verified match" : "Verified scene context";
-    vision.title.textContent = cardText(item.title, 180) || "Scene detail";
-    vision.description.textContent = cardText(item.description, 360) || "No verified detail was found exactly at this point.";
+    vision.confidence.textContent = score >= 80
+      ? (localeIsFrench() ? "Confiance élevée" : "High confidence")
+      : score > 0
+        ? (localeIsFrench() ? "Résultat probable" : "Likely match")
+        : "";
+    vision.title.textContent = cardText(item.title, 180) || (localeIsFrench() ? "Détail de la scène" : "Scene detail");
+    vision.description.textContent = cardText(item.description, 360) || (localeIsFrench()
+      ? "Aucun détail précis n’a été confirmé à cet endroit."
+      : "No specific detail was confirmed at this point.");
     if (vision.ask) vision.ask.hidden = data.status === "no_object";
 
     if (item.crop_url) { vision.image.src = item.crop_url; vision.figure.hidden = false; }
@@ -259,8 +269,7 @@
       vision.attributes.appendChild(element("span", "", `${key.replaceAll("_", " ")}: ${value}`));
     });
     clear(vision.sources);
-    const providers = item.source_providers || Object.values(data.pipeline || {}).filter(Boolean);
-    [...new Set(providers)].forEach((provider) => vision.sources.appendChild(element("span", "", sourceLabel(provider))));
+    if (vision.sources) vision.sources.hidden = true;
   }
 
   async function inspectPoint(point) {
@@ -288,17 +297,19 @@
         });
       }
       renderVision({
-        title: "Scene scan is still running",
-        description: "The panorama contains many details. You can close this card and press again in a moment.",
+        title: localeIsFrench() ? "Préparation toujours en cours" : "Still preparing the details",
+        description: localeIsFrench()
+          ? "Cette scène contient beaucoup d’éléments. Fermez cette fiche et réessayez dans quelques instants."
+          : "This scene contains many details. Close this card and try again in a moment.",
       });
     } catch (error) {
       if (error.name === "AbortError") return;
-      const reference = reportTechnicalError("VISION", error, {tourId: cfg.tourId, sceneId: currentSceneId, point});
+      reportTechnicalError("VISION", error, {tourId: cfg.tourId, sceneId: currentSceneId, point});
       renderVision({
-        title: localeIsFrench() ? "Analyse visuelle temporairement indisponible" : "Visual insight temporarily unavailable",
+        title: localeIsFrench() ? "Détails visuels temporairement indisponibles" : "Visual details temporarily unavailable",
         description: localeIsFrench()
-          ? `Cette partie de la scène ne peut pas être analysée maintenant. Réessayez dans un instant. Référence : ${reference}`
-          : `This part of the scene cannot be analyzed right now. Please try again shortly. Reference: ${reference}`,
+          ? "Nous ne pouvons pas afficher ces informations maintenant. Réessayez dans un instant."
+          : "We cannot display this information right now. Please try again shortly.",
       });
     } finally {
       if (insightRequest === controller) insightRequest = null;

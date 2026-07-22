@@ -11,6 +11,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Max
 
+from apps.ai_core.services.error_safety import classify_provider_error
 from apps.vision_ai.models import VisionAnalysis, VisionFrame, VisionInsight
 from apps.vision_ai.services.geometry import region_to_angular_geometry
 from apps.vision_ai.services.panorama import extract_point_frame
@@ -194,7 +195,7 @@ def inspect_scene_point(
             if semantic.get("found") and float(semantic.get("confidence") or 0) >= required_semantic_confidence:
                 break
         except Exception as exc:
-            semantic_errors.append(f"{provider_name}: {exc}")
+            semantic_errors.append(f"{provider_name}: {classify_provider_error(exc)}")
             logger.warning(
                 "Targeted semantic provider %s failed for analysis %s: %s",
                 provider_name,

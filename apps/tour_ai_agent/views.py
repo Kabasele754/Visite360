@@ -19,6 +19,7 @@ from apps.tour_ai_agent.tools.contact_tools import contact_options
 from apps.tour_ai_agent.services.grounded_context import build_organization_grounding
 from django.core import signing
 from apps.vision_ai.models import VisionAnalysis, VisionInsight
+from apps.ai_core.services.error_safety import public_error_copy
 from apps.vision_ai.services.point_inspection import inspect_scene_point
 from apps.vision_ai.services.queueing import (
     dispatch_scene_analysis,
@@ -201,6 +202,7 @@ def inspect_point(request):
     if not (-1.5709 <= pitch <= 1.5709):
         return JsonResponse({"ok": False, "error": "Pitch is outside the panorama range"}, status=400)
 
+    locale = getattr(conversation, "locale", None) or getattr(request, "LANGUAGE_CODE", "en")
     analysis = latest_scene_analysis(scene)
     if analysis is None:
         active = latest_active_analysis(scene)
@@ -222,11 +224,12 @@ def inspect_point(request):
                     conversation=conversation, signal_type="vision_scan_failed", scene=scene,
                     payload={"yaw": yaw, "pitch": pitch, "error": str(exc)[:500]},
                 )
+                title, description = public_error_copy(locale, kind="temporary")
                 return JsonResponse({
                     "ok": True,
                     "status": "scan_failed",
-                    "title": "Scene scan could not start",
-                    "description": "The computer-vision service is not ready yet. An administrator can run the local scene scan command and try again.",
+                    "title": title,
+                    "description": description,
                     "scene_id": scene.id,
                 })
 
@@ -235,11 +238,12 @@ def inspect_point(request):
                 conversation=conversation, signal_type="vision_scan_waiting", scene=scene,
                 payload={"yaw": yaw, "pitch": pitch, "analysis_id": str(active.pk)},
             )
+            title, description = public_error_copy(locale, kind="analyzing")
             return JsonResponse({
                 "ok": True,
                 "status": "analyzing",
-                "title": "Scanning this 360° scene",
-                "description": "YOLO is detecting objects, PaddleOCR is reading visible text, and semantic vision is verifying the scene. This card will update automatically.",
+                "title": title,
+                "description": description,
                 "scene_id": scene.id,
                 "analysis_id": str(active.pk),
                 "analysis_status": active.status,
@@ -251,11 +255,12 @@ def inspect_point(request):
                 conversation=conversation, signal_type="vision_long_press_unavailable", scene=scene,
                 payload={"yaw": yaw, "pitch": pitch},
             )
+            title, description = public_error_copy(locale, kind="not_ready")
             return JsonResponse({
                 "ok": True,
                 "status": "not_analyzed",
-                "title": "Visual analysis not ready",
-                "description": "This scene must be analyzed before object and text details can be displayed.",
+                "title": title,
+                "description": description,
                 "scene_id": scene.id,
             })
 
@@ -303,15 +308,15 @@ def inspect_point(request):
             distance = None
 
     if insight is None:
+        title, description = public_error_copy(locale, kind="no_object")
         return JsonResponse({
             "ok": True,
             "status": "no_object",
             "scene_id": scene.id,
             "analysis_id": str(analysis.id),
-            "title": "No verified object at this exact point",
-            "description": "Twinscopes did not find a distinct object or readable text under the selected point. Press directly on the visible item and hold without moving.",
+            "title": title,
+            "description": description,
             "confidence_percent": 0,
-            "pipeline": (scene.ai_analysis or {}).get("pipeline", {}),
         })
 
     return JsonResponse({
@@ -320,7 +325,6 @@ def inspect_point(request):
         "scene_id": scene.id,
         "analysis_id": str(analysis.id),
         "insight": serialize_insight(request, insight, tour_id=tour.id, distance=distance),
-        "pipeline": (scene.ai_analysis or {}).get("pipeline", {}),
     })
 
 

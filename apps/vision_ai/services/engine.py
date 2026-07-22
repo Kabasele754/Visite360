@@ -9,6 +9,7 @@ from typing import Any
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils import timezone
+from apps.ai_core.services.error_safety import classify_provider_error, provider_should_stop_for_analysis
 
 from apps.vision_ai.models import OCRTextBlock, VisionAnalysis, VisionDetection, VisionFrame
 from apps.tours.models import PipelineStatus
@@ -312,7 +313,7 @@ def execute_analysis(analysis: VisionAnalysis) -> VisionAnalysis:
             try:
                 provider = build_provider(provider_name, organization=analysis.organization)
             except Exception as exc:
-                failures[provider_name] = str(exc)
+                failures[provider_name] = classify_provider_error(exc)
                 logger.exception("Vision provider %s could not initialize", provider_name)
                 continue
 
@@ -325,7 +326,7 @@ def execute_analysis(analysis: VisionAnalysis) -> VisionAnalysis:
                     frame_outputs.append((frame, output))
                     _persist_local_output(analysis, frame, provider_name, output)
                 except Exception as exc:
-                    frame_errors.append(f"frame {frame.frame_index}: {exc}")
+                    frame_errors.append(f"frame {frame.frame_index}: {classify_provider_error(exc)}")
                     logger.exception(
                         "Vision provider %s failed on frame %s for analysis %s",
                         provider_name,
@@ -378,31 +379,30 @@ def execute_analysis(analysis: VisionAnalysis) -> VisionAnalysis:
                         break
                     except Exception as exc:
                         last_cloud_call_at = time.monotonic()
-                        semantic_errors[provider_name].append(f"frame {frame.frame_index}: {exc}")
-                        error_text = str(exc).lower()
-                        is_throttled = any(token in error_text for token in (
-                            "429",
-                            "resource_exhausted",
-                            "resource exhausted",
-                            "rate limit",
-                            "temporarily bypassed",
-                        ))
-                        if is_throttled:
+                        safe_code = classify_provider_error(exc)
+                        semantic_errors[provider_name].append(
+                            f"frame {frame.frame_index}: {safe_code}"
+                        )
+                        if provider_should_stop_for_analysis(exc):
                             semantic_disabled_for_analysis.add(provider_name)
                             logger.warning(
                                 "Semantic provider %s is disabled for the remainder of analysis %s "
-                                "after quota throttling; the fallback provider will be used: %s",
+                                "after %s; the fallback provider will be used. Technical detail: %s",
                                 provider_name,
                                 analysis.pk,
+                                safe_code,
                                 exc,
+                                exc_info=True,
                             )
                         else:
                             logger.warning(
-                                "Semantic provider %s failed on frame %s for analysis %s: %s",
+                                "Semantic provider %s failed on frame %s for analysis %s [%s]: %s",
                                 provider_name,
                                 frame.frame_index,
                                 analysis.pk,
+                                safe_code,
                                 exc,
+                                exc_info=True,
                             )
                 if not succeeded:
                     logger.error(
@@ -446,9 +446,7 @@ def execute_analysis(analysis: VisionAnalysis) -> VisionAnalysis:
             analysis.status = VisionAnalysis.Status.SUCCEEDED
         else:
             analysis.status = VisionAnalysis.Status.FAILED
-            analysis.error_message = "; ".join(
-                f"{name}: {message}" for name, message in failures.items()
-            ) or "No vision provider is enabled."
+            analysis.error_message = "vision_providers_unavailable"
         analysis.save()
 
         insight_count = 0
@@ -492,13 +490,13 @@ def execute_analysis(analysis: VisionAnalysis) -> VisionAnalysis:
     except Exception as exc:
         logger.exception("Vision analysis %s failed", analysis.pk)
         analysis.status = VisionAnalysis.Status.FAILED
-        analysis.error_message = str(exc)
+        analysis.error_message = classify_provider_error(exc)
         analysis.finished_at = timezone.now()
         analysis.save(update_fields=("status", "error_message", "finished_at", "updated_at"))
         if analysis.scene_id:
             scene = analysis.scene
             scene.ai_analysis_status = PipelineStatus.FAILED
-            scene.ai_analysis_error = str(exc)
+            scene.ai_analysis_error = classify_provider_error(exc)
             scene.ai_analyzed_at = analysis.finished_at
             scene.save(update_fields=(
                 "ai_analysis_status", "ai_analysis_error", "ai_analyzed_at", "updated_at",

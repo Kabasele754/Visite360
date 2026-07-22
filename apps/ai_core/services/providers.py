@@ -8,6 +8,8 @@ from typing import Any, Callable, Iterable, TypeVar
 
 from django.conf import settings
 
+from apps.ai_core.services.error_safety import provider_failure_token
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,7 +122,9 @@ class GeminiProvider:
 
             return self._with_client(operation)
         except Exception as exc:
-            raise AIProviderError(f"Gemini text generation failed: {exc}") from exc
+            token = provider_failure_token("gemini", "text", exc)
+            logger.warning("Gemini text generation failed [%s]: %s", token, exc, exc_info=True)
+            raise AIProviderError(token) from exc
 
     def analyze_image(
         self,
@@ -156,7 +160,9 @@ class GeminiProvider:
 
             return self._with_client(operation)
         except Exception as exc:
-            raise AIProviderError(f"Gemini vision analysis failed: {exc}") from exc
+            token = provider_failure_token("gemini", "vision", exc)
+            logger.warning("Gemini vision analysis failed [%s]: %s", token, exc, exc_info=True)
+            raise AIProviderError(token) from exc
 
     def embed(
         self,
@@ -224,7 +230,9 @@ class GeminiProvider:
 
             return self._with_client(operation)
         except Exception as exc:
-            raise AIProviderError(f"Gemini embedding failed: {exc}") from exc
+            token = provider_failure_token("gemini", "embedding", exc)
+            logger.warning("Gemini embedding failed [%s]: %s", token, exc, exc_info=True)
+            raise AIProviderError(token) from exc
 
 
 class OpenAIProvider:
@@ -260,7 +268,9 @@ class OpenAIProvider:
                     completion_tokens=int(getattr(usage, "output_tokens", 0) or 0),
                 )
         except Exception as exc:
-            raise AIProviderError(f"OpenAI text generation failed: {exc}") from exc
+            token = provider_failure_token("openai", "text", exc)
+            logger.warning("OpenAI text generation failed [%s]: %s", token, exc, exc_info=True)
+            raise AIProviderError(token) from exc
 
     def analyze_image(self, *, image_bytes: bytes, prompt: str, mime_type: str = "image/jpeg", model: str | None = None, **kwargs) -> AIVisionResult:
         import base64
@@ -285,7 +295,9 @@ class OpenAIProvider:
                     model=model,
                 )
         except Exception as exc:
-            raise AIProviderError(f"OpenAI vision analysis failed: {exc}") from exc
+            token = provider_failure_token("openai", "vision", exc)
+            logger.warning("OpenAI vision analysis failed [%s]: %s", token, exc, exc_info=True)
+            raise AIProviderError(token) from exc
 
     def embed(self, texts: Iterable[str], *, model: str | None = None, dimensions: int | None = None) -> list[list[float]]:
         model = model or settings.OPENAI_EMBEDDING_MODEL
@@ -300,7 +312,9 @@ class OpenAIProvider:
                 response = client.embeddings.create(**kwargs)
                 return [_normalize_vector(_fit_dimensions(list(item.embedding), dimensions)) for item in response.data]
         except Exception as exc:
-            raise AIProviderError(f"OpenAI embedding failed: {exc}") from exc
+            token = provider_failure_token("openai", "embedding", exc)
+            logger.warning("OpenAI embedding failed [%s]: %s", token, exc, exc_info=True)
+            raise AIProviderError(token) from exc
 
 
 class DeterministicLocalProvider:
