@@ -1,10 +1,14 @@
-# Optional heavy AI stack. Install in the dedicated AI worker image when needed.
-transformers>=4.48
-accelerate>=1.2
-sentence-transformers>=3.3
-paddleocr>=2.9
-# Install a PaddlePaddle build compatible with your CPU/GPU platform separately.
+# Heavy AI stack installed only in the dedicated AI worker image.
+# PyTorch, torchvision and PaddlePaddle are installed by the Dockerfile first.
+transformers>=4.48,<6
+accelerate>=1.2,<3
+sentence-transformers>=3.3,<6
+paddleocr>=3.0,<4
+sentencepiece>=0.2
+safetensors>=0.5
+einops>=0.8
+timm>=1.0
 
-# Optional camera formats (HEIC/HEIF/AVIF)
-pillow-heif
-pillow-avif-plugin
+# Optional camera formats used by panorama recovery.
+pillow-heif>=0.20
+pillow-avif-plugin>=1.5

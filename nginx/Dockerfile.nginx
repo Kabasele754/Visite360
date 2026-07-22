@@ -1,3 +1,10 @@
 FROM nginx:1.27-alpine
+
+RUN rm -f /etc/nginx/conf.d/default.conf
+
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY conf.d /etc/nginx/conf.d
+COPY conf.d/00-upstreams.conf /etc/nginx/conf.d/00-upstreams.conf
+COPY templates /etc/nginx/templates-custom
+COPY docker-entrypoint.d/40-configure-tls.sh /docker-entrypoint.d/40-configure-tls.sh
+
+RUN chmod +x /docker-entrypoint.d/40-configure-tls.sh

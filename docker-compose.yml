@@ -1,575 +1,444 @@
 # =============================================================================
-# TWINSCOPE / VISITE360
-# Docker Compose Production
-# Django + Daphne + Celery + PostgreSQL + Redis
-# Gemini Vertex AI + OpenAI optionnel + Ultralytics YOLO
-# =============================================================================
-
-
-# =============================================================================
-# ENVIRONNEMENT COMMUN DE L’APPLICATION
+# TWINSCOPE / VISITE360 — PRODUCTION
+# Django + Daphne + Celery + PostgreSQL/pgvector + Redis
+# YOLO + PaddleOCR + Gemini Vision + OpenAI Vision
 # =============================================================================
 
 x-app-environment: &app-environment
   DJANGO_SETTINGS_MODULE: config.settings.prod
   DEBUG: "0"
 
-  # ---------------------------------------------------------------------------
-  # DATABASE
-  # ---------------------------------------------------------------------------
+  # Database
   DB_HOST: db
   DB_PORT: "5432"
   DB_NAME: elevateaidb
   DB_USER: elevateaiuser
   DB_PASS_FILE: /run/secrets/db_password
 
-  # ---------------------------------------------------------------------------
-  # REDIS
-  # ---------------------------------------------------------------------------
+  # Redis / Celery / Channels
   REDIS_HOST: redis
   REDIS_PORT: "6379"
   REDIS_PASSWORD: ""
 
-  # ---------------------------------------------------------------------------
-  # AI ENGINE
-  # Gemini est le fournisseur principal.
-  # OpenAI reste désactivé jusqu’à ce qu’une clé valide soit configurée.
-  # ---------------------------------------------------------------------------
-  AI_PRIMARY_TEXT_PROVIDER: gemini
-  AI_FALLBACK_TEXT_PROVIDER: ""
+  # Text and RAG providers
+  AI_PRIMARY_TEXT_PROVIDER: "${AI_PRIMARY_TEXT_PROVIDER:-openai}"
+  AI_FALLBACK_TEXT_PROVIDER: "${AI_FALLBACK_TEXT_PROVIDER:-gemini}"
+  AI_ENABLE_GEMINI: "${AI_ENABLE_GEMINI:-true}"
+  AI_ENABLE_GEMINI_VISION: "${AI_ENABLE_GEMINI_VISION:-true}"
+  AI_ENABLE_OPENAI: "${AI_ENABLE_OPENAI:-true}"
+  AI_ENABLE_ULTRALYTICS: "${AI_ENABLE_ULTRALYTICS:-true}"
+  AI_DEFAULT_TEXT_PROVIDER: "${AI_DEFAULT_TEXT_PROVIDER:-OPENAI}"
+  AI_DEFAULT_IMAGE_PROVIDER: "${AI_DEFAULT_IMAGE_PROVIDER:-GOOGLE_VERTEX}"
+  AI_DEFAULT_VISION_PROVIDER: "${AI_DEFAULT_VISION_PROVIDER:-ULTRALYTICS}"
+  AI_PRIMARY_VISION_PROVIDER: "${AI_PRIMARY_VISION_PROVIDER:-fusion}"
+  AI_EMBEDDING_PROVIDER: "${AI_EMBEDDING_PROVIDER:-openai}"
+  AI_FALLBACK_EMBEDDING_PROVIDER: "${AI_FALLBACK_EMBEDDING_PROVIDER:-gemini}"
+  AI_EMBEDDING_DIMENSIONS: "${AI_EMBEDDING_DIMENSIONS:-1536}"
+  GOOGLE_EMBEDDING_NATIVE_DIMENSIONS: "${GOOGLE_EMBEDDING_NATIVE_DIMENSIONS:-768}"
+  AI_ALLOW_DETERMINISTIC_EMBEDDINGS: "${AI_ALLOW_DETERMINISTIC_EMBEDDINGS:-false}"
+  AI_PROVIDER_FAILURE_COOLDOWN_SECONDS: "${AI_PROVIDER_FAILURE_COOLDOWN_SECONDS:-300}"
+  AI_PROVIDER_RETRY_BASE_SECONDS: "${AI_PROVIDER_RETRY_BASE_SECONDS:-2}"
+  AI_PROVIDER_RETRY_MAX_SECONDS: "${AI_PROVIDER_RETRY_MAX_SECONDS:-20}"
 
-  AI_ENABLE_GEMINI: "true"
-  AI_ENABLE_GEMINI_VISION: "true"
-  AI_ENABLE_OPENAI: "false"
-  AI_ENABLE_ULTRALYTICS: "true"
-
-  AI_DEFAULT_TEXT_PROVIDER: GEMINI
-  AI_DEFAULT_IMAGE_PROVIDER: GOOGLE_VERTEX
-  AI_DEFAULT_VISION_PROVIDER: ULTRALYTICS
-  AI_PRIMARY_VISION_PROVIDER: fusion
-  AI_EMBEDDING_PROVIDER: ${AI_EMBEDDING_PROVIDER:-gemini}
-  AI_EMBEDDING_DIMENSIONS: ${AI_EMBEDDING_DIMENSIONS:-1536}
-  GOOGLE_EMBEDDING_NATIVE_DIMENSIONS: ${GOOGLE_EMBEDDING_NATIVE_DIMENSIONS:-768}
-  AI_ALLOW_DETERMINISTIC_EMBEDDINGS: ${AI_ALLOW_DETERMINISTIC_EMBEDDINGS:-false}
-
-  # ---------------------------------------------------------------------------
-  # GOOGLE VERTEX AI / GEMINI
-  # ---------------------------------------------------------------------------
+  # Google Vertex AI / Gemini
   GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google_adc_json
   GOOGLE_GENAI_USE_VERTEXAI: "true"
+  GOOGLE_CLOUD_PROJECT: "${GOOGLE_CLOUD_PROJECT:-ziarama-wedding-akk}"
+  GOOGLE_CLOUD_LOCATION: "${GOOGLE_CLOUD_LOCATION:-us-central1}"
+  GOOGLE_TEXT_MODEL: "${GOOGLE_TEXT_MODEL:-gemini-2.5-flash}"
+  GEMINI_TOUR_VISION_MODEL: "${GEMINI_TOUR_VISION_MODEL:-gemini-2.5-flash}"
+  GOOGLE_VISION_MODEL: "${GOOGLE_VISION_MODEL:-gemini-2.5-flash}"
+  GOOGLE_EMBEDDING_MODEL: "${GOOGLE_EMBEDDING_MODEL:-text-embedding-004}"
+  GOOGLE_IMAGE_MODEL: "${GOOGLE_IMAGE_MODEL:-imagen-4.0-generate-001}"
+  DEFAULT_AI_IMAGE_PROVIDER: "${DEFAULT_AI_IMAGE_PROVIDER:-GOOGLE_VERTEX}"
 
-  GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-ziarama-wedding-akk}
-  GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-us-central1}
+  # OpenAI
+  OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+  OPENAI_TEXT_MODEL: "${OPENAI_TEXT_MODEL:-gpt-5.6}"
+  OPENAI_VISION_MODEL: "${OPENAI_VISION_MODEL:-gpt-5.6}"
+  OPENAI_IMAGE_MODEL: "${OPENAI_IMAGE_MODEL:-gpt-image-1}"
+  OPENAI_EMBEDDING_MODEL: "${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}"
 
-  GOOGLE_TEXT_MODEL: ${GOOGLE_TEXT_MODEL:-gemini-2.5-flash}
-  GEMINI_TOUR_VISION_MODEL: ${GEMINI_TOUR_VISION_MODEL:-gemini-2.5-flash}
-  GOOGLE_VISION_MODEL: ${GOOGLE_VISION_MODEL:-gemini-2.5-flash}
-  GOOGLE_EMBEDDING_MODEL: ${GOOGLE_EMBEDDING_MODEL:-text-embedding-004}
+  AI_TEXT_TEMPERATURE: "${AI_TEXT_TEMPERATURE:-0.2}"
+  AI_TEXT_MAX_TOKENS: "${AI_TEXT_MAX_TOKENS:-1400}"
 
-  GOOGLE_IMAGE_MODEL: ${GOOGLE_IMAGE_MODEL:-imagen-4.0-generate-001}
-  DEFAULT_AI_IMAGE_PROVIDER: ${DEFAULT_AI_IMAGE_PROVIDER:-GOOGLE_VERTEX}
+  # YOLO
+  TOUR_AI_YOLO_MODEL_NAME: "${TOUR_AI_YOLO_MODEL_NAME:-yolo11m.pt}"
+  TOUR_AI_YOLO_MODEL_PATH: "/app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11m.pt}"
+  TOUR_AI_YOLO_DEVICE: "${TOUR_AI_YOLO_DEVICE:-cpu}"
+  TOUR_AI_YOLO_CONFIDENCE: "${TOUR_AI_YOLO_CONFIDENCE:-0.25}"
+  TOUR_AI_YOLO_IOU: "${TOUR_AI_YOLO_IOU:-0.45}"
+  TOUR_AI_YOLO_IMAGE_SIZE: "${TOUR_AI_YOLO_IMAGE_SIZE:-1280}"
+  TOUR_AI_YOLO_VERBOSE: "${TOUR_AI_YOLO_VERBOSE:-false}"
+  YOLO_MODEL: "/app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11m.pt}"
+  YOLO_DEVICE: "${TOUR_AI_YOLO_DEVICE:-cpu}"
+  YOLO_CONFIDENCE: "${TOUR_AI_YOLO_CONFIDENCE:-0.25}"
+  YOLO_IOU: "${TOUR_AI_YOLO_IOU:-0.45}"
+  YOLO_VERBOSE: "${TOUR_AI_YOLO_VERBOSE:-false}"
 
-  AI_TEXT_TEMPERATURE: ${AI_TEXT_TEMPERATURE:-0.3}
-  AI_TEXT_MAX_TOKENS: ${AI_TEXT_MAX_TOKENS:-1400}
+  # Advanced 360 vision
+  VISION_ENABLE_YOLO: "${VISION_ENABLE_YOLO:-true}"
+  VISION_ENABLE_FLORENCE2: "${VISION_ENABLE_FLORENCE2:-false}"
+  VISION_ENABLE_PADDLEOCR: "${VISION_ENABLE_PADDLEOCR:-true}"
+  VISION_ENABLE_GEMINI: "${VISION_ENABLE_GEMINI:-true}"
+  VISION_ENABLE_OPENAI: "${VISION_ENABLE_OPENAI:-true}"
+  VISION_YOLO_MODEL: "/app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11m.pt}"
+  VISION_FLORENCE_MODEL: "${VISION_FLORENCE_MODEL:-microsoft/Florence-2-base}"
+  VISION_PADDLEOCR_LANG: "${VISION_PADDLEOCR_LANG:-en}"
+  VISION_PRIMARY_SEMANTIC_PROVIDER: "${VISION_PRIMARY_SEMANTIC_PROVIDER:-gemini}"
+  VISION_FALLBACK_SEMANTIC_PROVIDER: "${VISION_FALLBACK_SEMANTIC_PROVIDER:-openai}"
+  VISION_MAX_PANORAMA_FRAMES: "${VISION_MAX_PANORAMA_FRAMES:-24}"
+  VISION_SEMANTIC_MAX_FRAMES: "${VISION_SEMANTIC_MAX_FRAMES:-12}"
+  VISION_SEMANTIC_MAX_CLOUD_CALLS_PER_SCENE: "${VISION_SEMANTIC_MAX_CLOUD_CALLS_PER_SCENE:-4}"
+  VISION_SEMANTIC_REQUEST_INTERVAL_SECONDS: "${VISION_SEMANTIC_REQUEST_INTERVAL_SECONDS:-1.25}"
+  AI_VISION_PROVIDER_MAX_RETRIES: "${AI_VISION_PROVIDER_MAX_RETRIES:-1}"
+  AI_VISION_PROVIDER_FAILURE_COOLDOWN_SECONDS: "${AI_VISION_PROVIDER_FAILURE_COOLDOWN_SECONDS:-180}"
+  VISION_PUBLIC_ON_DEMAND_SCAN: "${VISION_PUBLIC_ON_DEMAND_SCAN:-true}"
+  VISION_ON_DEMAND_ANALYSIS_MODE: "${VISION_ON_DEMAND_ANALYSIS_MODE:-celery}"
+  VISION_ON_DEMAND_RETRY_AFTER_MS: "${VISION_ON_DEMAND_RETRY_AFTER_MS:-3000}"
+  VISION_ANALYSIS_STALE_MINUTES: "${VISION_ANALYSIS_STALE_MINUTES:-45}"
+  VISION_LONG_PRESS_DURATION_MS: "${VISION_LONG_PRESS_DURATION_MS:-650}"
+  VISION_POINT_ON_DEMAND_INSPECTION: "${VISION_POINT_ON_DEMAND_INSPECTION:-true}"
+  VISION_POINT_INSPECTION_FOV_DEGREES: "${VISION_POINT_INSPECTION_FOV_DEGREES:-46}"
+  VISION_POINT_DETAIL_FOV_DEGREES: "${VISION_POINT_DETAIL_FOV_DEGREES:-26}"
+  VISION_POINT_INSPECTION_FRAME_SIZE: "${VISION_POINT_INSPECTION_FRAME_SIZE:-768}"
+  VISION_POINT_SEMANTIC_MIN_CONFIDENCE: "${VISION_POINT_SEMANTIC_MIN_CONFIDENCE:-0.55}"
 
-  # ---------------------------------------------------------------------------
-  # OPENAI
-  # La clé peut rester vide tant que AI_ENABLE_OPENAI=false.
-  # ---------------------------------------------------------------------------
-  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-  OPENAI_TEXT_MODEL: ${OPENAI_TEXT_MODEL:-gpt-4.1-mini}
-  OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-1}
-  OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
-  OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gpt-5.6}
-
-  # ---------------------------------------------------------------------------
-  # ULTRALYTICS / YOLO
-  # ---------------------------------------------------------------------------
-  TOUR_AI_YOLO_MODEL_NAME: ${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
-  TOUR_AI_YOLO_MODEL_PATH: /app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
-  TOUR_AI_YOLO_DEVICE: ${TOUR_AI_YOLO_DEVICE:-cpu}
-  TOUR_AI_YOLO_CONFIDENCE: ${TOUR_AI_YOLO_CONFIDENCE:-0.35}
-  TOUR_AI_YOLO_IOU: ${TOUR_AI_YOLO_IOU:-0.45}
-  TOUR_AI_YOLO_IMAGE_SIZE: ${TOUR_AI_YOLO_IMAGE_SIZE:-896}
-  TOUR_AI_YOLO_VERBOSE: ${TOUR_AI_YOLO_VERBOSE:-false}
-
-  YOLO_MODEL: /app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
-  YOLO_DEVICE: ${TOUR_AI_YOLO_DEVICE:-cpu}
-  YOLO_CONFIDENCE: ${TOUR_AI_YOLO_CONFIDENCE:-0.35}
-  YOLO_IOU: ${TOUR_AI_YOLO_IOU:-0.45}
-  YOLO_VERBOSE: ${TOUR_AI_YOLO_VERBOSE:-false}
-
-  VISION_ENABLE_YOLO: ${VISION_ENABLE_YOLO:-true}
-  VISION_ENABLE_FLORENCE2: ${VISION_ENABLE_FLORENCE2:-false}
-  VISION_ENABLE_PADDLEOCR: ${VISION_ENABLE_PADDLEOCR:-false}
-  VISION_ENABLE_GEMINI: ${VISION_ENABLE_GEMINI:-true}
-  VISION_ENABLE_OPENAI: ${VISION_ENABLE_OPENAI:-false}
-  VISION_YOLO_MODEL: /app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
-  VISION_FLORENCE_MODEL: ${VISION_FLORENCE_MODEL:-microsoft/Florence-2-base}
-  VISION_PADDLEOCR_LANG: ${VISION_PADDLEOCR_LANG:-en}
-  VISION_PUBLIC_ON_DEMAND_SCAN: ${VISION_PUBLIC_ON_DEMAND_SCAN:-true}
-  VISION_ON_DEMAND_ANALYSIS_MODE: ${VISION_ON_DEMAND_ANALYSIS_MODE:-celery}
-  VISION_ON_DEMAND_RETRY_AFTER_MS: ${VISION_ON_DEMAND_RETRY_AFTER_MS:-3000}
-  VISION_LOCAL_THREAD_WORKERS: ${VISION_LOCAL_THREAD_WORKERS:-1}
-  VISION_ANALYSIS_STALE_MINUTES: ${VISION_ANALYSIS_STALE_MINUTES:-45}
-  VISION_MAX_PANORAMA_FRAMES: ${VISION_MAX_PANORAMA_FRAMES:-12}
-  VISION_SEMANTIC_MAX_FRAMES: ${VISION_SEMANTIC_MAX_FRAMES:-8}
-
-  GOOGLE_CALENDAR_ENABLED: ${GOOGLE_CALENDAR_ENABLED:-false}
-  GOOGLE_CALENDAR_DEFAULT_TIMEZONE: ${GOOGLE_CALENDAR_DEFAULT_TIMEZONE:-Africa/Johannesburg}
-  INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
-
-
-# =============================================================================
-# CONFIGURATION COMMUNE DJANGO / CELERY
-# =============================================================================
+  # Integrations
+  GOOGLE_CALENDAR_ENABLED: "${GOOGLE_CALENDAR_ENABLED:-false}"
+  GOOGLE_CALENDAR_DEFAULT_TIMEZONE: "${GOOGLE_CALENDAR_DEFAULT_TIMEZONE:-Africa/Johannesburg}"
+  INTEGRATION_ENCRYPTION_KEY: "${INTEGRATION_ENCRYPTION_KEY:-}"
 
 x-app-common: &app-common
   build:
     context: .
     dockerfile: Dockerfile
-
+    args:
+      INSTALL_FULL_AI: "false"
+  init: true
   restart: unless-stopped
-
   env_file:
     - .env
-
   environment:
     <<: *app-environment
-
   networks:
     - my_network
-
   secrets:
     - db_password
     - google_adc_json
-
   depends_on:
     db:
       condition: service_healthy
-
     db_vector_init:
       condition: service_completed_successfully
-
     redis:
       condition: service_healthy
 
-
-# =============================================================================
-# SERVICES
-# =============================================================================
-
 services:
-
-  # ---------------------------------------------------------------------------
-  # DJANGO / DAPHNE
-  # ---------------------------------------------------------------------------
   django:
     <<: *app-common
-
     container_name: visite360_app
-
-    command: >
-      sh -c "
-      python manage.py migrate --noinput &&
-      python manage.py collectstatic --noinput &&
-      exec daphne -b 0.0.0.0 -p 8000 config.asgi:application
-      "
-
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        python manage.py migrate --noinput
+        python manage.py collectstatic --noinput
+        exec daphne -b 0.0.0.0 -p 8000 config.asgi:application
     volumes:
       - static-data:/app/staticfiles
       - media-data:/app/media
       - ai-models:/app/model_weights
-
     healthcheck:
       test:
         - CMD-SHELL
-        - python -c "import socket; s=socket.create_connection(('127.0.0.1', 8000), 5); s.close()" || exit 1
+        - python -c "import socket; s=socket.create_connection(('127.0.0.1',8000),5); s.close()" || exit 1
       interval: 20s
       timeout: 10s
       retries: 15
       start_period: 180s
 
-
-  # ---------------------------------------------------------------------------
-  # CELERY WORKER
-  # ---------------------------------------------------------------------------
   celery_worker:
     <<: *app-common
-
     container_name: visite360_celery_worker
-
-    command: >
-      sh -c "
-      celery -A config worker
-      --loglevel=info
-      --concurrency=2
-      --hostname=twinscopes-worker@%h
-      "
-
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        exec celery -A config worker \
+          --loglevel=info \
+          --concurrency=${CELERY_WORKER_CONCURRENCY:-2} \
+          --queues=celery \
+          --hostname=twinscopes-worker@%h
     volumes:
       - media-data:/app/media
       - ai-models:/app/model_weights
-
     depends_on:
       django:
-        condition: service_started
-
+        condition: service_healthy
       db:
         condition: service_healthy
-
       redis:
         condition: service_healthy
 
-
-  # ---------------------------------------------------------------------------
-  # ENTERPRISE AI WORKER
-  # Dedicated queue for vision, RAG indexing and multi-agent orchestration.
-  # ---------------------------------------------------------------------------
   ai_worker:
     <<: *app-common
-
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        INSTALL_FULL_AI: ${INSTALL_FULL_AI:-false}
-
+        INSTALL_FULL_AI: "${INSTALL_FULL_AI:-true}"
+        PADDLEPADDLE_VERSION: "${PADDLEPADDLE_VERSION:-3.3.0}"
     container_name: visite360_ai_worker
-
-    command: >
-      sh -c "
-      celery -A config worker
-      --loglevel=info
-      --concurrency=${AI_WORKER_CONCURRENCY:-1}
-      --queues=ai
-      --hostname=twinscopes-ai@%h
-      "
-
+    environment:
+      <<: *app-environment
+      OMP_NUM_THREADS: "${AI_OMP_NUM_THREADS:-2}"
+      MKL_NUM_THREADS: "${AI_MKL_NUM_THREADS:-2}"
+      OPENBLAS_NUM_THREADS: "${AI_OPENBLAS_NUM_THREADS:-2}"
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        exec celery -A config worker \
+          --loglevel=info \
+          --concurrency=${AI_WORKER_CONCURRENCY:-1} \
+          --queues=ai \
+          --hostname=twinscopes-ai@%h
     volumes:
       - media-data:/app/media
       - ai-models:/app/model_weights
       - huggingface-cache:/root/.cache/huggingface
       - paddle-cache:/root/.paddleocr
-
     depends_on:
       django:
-        condition: service_started
+        condition: service_healthy
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
 
-  # ---------------------------------------------------------------------------
-  # CELERY BEAT
-  # ---------------------------------------------------------------------------
   celery_beat:
     <<: *app-common
-
     container_name: visite360_celery_beat
-
-    command: >
-      sh -c "
-      celery -A config beat
-      --loglevel=info
-      --schedule=/var/run/celery/celerybeat-schedule
-      "
-
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        exec celery -A config beat \
+          --loglevel=info \
+          --schedule=/var/run/celery/celerybeat-schedule
     volumes:
       - media-data:/app/media
       - ai-models:/app/model_weights
       - celery-beat-data:/var/run/celery
-
     depends_on:
       django:
-        condition: service_started
-
+        condition: service_healthy
       db:
         condition: service_healthy
-
       redis:
         condition: service_healthy
 
-
-  # ---------------------------------------------------------------------------
-  # INITIALISATION DES MODÈLES IA
-  #
-  # Ce service est lancé manuellement pour télécharger YOLO.
-  # Il partage le volume ai-models avec Django et Celery.
-  # ---------------------------------------------------------------------------
+  # Manual tool: docker compose --profile tools run --rm ai_model_init
   ai_model_init:
-    <<: *app-common
-
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_FULL_AI: "false"
+    profiles: ["tools"]
     container_name: visite360_ai_model_init
-
     restart: "no"
-
-    command: >
-      sh -c "
-      mkdir -p /app/model_weights &&
-      python manage.py download_tour_ai_models
-      --model ${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
-      "
-
+    init: true
+    env_file:
+      - .env
+    environment:
+      <<: *app-environment
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        MODEL="/app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11m.pt}"
+        if [ -s "$$MODEL" ]; then
+          echo "YOLO model already present: $$MODEL"
+          ls -lh "$$MODEL"
+        else
+          python manage.py download_tour_ai_models \
+            --model "${TOUR_AI_YOLO_MODEL_NAME:-yolo11m.pt}"
+        fi
     volumes:
       - ai-models:/app/model_weights
+    networks:
+      - my_network
+    secrets:
+      - db_password
+      - google_adc_json
 
-    depends_on:
-      db:
-        condition: service_healthy
-
-      redis:
-        condition: service_healthy
-
-
-  # ---------------------------------------------------------------------------
-  # NGINX
-  # ---------------------------------------------------------------------------
   nginx:
     build:
       context: ./nginx
       dockerfile: Dockerfile.nginx
-
     container_name: visite360_nginx
-
     restart: unless-stopped
-
     ports:
       - "80:80"
       - "443:443"
-
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
     volumes:
       - static-data:/app/staticfiles:ro
       - media-data:/app/media:ro
-
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/var:/var/lib/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
-
     depends_on:
       django:
         condition: service_healthy
-
       pgadmin:
         condition: service_started
-
     networks:
       - my_network
 
-
-  # ---------------------------------------------------------------------------
-  # CERTBOT INITIAL
-  # ---------------------------------------------------------------------------
   certbot:
     image: certbot/certbot:latest
-
+    profiles: ["tools"]
     container_name: visite360_certbot
-
     restart: "no"
-
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/var:/var/lib/letsencrypt
       - ./certbot/www:/var/www/certbot
       - ./nginx/openssl.cnf:/etc/ssl/openssl.cnf:ro
-
-    command: >
-      certonly
-      --webroot
-      --webroot-path=/var/www/certbot
-      --domain twinscopes.com
-      --domain www.twinscopes.com
-      --domain pgadmin.twinscopes.com
-      --domain api.twinscopes.com
-      --email pepexykabasele@gmail.com
-      --agree-tos
-      --non-interactive
-      --keep-until-expiring
-
+    command:
+      - certonly
+      - --webroot
+      - --webroot-path=/var/www/certbot
+      - --domain=twinscopes.com
+      - --domain=www.twinscopes.com
+      - --domain=pgadmin.twinscopes.com
+      - --domain=api.twinscopes.com
+      - --email=${CERTBOT_EMAIL:-pepexykabasele@gmail.com}
+      - --agree-tos
+      - --non-interactive
+      - --keep-until-expiring
     networks:
       - my_network
 
-
-  # ---------------------------------------------------------------------------
-  # CERTBOT RENEW
-  # ---------------------------------------------------------------------------
   certbot-renew:
     image: certbot/certbot:latest
-
     container_name: visite360_certbot_renew
-
     restart: unless-stopped
-
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/var:/var/lib/letsencrypt
       - ./certbot/www:/var/www/certbot
-
-    entrypoint: >
-      /bin/sh -c "
-      trap exit TERM;
-      while :;
-      do
-        certbot renew
-        --webroot
-        --webroot-path=/var/www/certbot;
-        sleep 12h;
-      done
-      "
-
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        trap 'exit 0' TERM INT
+        while :; do
+          certbot renew --webroot --webroot-path=/var/www/certbot || true
+          sleep 12h & wait $$!
+        done
+    depends_on:
+      nginx:
+        condition: service_started
     networks:
       - my_network
 
-
-  # ---------------------------------------------------------------------------
-  # REDIS
-  # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
-
     container_name: visite360_redis
-
     restart: unless-stopped
-
-    command: >
-      redis-server
-      --appendonly yes
-
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
     volumes:
       - redis-data:/data
-
     healthcheck:
-      test:
-        - CMD
-        - redis-cli
-        - ping
-
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-
     networks:
       - my_network
 
-
-  # ---------------------------------------------------------------------------
-  # POSTGRESQL
-  # ---------------------------------------------------------------------------
   db:
     image: pgvector/pgvector:pg16
-
     container_name: visite360_postgres_db
-
     restart: unless-stopped
-
     volumes:
+      # Keep this volume key unchanged to preserve the existing production DB.
       - dev-db-data:/var/lib/postgresql/data
       - ./docker/postgres/init/01-enable-pgvector.sql:/docker-entrypoint-initdb.d/01-enable-pgvector.sql:ro
-
     environment:
       POSTGRES_DB: elevateaidb
       POSTGRES_USER: elevateaiuser
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
-
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U elevateaiuser -d elevateaidb -h localhost -p 5432
-
+        - pg_isready -U elevateaiuser -d elevateaidb -h 127.0.0.1 -p 5432
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 20s
-
+      retries: 10
+      start_period: 30s
     networks:
       - my_network
-
     secrets:
       - db_password
 
-
-  # ---------------------------------------------------------------------------
-  # PGVECTOR INITIALIZER
-  # Runs for both new and already-existing PostgreSQL volumes, before Django.
-  # ---------------------------------------------------------------------------
   db_vector_init:
     image: pgvector/pgvector:pg16
-
     container_name: visite360_pgvector_init
-
     restart: "no"
-
-    entrypoint:
-      - /bin/sh
-      - -ec
-
+    entrypoint: ["/bin/sh", "-ec"]
     command: |
       export PGPASSWORD="$$(cat /run/secrets/db_password)"
       until pg_isready -h db -p 5432 -U elevateaiuser -d elevateaidb; do
         sleep 2
       done
       psql -v ON_ERROR_STOP=1 \
-        -h db \
-        -p 5432 \
-        -U elevateaiuser \
-        -d elevateaidb \
+        -h db -p 5432 -U elevateaiuser -d elevateaidb \
         -c "CREATE EXTENSION IF NOT EXISTS vector;"
       psql -v ON_ERROR_STOP=1 \
-        -h db \
-        -p 5432 \
-        -U elevateaiuser \
-        -d elevateaidb \
+        -h db -p 5432 -U elevateaiuser -d elevateaidb \
         -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
-
     depends_on:
       db:
         condition: service_healthy
-
     networks:
       - my_network
-
     secrets:
       - db_password
 
-
-  # ---------------------------------------------------------------------------
-  # PGADMIN
-  # ---------------------------------------------------------------------------
   pgadmin:
     image: dpage/pgadmin4:latest
-
     container_name: pgadmin_server
-
     restart: unless-stopped
-
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pepexykabasele@gmail.com}
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-pepexykabasele@gmail.com}"
       PGADMIN_DEFAULT_PASSWORD_FILE: /run/secrets/pgadmin_password
-
       PGADMIN_CONFIG_SERVER_MODE: "True"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "True"
       PGADMIN_LISTEN_PORT: "80"
-
     volumes:
       - pgadmin-data:/var/lib/pgadmin
-
     depends_on:
       db:
         condition: service_healthy
-
     networks:
       - my_network
-
     secrets:
       - pgadmin_password
 
-
-# =============================================================================
-# VOLUMES
-# =============================================================================
-
 volumes:
+  # Do not rename or remove these production volumes.
   dev-db-data:
   static-data:
   media-data:
@@ -580,26 +449,14 @@ volumes:
   huggingface-cache:
   paddle-cache:
 
-
-# =============================================================================
-# NETWORKS
-# =============================================================================
-
 networks:
   my_network:
     driver: bridge
 
-
-# =============================================================================
-# SECRETS
-# =============================================================================
-
 secrets:
   db_password:
     file: ./secrets/db_password.txt
-
   google_adc_json:
     file: ./secrets/google_adc.json
-
   pgadmin_password:
     file: ./secrets/pgadmin_password.txt

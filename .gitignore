@@ -1,16 +1,46 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
+/.vscode
+.git
+.gitignore
+.github
 
-wheels/
-*.egg-info
 
-# Virtual environments
-.venv
-.vscode
+
+secrets/
+certbot/conf/
+certbot/var/
+
+.venv/
+venv/
 env/
-venv/   
 
+__pycache__/
+*.py[cod]
+*.log
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+media/
+staticfiles/
+logs/
+backups/
+vision_reports/
+
+model_weights/
+*.pt
+*.pth
+*.onnx
+
+node_modules/
+dist/
+build/
+
+.DS_Store
+__MACOSX/
+*.zip
 
 
 tools/tailwindcss.exe
