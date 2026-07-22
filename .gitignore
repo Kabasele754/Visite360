@@ -1,50 +1,86 @@
-/.vscode
-.git
-.gitignore
-.github
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Variables d’environnement et secrets
 .env
-.env.local.example
-
-
+.env.*
+!.env.example
 secrets/
+**/secrets/
+google_adc.json
+**/google_adc.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Certificats
 certbot/conf/
 certbot/var/
 
-
+# Environnements Python
 .venv/
 venv/
 env/
 
+# Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
-*.log
+*.egg
+*.egg-info/
 
+# Tests et caches
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
 htmlcov/
+.cache/
 
+# Logs
+*.log
+logs/
+
+# Données générées
 media/
 staticfiles/
-logs/
 backups/
 vision_reports/
 
+# Modèles IA
 model_weights/
 *.pt
 *.pth
 *.onnx
+*.safetensors
 
+# Node et frontend
 node_modules/
 dist/
 build/
 
-.DS_Store
-__MACOSX/
-*.zip
-
-
-tools/tailwindcss.exe
+# Tailwind
 tools/tailwindcss
-node_modules/
+tools/tailwindcss.exe
+tools/tailwindcss-*
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+*.pid
+
+# Système
+.DS_Store
+**/.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Archives
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
