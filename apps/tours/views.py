@@ -219,7 +219,7 @@ class OrgTourPhotoListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         org = get_object_or_404(Organization, slug=self.kwargs["organization_slug"])
         return TourPhoto.objects.filter(
-            organization=org,
+            tour__organization=org,
             tour_id=self.kwargs["tour_id"],
         ).order_by("order", "id")
 
@@ -231,10 +231,7 @@ class OrgTourPhotoListCreateView(generics.ListCreateAPIView):
             organization=org,
         )
 
-        serializer.save(
-            organization=org,
-            tour=tour,
-        )
+        serializer.save(tour=tour)
 
 
 class OrgTourPhotoDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -244,7 +241,7 @@ class OrgTourPhotoDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         org = get_object_or_404(Organization, slug=self.kwargs["organization_slug"])
-        return TourPhoto.objects.filter(organization=org)
+        return TourPhoto.objects.filter(tour__organization=org)
     
     
 

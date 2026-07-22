@@ -4,6 +4,16 @@ from celery.schedules import crontab
 
 
 CELERY_BEAT_SCHEDULE = {
+    "enterprise-platform-health-hourly": {
+        "task": "apps.monitoring.tasks.check_platform_health",
+        "schedule": crontab(minute=5),
+        "options": {"expires": 60 * 45},
+    },
+    "enterprise-ai-usage-daily": {
+        "task": "apps.ai_core.tasks.aggregate_ai_usage",
+        "schedule": crontab(hour=1, minute=30),
+        "options": {"expires": 60 * 60 * 4},
+    },
     "growth-ai-sync-all-sources-nightly": {
         "task": "apps.growth_ai.tasks.sync_all_growth_sources",
         "schedule": crontab(hour=2, minute=15),

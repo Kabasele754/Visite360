@@ -31,13 +31,20 @@ def analyze_scene(scene, force=False):
         return profile
     try:
         with tempfile.TemporaryDirectory(prefix=f"tour-ai-{scene.id}-") as tmp:
-            frames = generate_panorama_frames(path, tmp, size=int(getattr(settings, "TOUR_AI_FRAME_SIZE", 640)))
+            frames = generate_panorama_frames(
+                path,
+                tmp,
+                size=int(getattr(settings, "TOUR_AI_FRAME_SIZE", 640)),
+                yaws=getattr(settings, "TOUR_AI_FRAME_YAWS", "0,45,90,135,180,225,270,315"),
+                pitches=getattr(settings, "TOUR_AI_FRAME_PITCHES", "0"),
+                fov=float(getattr(settings, "TOUR_AI_FRAME_FOV", 90.0)),
+            )
             detector = LocalObjectDetector()
             detections = []
             for frame in frames:
                 for detection in detector.detect(frame["path"], float(getattr(settings, "TOUR_AI_DETECTION_CONFIDENCE", 0.35))):
                     item = detection.dict()
-                    item.update({"frame": frame["name"], "yaw": frame["yaw"]})
+                    item.update({"frame": frame["name"], "yaw": frame["yaw"], "pitch": frame["pitch"], "fov": frame["fov"]})
                     detections.append(item)
             simple = [type("D", (), item) for item in detections]
             classification = classify_scene(simple)

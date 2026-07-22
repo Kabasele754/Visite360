@@ -7,6 +7,7 @@ from django.conf import settings
 
 from .base import AITextResponse, TextProvider
 from .gemini_client import GeminiClient
+from .openai_client import OpenAIClient
 
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,8 @@ class AIProviderRouter:
 
         if normalized_name == "gemini":
             provider: TextProvider = GeminiClient()
+        elif normalized_name == "openai":
+            provider = OpenAIClient()
         else:
             logger.warning(
                 "Unknown AI provider: %s",

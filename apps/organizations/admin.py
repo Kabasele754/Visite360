@@ -13,7 +13,7 @@ class OrganizationMemberInline(admin.TabularInline):
 class OrganizationAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "status", "created_at", "updated_at")
     list_filter = ("status",)
-    search_fields = ("name", "slug")
+    search_fields = ("name", "slug", "website_url", "public_email", "public_phone")
     prepopulated_fields = {"slug": ("name",)}
     ordering = ("name",)
     inlines = (OrganizationMemberInline,)

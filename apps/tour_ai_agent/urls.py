@@ -6,5 +6,7 @@ urlpatterns=[
  path("message/",views.message,name="message"),
  path("signal/",views.signal,name="signal"),
  path("action/",views.action,name="action"),
+ path("inspect-point/",views.inspect_point,name="inspect-point"),
+ path("vision-crop/<str:token>/",views.vision_crop,name="vision-crop"),
  path("scene/<int:scene_id>/analyze/",views.analyze_scene_now,name="analyze-scene"),
 ]

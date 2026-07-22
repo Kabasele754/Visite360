@@ -2,6 +2,8 @@ from .models import Organization, OrganizationMember
 
 
 def get_user_organizations(user):
+    if not getattr(user, "is_authenticated", False):
+        return Organization.objects.none()
     if user.is_superuser:
         return Organization.objects.all()
     return Organization.objects.filter(memberships__user=user, memberships__is_active=True).distinct()

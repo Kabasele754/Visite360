@@ -163,3 +163,6 @@ CSP_HEADER = {
     ],
     "media-src": ["'self'", "blob:", "data:"],
 }
+
+# Development-only fallback for semantic indexing without cloud credentials.
+AI_ALLOW_DETERMINISTIC_EMBEDDINGS = True

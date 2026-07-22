@@ -53,10 +53,18 @@ INSTALLED_APPS = [
     "apps.vendors",
     "apps.growth_ai.apps.GrowthAIConfig",
     "apps.tour_ai_agent.apps.TourAIAgentConfig",
+    "apps.ai_core.apps.AICoreConfig",
+    "apps.knowledge.apps.KnowledgeConfig",
+    "apps.vision_ai.apps.VisionAIConfig",
+    "apps.ai_agents.apps.AIAgentsConfig",
+    "apps.ai_chat.apps.AIChatConfig",
+    "apps.integrations.apps.IntegrationsConfig",
+    "apps.monitoring.apps.MonitoringConfig",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.monitoring.middleware.RequestTraceMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -169,6 +177,12 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 
+CELERY_TASK_ROUTES = {
+    "apps.vision_ai.tasks.*": {"queue": "ai"},
+    "apps.knowledge.tasks.*": {"queue": "ai"},
+    "apps.ai_agents.tasks.*": {"queue": "ai"},
+}
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -251,6 +265,106 @@ AI_ENABLED = bool(
     or GEMINI_API_KEY
 )
 
+
+# ---------------------------------------------------------------------
+# Twinscopes AI Enterprise
+# ---------------------------------------------------------------------
+AI_PRIMARY_TEXT_PROVIDER = config("AI_PRIMARY_TEXT_PROVIDER", default="gemini").lower()
+AI_FALLBACK_TEXT_PROVIDER = config("AI_FALLBACK_TEXT_PROVIDER", default="openai").lower()
+AI_PRIMARY_VISION_PROVIDER = config("AI_PRIMARY_VISION_PROVIDER", default="fusion").lower()
+AI_EMBEDDING_PROVIDER = config("AI_EMBEDDING_PROVIDER", default="auto").lower()
+AI_FALLBACK_EMBEDDING_PROVIDER = config("AI_FALLBACK_EMBEDDING_PROVIDER", default="openai").lower()
+AI_EMBEDDING_DIMENSIONS = config("AI_EMBEDDING_DIMENSIONS", default=1536, cast=int)
+AI_PROVIDER_FAILURE_COOLDOWN_SECONDS = config("AI_PROVIDER_FAILURE_COOLDOWN_SECONDS", default=300, cast=int)
+AI_VISION_PROVIDER_FAILURE_COOLDOWN_SECONDS = config(
+    "AI_VISION_PROVIDER_FAILURE_COOLDOWN_SECONDS", default=180, cast=int
+)
+AI_PROVIDER_MAX_RETRIES = config("AI_PROVIDER_MAX_RETRIES", default=2, cast=int)
+AI_VISION_PROVIDER_MAX_RETRIES = config("AI_VISION_PROVIDER_MAX_RETRIES", default=1, cast=int)
+AI_PROVIDER_RETRY_BASE_SECONDS = config("AI_PROVIDER_RETRY_BASE_SECONDS", default=2.0, cast=float)
+AI_PROVIDER_RETRY_MAX_SECONDS = config("AI_PROVIDER_RETRY_MAX_SECONDS", default=20.0, cast=float)
+AI_ALLOW_DETERMINISTIC_EMBEDDINGS = config(
+    "AI_ALLOW_DETERMINISTIC_EMBEDDINGS", default=DEBUG, cast=bool
+)
+AI_REQUEST_TIMEOUT_SECONDS = config("AI_REQUEST_TIMEOUT_SECONDS", default=90, cast=int)
+AI_MAX_CONTEXT_CHARS = config("AI_MAX_CONTEXT_CHARS", default=24000, cast=int)
+AI_CHAT_MAX_HISTORY_MESSAGES = config("AI_CHAT_MAX_HISTORY_MESSAGES", default=20, cast=int)
+AI_CHAT_REQUIRE_CITATIONS = config("AI_CHAT_REQUIRE_CITATIONS", default=True, cast=bool)
+
+OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
+OPENAI_TEXT_MODEL = config("OPENAI_TEXT_MODEL", default="gpt-5.6")
+OPENAI_VISION_MODEL = config("OPENAI_VISION_MODEL", default=OPENAI_TEXT_MODEL)
+OPENAI_EMBEDDING_MODEL = config("OPENAI_EMBEDDING_MODEL", default="text-embedding-3-small")
+GOOGLE_VISION_MODEL = config("GOOGLE_VISION_MODEL", default=GOOGLE_TEXT_MODEL)
+GOOGLE_EMBEDDING_MODEL = config("GOOGLE_EMBEDDING_MODEL", default="gemini-embedding-001")
+GOOGLE_EMBEDDING_NATIVE_DIMENSIONS = config(
+    "GOOGLE_EMBEDDING_NATIVE_DIMENSIONS", default=0, cast=int
+)
+
+VISION_ENABLE_YOLO = config("VISION_ENABLE_YOLO", default=True, cast=bool)
+VISION_ENABLE_FLORENCE2 = config("VISION_ENABLE_FLORENCE2", default=False, cast=bool)
+VISION_ENABLE_PADDLEOCR = config("VISION_ENABLE_PADDLEOCR", default=True, cast=bool)
+VISION_ENABLE_GEMINI = config("VISION_ENABLE_GEMINI", default=True, cast=bool)
+VISION_ENABLE_OPENAI = config("VISION_ENABLE_OPENAI", default=bool(OPENAI_API_KEY), cast=bool)
+VISION_YOLO_MODEL = config("VISION_YOLO_MODEL", default="/app/model_weights/yolo11n.pt")
+VISION_FLORENCE_MODEL = config("VISION_FLORENCE_MODEL", default="microsoft/Florence-2-base")
+VISION_PADDLEOCR_LANG = config("VISION_PADDLEOCR_LANG", default="en")
+VISION_MAX_PANORAMA_FRAMES = config("VISION_MAX_PANORAMA_FRAMES", default=12, cast=int)
+VISION_PRIMARY_SEMANTIC_PROVIDER = config("VISION_PRIMARY_SEMANTIC_PROVIDER", default="gemini").lower()
+VISION_FALLBACK_SEMANTIC_PROVIDER = config("VISION_FALLBACK_SEMANTIC_PROVIDER", default="openai").lower()
+VISION_SEMANTIC_MAX_FRAMES = config("VISION_SEMANTIC_MAX_FRAMES", default=12, cast=int)
+VISION_SEMANTIC_MAX_CLOUD_CALLS_PER_SCENE = config(
+    "VISION_SEMANTIC_MAX_CLOUD_CALLS_PER_SCENE", default=4, cast=int
+)
+VISION_SEMANTIC_REQUEST_INTERVAL_SECONDS = config(
+    "VISION_SEMANTIC_REQUEST_INTERVAL_SECONDS", default=1.25, cast=float
+)
+VISION_PERSPECTIVE_FRAME_SIZE = config("VISION_PERSPECTIVE_FRAME_SIZE", default=896, cast=int)
+VISION_SEMANTIC_TEMPERATURE = config("VISION_SEMANTIC_TEMPERATURE", default=0.1, cast=float)
+VISION_SEMANTIC_MAX_OUTPUT_TOKENS = config("VISION_SEMANTIC_MAX_OUTPUT_TOKENS", default=2200, cast=int)
+VISION_LONG_PRESS_DURATION_MS = config("VISION_LONG_PRESS_DURATION_MS", default=650, cast=int)
+VISION_POINT_MAX_DISTANCE_DEGREES = config("VISION_POINT_MAX_DISTANCE_DEGREES", default=18.0, cast=float)
+VISION_POINT_PIXEL_PADDING_RATIO = config("VISION_POINT_PIXEL_PADDING_RATIO", default=0.012, cast=float)
+VISION_POINT_NEAR_PADDING_RATIO = config("VISION_POINT_NEAR_PADDING_RATIO", default=0.035, cast=float)
+VISION_POINT_REFINEMENT_AREA_RATIO = config("VISION_POINT_REFINEMENT_AREA_RATIO", default=0.16, cast=float)
+VISION_POINT_REFINE_LOCAL_ONLY = config("VISION_POINT_REFINE_LOCAL_ONLY", default=True, cast=bool)
+VISION_POINT_REFINE_BELOW_CONFIDENCE = config("VISION_POINT_REFINE_BELOW_CONFIDENCE", default=0.55, cast=float)
+VISION_POINT_LEGACY_MAX_DISTANCE_DEGREES = config("VISION_POINT_LEGACY_MAX_DISTANCE_DEGREES", default=5.0, cast=float)
+VISION_POINT_ON_DEMAND_INSPECTION = config("VISION_POINT_ON_DEMAND_INSPECTION", default=True, cast=bool)
+VISION_POINT_INSPECTION_FOV_DEGREES = config("VISION_POINT_INSPECTION_FOV_DEGREES", default=46.0, cast=float)
+VISION_POINT_DETAIL_FOV_DEGREES = config("VISION_POINT_DETAIL_FOV_DEGREES", default=26.0, cast=float)
+VISION_POINT_INSPECTION_FRAME_SIZE = config("VISION_POINT_INSPECTION_FRAME_SIZE", default=768, cast=int)
+VISION_POINT_YOLO_NEAR_CENTER_RATIO = config("VISION_POINT_YOLO_NEAR_CENTER_RATIO", default=0.16, cast=float)
+VISION_POINT_SEMANTIC_MIN_CONFIDENCE = config("VISION_POINT_SEMANTIC_MIN_CONFIDENCE", default=0.55, cast=float)
+VISION_POINT_SEMANTIC_ONLY_MIN_CONFIDENCE = config("VISION_POINT_SEMANTIC_ONLY_MIN_CONFIDENCE", default=0.72, cast=float)
+VISION_INSIGHT_MIN_CONFIDENCE = config("VISION_INSIGHT_MIN_CONFIDENCE", default=0.25, cast=float)
+VISION_PUBLIC_ON_DEMAND_SCAN = config("VISION_PUBLIC_ON_DEMAND_SCAN", default=True, cast=bool)
+VISION_ON_DEMAND_ANALYSIS_MODE = config(
+    "VISION_ON_DEMAND_ANALYSIS_MODE", default="auto"
+).lower()
+VISION_ON_DEMAND_RETRY_AFTER_MS = config(
+    "VISION_ON_DEMAND_RETRY_AFTER_MS", default=3000, cast=int
+)
+VISION_LOCAL_THREAD_WORKERS = config("VISION_LOCAL_THREAD_WORKERS", default=1, cast=int)
+VISION_ANALYSIS_STALE_MINUTES = config("VISION_ANALYSIS_STALE_MINUTES", default=45, cast=int)
+
+KNOWLEDGE_CRAWLER_USER_AGENT = config(
+    "KNOWLEDGE_CRAWLER_USER_AGENT", default="TwinscopesKnowledgeBot/1.0"
+)
+KNOWLEDGE_CRAWLER_MAX_PAGES = config("KNOWLEDGE_CRAWLER_MAX_PAGES", default=50, cast=int)
+KNOWLEDGE_CRAWLER_TIMEOUT_SECONDS = config("KNOWLEDGE_CRAWLER_TIMEOUT_SECONDS", default=20, cast=int)
+KNOWLEDGE_CHUNK_SIZE = config("KNOWLEDGE_CHUNK_SIZE", default=1200, cast=int)
+KNOWLEDGE_CHUNK_OVERLAP = config("KNOWLEDGE_CHUNK_OVERLAP", default=180, cast=int)
+
+GOOGLE_CALENDAR_ENABLED = config("GOOGLE_CALENDAR_ENABLED", default=False, cast=bool)
+GOOGLE_CALENDAR_DEFAULT_TIMEZONE = config(
+    "GOOGLE_CALENDAR_DEFAULT_TIMEZONE", default=TIME_ZONE
+)
+INTEGRATION_ENCRYPTION_KEY = config("INTEGRATION_ENCRYPTION_KEY", default="")
+
+MONITORING_STORE_REQUEST_EVENTS = config("MONITORING_STORE_REQUEST_EVENTS", default=False, cast=bool)
+MONITORING_SLOW_REQUEST_MS = config("MONITORING_SLOW_REQUEST_MS", default=1500, cast=int)
+
 GOOGLE_STREETVIEW_CLIENT_ID = config("GOOGLE_STREETVIEW_CLIENT_ID", default="")
 GOOGLE_STREETVIEW_CLIENT_SECRET = config("GOOGLE_STREETVIEW_CLIENT_SECRET", default="")
 GOOGLE_STREETVIEW_SCOPE = config(
@@ -326,10 +440,12 @@ GOOGLE_AUTH_REDIRECT_URI = config(
 
 # Tour AI Agent
 TOUR_AI_ENABLED = config("TOUR_AI_ENABLED", default=True, cast=bool)
-OPENAI_API_KEY = read_secret("OPENAI_API_KEY", "")
+OPENAI_API_KEY = read_secret(
+    "OPENAI_API_KEY",
+    config("OPENAI_API_KEY", default=""),
+)
 OPENAI_TOUR_AGENT_MODEL = config("OPENAI_TOUR_AGENT_MODEL", default="gpt-5-mini")
 GEMINI_TOUR_VISION_MODEL = config("GEMINI_TOUR_VISION_MODEL", default="gemini-2.5-flash")
-TOUR_AI_YOLO_MODEL_PATH = str(BASE_DIR / "apps" / "tour_ai_agent" / "model_weights" / "yolo11n.pt")
 TOUR_AI_FRAME_SIZE = config("TOUR_AI_FRAME_SIZE", default=640, cast=int)
 TOUR_AI_DETECTION_CONFIDENCE = config("TOUR_AI_DETECTION_CONFIDENCE", default=0.35, cast=float)
 TOUR_AI_AUTO_PROMPT_DELAY_SECONDS = config("TOUR_AI_AUTO_PROMPT_DELAY_SECONDS", default=15, cast=int)

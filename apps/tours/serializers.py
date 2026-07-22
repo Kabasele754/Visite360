@@ -94,6 +94,7 @@ class Scene360Serializer(serializers.ModelSerializer):
 
 
 class TourPhotoSerializer(serializers.ModelSerializer):
+    organization = serializers.IntegerField(source="tour.organization_id", read_only=True)
     image_url = serializers.SerializerMethodField()
 
     class Meta:

@@ -11,12 +11,33 @@
   const form = root.querySelector("[data-ai-form]");
   const input = root.querySelector("[data-ai-input]");
   const sendButton = root.querySelector("[data-ai-send]");
+  const vision = {
+    backdrop: root.querySelector("[data-vision-backdrop]"),
+    sheet: root.querySelector("[data-vision-sheet]"),
+    loading: root.querySelector("[data-vision-loading]"),
+    content: root.querySelector("[data-vision-content]"),
+    figure: root.querySelector("[data-vision-figure]"),
+    image: root.querySelector("[data-vision-image]"),
+    kind: root.querySelector("[data-vision-kind]"),
+    confidence: root.querySelector("[data-vision-confidence]"),
+    title: root.querySelector("[data-vision-title]"),
+    description: root.querySelector("[data-vision-description]"),
+    exactText: root.querySelector("[data-vision-text]"),
+    attributes: root.querySelector("[data-vision-attributes]"),
+    sources: root.querySelector("[data-vision-sources]"),
+    ask: root.querySelector("[data-vision-ask]"),
+  };
+
   let visitorId = localStorage.getItem("tw_visitor_id") || "";
   let conversationId = null;
   let currentSceneId = root.dataset.initialSceneId || null;
   let bootstrapped = false;
+  let bootstrapPromise = null;
   let isOpen = false;
   let busy = false;
+  let insightRequest = null;
+  let activeInsight = null;
+  let longPressMs = Number(cfg.longPressMs || 650);
 
   const csrfToken = (() => {
     const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
@@ -34,68 +55,64 @@
     };
   }
 
-  async function post(url, body) {
+  async function post(url, body, signal) {
     const response = await fetch(url, {
       method: "POST",
       credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-CSRFToken": csrfToken,
-        "X-Requested-With": "XMLHttpRequest",
-      },
+      headers: {"Content-Type": "application/json", Accept: "application/json", "X-CSRFToken": csrfToken, "X-Requested-With": "XMLHttpRequest"},
       body: JSON.stringify(body),
+      signal,
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Request failed");
     return data;
   }
 
-  function escapeText(value) {
-    return String(value || "");
+  function text(value) { return String(value ?? ""); }
+  function cardText(value, maxLength = 360) {
+    let valueText = text(value).replaceAll("```json", " ").replaceAll("```", " ").replace(/\s+/g, " ").trim();
+    if (!valueText || valueText.startsWith("{") || valueText.startsWith("[")) return "";
+    const jsonStarts = [valueText.indexOf(" {"), valueText.indexOf(" [")].filter((index) => index > 20);
+    if (jsonStarts.length) valueText = valueText.slice(0, Math.min(...jsonStarts)).trim();
+    if (valueText.length > maxLength) valueText = `${valueText.slice(0, maxLength).replace(/\s+\S*$/, "").trim()}…`;
+    return valueText;
+  }
+  function clear(node) { while (node?.firstChild) node.removeChild(node.firstChild); }
+  function element(tag, className, value) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (value !== undefined) node.textContent = text(value);
+    return node;
   }
 
-  function addMessage(text, role = "assistant", meta = {}) {
-    if (!text) return null;
-    const wrap = document.createElement("div");
-    wrap.className = `tour-ai-message-wrap ${role}`;
-
-    const item = document.createElement("div");
-    item.className = `tour-ai-msg ${role}`;
-    item.textContent = escapeText(text);
-    wrap.appendChild(item);
-
+  function addMessage(value, role = "assistant", meta = {}) {
+    if (!value) return null;
+    const wrap = element("div", `tour-ai-message-wrap ${role}`);
+    wrap.appendChild(element("div", `tour-ai-msg ${role}`, value));
     if (role === "assistant" && meta.provider) {
-      const source = document.createElement("small");
-      source.className = "tour-ai-source";
-      source.textContent = meta.degraded ? "Local assistant" : `Powered by ${meta.provider}`;
-      wrap.appendChild(source);
+      wrap.appendChild(element("small", "tour-ai-source", meta.degraded ? "Twinscopes AI · Local mode" : "Twinscopes AI"));
     }
-
     messages.appendChild(wrap);
     messages.scrollTop = messages.scrollHeight;
     return wrap;
   }
 
   function addProductCards(products = []) {
-    const visible = products.filter((product) => product.verified || product.confidence >= 0.3).slice(0, 4);
+    const visible = products.filter((p) => p.verified || Number(p.confidence || 0) >= 0.3).slice(0, 4);
     if (!visible.length) return;
-    const rail = document.createElement("div");
-    rail.className = "tour-ai-products";
+    const rail = element("div", "tour-ai-products");
     visible.forEach((product) => {
-      const card = document.createElement("button");
+      const card = element("button", "tour-ai-product-card");
       card.type = "button";
-      card.className = "tour-ai-product-card";
-      card.innerHTML = `
-        ${product.cover_image ? `<img src="${product.cover_image}" alt="">` : '<span class="tour-ai-product-placeholder">◎</span>'}
-        <span class="tour-ai-product-copy">
-          <strong>${escapeText(product.name)}</strong>
-          <small>${escapeText(product.category || "Related item")}</small>
-          <b>${escapeText(product.currency || "")} ${escapeText(product.price || "")}</b>
-        </span>`;
+      if (product.cover_image) {
+        const img = document.createElement("img"); img.src = product.cover_image; img.alt = ""; card.appendChild(img);
+      } else card.appendChild(element("span", "tour-ai-product-placeholder", "◎"));
+      const copy = element("span", "tour-ai-product-copy");
+      copy.append(element("strong", "", product.name), element("small", "", product.category || "Related item"), element("b", "", `${product.currency || ""} ${product.price || ""}`.trim()));
+      card.appendChild(copy);
       card.addEventListener("click", () => {
-        window.TwinscopesAgent?.action("add_to_cart", { product_id: product.id, quantity: 1 });
-        sendSignal("ai_product_clicked", { product_id: product.id, verified: product.verified });
+        window.TwinscopesAgent?.action("add_to_cart", {product_id: product.id, quantity: 1});
+        sendSignal("ai_product_clicked", {product_id: product.id, verified: product.verified});
       });
       rail.appendChild(card);
     });
@@ -104,183 +121,187 @@
   }
 
   function createThinkingIndicator() {
-    const box = document.createElement("div");
-    box.className = "tour-ai-thinking";
+    const box = element("div", "tour-ai-thinking");
     box.setAttribute("role", "status");
-    box.setAttribute("aria-live", "polite");
-    box.innerHTML = `
-      <div class="tour-ai-thinking-head">
-        <span class="tour-ai-avatar">AI</span>
-        <div><strong>Twinscopes AI is working</strong><small data-thinking-label>Understanding your request</small></div>
-      </div>
-      <div class="tour-ai-dots" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="tour-ai-thinking-steps" data-thinking-steps></div>`;
-    messages.appendChild(box);
-    messages.scrollTop = messages.scrollHeight;
-    return box;
+    box.innerHTML = '<div class="tour-ai-thinking-head"><span class="tour-ai-avatar">AI</span><div><strong>Twinscopes AI is working</strong><small data-thinking-label>Understanding your request</small></div></div><div class="tour-ai-dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="tour-ai-thinking-steps" data-thinking-steps></div>';
+    messages.appendChild(box); messages.scrollTop = messages.scrollHeight; return box;
   }
 
   function animateThinking(box) {
-    const labels = [
-      "Understanding your request",
-      "Analyzing the current 360° scene",
-      "Checking organization and place context",
-      "Comparing verified products",
-      "Preparing a reliable answer",
-    ];
-    let index = 0;
-    const label = box.querySelector("[data-thinking-label]");
-    const timer = window.setInterval(() => {
-      index = Math.min(index + 1, labels.length - 1);
-      if (label) label.textContent = labels[index];
-    }, 1100);
-    return () => window.clearInterval(timer);
+    const labels = ["Understanding your request", "Analyzing the current 360° scene", "Checking verified organization data", "Comparing products and services", "Preparing a reliable answer"];
+    let index = 0; const label = box.querySelector("[data-thinking-label]");
+    const timer = setInterval(() => { index = Math.min(index + 1, labels.length - 1); if (label) label.textContent = labels[index]; }, 1100);
+    return () => clearInterval(timer);
   }
 
   function renderReasoningSummary(box, steps = []) {
-    const holder = box.querySelector("[data-thinking-steps]");
-    if (!holder) return;
-    holder.innerHTML = "";
-    steps.slice(0, 4).forEach((step) => {
-      const row = document.createElement("div");
-      row.className = "tour-ai-step done";
-      row.innerHTML = `<span>✓</span><small>${escapeText(step.label)}</small>`;
-      holder.appendChild(row);
-    });
+    const holder = box.querySelector("[data-thinking-steps]"); if (!holder) return; clear(holder);
+    steps.slice(0, 4).forEach((step) => { const row = element("div", "tour-ai-step done"); row.append(element("span", "", "✓"), element("small", "", step.label)); holder.appendChild(row); });
   }
 
   function setBusy(value) {
-    busy = value;
-    input.disabled = value;
-    if (sendButton) sendButton.disabled = value;
-    root.classList.toggle("is-busy", value);
+    busy = value; input.disabled = value; if (sendButton) sendButton.disabled = value; root.classList.toggle("is-busy", value);
   }
 
   function updateMobileOffset() {
-    if (!window.matchMedia("(max-width: 640px)").matches) {
-      root.style.removeProperty("--tour-ai-mobile-offset");
-      return;
-    }
-    const selectors = [
-      "[data-tour-controls]",
-      ".tour-controls",
-      ".viewer-controls",
-      ".panorama-controls",
-      ".bottom-controls",
-      ".control-bar",
-      "#controls",
-    ];
-    let top = window.innerHeight;
-    selectors.forEach((selector) => {
-      document.querySelectorAll(selector).forEach((node) => {
-        if (root.contains(node)) return;
-        const style = getComputedStyle(node);
-        if (style.display === "none" || style.visibility === "hidden") return;
-        const rect = node.getBoundingClientRect();
-        if (rect.width > 80 && rect.height > 20 && rect.bottom >= window.innerHeight - 100) {
-          top = Math.min(top, rect.top);
-        }
-      });
-    });
-    const occupied = top < window.innerHeight ? Math.max(78, window.innerHeight - top + 16) : 92;
-    root.style.setProperty("--tour-ai-mobile-offset", `${occupied}px`);
+    if (!matchMedia("(max-width: 640px)").matches) { root.style.removeProperty("--tour-ai-mobile-offset"); return; }
+    const selectors = ["[data-tour-controls]", ".tour-controls", ".viewer-controls", ".panorama-controls", ".bottom-controls", ".control-bar", "#controls"];
+    let top = innerHeight;
+    selectors.forEach((selector) => document.querySelectorAll(selector).forEach((node) => {
+      if (root.contains(node)) return;
+      const style = getComputedStyle(node); if (style.display === "none" || style.visibility === "hidden") return;
+      const rect = node.getBoundingClientRect(); if (rect.width > 80 && rect.height > 20 && rect.bottom >= innerHeight - 100) top = Math.min(top, rect.top);
+    }));
+    root.style.setProperty("--tour-ai-mobile-offset", `${top < innerHeight ? Math.max(78, innerHeight - top + 16) : 92}px`);
   }
 
   async function bootstrap() {
     if (bootstrapped) return;
-    const data = await post(cfg.bootstrapUrl, payload());
-    bootstrapped = true;
-    conversationId = data.conversation_id;
-    visitorId = data.visitor_id || visitorId;
-    if (visitorId) localStorage.setItem("tw_visitor_id", visitorId);
-    addMessage(data.opening_message || "Need help exploring this space?");
-    const delay = Math.max(6, Number(data.auto_prompt_delay || 15)) * 1000;
-    window.setTimeout(() => {
-      if (!isOpen && sessionStorage.getItem("tw_ai_nudge_dismissed") !== "1") nudge.hidden = false;
-    }, delay);
+    if (bootstrapPromise) return bootstrapPromise;
+    bootstrapPromise = (async () => {
+      const data = await post(cfg.bootstrapUrl, payload());
+      bootstrapped = true; conversationId = data.conversation_id; visitorId = data.visitor_id || visitorId;
+      longPressMs = Number(data.vision_long_press_duration_ms || longPressMs);
+      window.dispatchEvent(new CustomEvent("twinscopes:vision-config", {detail: {longPressMs, available: data.vision_available}}));
+      if (visitorId) localStorage.setItem("tw_visitor_id", visitorId);
+      addMessage(data.opening_message || "Need help exploring this space?");
+      setTimeout(() => { if (!isOpen && sessionStorage.getItem("tw_ai_nudge_dismissed") !== "1") nudge.hidden = false; }, Math.max(6, Number(data.auto_prompt_delay || 15)) * 1000);
+    })();
+    try { return await bootstrapPromise; }
+    finally { bootstrapPromise = null; }
   }
 
-  async function sendSignal(signalType, data = {}) {
-    try { await post(cfg.signalUrl, payload({ signal_type: signalType, payload: data })); } catch (_) {}
-  }
+  async function sendSignal(signalType, data = {}) { try { await post(cfg.signalUrl, payload({signal_type: signalType, payload: data})); } catch (_) {} }
+  async function openPanel() { await bootstrap().catch(() => {}); isOpen = true; panel.hidden = false; nudge.hidden = true; launcher.setAttribute("aria-expanded", "true"); updateMobileOffset(); input?.focus(); sendSignal("ai_agent_opened"); }
+  function closePanel() { isOpen = false; panel.hidden = true; launcher.setAttribute("aria-expanded", "false"); }
 
-  async function openPanel() {
-    await bootstrap().catch(() => {});
-    isOpen = true;
-    panel.hidden = false;
-    nudge.hidden = true;
-    launcher.setAttribute("aria-expanded", "true");
-    updateMobileOffset();
-    input?.focus();
-    sendSignal("ai_agent_opened");
-  }
-
-  function closePanel() {
-    isOpen = false;
-    panel.hidden = true;
-    launcher.setAttribute("aria-expanded", "false");
-  }
-
-  async function sendMessage(text) {
-    const clean = String(text || "").trim();
-    if (!clean || busy) return;
-    addMessage(clean, "user");
-    input.value = "";
-    setBusy(true);
-    const thinking = createThinkingIndicator();
-    const stopThinking = animateThinking(thinking);
+  async function sendMessage(value, options = {}) {
+    const clean = text(value).trim(); if (!clean || busy) return;
+    addMessage(options.displayText || clean, "user"); input.value = ""; setBusy(true);
+    const thinking = createThinkingIndicator(); const stopThinking = animateThinking(thinking);
     try {
-      const data = await post(cfg.messageUrl, payload({ message: clean }));
-      conversationId = data.conversation_id || conversationId;
-      stopThinking();
-      renderReasoningSummary(thinking, data.reasoning_steps || []);
-      await new Promise((resolve) => setTimeout(resolve, 320));
-      thinking.remove();
-      addMessage(data.text || "I’m here to help.", "assistant", data);
-      addProductCards(data.products || []);
+      const requestId = crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+      const data = await post(cfg.messageUrl, payload({
+        message: clean,
+        request_id: requestId,
+        vision_insight_id: options.visionInsightId || undefined,
+      }));
+      conversationId = data.conversation_id || conversationId; stopThinking(); renderReasoningSummary(thinking, data.reasoning_steps || []);
+      await new Promise((resolve) => setTimeout(resolve, 320)); thinking.remove();
+      addMessage(data.text || "I’m here to help.", "assistant", data); addProductCards(data.products || []);
+    } catch (_) { stopThinking(); thinking.remove(); addMessage("I could not answer right now. Please try again.", "assistant", {degraded: true, provider: "local"}); }
+    finally { setBusy(false); input.focus(); }
+  }
+
+  function sourceLabel(provider) {
+    return ({yolo: "Object detection", paddleocr: "Text recognition", gemini: "Semantic verification", openai: "Semantic fallback", florence2: "Detailed captioning"})[text(provider).toLowerCase()] || "Visual analysis";
+  }
+
+  function openVisionLoading() {
+    vision.backdrop.hidden = false; vision.sheet.hidden = false; vision.loading.hidden = false; vision.content.hidden = true;
+    requestAnimationFrame(() => root.classList.add("vision-open"));
+  }
+  function closeVision() {
+    insightRequest?.abort(); insightRequest = null; activeInsight = null; root.classList.remove("vision-open");
+    setTimeout(() => { vision.backdrop.hidden = true; vision.sheet.hidden = true; }, 180);
+  }
+
+  function renderVision(data) {
+    vision.loading.hidden = true; vision.content.hidden = false; activeInsight = data.insight || null;
+    const item = data.insight || data;
+    vision.kind.textContent = data.status === "no_object" ? "Point inspection" : item.kind === "text" ? "Text recognized" : item.kind === "object" ? "Object detected" : "Scene analysis";
+    const score = Number(item.confidence_percent ?? data.confidence_percent ?? 0);
+    vision.confidence.textContent = score > 0 ? `${score}% confidence` : data.status === "no_object" ? "No verified match" : "Verified scene context";
+    vision.title.textContent = cardText(item.title, 180) || "Scene detail";
+    vision.description.textContent = cardText(item.description, 360) || "No verified detail was found exactly at this point.";
+    if (vision.ask) vision.ask.hidden = data.status === "no_object";
+
+    if (item.crop_url) { vision.image.src = item.crop_url; vision.figure.hidden = false; }
+    else { vision.image.removeAttribute("src"); vision.figure.hidden = true; }
+    if (item.exact_text) { vision.exactText.textContent = `“${item.exact_text}”`; vision.exactText.hidden = false; }
+    else { vision.exactText.textContent = ""; vision.exactText.hidden = true; }
+
+    clear(vision.attributes);
+    Object.entries(item.attributes || {}).slice(0, 6).forEach(([key, value]) => {
+      if (typeof value === "object" || value === "") return;
+      vision.attributes.appendChild(element("span", "", `${key.replaceAll("_", " ")}: ${value}`));
+    });
+    clear(vision.sources);
+    const providers = item.source_providers || Object.values(data.pipeline || {}).filter(Boolean);
+    [...new Set(providers)].forEach((provider) => vision.sources.appendChild(element("span", "", sourceLabel(provider))));
+  }
+
+  async function inspectPoint(point) {
+    if (!cfg.inspectUrl || !point?.sceneId) return;
+    currentSceneId = String(point.sceneId);
+    await bootstrap().catch(() => {});
+    insightRequest?.abort();
+    const controller = new AbortController();
+    insightRequest = controller;
+    openVisionLoading();
+    try {
+      const requestPayload = payload({yaw: Number(point.yaw), pitch: Number(point.pitch)});
+      const maxAttempts = 80;
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const data = await post(cfg.inspectUrl, requestPayload, controller.signal);
+        renderVision(data);
+        if (data.status !== "analyzing") return;
+        const waitMs = Math.max(1200, Math.min(Number(data.retry_after_ms || 3000), 10000));
+        await new Promise((resolve, reject) => {
+          const timer = window.setTimeout(resolve, waitMs);
+          controller.signal.addEventListener("abort", () => {
+            window.clearTimeout(timer);
+            reject(new DOMException("Aborted", "AbortError"));
+          }, {once: true});
+        });
+      }
+      renderVision({
+        title: "Scene scan is still running",
+        description: "The panorama contains many details. You can close this card and press again in a moment.",
+      });
     } catch (error) {
-      stopThinking();
-      thinking.remove();
-      addMessage("I could not answer right now. Please try again.", "assistant", { degraded: true, provider: "local" });
+      if (error.name === "AbortError") return;
+      renderVision({title: "Visual insight unavailable", description: "Twinscopes could not read this part of the scene right now."});
     } finally {
-      setBusy(false);
-      input.focus();
+      if (insightRequest === controller) insightRequest = null;
     }
   }
 
   launcher.addEventListener("click", () => isOpen ? closePanel() : openPanel());
   root.querySelector("[data-ai-open]")?.addEventListener("click", openPanel);
-  root.querySelector("[data-ai-dismiss]")?.addEventListener("click", () => {
-    nudge.hidden = true;
-    sessionStorage.setItem("tw_ai_nudge_dismissed", "1");
-    sendSignal("ai_agent_dismissed");
-  });
+  root.querySelector("[data-ai-dismiss]")?.addEventListener("click", () => { nudge.hidden = true; sessionStorage.setItem("tw_ai_nudge_dismissed", "1"); sendSignal("ai_agent_dismissed"); });
   root.querySelector("[data-ai-close]")?.addEventListener("click", closePanel);
   form.addEventListener("submit", (event) => { event.preventDefault(); sendMessage(input.value); });
   root.querySelectorAll("[data-ai-prompt]").forEach((button) => button.addEventListener("click", () => sendMessage(button.dataset.aiPrompt)));
+  root.querySelectorAll("[data-vision-close],[data-vision-dismiss]").forEach((button) => button.addEventListener("click", closeVision));
+  vision.backdrop?.addEventListener("click", closeVision);
+  vision.ask?.addEventListener("click", async () => {
+    const target = activeInsight?.title || vision.title.textContent || "this visible detail";
+    const exactText = activeInsight?.exact_text ? ` Visible text: ${activeInsight.exact_text}.` : "";
+    closeVision(); await openPanel();
+    sendMessage(
+      `Explain only the exact visual item selected in the current scene: ${target}.${exactText} Use the selected visual insight and verified organization data; do not substitute another object or invent a catalogue match.`,
+      {displayText: `Tell me more about ${target}`, visionInsightId: activeInsight?.id},
+    );
+  });
 
   function updateScene(sceneId, title = "") {
     if (!sceneId || String(sceneId) === String(currentSceneId)) return;
-    currentSceneId = String(sceneId);
-    sendSignal("scene_changed", { scene_title: title });
+    currentSceneId = String(sceneId); closeVision(); sendSignal("scene_changed", {scene_title: title});
   }
-
-  document.addEventListener("click", (event) => {
-    const trigger = event.target.closest("[data-scene-id]");
-    if (trigger) updateScene(trigger.dataset.sceneId, trigger.dataset.sceneTitle || trigger.textContent.trim());
-  }, true);
+  document.addEventListener("click", (event) => { const trigger = event.target.closest("[data-scene-id]"); if (trigger) updateScene(trigger.dataset.sceneId, trigger.dataset.sceneTitle || trigger.textContent.trim()); }, true);
   window.addEventListener("twinscopes:scene-changed", (event) => updateScene(event.detail?.sceneId, event.detail?.title || ""));
-  window.addEventListener("resize", updateMobileOffset, { passive: true });
-  window.addEventListener("orientationchange", () => setTimeout(updateMobileOffset, 250), { passive: true });
+  window.addEventListener("twinscopes:vision-long-press", (event) => inspectPoint(event.detail));
+  window.addEventListener("resize", updateMobileOffset, {passive: true});
+  window.addEventListener("orientationchange", () => setTimeout(updateMobileOffset, 250), {passive: true});
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !vision.sheet.hidden) closeVision(); });
 
   window.TwinscopesAgent = {
-    open: openPanel,
-    close: closePanel,
-    setScene: ({ sceneId, sceneTitle }) => updateScene(sceneId, sceneTitle),
-    signal: sendSignal,
-    action: (actionType, actionPayload = {}) => post(cfg.actionUrl, payload({ action_type: actionType, payload: actionPayload })),
+    open: openPanel, close: closePanel,
+    setScene: ({sceneId, sceneTitle}) => updateScene(sceneId, sceneTitle),
+    inspectPoint, signal: sendSignal,
+    action: (actionType, actionPayload = {}) => post(cfg.actionUrl, payload({action_type: actionType, payload: actionPayload})),
   };
 
-  updateMobileOffset();
-  bootstrap().catch(() => {});
+  updateMobileOffset(); bootstrap().catch(() => {});
 })();

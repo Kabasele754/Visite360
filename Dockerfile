@@ -53,10 +53,18 @@ RUN python -m pip install --upgrade \
 # =============================================================================
 
 COPY requirements.txt /app/requirements.txt
+COPY requirements-ai-full.txt /app/requirements-ai-full.txt
 
 RUN python -m pip install \
     --no-cache-dir \
     -r /app/requirements.txt
+
+# Optional Florence-2 / PaddleOCR Python stack for the dedicated AI worker.
+# PaddlePaddle itself must match the target CPU/GPU platform and is installed separately.
+ARG INSTALL_FULL_AI=false
+RUN if [ "$INSTALL_FULL_AI" = "true" ]; then \
+      python -m pip install --no-cache-dir -r /app/requirements-ai-full.txt; \
+    fi
 
 
 # =============================================================================

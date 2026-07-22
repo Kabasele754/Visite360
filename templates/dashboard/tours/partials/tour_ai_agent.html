@@ -15,9 +15,33 @@
       <button type="button" data-ai-prompt="I want to book an appointment">Book appointment</button>
       <button type="button" data-ai-prompt="I want to contact the business">Contact</button>
     </div>
+    <div class="tour-ai-powered"><span>Twinscopes AI</span><small>Vision &amp; knowledge verified</small></div>
     <form data-ai-form><input data-ai-input maxlength="1000" placeholder="Ask about this scene, products or business…" autocomplete="off"><button type="submit" data-ai-send>Send</button></form>
   </section>
+
+  <div class="tour-ai-vision-backdrop" data-vision-backdrop hidden></div>
+  <aside class="tour-ai-vision-sheet" data-vision-sheet hidden aria-modal="true" role="dialog" aria-label="Visual scene insight">
+    <button class="tour-ai-vision-close" type="button" data-vision-close aria-label="Close visual insight">×</button>
+    <div class="tour-ai-vision-loading" data-vision-loading hidden>
+      <span class="tour-ai-vision-scan"></span><strong>Reading this part of the scene…</strong><small>Objects, labels and visual context</small>
+    </div>
+    <div data-vision-content hidden>
+      <figure class="tour-ai-vision-figure" data-vision-figure hidden><img data-vision-image alt="Detected scene detail"></figure>
+      <div class="tour-ai-vision-body">
+        <div class="tour-ai-vision-kicker"><span data-vision-kind>Visual insight</span><span data-vision-confidence></span></div>
+        <h3 data-vision-title>Scene detail</h3>
+        <p data-vision-description></p>
+        <blockquote data-vision-text hidden></blockquote>
+        <div class="tour-ai-vision-attributes" data-vision-attributes></div>
+        <div class="tour-ai-vision-sources" data-vision-sources></div>
+        <div class="tour-ai-vision-actions">
+          <button type="button" class="primary" data-vision-ask>Ask Twinscopes AI</button>
+          <button type="button" data-vision-dismiss>Close</button>
+        </div>
+      </div>
+    </div>
+  </aside>
 </div>
-<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=3">
-<script>window.TOUR_AI_CONFIG={tourId:{{ tour.id }},bootstrapUrl:"{% url 'tour_ai_agent:bootstrap' %}",messageUrl:"{% url 'tour_ai_agent:message' %}",signalUrl:"{% url 'tour_ai_agent:signal' %}",actionUrl:"{% url 'tour_ai_agent:action' %}",locale:"{{ request.LANGUAGE_CODE|default:'en' }}"};</script>
-<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=3"></script>
+<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=vision-7">
+<script>window.TOUR_AI_CONFIG={tourId:{{ tour.id }},bootstrapUrl:"{% url 'tour_ai_agent:bootstrap' %}",messageUrl:"{% url 'tour_ai_agent:message' %}",signalUrl:"{% url 'tour_ai_agent:signal' %}",actionUrl:"{% url 'tour_ai_agent:action' %}",inspectUrl:"{% url 'tour_ai_agent:inspect-point' %}",locale:"{{ request.LANGUAGE_CODE|default:'en' }}",longPressMs:650};</script>
+<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=vision-7"></script>

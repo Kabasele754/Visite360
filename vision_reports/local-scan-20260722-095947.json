@@ -1,0 +1,576 @@
+[
+  {
+    "scene_id": 1,
+    "analysis_id": "2470c698-6ed1-44bd-8178-20406774e610",
+    "status": "running",
+    "scene_status": "processing",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "",
+    "confidence": 0.0,
+    "frame_count": 24,
+    "detection_count": 0,
+    "ocr_count": 0,
+    "insight_count": 0,
+    "error": "",
+    "created_at": "2026-07-22T07:57:15.735934+00:00",
+    "started_at": "2026-07-22T07:57:15.774797+00:00",
+    "finished_at": null,
+    "ok": true,
+    "created": false,
+    "dispatch_mode": "existing",
+    "task_id": ""
+  },
+  {
+    "scene_id": 2,
+    "analysis_id": "baa10605-847d-4176-8f66-73a1b57061b7",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "futuristic_city",
+    "summary": "A surreal image depicts a futuristic city built on a cliff-like structure, with an inverted sky and clouds visible below.\n\nA futuristic cityscape with large structures appears to float above a cloud-covered Earth, bathed in bright light.\n\nA conceptual image of a massive linear city structure reflected over a body of water under a bright sky.\n\nAn extremely blurry and inverted image depicts a coastal cityscape with buildings, water, and a bright sun reflecting on the surface.\n\nThis image presents a surreal, inverted cityscape reflected over a body of water, with clouds and blue sky visible below the reflection.\n\nThis image depicts a surreal, inverted cityscape reflected in a vast body of water, which in turn reflects a cloudy sky.\n\nA surreal image featuring an inverted cityscape reflected in a body of water, which also shows reflections of clouds and sky.\n\nThis surreal image presents an inverted cityscape reflected in a body of water, which itself mirrors a cloudy blue sky.\n\nA surreal image featuring an inverted cityscape above a cloudy blue expanse, creating a dreamlike reflection.\n\nAn aerial, tilted view of a dense urban cityscape featuring numerous buildings alongside a large expanse of blue, likely water and sky.\n\nA highly distorted aerial view depicts a city skyline on one side and a vast expanse of blue sky with white clouds on the other, resembling Earth's curvature.\n\nA highly blurred, tilted aerial view shows a cityscape or industrial area adjacent to a body of water or clouds.",
+    "confidence": 0.741492971777916,
+    "frame_count": 24,
+    "detection_count": 4,
+    "ocr_count": 0,
+    "insight_count": 4,
+    "error": "",
+    "created_at": "2026-07-22T07:59:57.697336+00:00",
+    "started_at": "2026-07-22T07:59:57.713760+00:00",
+    "finished_at": "2026-07-22T08:03:34.899778+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 3,
+    "analysis_id": "27c82e68-babd-4a91-b707-06a2864fc9a5",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "indoor_with_view",
+    "summary": "A large window with a dark wooden frame offers a clear view of lush green foliage outside, suggesting an indoor setting with a natural connection.\n\nAn inverted image shows a modern room with large windows overlooking lush greenery, featuring a pink sofa and a unique ceiling fixture.\n\nA modern living room features a pink sofa with decorative pillows, a large window overlooking lush greenery, and abstract artwork on a white wall.\n\nA modern living space featuring a pink sofa adorned with decorative pillows, an abstract painting on a white wall, and a hanging green plant.\n\nAn inviting indoor living space featuring a hanging plant, abstract wall art, and a comfortable seating area.\n\n{\n  \"scene_type\": \"indoor_corridor\",\n  \"summary\": \"An indoor corridor is depicted from an unusual, rotated perspective, featuring a hanging plant in the foreground and a distant room with furniture.\",\n  \"features\": [\n    \"hanging plant\",\n    \"light-colored wall\",\n    \"wooden surface\",\n\n\nA split image showing an inverted interior hallway on the left and a modern wall with a hanging plant and wooden accents on the right.\n\nA modern indoor space features a large window overlooking greenery, a prominent green plant, and architectural details, presented with an artistic or distorted rendering.\n\n{\n  \"scene_type\": \"modern_interior\",\n  \"summary\": \"This image displays a modern interior space with a large glass door or window offering a view of an outdoor area with greenery, featuring minimalist decor and wooden architectural elements.\",\n  \"features\": [\n    \"large glass door\",\n    \"wooden ceiling\",\n    \"minimalist decor\n\n{\n  \"scene_type\": \"modern_living_space\",\n  \"summary\": \"A modern room features large glass doors opening to an outdoor view, complemented by a wooden ceiling, white walls, and minimalist decor.\",\n  \"features\": [\n    \"large glass doors\",\n    \"wooden ceiling\",\n    \"white walls\",\n    \"white floor\",\n    \"wall-mounted wooden shelf\",\n    \"wall light fixture\",\n    \"framed artwork\",\n    \"modern chair\",\n    \"round area rug\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"glass door\",\n      \"title\": \"Large Glass Door\",\n      \"description\": \"A tall, dark-framed glass door providing access to an outdoor area and offering a view of lush greenery.\",\n      \"category\": \"architectural element\",\n      \"color\": \"dark brown\",\n      \"material\": \"glass\",\n      \"condition\": \"clean\",\n      \"confidence\": 0.95\n    },\n    {\n      \"local_index\": 1,\n      \"label\": \"shelf\",\n      \"title\": \"Wooden Wall Shelf\",\n      \"description\": \"A light-colored wooden shelf mounted on the wall, positioned above a light fixture and artwork.\",\n      \"category\": \"furniture\",\n      \n\nAn indoor living space featuring a large window with a view of lush greenery, a pink sofa adorned with decorative pillows, and an abstract artwork displayed on a white wall.\n\nAn indoor scene featuring a pink sofa with decorative cushions, a framed abstract painting on the wall, and a potted plant.",
+    "confidence": 0.7272895097732544,
+    "frame_count": 24,
+    "detection_count": 4,
+    "ocr_count": 0,
+    "insight_count": 4,
+    "error": "",
+    "created_at": "2026-07-22T08:03:35.004549+00:00",
+    "started_at": "2026-07-22T08:03:35.016086+00:00",
+    "finished_at": "2026-07-22T08:07:04.814421+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 5,
+    "analysis_id": "9eac6ea5-07ef-4f6f-9510-a9da6d357f85",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_store_aisle\",\n  \"summary\": \"An aisle in a pet store displaying a wide variety of pet products, including food, beds, and toys, with a person visible in the distance.\",\n  \"features\": [\n    \"shelving units\",\n    \"product displays\",\n    \"fluorescent lighting\",\n    \"tiled floor\",\n    \"wall-mounted pegboard\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"person\",\n      \"title\": \"Person\",\n      \"description\": \"A person is partially visible in the background of the store aisle.\",\n      \"category\": \"human\",\n      \"color\": \"\",\n      \"material\": \"\",\n      \"condition\": \"\",\n      \"confidence\": 0.355\n    },\n    {\n      \"local_index\": 1,\n      \"label\": \"pet food shelf\",\n      \"title\": \"Pet Food Shelf\",\n      \"description\": \"A white shelf unit on the left side of the aisle displaying various packaged pet food and treats.\",\n      \"category\": \"furniture\",\n      \"color\": \"white\",\n      \"material\": \"wood\",\n      \"condition\": \"good\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 2,\n      \"label\": \"pet toy display\",\n      \"title\": \"Pet Toy Display\",\n      \"description\": \"A wall-mounted pegboard display on the right side of the aisle showcasing numerous colorful pet toys.\",\n      \"category\": \"display_fixture\",\n      \"color\": \"grey\",\n      \"material\": \"metal\",\n      \"condition\": \"good\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 3,\n      \"label\": \"pet bed\",\n      \"title\": \"Pet Bed\",\n      \"description\": \"A large, rectangular, soft pet bed is placed on the floor in the foreground.\",\n      \"category\": \"pet_accessory\",\n      \"color\": \"brown\",\n      \"material\": \"fabric\",\n      \"condition\": \"good\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": 4,\n      \"label\": \"pet food packaging\",\n      \"title\": \"Pet Food Packaging\",\n      \"description\": \"Numerous boxes and bags of pet food are stacked neatly on the lower shelves.\",\n      \"category\": \"packaging\",\n      \"color\": \"various\",\n      \"material\": \"cardboard\",\n      \"condition\": \"new\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": 5,\n      \"label\": \"pet toy\",\n      \"title\": \"Pet Toy\",\n      \"description\": \"Various pet toys, including ropes, balls, and plush animals, are hanging on the display wall.\",\n      \"category\": \"pet_accessory\",\n      \"color\": \"various\",\n      \"material\": \"fabric, rubber, rope\",\n      \"condition\": \"new\",\n      \"confidence\": 0.85\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": 0,\n      \"text\": \"BEIGEL CANIN\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Likely a misread of 'ROYAL CANIN', a pet food brand.\",\n      \"language\": \"en\",\n      \"confidence\": 0.7\n    },\n    {\n      \"local_index\": 1,\n      \"text\": \"ROPGEL CANIN\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Likely a misread of 'ROYAL CANIN', a pet food brand.\",\n      \"language\": \"en\",\n      \"confidence\": 0.7\n    },\n    {\n      \"local_index\": 2,\n      \"text\": \"ROYAL CANIN\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"A brand name for pet food.\",\n      \"language\": \"en\",\n      \"confidence\": 0.95\n    },\n    {\n      \"local_index\": 3,\n      \"text\": \"BACS\",\n      \"kind\": \"other\",\n      \"meaning\": \"Partial or unclear text, possibly part of a product name.\",\n      \"language\": \"en\",\n      \"confidence\": 0.6\n    },\n    {\n      \"local_index\": 4,\n      \"text\": \"CHEVEIES\",\n      \"kind\": \"other\",\n      \"meaning\": \"Likely a misread of 'CHEWIES', referring to pet treats.\",\n      \"language\": \"en\",\n      \"confidence\": 0.75\n    },\n    {\n      \"local_index\": 5,\n      \"text\": \"CHEWIES\",\n      \"kind\": \"other\",\n      \"meaning\": \"Refers to pet chew treats.\",\n      \"language\": \"en\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 6,\n      \"text\": \"bita\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"A brand or product name.\",\n      \"language\": \"en\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": 7,\n      \"text\": \"APPROPRIATE\",\n      \"kind\": \"other\",\n      \"meaning\": \"Descriptive text, possibly part of a product recommendation.\",\n      \"language\": \"en\",\n      ",
+    "confidence": 0.5276978373527527,
+    "frame_count": 1,
+    "detection_count": 1,
+    "ocr_count": 0,
+    "insight_count": 1,
+    "error": "",
+    "created_at": "2026-07-22T08:07:04.867690+00:00",
+    "started_at": "2026-07-22T08:07:04.877054+00:00",
+    "finished_at": "2026-07-22T08:07:27.120334+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 6,
+    "analysis_id": "04d3ca2a-6283-4541-a68c-95d915eee62a",
+    "status": "partial",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "openai"
+    ],
+    "failed_providers": {
+      "gemini": [
+        "frame 0: Gemini vision analysis failed: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}"
+      ]
+    },
+    "scene_type": "pet_store_aisle",
+    "summary": "A brightly lit pet-supply aisle displays packaged food, bedding, care products, beds, and toys on closely spaced shelves.",
+    "confidence": 0.96,
+    "frame_count": 1,
+    "detection_count": 0,
+    "ocr_count": 0,
+    "insight_count": 0,
+    "error": "",
+    "created_at": "2026-07-22T08:07:27.149362+00:00",
+    "started_at": "2026-07-22T08:07:27.179926+00:00",
+    "finished_at": "2026-07-22T08:08:12.868670+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 7,
+    "analysis_id": "8d112e83-9bca-4155-9ef4-a7a6f8cfbc56",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_supply_store_aisle\",\n  \"summary\": \"An aisle in a pet supply store displays various bird-related products, including packaged food, feeders, and accessories, arranged on shelves and pegboards.\",\n  \"features\": [\n    \"shelving units\",\n    \"pegboard display\",\n    \"packaged goods\",\n    \"bulk bins\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"shelf\",\n      \"title\": \"Gray display shelf\",\n      \"description\": \"A multi-tiered gray shelving unit holds various packaged pet products.\",\n      \"category\": \"furniture\",\n      \"color\": \"gray\",\n      \"material\": \"wood\",\n      \"condition\": \"good\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 1,\n      \"label\": \"pegboard\",\n      \"title\": \"White pegboard display\",\n      \"description\": \"A white pegboard wall is used to hang numerous small packaged items.\",\n      \"category\": \"display_fixture\",\n      \"color\": \"white\",\n      \"material\": \"wood\",\n      \"condition\": \"good\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": 2,\n      \"label\": \"packaged food\",\n      \"title\": \"Green packaged bird food\",\n      \"description\": \"Several green pouches of bird food are displayed on a shelf.\",\n      \"category\": \"pet_food\",\n      \"color\": \"green\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 3,\n      \"label\": \"packaged food\",\n      \"title\": \"Clear packaged bird seed\",\n      \"description\": \"Numerous clear plastic bags filled with bird seed are stacked on shelves.\",\n      \"category\": \"pet_food\",\n      \"color\": \"clear\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.88\n    },\n    {\n      \"local_index\": 4,\n      \"label\": \"bird feeder\",\n      \"title\": \"Packaged seed bells\",\n      \"description\": \"Yellow cardboard packages containing seed bells for wild birds are displayed on a shelf.\",\n      \"category\": \"pet_accessory\",\n      \"color\": \"yellow\",\n      \"material\": \"cardboard\",\n      \"condition\": \"new\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": 5,\n      \"label\": \"bird toy\",\n      \"title\": \"Packaged bird toys\",\n      \"description\": \"Small colorful bird toys are packaged in clear plastic with yellow header cards and hung on a pegboard.\",\n      \"category\": \"pet_accessory\",\n      \"color\": \"yellow, various\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": 6,\n      \"label\": \"container\",\n      \"title\": \"Large white container\",\n      \"description\": \"A large white container with red graphics is visible on a lower shelf.\",\n      \"category\": \"storage\",\n      \"color\": \"white, red\",\n      \"material\": \"plastic\",\n      \"condition\": \"good\",\n      \"confidence\": 0.75\n    },\n    {\n      \"local_index\": 7,\n      \"label\": \"basket\",\n      \"title\": \"Wire display basket\",\n      \"description\": \"A wire basket holds various small items on a lower shelf.\",\n      \"category\": \"display_fixture\",\n      \"color\": \"silver\",\n      \"material\": \"metal\",\n      \"condition\": \"good\",\n      \"confidence\": 0.7\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": 0,\n      \"text\": \"SKO\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Part of a product name or brand.\",\n      \"language\": \"eng\",\n      \"confidence\": 0.7\n    },\n    {\n      \"local_index\": 1,\n      \"text\": \"Estige\",\n      \"kind\": \"other\",\n      \"meaning\": \"Text on a package, possibly part of a product name.\",\n      \"language\": \"eng\",\n      \"confidence\": 0.6\n    },\n    {\n      \"local_index\": 2,\n      \"text\": \"Paro\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Part of a product name on a green bag.\",\n      \"language\": \"eng\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": 3,\n      \"text\": \"Ale\",\n      \"kind\": \"other\",\n      \"meaning\": \"Unclear text on a package.\",\n      \"language\": \"eng\",\n      \"confidence\": 0.5\n    },\n    {\n      \"local_index\": 4,",
+    "confidence": 0.7,
+    "frame_count": 1,
+    "detection_count": 0,
+    "ocr_count": 0,
+    "insight_count": 0,
+    "error": "",
+    "created_at": "2026-07-22T08:08:12.900191+00:00",
+    "started_at": "2026-07-22T08:08:12.912242+00:00",
+    "finished_at": "2026-07-22T08:08:32.232272+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 8,
+    "analysis_id": "70f82be5-83c2-4988-ab18-e68c0687ab3a",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_supply_store\",\n  \"summary\": \"A pet supply store aisle is visible, featuring shelves stocked with various pet food bags and pet beds.\",\n  \"features\": [\n    \"shelves\",\n    \"pet food bags\",\n    \"pet beds\",\n    \"tiled floor\",\n    \"ceiling lights\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"bed\",\n      \"title\": \"Pet Beds\",\n      \"description\": \"Several dark-colored, soft pet beds are stacked on the top shelves.\",\n      \"category\": \"pet accessory\",\n      \"color\": \"black\",\n      \"material\": \"fabric\",\n      \"condition\": \"new\",\n      \"confidence\": 0.37\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": 0,\n      \"text\": \"TTCM\",\n      \"kind\": \"other\",\n      \"meaning\": \"Part of a product label or brand name.\",\n      \"language\": \"\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"222\",\n      \"kind\": \"other\",\n      \"meaning\": \"A number, possibly a quantity or code.\",\n      \"language\": \"\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"27%\",\n      \"kind\": \"other\",\n      \"meaning\": \"A percentage, likely indicating nutritional content.\",\n      \"language\": \"\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"PUPPY\",\n      \"kind\": \"label\",\n      \"meaning\": \"Indicates pet food suitable for puppies.\",\n      \"language\": \"en\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"10\",\n      \"kind\": \"other\",\n      \"meaning\": \"A number, likely indicating weight in kilograms.\",\n      \"language\": \"\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"22%\",\n      \"kind\": \"other\",\n      \"meaning\": \"A percentage, likely indicating nutritional content.\",\n      \"language\": \"\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"ADULT\",\n      \"kind\": \"label\",\n      \"meaning\": \"Indicates pet food suitable for adult pets.\",\n      \"language\": \"en\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"QUALITY PROTEIN\",\n      \"kind\": \"label\",\n      \"meaning\": \"Highlights a nutritional aspect of the product.\",\n      \"language\": \"en\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"Classic ADULT\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"A brand and type of pet food.\",\n      \"language\": \"en\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"10 kg\",\n      \"kind\": \"other\",\n      \"meaning\": \"Indicates weight in kilograms.\",\n      \"language\": \"en\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"26.57\",\n      \"kind\": \"other\",\n      \"meaning\": \"A number, possibly a percentage or quantity.\",\n      \"language\": \"\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"21%\",\n      \"kind\": \"other\",\n      \"meaning\": \"A percentage, likely indicating nutritional content.\",\n      \"language\": \"\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"22.00 106\",\n      \"kind\": \"other\",\n      \"meaning\": \"A number, possibly a price or quantity.\",\n      \"language\": \"\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"TRAINING\",\n      \"kind\": \"label\",\n      \"meaning\": \"Indicates a product related to pet training,",
+    "confidence": 0.5370973855257034,
+    "frame_count": 1,
+    "detection_count": 1,
+    "ocr_count": 0,
+    "insight_count": 1,
+    "error": "",
+    "created_at": "2026-07-22T08:08:32.271853+00:00",
+    "started_at": "2026-07-22T08:08:32.278720+00:00",
+    "finished_at": "2026-07-22T08:08:54.077103+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 9,
+    "ok": false,
+    "error": "cannot identify image file <_io.BytesIO object at 0x12b1d19e0>"
+  },
+  {
+    "scene_id": 10,
+    "analysis_id": "7b82df82-5bc5-49d6-9347-604ac32d6c3c",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_food_aisle\",\n  \"summary\": \"A well-stocked pet food aisle displays various brands of dog and cat food in bags and cans on white shelves.\",\n  \"features\": [\n    \"shelving unit\",\n    \"pet food bags\",\n    \"pet food cans\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"shelving unit\",\n      \"title\": \"White Shelving Unit\",\n      \"description\": \"A multi-tiered white shelving unit displays various pet food products.\",\n      \"category\": \"furniture\",\n      \"color\": \"white\",\n      \"material\": \"wood\",\n      \"condition\": \"good\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 1,\n      \"label\": \"pet food bag\",\n      \"title\": \"Eukanuba Dog Food Bags\",\n      \"description\": \"Several bags of Eukanuba dog food, primarily in black, purple, and pink packaging, are displayed on the top and middle shelves.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"black, purple, pink\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": 2,\n      \"label\": \"pet food bag\",\n      \"title\": \"Karoo Dog Food Bags\",\n      \"description\": \"Multiple bags of Karoo dog food, mostly in brown and beige packaging, are arranged on the upper and middle shelves.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"brown, beige\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": 3,\n      \"label\": \"pet food bag\",\n      \"title\": \"IAMS Dog Food Bags\",\n      \"description\": \"Orange bags of IAMS dog food are visible on the right side of the shelving unit.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"orange\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.75\n    },\n    {\n      \"local_index\": 4,\n      \"label\": \"pet food can\",\n      \"title\": \"Pet Food Cans\",\n      \"description\": \"Numerous small cans of pet food are stacked on the lower shelves to the right.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"silver, various\",\n      \"material\": \"metal\",\n      \"condition\": \"new\",\n      \"confidence\": 0.7\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": 0,\n      \"text\": \"Eukanuba\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Brand name for pet food.\",\n      \"language\": \"en\",\n      \"confidence\": 0.95\n    },\n    {\n      \"local_index\": 1,\n      \"text\": \"ADULT\",\n      \"kind\": \"other\",\n      \"meaning\": \"Indicates pet food for adult animals.\",\n      \"language\": \"en\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 2,\n      \"text\": \"ADULTE\",\n      \"kind\": \"other\",\n      \"meaning\": \"Indicates pet food for adult animals (French).\",\n      \"language\": \"fr\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 3,\n      \"text\": \"MEDIUM\",\n      \"kind\": \"other\",\n      \"meaning\": \"Indicates pet food for medium-sized animals.\",\n      \"language\": \"en\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": 4,\n      \"text\": \"METENNE\",\n      \"kind\": \"other\",\n      \"meaning\": \"Likely a partial word related to size or breed.\",\n      \"language\": \"en\",\n      \"confidence\": 0.7\n    },\n    {\n      \"local_index\": 5,\n      \"text\": \"ACTIV\",\n      \"kind\": \"other\",\n      \"meaning\": \"Part of a product feature or benefit.\",\n      \"language\": \"en\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": 6,\n      \"text\": \"12 PUPPY\",\n      \"kind\": \"other\",\n      \"meaning\": \"Indicates pet food for puppies, possibly age-related.\",\n      \"language\": \"en\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 7,\n      \"text\": \"CHIOT\",\n      \"kind\": \"other\",\n      \"meaning\": \"Indicates pet food for puppies (French).\",\n      \"language\": \"fr\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 8,\n      \"text\": \"ACTIVADVANTAGE\",\n      \"kind\": \"other\",\n      \"meaning\": \"Product feature or benefit.\",\n      \"language\": \"en\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 9,\n      \"text\": \"12PUPPY\",\n      \"kind\": \"other\",\n      \"meaning\": \"Ind",
+    "confidence": 0.6615691840648651,
+    "frame_count": 1,
+    "detection_count": 1,
+    "ocr_count": 0,
+    "insight_count": 1,
+    "error": "",
+    "created_at": "2026-07-22T08:08:55.731278+00:00",
+    "started_at": "2026-07-22T08:08:55.738311+00:00",
+    "finished_at": "2026-07-22T08:09:15.293595+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 11,
+    "analysis_id": "6920fe4b-0fd4-447f-a739-c67148d71006",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_supply_store\",\n  \"summary\": \"A view inside a pet supply store, featuring shelves stocked with pet food bags, clothing racks, and a checkout counter.\",\n  \"features\": [\n    \"shelving units\",\n    \"pet food bags\",\n    \"clothing racks\",\n    \"checkout counter\",\n    \"computer monitor\",\n    \"glass entrance\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"suitcase\",\n      \"title\": \"Large Pet Food Bag\",\n      \"description\": \"A large, light-colored bag of pet food is visible on a shelf, though YOLO identified it as a suitcase.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"light brown\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.37998130917549133\n    },\n    {\n      \"local_index\": -1,\n      \"label\": \"pet food bag\",\n      \"title\": \"Pet Food Bags on Shelf\",\n      \"description\": \"Several large bags of pet food are stacked on a dark metal shelving unit.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"light brown\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": -1,\n      \"label\": \"pet food bag\",\n      \"title\": \"Pet Food Bags on Floor\",\n      \"description\": \"Multiple large bags of pet food are stacked on the floor next to a shelving unit.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"white\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": -1,\n      \"label\": \"clothing rack\",\n      \"title\": \"Pet Apparel Rack\",\n      \"description\": \"A clothing rack displays various pet apparel items, likely for dogs or cats.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"mixed\",\n      \"material\": \"metal\",\n      \"condition\": \"good\",\n      \"confidence\": 0.75\n    },\n    {\n      \"local_index\": -1,\n      \"label\": \"checkout counter\",\n      \"title\": \"Store Checkout Counter\",\n      \"description\": \"A white and dark grey checkout counter is visible with a computer monitor and various small items.\",\n      \"category\": \"store fixture\",\n      \"color\": \"white, dark grey\",\n      \"material\": \"laminate\",\n      \"condition\": \"good\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": -1,\n      \"label\": \"computer monitor\",\n      \"title\": \"Desktop Monitor\",\n      \"description\": \"A desktop computer monitor is placed on the checkout counter, likely for point-of-sale operations.\",\n      \"category\": \"electronics\",\n      \"color\": \"black\",\n      \"material\": \"plastic\",\n      \"condition\": \"good\",\n      \"confidence\": 0.7\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": -1,\n      \"text\": \"ACUL DA\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Partial text, likely part of 'ROYAL CANIN' brand name visible on a sign.\",\n      \"language\": \"\",\n      \"confidence\": 0.6\n    },\n    {\n      \"local_index\": -1,\n      \"text\": \"더\",\n      \"kind\": \"other\",\n      \"meaning\": \"A Korean character, context unclear.\",\n      \"language\": \"ko\",\n      \"confidence\": 0.5\n    },\n    {\n      \"local_index\": -1,\n      \"text\": \"500\",\n      \"kind\": \"other\",\n      \"meaning\": \"A number, possibly indicating weight, volume, or a product code on a bag.\",\n      \"language\": \"\",\n      \"confidence\": 0.7\n    },\n    {\n      \"local_index\": -1,\n      \"text\": \"SIMO\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Text on a sign, possibly a brand or store name.\",\n      \"language\": \"\",\n      \"confidence\": 0.75\n    },\n    {\n      \"local_index\": -1,\n      \"text\": \"K\",\n      \"kind\": \"other\",\n      \"meaning\": \"A single letter, possibly part of a brand name on a bag.\",\n      \"language\": \"\",\n      \"confidence\": 0.6\n    },\n    {\n      \"local_index\": -1,\n      \"text\": \"From bowl\",\n      \"kind\": \"other\",\n      \"meaning\": \"Text on a poster, possibly a slogan or promotional phrase.\",\n      \"language\": \"en\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": -1,\n      \"text\": \"BARCELONA\",\n      \"kind\": \"other\",\n      \"meaning\": \"A place name, part of a larger text on a poster.\",\n      \"language\": \"en\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": -1,\n      \"text\": \"BELA-BELA\",\n      \"kind\": \"other\",\n      \"",
+    "confidence": 0.5399906545877456,
+    "frame_count": 1,
+    "detection_count": 1,
+    "ocr_count": 0,
+    "insight_count": 1,
+    "error": "",
+    "created_at": "2026-07-22T08:09:15.324659+00:00",
+    "started_at": "2026-07-22T08:09:15.338547+00:00",
+    "finished_at": "2026-07-22T08:09:37.291292+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 12,
+    "ok": false,
+    "error": "cannot identify image file <_io.BytesIO object at 0x13d477d30>"
+  },
+  {
+    "scene_id": 13,
+    "analysis_id": "4f1a9691-9acd-4d0d-a683-71cd317c682e",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "pet_store_interior",
+    "summary": "An interior view of a pet store featuring various pet food bags, harnesses, and a checkout counter with a computer monitor.",
+    "confidence": 0.6679742008447647,
+    "frame_count": 1,
+    "detection_count": 1,
+    "ocr_count": 0,
+    "insight_count": 1,
+    "error": "",
+    "created_at": "2026-07-22T08:09:38.788477+00:00",
+    "started_at": "2026-07-22T08:09:38.795801+00:00",
+    "finished_at": "2026-07-22T08:10:15.631495+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 14,
+    "analysis_id": "c5ad865f-da77-45c9-a1f0-fb4243a6b36f",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_supply_store_counter\",\n  \"summary\": \"A pet supply store counter is shown with various pet food products, accessories, and a computer setup, with a view into a larger shopping area.\",\n  \"features\": [\n    \"display shelves\",\n    \"checkout counter\",\n    \"pet food products\",\n    \"pet accessories\",\n    \"computer workstation\",\n    \"promotional signage\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"monitor\",\n      \"title\": \"Computer Monitor\",\n      \"description\": \"A black computer monitor is placed on the counter, displaying a white screen.\",\n      \"category\": \"electronics\",\n      \"color\": \"black\",\n      \"material\": \"plastic\",\n      \"condition\": \"good\",\n      \"confidence\": 0.419\n    },\n    {\n      \"local_index\": 2,\n      \"label\": \"laptop\",\n      \"title\": \"Laptop Computer\",\n      \"description\": \"A laptop computer is open on the counter next to the monitor, with its screen illuminated.\",\n      \"category\": \"electronics\",\n      \"color\": \"black\",\n      \"material\": \"plastic\",\n      \"condition\": \"good\",\n      \"confidence\": 0.407\n    },\n    {\n      \"local_index\": 3,\n      \"label\": \"suitcase\",\n      \"title\": \"Black Pet Carrier\",\n      \"description\": \"A black pet carrier or travel bag is visible on the floor to the right, near other stacked items.\",\n      \"category\": \"pet_accessory\",\n      \"color\": \"black\",\n      \"material\": \"fabric\",\n      \"condition\": \"good\",\n      \"confidence\": 0.368\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": 0,\n      \"text\": \"Eht htlight light Probem\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Product names or brands on packaging, possibly 'light' and 'Probono'.\",\n      \"language\": \"en\",\n      \"confidence\": 1.0\n    },\n    {\n      \"local_index\": 1,\n      \"text\": \"Caster\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"A brand name on a product box.\",\n      \"language\": \"en\",\n      \"confidence\": 1.0\n    },\n    {\n      \"local_index\": 2,\n      \"text\": \"BOW\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"A brand name on a pet food container.\",\n      \"language\": \"en\",\n      \"confidence\": 1.0\n    },\n    {\n      \"local_index\": 3,\n      \"text\": \"nats\",\n      \"kind\": \"other\",\n      \"meaning\": \"Partial or unclear text on packaging.\",\n      \"language\": \"en\",\n      \"confidence\": 1.0\n    },\n    {\n      \"local_index\": 4,\n      \"text\": \"R3 MILLION\",\n      \"kind\": \"price\",\n      \"meaning\": \"Part of a promotional offer indicating a monetary value.\",\n      \"language\": \"en\",\n      \"confidence\": 1.0\n    },\n    {\n      \"local_index\": 5,\n      \"text\": \"From boul TO BARCELONA OR BELA-BELA\",\n      \"kind\": \"sign\",\n      \"meaning\": \"Text from a promotional sign, possibly for a competition or travel offer.\",\n      \"language\": \"en\",\n      \"confidence\": 1.0\n    },\n    {\n      \"local_index\": 6,\n      \"text\":",
+    "confidence": 0.5595017582178116,
+    "frame_count": 1,
+    "detection_count": 5,
+    "ocr_count": 0,
+    "insight_count": 5,
+    "error": "",
+    "created_at": "2026-07-22T08:10:15.674860+00:00",
+    "started_at": "2026-07-22T08:10:15.708021+00:00",
+    "finished_at": "2026-07-22T08:10:35.798238+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 15,
+    "analysis_id": "cc0b4cc9-f2dc-4999-ad7f-d79bc05136aa",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_store_aisle\",\n  \"summary\": \"An aisle in a pet store displays various pet products, including food, beds, and accessories, under bright ceiling lights.\",\n  \"features\": [\n    \"shelving units\",\n    \"ceiling lights\",\n    \"product displays\",\n    \"hanging merchandise\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"pet bed\",\n      \"title\": \"Blue Pet Beds\",\n      \"description\": \"Multiple blue, soft pet beds are stacked on a high shelf on the left side of the aisle.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"blue\",\n      \"material\": \"fabric\",\n      \"condition\": \"new\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 1,\n      \"label\": \"shelving unit\",\n      \"title\": \"White Display Shelf\",\n      \"description\": \"A white shelving unit on the left displays various packaged pet accessories and items on hangers.\",\n      \"category\": \"store fixture\",\n      \"color\": \"white\",\n      \"material\": \"wood\",\n      \"condition\": \"good\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": 2,\n      \"label\": \"shelving unit\",\n      \"title\": \"Dark Pet Food Display\",\n      \"description\": \"A dark brown shelving unit in the center holds bags of pet food and features a display sign at the top.\",\n      \"category\": \"store fixture\",\n      \"color\": \"dark brown\",\n      \"material\": \"wood\",\n      \"condition\": \"good\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 3,\n      \"label\": \"pet food bag\",\n      \"title\": \"ACANA Pet Food\",\n      \"description\": \"Several bags of ACANA brand pet food are displayed on the central dark shelving unit.\",\n      \"category\": \"pet food\",\n      \"color\": \"various\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 4,\n      \"label\": \"floor fan\",\n      \"title\": \"Black Floor Fan\",\n      \"description\": \"A black electric fan is positioned on the floor next to the central pet food display.\",\n      \"category\": \"appliance\",\n      \"color\": \"black\",\n      \"material\": \"metal\",\n      \"condition\": \"good\",\n      \"confidence\": 0.75\n    },\n    {\n      \"local_index\": 5,\n      \"label\": \"shelving unit\",\n      \"title\": \"White Product Shelves\",\n      \"description\": \"A tall white shelving unit on the right side of the aisle displays numerous bottles and containers of pet care products.\",\n      \"category\": \"store fixture\",\n      \"color\": \"white\",\n      \"material\": \"wood\",\n      \"condition\": \"good\",\n      \"confidence\": 0.88\n    },\n    {\n      \"local_index\": 6,\n      \"label\": \"pet care products\",\n      \"title\": \"Bottled Pet Products\",\n      \"description\": \"Various colored bottles and containers, likely shampoos or treatments, are neatly arranged on the white shelves on the right.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"various\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": 7,\n      \"label\": \"pet food bag\",\n      \"title\": \"Probono Pet Food\",\n      \"description\": \"Bags of 'probono' brand pet food are visible on the lower shelves of the right-side display.\",\n      \"category\": \"pet food\",\n      \"color\": \"brown, red\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.8\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": 0,\n      \"text\": \"Rexi\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"A brand name, likely for a pet product.\",\n      \"language\": \"en\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": 1,\n      \"text\": \"ACANA\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"A brand name for pet food.\",\n      \"language\": \"en\",\n      \"confidence\": 0.95\n    },\n    {\n      \"local_index\": 2,\n      \"text\": \"PET FOODS FROM\",\n      \"kind\": \"instruction\",\n      \"meaning\": \"Part of a descriptive slogan for pet food.\",\n      \"language\": \"en\",\n      \"confidence\": 0.88\n    },\n    {\n      \"local_",
+    "confidence": 0.7,
+    "frame_count": 1,
+    "detection_count": 0,
+    "ocr_count": 0,
+    "insight_count": 0,
+    "error": "",
+    "created_at": "2026-07-22T08:10:35.867014+00:00",
+    "started_at": "2026-07-22T08:10:35.882745+00:00",
+    "finished_at": "2026-07-22T08:11:07.696593+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 16,
+    "analysis_id": "47939e7d-05a3-4868-9ac8-c7c30b820902",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "pet_store_entrance",
+    "summary": "The image shows the entrance to a pet store with pet beds displayed outside, leading into a brightly lit shopping mall corridor.",
+    "confidence": 0.9,
+    "frame_count": 1,
+    "detection_count": 0,
+    "ocr_count": 0,
+    "insight_count": 0,
+    "error": "",
+    "created_at": "2026-07-22T08:11:07.733510+00:00",
+    "started_at": "2026-07-22T08:11:07.742072+00:00",
+    "finished_at": "2026-07-22T08:11:27.448641+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 17,
+    "analysis_id": "97dda23b-9db0-4b0f-9fee-d678f4d07e89",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_store_entrance\",\n  \"summary\": \"The entrance to a pet store named 'Canine Cafe' is visible, featuring pet beds and apparel displayed outside, with adjacent storefronts also present.\",\n  \"features\": [\n    \"glass storefront\",\n    \"tiled floor\",\n    \"overhead lighting\",\n    \"display racks\",\n    \"chalkboard sign\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"pet bed stack\",\n      \"title\": \"Large Pet Bed Stack\",\n      \"description\": \"A large stack of various colored pet beds or cushions is displayed on the floor near the entrance.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"various\",\n      \"material\": \"fabric\",\n      \"condition\": \"new\",\n      \"confidence\": 0.5203966498374939\n    },\n    {\n      \"local_index\": 1,\n      \"label\": \"pet bed stack\",\n      \"title\": \"Small Pet Bed Stack\",\n      \"description\": \"A smaller stack of pet beds or cushions is visible next to larger pet beds on the right side of the entrance.\",\n      \"category\": \"pet supplies\",\n      \"color\": \"various\",\n      \"material\": \"fabric\",\n      \"condition\": \"new\",\n      \"confidence\": 0.4237557649612427\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": 0,\n      \"text\": \"Felgels\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Name of an adjacent business.\",\n      \"language\": \"en\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"ONLINE LUNCH MEN\",\n      \"kind\": \"instruction\",\n      \"meaning\": \"Part of a menu or service offering for an adjacent business.\",\n      \"language\": \"en\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"EAT\",\n      \"kind\": \"other\",\n      \"meaning\": \"Part of an inspirational phrase on a chalkboard.\",\n      \"language\": \"en\",\n      \"confidence\": 0.95\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"PRAY\",\n      \"kind\": \"other\",\n      \"meaning\": \"Part of an inspirational phrase on a chalkboard.\",\n      \"language\": \"en\",\n      \"confidence\": 0.95\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"LOVE\",\n      \"kind\": \"other\",\n      \"meaning\": \"Part of an inspirational phrase on a chalkboard.\",\n      \"language\": \"en\",\n      \"confidence\": 0.95\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"Firs\",\n      \"kind\": \"other\",\n      \"meaning\": \"Partial word on a chalkboard, context unclear.\",\n      \"language\": \"en\",\n      \"confidence\": 0.7\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"Baked Pagk\",\n      \"kind\": \"other\",\n      \"meaning\": \"Partial text on a chalkboard, possibly a food item.\",\n      \"language\": \"en\",\n      \"confidence\": 0.75\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"Canines Cafe\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"The name of the pet store.\",\n      \"language\": \"en\",\n      \"confidence\": 0.98\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"Pre bout\",\n      \"kind\": \"other\",\n      \"meaning\": \"Partial text on a sign, context unclear.\",\n      \"language\": \"en\",\n      \"confidence\": 0.6\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"BALLITO\",\n      \"kind\": \"other\",\n      \"meaning\": \"Part of a location or product name on a blue sign.\",\n      \"language\": \"en\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"BALI\",\n      \"kind\": \"other\",\n      \"meaning\": \"Part of a location or product name on a blue sign.\",\n      \"language\": \"en\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 0,\n      \"text\": \"ADELE CATHERINE\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Name of an adjacent business.\",\n      \"language\": \"en\",\n      \"confidence\": 0.9\n    }\n  ],\n  \"products\": [],\n  \"safety",
+    "confidence": 0.6101983249187469,
+    "frame_count": 1,
+    "detection_count": 2,
+    "ocr_count": 0,
+    "insight_count": 2,
+    "error": "",
+    "created_at": "2026-07-22T08:11:27.488390+00:00",
+    "started_at": "2026-07-22T08:11:27.515705+00:00",
+    "finished_at": "2026-07-22T08:11:46.835393+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 18,
+    "analysis_id": "bbfbd83b-8d70-4b2f-8fcc-3e7e18300bd8",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_store_entrance\",\n  \"summary\": \"The entrance to a pet store, featuring pet food displays, pet beds, and visible branding for Royal Canin.\",\n  \"features\": [\n    \"pet food display\",\n    \"pet beds\",\n    \"glass entrance\",\n    \"shopping mall corridor\"",
+    "confidence": 0.6590752959251404,
+    "frame_count": 1,
+    "detection_count": 1,
+    "ocr_count": 0,
+    "insight_count": 1,
+    "error": "",
+    "created_at": "2026-07-22T08:11:46.910449+00:00",
+    "started_at": "2026-07-22T08:11:46.948309+00:00",
+    "finished_at": "2026-07-22T08:12:10.188090+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 19,
+    "analysis_id": "2823fea6-150d-40ba-99d3-f1d593c6042a",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "",
+    "summary": "{\n  \"scene_type\": \"pet_store_interior\",\n  \"summary\": \"The image shows the interior of a pet store with various pet supplies, including clothing, leashes, and food, displayed on shelves and racks.\",\n  \"features\": [\n    \"fluorescent lighting\",\n    \"shelving units\",\n    \"display racks\",\n    ",
+    "confidence": 0.7052188575267792,
+    "frame_count": 1,
+    "detection_count": 1,
+    "ocr_count": 0,
+    "insight_count": 1,
+    "error": "",
+    "created_at": "2026-07-22T08:12:10.222563+00:00",
+    "started_at": "2026-07-22T08:12:10.230076+00:00",
+    "finished_at": "2026-07-22T08:13:04.334052+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 21,
+    "analysis_id": "3fd99a6f-2a37-4f75-a2aa-c5178ab2851b",
+    "status": "partial",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "failed_providers": {
+      "gemini": [
+        "frame 2: Gemini vision analysis failed: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}"
+      ]
+    },
+    "scene_type": "living_room",
+    "summary": "{\n  \"scene_type\": \"indoor_view_outdoor\",\n  \"summary\": \"A large window with dark frames and white blinds offers a clear view of lush green foliage outside.\",\n  \"features\": [\n    \"window\",\n    \"foliage\",\n    \"blinds\",\n    \"wooden_frame\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"window\",\n      \"title\": \"Large Window\",\n      \"description\": \"A multi-pane window providing a clear view of the outdoors.\",\n      \"category\": \"architectural_element\",\n      \"color\": \"clear\",\n      \"material\": \"glass\",\n      \"condition\": \"good\",\n      \"confidence\": 0.95\n    },\n    {\n      \"local_index\": 1,\n      \"label\": \"window_frame\",\n      \"title\": \"Dark Window Frame\",\n      \"description\": \"The dark brown wooden structure outlining the window panes.\",\n      \"category\": \"architectural_element\",\n      \"color\": \"dark brown\",\n      \"material\": \"wood\",\n      \"condition\": \"good\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 2,\n      \"label\": \"blinds\",\n      \"title\": \"White Window Blinds\",\n      \"description\": \"White horizontal blinds partially cover the top and bottom sections of the window.\",\n      \"category\": \"window_treatment\",\n      \"color\": \"white\",\n      \"material\": \"fabric\",\n      \"condition\": \"good\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": 3,\n      \"label\": \"foliage\",\n      \"title\": \"Green Foliage\",\n      \"description\": \"Lush green leaves and branches are visible through the window.\",\n      \"category\": \"plant\",\n      \"color\": \"green\",\n      \"material\": \"organic\",\n      \n\n{\n  \"scene_type\": \"inverted_modern_room\",\n  \"summary\": \"An inverted perspective of a modern room featuring expansive windows with a lush green outdoor view, a pink sofa, and a contemporary ceiling fan.\",\n  \"features\": [\n    \"large windows\",\n    \"lush greenery view\",\n    \"modern interior design\n\nA modern living room featuring a pink sofa with decorative pillows, an abstract painting on a white wall, and a hanging green plant.\n\nAn indoor scene features a potted plant hanging near a wall with abstract art, alongside soft furnishings.\n\n{\n  \"scene_type\": \"indoor_hallway\",\n  \"summary\": \"An indoor hallway features a hanging green plant in the foreground, with light-colored walls and a wooden ceiling extending into the background.\",\n  \"features\": [\n    \"hanging plant\",\n    \"wooden ceiling\",\n    \"hallway\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"plant\",\n      \"title\": \"Hanging Plant\",\n      \"description\": \"A green leafy plant is suspended from above, with multiple stems and leaves.\",\n      \"category\": \"decoration\",\n      \"color\": \"green\",\n      \"material\": \"organic\",\n      \"condition\": \"healthy\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 1,\n      \"label\": \"pot\",\n      \"title\": \"Plant Pot\",\n      \"description\": \"A round, brown pot holds the hanging plant.\",\n      \"category\": \"container\",\n      \"color\": \"brown\",\n      \"material\": \"ceramic\",\n      \"condition\": \"good\",\n      \"confidence\": 0.8\n    },\n    {\n      \"local_index\": 2,\n      \"label\": \"wall\",\n      \"title\": \"Interior Wall\",\n      \"description\": \"A light-colored, smooth wall forms the side of the hallway.\",\n      \"category\": \"structure\",\n      \"color\": \"light_beige\",\n      \"material\": \"painted_drywall\",\n      \"condition\": \"clean\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 3,\n      \"label\": \"ceiling\",\n      \"title\": \"Wooden Ceiling\",\n      \"description\": \"\n\n{\n  \"scene_type\": \"split_interior_view\",\n  \"summary\": \"A split image featuring an upright modern interior with a large plant and window on the right, and an inverted view of a hallway with dining furniture on the left.\",\n  \"features\": [\n    \"split view\",\n    \"inverted perspective\",\n    \"modern design\",\n\n{\n  \"scene_type\": \"modern_interior_with_view\",\n  \"summary\": \"A modern interior space features a large sliding glass door offering a view of outdoor greenery, complemented by a prominent houseplant and warm wooden architectural details.\",\n  \"features\": [\n    \"large window\",\n    \"indoor plant\",\n    \"wooden\n\nA modern interior space with white walls and wooden accents, featuring a large glass door that provides a view of an outdoor area with lush greenery.\n\n{\n  \"scene_type\": \"modern_interior_room\",\n  \"summary\": \"A modern and minimalist interior room features large windows, a light wooden ceiling, and contemporary decor elements.\",\n  \"features\": [\n    \"large windows\",\n    \"wooden ceiling\",\n    \"white walls\",\n    \"white floor\",\n    \"wall-mounted shelf\",\n    \"wall art\",\n    \"wall light fixture\",\n    \"sheer curtains\",\n    \"outdoor greenery view\",\n    \"modern chair\",\n    \"area rug\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"window\",\n      \"title\": \"Large Window\",\n      \"description\": \"A large window with a dark frame provides an expansive view of outdoor greenery.\",\n      \"category\": \"architectural_element\",\n      \"color\": \"dark\n\nA modern living space featuring a pink sofa, abstract artwork, and a large window overlooking lush greenery.\n\n{\n  \"scene_type\": \"living_room\",\n  \"summary\": \"An indoor living space featuring a pink sofa with cushions, a framed abstract painting, and a potted plant.\",\n  \"features\": [\n    \"sofa\",\n    \"cushions\",\n    \"painting\",\n    \"potted plant\",\n    \"wall\",\n    \"window\",\n    \"curtain\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"potted plant\",\n      \"title\": \"Hanging Potted Plant\",\n      \"description\": \"A green plant with round leaves is visible, appearing to be in a pot and hanging from above.\",\n      \"category\": \"plant\",\n      \"color\": \"green\",\n      \"material\": \"\",\n      \"condition\": \"healthy\",\n      \"confidence\": 0.5545790195465088\n    },\n    {\n      \"local_index\": null,\n      \"label\": \"sofa\",\n      \"title\": \"Pink Sofa\",\n      \"description\": \"A large sofa upholstered in pink fabric is visible with multiple decorative cushions.\",\n      \"category\": \"furniture\",\n      \"color\": \"pink\",\n      \"material\": \"fabric\",\n      \"condition\": \"good\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": null,\n      \"label\": \"cushion\",\n      \"title\": \"Decorative Cushions\",\n      \"description\": \"Several decorative cushions with patterns and textures are placed on the pink sofa.\",\n      \"category\": \"textile\",\n      \"color\": \"white\",\n\nA bright modern lounge features a blush-pink sectional sofa, framed blue artwork, and expansive windows overlooking tropical greenery.",
+    "confidence": 0.8048596731821696,
+    "frame_count": 24,
+    "detection_count": 4,
+    "ocr_count": 0,
+    "insight_count": 4,
+    "error": "",
+    "created_at": "2026-07-22T08:13:04.360713+00:00",
+    "started_at": "2026-07-22T08:13:04.399361+00:00",
+    "finished_at": "2026-07-22T08:17:15.267357+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  },
+  {
+    "scene_id": 22,
+    "analysis_id": "e62c34da-95f4-48b4-b305-37d1b0942907",
+    "status": "succeeded",
+    "scene_status": "ready",
+    "requested_providers": [
+      "yolo",
+      "gemini",
+      "openai"
+    ],
+    "completed_providers": [
+      "yolo",
+      "gemini"
+    ],
+    "failed_providers": {},
+    "scene_type": "pet_store_aisle",
+    "summary": "An upside-down view of a pet store aisle featuring shelves stocked with various pet products and a pet bed on the floor.\n\nAn aisle in a pet supply store featuring shelves stocked with various pet food and accessory products.\n\n{\n  \"scene_type\": \"pet_store_aisle\",\n  \"summary\": \"A well-stocked pet store aisle featuring various packaged pet food products displayed on shelves and a large display unit, with pet beds visible at the bottom.\",\n  \"features\": [\n    \"shelving units\",\n    \"pet food bags\",\n    \"pet food pouches\n\n{\n  \"scene_type\": \"retail_shelf\",\n  \"summary\": \"A retail display shelf is filled with various pet food products, including large bags and smaller containers.\",\n  \"features\": [\n    \"shelving\",\n    \"product_packaging\",\n    \"signage\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"display_rack\",\n      \"title\": \"Pet Food Display Rack\",\n      \"description\": \"A tall, multi-shelf display rack holds various pet food products.\",\n      \"category\": \"furniture\",\n      \"color\": \"black\",\n      \"material\": \"metal\",\n      \"condition\": \"good\",\n      \"confidence\": 0.74\n    },\n    {\n      \"local_index\": -1,\n      \"label\": \"pet_food_bag\",\n      \"title\": \"Large Pet Food Bags\",\n      \"description\": \"Several large bags of pet food are stacked on the upper shelves of the display.\",\n      \"category\": \"food_packaging\",\n      \"color\": \"blue, black, grey\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": -1,\n      \"label\": \"pet_food_bag\",\n      \"title\": \"Small Pet Food Bags\",\n      \"description\": \"Multiple smaller bags of pet food are arranged on the lower shelves of the display.\",\n      \"category\": \"food_packaging\",\n      \"color\": \"various\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.85\n    },\n    {\n      \"local_index\": -1,\n      \"label\": \"pet_food_container\",\n      \"title\": \"Pet Food Jars\",\n      \"description\": \"Several plastic jars or tubs containing pet food are visible on a shelf to the left.\",\n      \"category\": \"food_packaging\",\n      \"color\": \"clear, green, orange\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.8\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": -1,\n      \"text\": \"AMADA\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"Mirrored text, likely 'ACANA', a pet food brand.\",\n      \"language\": \"en\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": -1,\n      \"text\": \"WOKE WEL\",\n      \"kind\": \"other\",\n      \"meaning\": \"Mirrored text, possibly part of a slogan or product description.\",\n      \"language\": \"en\",\n      \"confidence\": 0.7\n    },\n    {\n      \"local_index\":\n\n{\n  \"scene_type\": \"pet_store_aisle\",\n  \"summary\": \"A pet store aisle displays various pet food products on shelves, with a cat tree visible on the right side.\",\n  \"features\": [\n    \"shelving units\",\n    \"pet food bags\",\n    \"cat tree\",\n    \"fluorescent lighting\",\n\nAn upside-down view of a pet store aisle featuring shelves stocked with pet food and accessories, along with pet beds and a cat tree.\n\n{\n  \"scene_type\": \"pet_store\",\n  \"summary\": \"An interior view of a well-lit pet store, showcasing a wide variety of pet supplies and accessories on shelves and display units.\",\n  \"features\": [\n    \"shelving units\",\n    \"display counter\",\n    \"pet products\",\n    \"overhead lighting\",\n    \"cat tree\",\n    \"pet beds\",\n    \"pet toys\",\n    \"pet bowls\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"pet bed\",\n      \"title\": \"Plaid Pet Bed\",\n      \"description\": \"A soft pet bed with a plaid pattern, displayed on a shelf.\",\n      \"category\": \"pet accessory\",\n      \"color\": \"brown, black, white\",\n      \"material\": \"fabric\",\n      \"condition\": \"new\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 1,\n      \"label\": \"cat tree\",\n      \"title\": \"Multi-level Cat Tree\",\n      \"description\": \"A multi-level cat tree with scratching posts and perches, made of wood and carpeted surfaces.\",\n      \"category\": \"pet accessory\",\n      \"color\": \"beige, brown\",\n      \"material\": \"wood, carpet\",\n      \"condition\": \"new\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 2,\n      \"label\": \"pet toy\",\n      \"title\": \"Assorted Pet Toys\",\n      \"description\": \"Various colorful pet toys, including balls and chew toys, packaged and displayed on hooks.\",\n      \"category\": \"pet accessory\",\n      \"color\": \"multiple\",\n      \"material\": \"plastic, rubber\",\n      \"condition\": \"new\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 3,\n      \"label\": \"pet bowl\",\n      \"title\": \"Colorful Pet Bowls\",\n      \"description\": \"Several pet bowls in various colors, likely for food or water, stacked on a shelf.\",\n      \"category\": \"pet accessory\",\n      \"color\": \"green, red, blue\",\n      \"material\": \"plastic\",\n      \"condition\": \"new\",\n      \"confidence\": 0.9\n    },\n    {\n      \"local_index\": 4,\n      \"label\": \"display shelf\",\n      \"title\": \"Pet Accessory Display\",\n      \"description\": \"A long wall-mounted display shelf showcasing a wide range of packaged pet accessories.\",\n      \"category\": \"store fixture\",\n      \"\n\nA well-stocked pet supply store aisle displays a wide variety of pet toys, accessories, and food items on pegboards and shelves, with a white counter and blue stools in the foreground.\n\nA well-stocked pet store aisle displays a variety of pet toys, food, and accessories on shelves and in baskets.\n\n{\n  \"scene_type\": \"pet_store_aisle\",\n  \"summary\": \"An aisle in a pet store displaying various pet food products, treats, and pet beds on shelves and a display stand.\",\n  \"features\": [\n    \"shelves\",\n    \"pet food products\",\n    \"pet treats\",\n    \"pet beds\",\n    \"display stand\"\n  ],\n  \"detections\": [\n    {\n      \"local_index\": 0,\n      \"label\": \"pet bed\",\n      \"title\": \"Cozy Pet Bed\",\n      \"description\": \"A soft, enclosed pet bed with a circular opening, designed for a small pet to rest inside.\",\n      \"category\": \"pet accessory\",\n      \"color\": \"gray and white\",\n      \"material\": \"fabric\",\n      \"condition\": \"new\",\n      \"confidence\": 0.44418707489967346\n    }\n  ],\n  \"visible_text\": [\n    {\n      \"local_index\": 0,\n      \"text\": \"AMADA\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"A brand or product name.\",\n      \"language\": \"en\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 1,\n      \"text\": \"AMADA\",\n      \"kind\": \"brand_text\",\n      \"meaning\": \"A brand or product name.\",\n      \"language\": \"en\",\n      \"confidence\": 0.0\n    },\n    {\n      \"local_index\": 2,\n      \"text\": \"المندق\",\n      \"kind\": \"other\n\n{\n  \"scene_type\": \"pet_store_display\",\n  \"summary\": \"A retail display shelf in a pet store showcasing a variety of colorful pet toys.\",\n  \"features\": [\n    \"display shelf\",\n    \"pet toys\",\n    \"plush toys\",\n    \"chew toys\",\n    \"retail environment\",\n\n\n{\n  \"scene_type\": \"pet_store_aisle\",\n  \"summary\": \"An aisle in a pet store featuring shelves stocked with various pet toys, treats, and packaged food items.\",\n  \"features\": [\n    \"shelving units\",\n    \"pet products\",\n    \"tiled floor\"\n  ],\n  \"dete",
+    "confidence": 0.9070113718509674,
+    "frame_count": 24,
+    "detection_count": 12,
+    "ocr_count": 0,
+    "insight_count": 12,
+    "error": "",
+    "created_at": "2026-07-22T08:17:15.353257+00:00",
+    "started_at": "2026-07-22T08:17:15.362518+00:00",
+    "finished_at": "2026-07-22T08:21:21.234133+00:00",
+    "ok": true,
+    "created": true,
+    "dispatch_mode": "sync",
+    "task_id": ""
+  }
+]

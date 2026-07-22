@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 
 from apps.tour_ai_agent.providers import AIProviderRouter
 
@@ -29,6 +30,15 @@ def _public_reasoning_steps(context: dict) -> list[dict]:
     return steps
 
 
+def _sanitize_citations(text: str, context: dict) -> str:
+    valid = {str(item.get("citation")) for item in context.get("knowledge_sources", []) if item.get("citation")}
+    def replace(match):
+        label = match.group(1)
+        return match.group(0) if label in valid else ""
+    cleaned = re.sub(r"\[(K(?:#|\d+))\]", replace, str(text or ""))
+    return re.sub(r"[ \t]+(?=[.,;:!?])", "", cleaned).strip()
+
+
 def run_agent(*, text: str, context: dict) -> dict:
     intent = detect_intent(text)
     public_steps = _public_reasoning_steps(context)
@@ -38,7 +48,7 @@ def run_agent(*, text: str, context: dict) -> dict:
             input_text=build_input(text, context),
         )
         return {
-            "text": result.text,
+            "text": _sanitize_citations(result.text, context),
             "intent": intent,
             "quick_actions": ["book_appointment", "view_products", "contact_business"],
             "provider": result.provider,

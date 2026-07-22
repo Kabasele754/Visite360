@@ -7,6 +7,20 @@ def _safe(value, default=""):
     return value if value not in (None, "") else default
 
 
+def _clean_visual_text(value, max_length=360):
+    text = " ".join(str(value or "").replace("```json", " ").replace("```", " ").split())
+    if not text or text.startswith(("{", "[")):
+        return ""
+    for marker in (" {", " ["):
+        position = text.find(marker)
+        if position > 20:
+            text = text[:position].strip()
+            break
+    if len(text) > max_length:
+        text = text[:max_length].rsplit(" ", 1)[0].rstrip(" ,;:-") + "…"
+    return text
+
+
 def _organization_context(organization) -> dict:
     if not organization:
         return {}
@@ -16,6 +30,19 @@ def _organization_context(organization) -> dict:
         "slug": organization.slug,
         "status": organization.status,
         "description": _safe(getattr(organization, "description", "")),
+        "website_url": _safe(getattr(organization, "website_url", "")),
+        "booking_url": _safe(getattr(organization, "booking_url", "")),
+        "public_email": _safe(getattr(organization, "public_email", "")),
+        "public_phone": _safe(getattr(organization, "public_phone", "")),
+        "social_links": {
+            key: value for key, value in {
+                "facebook": getattr(organization, "facebook_url", ""),
+                "instagram": getattr(organization, "instagram_url", ""),
+                "tiktok": getattr(organization, "tiktok_url", ""),
+                "linkedin": getattr(organization, "linkedin_url", ""),
+                "youtube": getattr(organization, "youtube_url", ""),
+            }.items() if value
+        },
     }
 
 
@@ -80,16 +107,49 @@ def get_scene_context(scene, *, tour=None) -> dict:
             "cover_image": product.cover_image.url if product.cover_image else "",
         })
 
+    enterprise = None
+    enterprise_insights = []
+    if scene:
+        try:
+            from apps.vision_ai.services.insights import latest_scene_analysis
+            enterprise = latest_scene_analysis(scene)
+            if enterprise:
+                enterprise_insights = list(
+                    enterprise.insights.order_by("-confidence").values(
+                        "kind", "label", "title", "description", "confidence", "source_providers"
+                    )[:40]
+                )
+        except Exception:
+            enterprise = None
+
+    enterprise_objects = [
+        {
+            "label": item["label"] or item["title"],
+            "title": _clean_visual_text(item["title"], 180),
+            "description": _clean_visual_text(item["description"], 320),
+            "confidence": round(float(item["confidence"] or 0), 3),
+            "kind": item["kind"],
+            "source": item["source_providers"],
+        }
+        for item in enterprise_insights
+    ]
+
     scene_payload = {
         "id": scene.id if scene else None,
         "title": scene.title if scene else "",
-        "type": profile.final_scene_type if profile else "",
-        "summary": profile.final_summary if profile else "",
-        "features": profile.final_features if profile else [],
-        "analysis_source": profile.analysis_source if profile else "",
-        "analysis_confidence": round(profile.analysis_confidence, 3) if profile else 0,
-        "detected_objects": list(deduped.values())[:30],
-        "visual_hypotheses": (profile.gemini_payload or {}).get("product_hypotheses", []) if profile else [],
+        "type": enterprise.scene_type if enterprise else (profile.final_scene_type if profile else ""),
+        "summary": _clean_visual_text(enterprise.summary if enterprise else (profile.final_summary if profile else ""), 360),
+        "features": enterprise.features if enterprise else (profile.final_features if profile else []),
+        "analysis_source": "enterprise_vision" if enterprise else (profile.analysis_source if profile else ""),
+        "analysis_confidence": round(float(enterprise.confidence), 3) if enterprise else (round(profile.analysis_confidence, 3) if profile else 0),
+        "detected_objects": enterprise_objects or list(deduped.values())[:30],
+        "recognized_text": enterprise.extracted_text[:5000] if enterprise else "",
+        "vision_pipeline": {
+            "providers": enterprise.completed_providers,
+            "analysis_id": str(enterprise.id),
+            "insight_count": len(enterprise_insights),
+        } if enterprise else {},
+        "visual_hypotheses": enterprise.products if enterprise else ((profile.gemini_payload or {}).get("product_hypotheses", []) if profile else []),
         "suggested_questions": profile.suggested_questions if profile else [],
     }
 

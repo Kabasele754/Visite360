@@ -46,6 +46,11 @@ x-app-environment: &app-environment
   AI_DEFAULT_TEXT_PROVIDER: GEMINI
   AI_DEFAULT_IMAGE_PROVIDER: GOOGLE_VERTEX
   AI_DEFAULT_VISION_PROVIDER: ULTRALYTICS
+  AI_PRIMARY_VISION_PROVIDER: fusion
+  AI_EMBEDDING_PROVIDER: ${AI_EMBEDDING_PROVIDER:-gemini}
+  AI_EMBEDDING_DIMENSIONS: ${AI_EMBEDDING_DIMENSIONS:-1536}
+  GOOGLE_EMBEDDING_NATIVE_DIMENSIONS: ${GOOGLE_EMBEDDING_NATIVE_DIMENSIONS:-768}
+  AI_ALLOW_DETERMINISTIC_EMBEDDINGS: ${AI_ALLOW_DETERMINISTIC_EMBEDDINGS:-false}
 
   # ---------------------------------------------------------------------------
   # GOOGLE VERTEX AI / GEMINI
@@ -58,6 +63,8 @@ x-app-environment: &app-environment
 
   GOOGLE_TEXT_MODEL: ${GOOGLE_TEXT_MODEL:-gemini-2.5-flash}
   GEMINI_TOUR_VISION_MODEL: ${GEMINI_TOUR_VISION_MODEL:-gemini-2.5-flash}
+  GOOGLE_VISION_MODEL: ${GOOGLE_VISION_MODEL:-gemini-2.5-flash}
+  GOOGLE_EMBEDDING_MODEL: ${GOOGLE_EMBEDDING_MODEL:-text-embedding-004}
 
   GOOGLE_IMAGE_MODEL: ${GOOGLE_IMAGE_MODEL:-imagen-4.0-generate-001}
   DEFAULT_AI_IMAGE_PROVIDER: ${DEFAULT_AI_IMAGE_PROVIDER:-GOOGLE_VERTEX}
@@ -73,22 +80,44 @@ x-app-environment: &app-environment
   OPENAI_TEXT_MODEL: ${OPENAI_TEXT_MODEL:-gpt-4.1-mini}
   OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-1}
   OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+  OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gpt-5.6}
 
   # ---------------------------------------------------------------------------
   # ULTRALYTICS / YOLO
   # ---------------------------------------------------------------------------
-  TOUR_AI_YOLO_MODEL_PATH: /app/model_weights/yolo11n.pt
+  TOUR_AI_YOLO_MODEL_NAME: ${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
+  TOUR_AI_YOLO_MODEL_PATH: /app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
   TOUR_AI_YOLO_DEVICE: ${TOUR_AI_YOLO_DEVICE:-cpu}
   TOUR_AI_YOLO_CONFIDENCE: ${TOUR_AI_YOLO_CONFIDENCE:-0.35}
   TOUR_AI_YOLO_IOU: ${TOUR_AI_YOLO_IOU:-0.45}
-  TOUR_AI_YOLO_IMAGE_SIZE: ${TOUR_AI_YOLO_IMAGE_SIZE:-640}
+  TOUR_AI_YOLO_IMAGE_SIZE: ${TOUR_AI_YOLO_IMAGE_SIZE:-896}
   TOUR_AI_YOLO_VERBOSE: ${TOUR_AI_YOLO_VERBOSE:-false}
 
-  YOLO_MODEL: /app/model_weights/yolo11n.pt
+  YOLO_MODEL: /app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
   YOLO_DEVICE: ${TOUR_AI_YOLO_DEVICE:-cpu}
   YOLO_CONFIDENCE: ${TOUR_AI_YOLO_CONFIDENCE:-0.35}
   YOLO_IOU: ${TOUR_AI_YOLO_IOU:-0.45}
   YOLO_VERBOSE: ${TOUR_AI_YOLO_VERBOSE:-false}
+
+  VISION_ENABLE_YOLO: ${VISION_ENABLE_YOLO:-true}
+  VISION_ENABLE_FLORENCE2: ${VISION_ENABLE_FLORENCE2:-false}
+  VISION_ENABLE_PADDLEOCR: ${VISION_ENABLE_PADDLEOCR:-false}
+  VISION_ENABLE_GEMINI: ${VISION_ENABLE_GEMINI:-true}
+  VISION_ENABLE_OPENAI: ${VISION_ENABLE_OPENAI:-false}
+  VISION_YOLO_MODEL: /app/model_weights/${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
+  VISION_FLORENCE_MODEL: ${VISION_FLORENCE_MODEL:-microsoft/Florence-2-base}
+  VISION_PADDLEOCR_LANG: ${VISION_PADDLEOCR_LANG:-en}
+  VISION_PUBLIC_ON_DEMAND_SCAN: ${VISION_PUBLIC_ON_DEMAND_SCAN:-true}
+  VISION_ON_DEMAND_ANALYSIS_MODE: ${VISION_ON_DEMAND_ANALYSIS_MODE:-celery}
+  VISION_ON_DEMAND_RETRY_AFTER_MS: ${VISION_ON_DEMAND_RETRY_AFTER_MS:-3000}
+  VISION_LOCAL_THREAD_WORKERS: ${VISION_LOCAL_THREAD_WORKERS:-1}
+  VISION_ANALYSIS_STALE_MINUTES: ${VISION_ANALYSIS_STALE_MINUTES:-45}
+  VISION_MAX_PANORAMA_FRAMES: ${VISION_MAX_PANORAMA_FRAMES:-12}
+  VISION_SEMANTIC_MAX_FRAMES: ${VISION_SEMANTIC_MAX_FRAMES:-8}
+
+  GOOGLE_CALENDAR_ENABLED: ${GOOGLE_CALENDAR_ENABLED:-false}
+  GOOGLE_CALENDAR_DEFAULT_TIMEZONE: ${GOOGLE_CALENDAR_DEFAULT_TIMEZONE:-Africa/Johannesburg}
+  INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
 
 
 # =============================================================================
@@ -191,6 +220,44 @@ services:
 
 
   # ---------------------------------------------------------------------------
+  # ENTERPRISE AI WORKER
+  # Dedicated queue for vision, RAG indexing and multi-agent orchestration.
+  # ---------------------------------------------------------------------------
+  ai_worker:
+    <<: *app-common
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_FULL_AI: ${INSTALL_FULL_AI:-false}
+
+    container_name: visite360_ai_worker
+
+    command: >
+      sh -c "
+      celery -A config worker
+      --loglevel=info
+      --concurrency=${AI_WORKER_CONCURRENCY:-1}
+      --queues=ai
+      --hostname=twinscopes-ai@%h
+      "
+
+    volumes:
+      - media-data:/app/media
+      - ai-models:/app/model_weights
+      - huggingface-cache:/root/.cache/huggingface
+      - paddle-cache:/root/.paddleocr
+
+    depends_on:
+      django:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
   # CELERY BEAT
   # ---------------------------------------------------------------------------
   celery_beat:
@@ -238,7 +305,7 @@ services:
       sh -c "
       mkdir -p /app/model_weights &&
       python manage.py download_tour_ai_models
-      --model yolo11n.pt
+      --model ${TOUR_AI_YOLO_MODEL_NAME:-yolo11n.pt}
       "
 
     volumes:
@@ -387,7 +454,7 @@ services:
   # POSTGRESQL
   # ---------------------------------------------------------------------------
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
 
     container_name: visite360_postgres_db
 
@@ -462,6 +529,8 @@ volumes:
   pgadmin-data:
   celery-beat-data:
   ai-models:
+  huggingface-cache:
+  paddle-cache:
 
 
 # =============================================================================

@@ -194,6 +194,40 @@ def _generate_scene_tiles(scene):
     return {"tiles_count": created_count}
 
 
+
+def _real_ai_analysis(scene):
+    """Run the real Twinscopes Vision pipeline (YOLO + optional Gemini Vision)."""
+    from apps.tour_ai_agent.vision.scene_analyzer import analyze_scene
+
+    profile = analyze_scene(scene, force=True)
+    detections = profile.local_detections or []
+    recommended_hotspots = []
+    for index, detection in enumerate(detections[:8]):
+        yaw = float(detection.get("yaw", 0.0))
+        pitch = float(detection.get("pitch", 0.0)) / 90.0
+        label = str(detection.get("label", "Object")).replace("_", " ").title()
+        recommended_hotspots.append({
+            "type": "info",
+            "label": label,
+            "title": label,
+            "description": f"Detected by Twinscopes Vision ({float(detection.get('confidence', 0)):.0%} confidence).",
+            "selected_icon": "info",
+            "yaw": yaw,
+            "pitch": pitch,
+        })
+
+    return {
+        "scene_title": scene.title,
+        "scene_type": profile.final_scene_type or profile.local_scene_type or "general",
+        "confidence": float(profile.analysis_confidence or profile.local_scene_confidence or 0),
+        "summary": profile.final_summary,
+        "detected_features": profile.final_features or profile.local_features or [],
+        "detections": detections,
+        "analysis_source": profile.analysis_source,
+        "gemini": profile.gemini_payload or {},
+        "recommended_hotspots": recommended_hotspots,
+    }
+
 def _mock_ai_analysis(scene):
     title = (scene.title or "").lower()
 
@@ -482,7 +516,7 @@ def analyze_scene_ai_task(self, scene_id):
     )
 
     try:
-        analysis = _mock_ai_analysis(scene)
+        analysis = _real_ai_analysis(scene)
 
         scene.ai_analysis = analysis
         scene.ai_analysis_status = PipelineStatus.READY
@@ -524,7 +558,7 @@ def generate_ai_hotspots_task(self, scene_id):
     )
 
     try:
-        analysis = scene.ai_analysis or _mock_ai_analysis(scene)
+        analysis = scene.ai_analysis or _real_ai_analysis(scene)
         created_ids = _generate_ai_hotspots(scene, analysis)
 
         scene.ai_hotspots_status = PipelineStatus.READY
@@ -801,7 +835,7 @@ def run_scene_pipeline_task(self, scene_id):
 
     try:
         scene.refresh_from_db()
-        analysis = _mock_ai_analysis(scene)
+        analysis = _real_ai_analysis(scene)
 
         scene.ai_analysis = analysis
         scene.ai_analysis_status = PipelineStatus.READY
@@ -844,7 +878,7 @@ def run_scene_pipeline_task(self, scene_id):
 
     try:
         scene.refresh_from_db()
-        analysis = scene.ai_analysis or _mock_ai_analysis(scene)
+        analysis = scene.ai_analysis or _real_ai_analysis(scene)
         created_ids = _generate_ai_hotspots(scene, analysis)
 
         scene.ai_hotspots_status = PipelineStatus.READY

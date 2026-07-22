@@ -1,24 +1,8 @@
-[ req ]
-default_bits       = 2048
-distinguished_name = req_distinguished_name
-req_extensions     = v3_req
-prompt             = no
-
-[ req_distinguished_name ]
-C  = EN                                   # Code du pays
-ST = washington                        # État ou province
-L  = washington                                # Ville
-O  = 5BSS                         # Nom de l'organisation
-OU = Votre Unité Organisationnelle        # Unité organisationnelle
-CN = s4e-elevatai.com                  # Nom commun (domaine principal)
-
-[ v3_req ]
-keyUsage = critical, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
-subjectAltName = @alt_names
-
-[ alt_names ]
-DNS.1 = twinscopes.com               # Domaine principal
-DNS.2 = www.twinscopes.com          # Sous-domaine www
-DNS.3 = pgadmin.twinscopes.com      # Sous-domaine pgAdmin
-DNS.4 = api.twinscopes.com          # Autre sous-domaine
+openssl_conf = default_conf
+[default_conf]
+ssl_conf = ssl_sect
+[ssl_sect]
+system_default = system_default_sect
+[system_default_sect]
+MinProtocol = TLSv1.2
+CipherString = DEFAULT@SECLEVEL=2

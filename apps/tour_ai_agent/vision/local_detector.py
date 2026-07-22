@@ -64,9 +64,9 @@ class LocalObjectDetector:
                 verbose=False,
                 device=self.device,
             )
-        except Exception:
-            logger.exception("Local YOLO detection failed")
-            return []
+        except Exception as exc:
+            logger.exception("Local YOLO detection failed for %s: %s", image_path, exc)
+            raise RuntimeError(f"Local YOLO detection failed: {exc}") from exc
 
         detections: list[Detection] = []
         for result in results:

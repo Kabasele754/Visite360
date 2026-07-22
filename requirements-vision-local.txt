@@ -1,0 +1,13 @@
+-r requirements.txt
+
+# Semantic/local vision additions
+paddleocr>=3.0,<4
+transformers>=4.48
+accelerate>=1.2
+
+# PaddlePaddle must match the local OS, CPU architecture and Python version.
+# Install it separately from the official PaddlePaddle installation selector.
+
+# Optional camera formats (HEIC/HEIF/AVIF)
+pillow-heif
+pillow-avif-plugin

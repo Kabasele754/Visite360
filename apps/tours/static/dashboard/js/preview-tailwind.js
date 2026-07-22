@@ -1556,6 +1556,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateSceneMeta(scene) {
         if (sceneCountBadge) sceneCountBadge.textContent = `${getNavigationSceneList().length}`;
         markActiveSceneCard(scene?.id);
+        if (scene?.id) {
+            window.dispatchEvent(new CustomEvent("twinscopes:scene-changed", {
+                detail: { sceneId: scene.id, title: scene.title || "" }
+            }));
+        }
     }
 
     const previewMediaModal = $("previewMediaModal");
@@ -3252,6 +3257,116 @@ document.addEventListener("DOMContentLoaded", () => {
         }, { passive: false, capture: true });
     }
 
+    function setupVisionLongPress() {
+        if (!previewViewer || previewViewer.dataset.visionLongPressReady === "1") return;
+        previewViewer.dataset.visionLongPressReady = "1";
+
+        let holdMs = Number(window.TOUR_AI_CONFIG?.longPressMs || 650);
+        let timer = null;
+        let activePointerId = null;
+        let startX = 0;
+        let startY = 0;
+        let lastX = 0;
+        let lastY = 0;
+        let fired = false;
+        let suppressNextClick = false;
+        const moveTolerance = 13;
+
+        window.addEventListener("twinscopes:vision-config", (event) => {
+            const value = Number(event.detail?.longPressMs);
+            if (Number.isFinite(value)) holdMs = Math.max(450, Math.min(value, 1200));
+        });
+
+        function ignoredTarget(target) {
+            return !!target?.closest?.(
+                "button,a,input,textarea,select,[role='button'],.hotspot,.hotspot-container," +
+                ".tour-ai-agent,.preview-info-panel,.preview-media-modal,.scene-stack-panel,.preview-control"
+            );
+        }
+
+        function cancel() {
+            if (timer) window.clearTimeout(timer);
+            timer = null;
+            activePointerId = null;
+        }
+
+        function showProbe(clientX, clientY) {
+            const rect = previewViewer.getBoundingClientRect();
+            const probe = document.createElement("span");
+            probe.className = "preview-vision-probe";
+            probe.style.left = `${clientX - rect.left}px`;
+            probe.style.top = `${clientY - rect.top}px`;
+            previewViewer.appendChild(probe);
+            window.setTimeout(() => probe.remove(), 950);
+        }
+
+        function fireLongPress(clientX, clientY) {
+            const view = getCurrentView();
+            if (!view || !currentSceneId) return;
+            const rect = previewViewer.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+            const coords = view.screenToCoordinates({ x, y });
+            if (!Number.isFinite(coords?.yaw) || !Number.isFinite(coords?.pitch)) return;
+
+            fired = true;
+            suppressNextClick = true;
+            showProbe(clientX, clientY);
+            try { navigator.vibrate?.(24); } catch (_) {}
+            const detail = {
+                sceneId: currentSceneId,
+                yaw: coords.yaw,
+                pitch: coords.pitch,
+                clientX,
+                clientY,
+            };
+            if (window.TwinscopesAgent?.inspectPoint) {
+                window.TwinscopesAgent.inspectPoint(detail);
+            } else {
+                window.dispatchEvent(new CustomEvent("twinscopes:vision-long-press", { detail }));
+            }
+        }
+
+        previewViewer.addEventListener("pointerdown", (event) => {
+            if (isTransitioning || ignoredTarget(event.target)) return;
+            if (event.pointerType === "mouse" && event.button !== 0) return;
+            if (!getCurrentView()) return;
+            cancel();
+            fired = false;
+            activePointerId = event.pointerId;
+            startX = lastX = event.clientX;
+            startY = lastY = event.clientY;
+            timer = window.setTimeout(() => {
+                timer = null;
+                if (activePointerId === event.pointerId) fireLongPress(lastX, lastY);
+            }, holdMs);
+        }, { passive: true, capture: true });
+
+        previewViewer.addEventListener("pointermove", (event) => {
+            if (event.pointerId !== activePointerId) return;
+            lastX = event.clientX;
+            lastY = event.clientY;
+            if (Math.hypot(lastX - startX, lastY - startY) > moveTolerance) cancel();
+        }, { passive: true, capture: true });
+
+        ["pointerup", "pointercancel", "pointerleave"].forEach((type) => {
+            previewViewer.addEventListener(type, (event) => {
+                if (event.pointerId === activePointerId) cancel();
+            }, { passive: true, capture: true });
+        });
+
+        previewViewer.addEventListener("contextmenu", (event) => {
+            if (!ignoredTarget(event.target)) event.preventDefault();
+        }, { capture: true });
+        previewViewer.addEventListener("click", (event) => {
+            if (!suppressNextClick) return;
+            suppressNextClick = false;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }, { capture: true });
+    }
+
     function bindZoomButton(button, handler) {
         if (!button) return;
         button.addEventListener("click", (event) => {
@@ -3344,6 +3459,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSceneRail();
     renderFloorNavigator();
     setupMobileZoomGestures();
+    setupVisionLongPress();
 
     const initialScene = getInitialSceneFromUrl() || scenes[0];
     currentSceneId = initialScene.id;

@@ -1,0 +1,10 @@
+# Optional heavy AI stack. Install in the dedicated AI worker image when needed.
+transformers>=4.48
+accelerate>=1.2
+sentence-transformers>=3.3
+paddleocr>=2.9
+# Install a PaddlePaddle build compatible with your CPU/GPU platform separately.
+
+# Optional camera formats (HEIC/HEIF/AVIF)
+pillow-heif
+pillow-avif-plugin

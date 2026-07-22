@@ -20,6 +20,19 @@ class Organization(TimeStampedModel):
         blank=True
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    description = models.TextField(blank=True)
+    website_url = models.URLField(blank=True)
+    booking_url = models.URLField(blank=True)
+    public_email = models.EmailField(blank=True)
+    public_phone = models.CharField(max_length=40, blank=True)
+    facebook_url = models.URLField(blank=True)
+    instagram_url = models.URLField(blank=True)
+    tiktok_url = models.URLField(blank=True)
+    linkedin_url = models.URLField(blank=True)
+    youtube_url = models.URLField(blank=True)
+    social_links_verified_at = models.DateTimeField(null=True, blank=True)
+    ai_use_website = models.BooleanField(default=True)
+    ai_auto_discover_social_links = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
