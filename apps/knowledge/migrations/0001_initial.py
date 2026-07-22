@@ -5,10 +5,22 @@ import django.db.models.deletion
 import pgvector.django.vector
 
 
+def enable_vector_before_models(apps, schema_editor):
+    """Enable pgvector before any VectorField table is created.
+
+    SQLite is kept compatible for local development. On PostgreSQL the
+    database user created by the official image owns the application database
+    and can install the bundled extension.
+    """
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute("CREATE EXTENSION IF NOT EXISTS vector")
+
+
 class Migration(migrations.Migration):
     initial = True
     dependencies = [("organizations", "0003_organization_logo")]
     operations = [
+        migrations.RunPython(enable_vector_before_models, migrations.RunPython.noop),
         migrations.CreateModel(
             name="KnowledgeSource",
             fields=[
