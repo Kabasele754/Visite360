@@ -1,0 +1,58 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}{{ resource.label }} · Control Center{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=4">{% endblock %}
+
+{% block content %}
+<div class="ts-control-center">
+    <nav class="ts-control-breadcrumb" aria-label="Breadcrumb">
+        <a href="{% url 'platform-console-overview' %}">Control Center</a><span>›</span><strong>{{ resource.label }}</strong>
+    </nav>
+
+    <section class="ts-control-pagehead">
+        <div><span class="ts-control-kicker">{{ resource.icon }} Platform data</span><h1>{{ resource.label }}</h1><p>{{ resource.description }}</p></div>
+        {% if not resource.readonly and resource.form_fields %}<a href="{% url 'platform-console-resource-create' resource.key %}" class="ts-control-primary">Add {{ resource.singular|lower }}</a>{% endif %}
+    </section>
+
+    <section class="ts-control-card ts-control-table-card">
+        <form method="get" class="ts-control-toolbar">
+            <label class="ts-control-search"><span aria-hidden="true">⌕</span><input type="search" name="q" value="{{ query }}" placeholder="Search {{ resource.label|lower }}"></label>
+            {% if status_choices %}
+            <select name="status" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                {% for value, label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            {% endif %}
+            <button type="submit">Filter</button>
+            {% if query or selected_status %}<a href="{% url 'platform-console-resource-list' resource.key %}">Reset</a>{% endif %}
+        </form>
+
+        <div class="ts-control-table-scroll">
+            <table class="ts-control-table">
+                <thead><tr>{% for path, label in resource.columns %}<th>{{ label }}</th>{% endfor %}<th class="ts-control-table__actions">Actions</th></tr></thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        {% for value in row.values %}<td>{{ value }}</td>{% endfor %}
+                        <td class="ts-control-table__actions">
+                            <a href="{{ row.action_url }}">{{ row.action_label }}</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="{{ resource.columns|length|add:1 }}"><div class="ts-control-empty">No records matched this filter.</div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="ts-control-pagination" aria-label="Pagination">
+            {% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&status={{ selected_status|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+            <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&status={{ selected_status|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+        </nav>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

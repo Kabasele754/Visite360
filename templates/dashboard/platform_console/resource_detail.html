@@ -1,0 +1,18 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% block title %}{{ resource.singular }} details · Control Center{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=4">{% endblock %}
+{% block content %}
+<div class="ts-control-center ts-control-center--form">
+    <nav class="ts-control-breadcrumb"><a href="{% url 'platform-console-overview' %}">Control Center</a><span>›</span><a href="{% url 'platform-console-resource-list' resource.key %}">{{ resource.label }}</a><span>›</span><strong>Details</strong></nav>
+    <section class="ts-control-pagehead">
+        <div><span class="ts-control-kicker">{{ resource.icon }} {{ resource.singular }}</span><h1>{{ object }}</h1><p>Read-only operational details for this record.</p></div>
+        {% if not resource.readonly %}<a class="ts-control-primary" href="{% url 'platform-console-resource-edit' resource.key object.pk %}">Edit record</a>{% endif %}
+    </section>
+    <section class="ts-control-card ts-control-detail">
+        {% for field in detail_fields %}
+        <div class="ts-control-detail__row"><strong>{{ field.label }}</strong>{% if field.structured %}<pre>{{ field.value }}</pre>{% else %}<span>{{ field.value }}</span>{% endif %}</div>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

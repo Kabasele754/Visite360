@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("", include("apps.public.urls")),
     
+    path("", include("apps.platform_console.urls")),
     path("", include("apps.organizations.dashboard_urls")),
     path("", include("apps.places.dashboard_urls")),
     path("", include("apps.tours.dashboard_urls")),
@@ -37,6 +38,7 @@ urlpatterns = [
     path("api/enterprise/chat/", include("apps.ai_chat.urls")),
     path("api/enterprise/integrations/", include("apps.integrations.urls")),
     path("api/enterprise/monitoring/", include("apps.monitoring.urls")),
+    path("api/public/discovery/", include("apps.domain_intelligence.urls")),
 
     path("api/", include("apps.users.urls")),
     path("accounts/", include("apps.users.account_urls")),

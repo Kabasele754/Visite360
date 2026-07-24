@@ -11,7 +11,7 @@
     <div class="tour-ai-quick" data-ai-quick>
       <button type="button" data-ai-prompt="What can you see in this scene?">Analyze scene</button>
       <button type="button" data-ai-prompt="Show me verified products related to this scene">Related products</button>
-      <button type="button" data-ai-prompt="Tell me about this business and place">About this place</button>
+      <button type="button" data-ai-prompt="Tell me about this business, its verified services, specialists and public contacts">Verified services</button>
       <button type="button" data-ai-prompt="I want to book an appointment">Book appointment</button>
       <button type="button" data-ai-prompt="I want to contact the business">Contact</button>
     </div>
@@ -35,6 +35,7 @@
         <div class="tour-ai-vision-attributes" data-vision-attributes></div>
         <div class="tour-ai-vision-sources" data-vision-sources hidden></div>
         <div class="tour-ai-vision-actions">
+          <button type="button" class="primary" data-vision-rescan hidden>Scan again</button>
           <button type="button" class="primary" data-vision-ask>Ask Twinscopes AI</button>
           <button type="button" data-vision-dismiss>Close</button>
         </div>
@@ -42,6 +43,6 @@
     </div>
   </aside>
 </div>
-<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=vision-9">
-<script>window.TOUR_AI_CONFIG={tourId:{{ tour.id }},bootstrapUrl:"{% url 'tour_ai_agent:bootstrap' %}",messageUrl:"{% url 'tour_ai_agent:message' %}",signalUrl:"{% url 'tour_ai_agent:signal' %}",actionUrl:"{% url 'tour_ai_agent:action' %}",inspectUrl:"{% url 'tour_ai_agent:inspect-point' %}",locale:"{{ request.LANGUAGE_CODE|default:'en' }}",longPressMs:650};</script>
-<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=public-errors-9"></script>
+<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=preview-intelligence-seo-14">
+<script>window.TOUR_AI_CONFIG={tourId:{{ tour.id }},selectionRequired:true,bootstrapUrl:"{% url 'tour_ai_agent:bootstrap' %}",messageUrl:"{% url 'tour_ai_agent:message' %}",signalUrl:"{% url 'tour_ai_agent:signal' %}",actionUrl:"{% url 'tour_ai_agent:action' %}",inspectUrl:"{% url 'tour_ai_agent:inspect-point' %}",locale:"{{ request.LANGUAGE_CODE|default:'en' }}",longPressMs:650};</script>
+<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=preview-intelligence-seo-14"></script>

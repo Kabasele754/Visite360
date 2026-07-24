@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import io
+import importlib.util
 import json
 import logging
+import os
 import threading
 from dataclasses import dataclass, field
 from typing import Any
@@ -33,6 +35,21 @@ class ProviderVisionOutput:
 _MODEL_LOCK = threading.Lock()
 _YOLO_MODELS: dict[str, Any] = {}
 _PADDLE_ENGINES: dict[str, Any] = {}
+_PROVIDER_AVAILABILITY_WARNED: set[str] = set()
+
+
+def _module_available(module_name: str) -> bool:
+    try:
+        return importlib.util.find_spec(module_name) is not None
+    except (ImportError, AttributeError, ValueError):
+        return False
+
+
+def _warn_provider_once(provider: str, message: str) -> None:
+    if provider in _PROVIDER_AVAILABILITY_WARNED:
+        return
+    _PROVIDER_AVAILABILITY_WARNED.add(provider)
+    logger.warning(message)
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:
@@ -126,10 +143,27 @@ class PaddleOCRProvider:
     name = "paddleocr"
 
     def __init__(self):
+        # PaddleOCR is only the high-level pipeline. Its actual inference
+        # runtime is imported as ``paddle`` from the separate paddlepaddle
+        # package. Check it before constructing PaddleOCR so a missing runtime
+        # does not trigger model downloads followed by a long traceback.
+        if not _module_available("paddle"):
+            raise RuntimeError(
+                "PaddleOCR runtime unavailable: install the paddlepaddle package "
+                "in the active Python environment."
+            )
+        if not _module_available("paddleocr"):
+            raise RuntimeError("PaddleOCR package is not installed.")
+
+        # Avoid the PaddleX model-hoster connectivity probe during application
+        # startup. Required model files are still downloaded on first use when
+        # they are not already cached.
+        os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
+
         try:
             from paddleocr import PaddleOCR
         except ImportError as exc:
-            raise RuntimeError("paddleocr is not installed") from exc
+            raise RuntimeError("PaddleOCR package is not installed.") from exc
 
         language = str(settings.VISION_PADDLEOCR_LANG)
         engine_key = f"{language}:{getattr(settings, 'VISION_PADDLEOCR_DEVICE', 'cpu')}"
@@ -369,7 +403,7 @@ LOCAL EVIDENCE:
         """Identify only the item intersecting the center reticle of a crop."""
         local_context = context or {}
         prompt = """You are the point-inspection stage of Twinscopes computer vision.
-The image has two panels: CONTEXT and DETAIL - TARGET. Both show the same panorama point, and the DETAIL panel is more tightly zoomed. Identify ONLY the distinct visible object, product package, sign, or readable text intersecting the cyan center reticle in the DETAIL panel. Use CONTEXT only to understand the target, and ignore every other item.
+The image is either (a) one EXACT USER SELECTION captured directly from the panorama viewer, or (b) two panels named CONTEXT and DETAIL - TARGET. When it is an EXACT USER SELECTION, every pixel outside the user-drawn rectangle has already been removed: identify only the principal distinct object, product package, sign, or readable text inside that framed image. When two panels are present, identify only the item intersecting the cyan center reticle in DETAIL and use CONTEXT only for orientation.
 Return ONLY strict JSON:
 {
   "found": true,
@@ -384,8 +418,12 @@ Return ONLY strict JSON:
   "confidence": 0.0
 }
 Rules:
-- Set found=false when no distinct item intersects the reticle.
-- Never return a description of the whole room, aisle, shelf, or panorama unless the reticle is truly on that structure.
+- Inspect the entire exact crop carefully before deciding that nothing is present. Small products, packages, labels, controls, furniture details, medical equipment, signs and readable text all count as distinct targets when visibly supported.
+- Set found=false only when the exact selection is genuinely empty, too blurred/occluded to verify, or when no distinct item intersects the reticle in two-panel mode.
+- The context may say inspection_pass=enhanced_rescan. That image contains the same user-selected pixels with contrast/sharpness enhancement; do not treat enhancement as new visual evidence outside the crop.
+- In exact-selection mode, prefer the object occupying the center or largest meaningful part of the crop; never infer anything outside the crop.
+- Use OCR evidence only for text visibly present in the selected pixels, and copy visible_text exactly when readable.
+- Never return a description of the whole room, aisle, shelf, or panorama unless that structure itself clearly fills the exact selection or reticle.
 - Never invent brand, product name, price, stock, URL, service, or hidden detail.
 - Do not return markdown or a second JSON object.
 - Treat the crop as upright; do not describe panorama projection, mirroring or an upside-down camera view.
@@ -439,10 +477,19 @@ def enabled_provider_names(requested: list[str] | None = None) -> list[str]:
         or getattr(settings, "GEMINI_API_KEY", "")
     )
     openai_configured = bool(getattr(settings, "OPENAI_API_KEY", ""))
+    paddle_enabled = bool(getattr(settings, "VISION_ENABLE_PADDLEOCR", False))
+    paddle_runtime_ready = _module_available("paddle") and _module_available("paddleocr")
+    if paddle_enabled and not paddle_runtime_ready:
+        _warn_provider_once(
+            "paddleocr",
+            "PaddleOCR is enabled but its paddlepaddle runtime is unavailable; "
+            "continuing with YOLO and semantic vision without local OCR.",
+        )
+
     flags = {
         "yolo": bool(getattr(settings, "VISION_ENABLE_YOLO", False)),
         "florence2": bool(getattr(settings, "VISION_ENABLE_FLORENCE2", False)),
-        "paddleocr": bool(getattr(settings, "VISION_ENABLE_PADDLEOCR", False)),
+        "paddleocr": paddle_enabled and paddle_runtime_ready,
         "gemini": bool(getattr(settings, "VISION_ENABLE_GEMINI", False)) and gemini_configured,
         "openai": bool(getattr(settings, "VISION_ENABLE_OPENAI", False)) and openai_configured,
     }

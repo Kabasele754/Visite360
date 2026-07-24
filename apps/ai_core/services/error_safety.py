@@ -63,11 +63,17 @@ def public_error_copy(locale: str = "en", *, kind: str = "temporary") -> tuple[s
             if french else
             ("Visual details are being prepared", "This scene is still being prepared. Please try again in a moment.")
         )
-    if kind == "no_object":
+    if kind in {"no_object", "refine_selection"}:
         return (
-            ("Aucun élément précis trouvé", "Maintenez votre doigt ou la souris directement sur l’élément visible, sans déplacer l’image.")
+            (
+                "Ajustons la zone de scan",
+                "Twinscopes a rescanné les pixels sélectionnés sans pouvoir confirmer l’élément avec assez de précision. Rapprochez le cadre autour de l’objet, puis relancez le scan.",
+            )
             if french else
-            ("No specific item found", "Press and hold directly on the visible item without moving the scene.")
+            (
+                "Let’s refine the scan",
+                "Twinscopes rescanned the selected pixels but could not identify the item with enough confidence. Move the frame closer around the object, then scan again.",
+            )
         )
     return (
         ("Détails visuels temporairement indisponibles", "Nous ne pouvons pas afficher ces informations maintenant. Réessayez dans un instant.")

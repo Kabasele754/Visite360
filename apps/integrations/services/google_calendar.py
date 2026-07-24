@@ -43,11 +43,23 @@ def create_event_for_appointment(appointment, connection: IntegrationConnection,
     starts_at = timezone.make_aware(datetime.combine(appointment.preferred_date, appointment_time))
     duration_minutes = duration_minutes or getattr(appointment.appointment_type, "duration_minutes", None) or 30
     ends_at = starts_at + timedelta(minutes=duration_minutes)
+    context_lines = [
+        appointment.notes,
+        f"Practitioner: {appointment.practitioner_name}" if getattr(appointment, "practitioner_name", "") else "",
+        f"Specialty: {appointment.specialty_name}" if getattr(appointment, "specialty_name", "") else "",
+        f"Reason for visit: {appointment.reason_for_visit}" if getattr(appointment, "reason_for_visit", "") else "",
+        f"Mode: {appointment.appointment_mode}" if getattr(appointment, "appointment_mode", "") else "",
+        f"Phone: {appointment.phone}" if appointment.phone else "",
+    ]
     event = GoogleCalendarService(connection).create_event(
-        summary=f"{appointment.organization.name}: {appointment.full_name}",
+        summary=" — ".join(filter(None, [
+            appointment.organization.name,
+            getattr(appointment, "specialty_name", ""),
+            appointment.full_name,
+        ])),
         starts_at=starts_at,
         ends_at=ends_at,
-        description=appointment.notes,
+        description="\n".join(line for line in context_lines if line),
         attendees=[appointment.email] if appointment.email else [],
         calendar_id=connection.settings.get("calendar_id", "primary"),
     )

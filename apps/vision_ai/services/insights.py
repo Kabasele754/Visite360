@@ -448,7 +448,6 @@ def serialize_insight(request, insight: VisionInsight, *, tour_id: int, distance
         "description": _card_text(insight.description, max_length=320) or _safe_description(insight.label, attributes),
         "confidence": round(float(insight.confidence or 0), 4),
         "confidence_percent": int(round(float(insight.confidence or 0) * 100)),
-        "source_providers": insight.source_providers,
         "attributes": {
             key: value for key, value in attributes.items()
             if key in {"category", "color", "material", "condition", "kind", "meaning", "language"} and value

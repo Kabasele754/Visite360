@@ -23,9 +23,9 @@
 
     <div class="ts-header-actions">
       {% if search_mode == 'home' %}
-      <button type="button" class="ts-icon-button search-trigger" aria-label="Search virtual tours">
+      <a href="{% url 'public_search' %}" class="ts-icon-button search-trigger" aria-label="Search virtual tours">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
-      </button>
+      </a>
       {% elif search_mode == 'products' %}
       <button type="button" class="ts-icon-button" data-market-filter-open aria-label="Search and filter products">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
@@ -54,7 +54,7 @@
   </a>
   <div class="ts-mobile-top-actions__right">
     {% if mobile_back %}<button type="button" class="ts-icon-button ts-mobile-header-back" data-market-back aria-label="Go back"><svg viewBox="0 0 24 24" fill="none"><path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>{% endif %}
-    {% if search_mode == 'home' %}<button type="button" class="ts-icon-button search-trigger" aria-label="Search virtual tours"><svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>{% elif search_mode == 'products' %}<button type="button" class="ts-icon-button" data-market-filter-open aria-label="Search and filter products"><svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>{% endif %}
+    {% if search_mode == 'home' %}<a href="{% url 'public_search' %}" class="ts-icon-button search-trigger" aria-label="Search virtual tours"><svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></a>{% elif search_mode == 'products' %}<button type="button" class="ts-icon-button" data-market-filter-open aria-label="Search and filter products"><svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.6 4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>{% endif %}
     <button type="button" class="ts-icon-button" data-ts-theme-toggle aria-label="Switch color theme"><svg class="ts-theme-sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2M12 19.5v2M21.5 12h-2M4.5 12h-2M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4M18.7 18.7l-1.4-1.4M6.7 6.7 5.3 5.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><svg class="ts-theme-moon" viewBox="0 0 24 24" fill="none"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
   </div>
 </div>

@@ -336,6 +336,11 @@ class AppointmentRequest(TimeStampedModel):
     preferred_time = models.TimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
     source = models.CharField(max_length=40, default="tour")
+    practitioner_name = models.CharField(max_length=255, blank=True)
+    specialty_name = models.CharField(max_length=180, blank=True)
+    reason_for_visit = models.TextField(blank=True)
+    appointment_mode = models.CharField(max_length=24, default="in_person")
+    metadata = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 
 

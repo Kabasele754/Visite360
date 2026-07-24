@@ -1,0 +1,35 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}{% if mode == 'create' %}Add{% else %}Edit{% endif %} {{ resource.singular }} · Control Center{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=4">{% endblock %}
+
+{% block content %}
+<div class="ts-control-center ts-control-center--form">
+    <nav class="ts-control-breadcrumb" aria-label="Breadcrumb"><a href="{% url 'platform-console-overview' %}">Control Center</a><span>›</span><a href="{% url 'platform-console-resource-list' resource.key %}">{{ resource.label }}</a><span>›</span><strong>{% if mode == 'create' %}Add{% else %}Edit{% endif %}</strong></nav>
+
+    <section class="ts-control-pagehead">
+        <div><span class="ts-control-kicker">{{ resource.icon }} {{ resource.singular }}</span><h1>{% if mode == 'create' %}Add {{ resource.singular|lower }}{% else %}Edit {{ object }}{% endif %}</h1><p>{{ resource.description }}</p></div>
+    </section>
+
+    <form method="post" enctype="multipart/form-data" class="ts-control-card ts-control-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="ts-control-form__error">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="ts-control-form__grid">
+            {% for field in form %}
+            <label class="{% if field.field.widget.input_type == 'checkbox' %}ts-control-form__checkbox{% endif %}">
+                <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+                {{ field }}
+                {% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}
+                {% for error in field.errors %}<em>{{ error }}</em>{% endfor %}
+            </label>
+            {% endfor %}
+        </div>
+        <footer class="ts-control-form__actions">
+            <a href="{% url 'platform-console-resource-list' resource.key %}">Cancel</a>
+            {% if mode == 'edit' and resource.allow_delete %}<a class="danger" href="{% url 'platform-console-resource-delete' resource.key object.pk %}">Delete</a>{% endif %}
+            <button type="submit">Save changes</button>
+        </footer>
+    </form>
+</div>
+{% endblock %}

@@ -1798,7 +1798,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         ${fr ? "Ouvrir le document" : "Open document"}
                     </a>
                 </div>
-                <small class="preview-error-reference">${fr ? "Référence" : "Reference"}: ${reference}</small>
             </div>`;
 
         previewMediaBody.querySelector("[data-pdf-retry]")?.addEventListener("click", () => {
@@ -1938,12 +1937,53 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
             delete shell.dataset.rendering;
             const reference = reportPreviewTechnicalError("PDF-PAGE", error, { pageNumber });
-            shell.innerHTML = `<div class="preview-pdf-page-error">${previewLocaleIsFrench() ? "Cette page ne peut pas être affichée." : "This page could not be displayed."}<small>${previewLocaleIsFrench() ? "Référence" : "Reference"}: ${reference}</small></div>`;
+            shell.innerHTML = `<div class="preview-pdf-page-error">${previewLocaleIsFrench() ? "Cette page ne peut pas être affichée." : "This page could not be displayed."}</div>`;
+        }
+    }
+
+    async function probePdfDocument(url) {
+        try {
+            const response = await fetch(url, {
+                method: "HEAD",
+                credentials: "same-origin",
+                cache: "no-cache",
+                headers: { Accept: "application/pdf" },
+            });
+            if (!response.ok) throw new Error(`PDF HTTP ${response.status}`);
+            const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+            if (contentType && !contentType.includes("application/pdf") && !contentType.includes("octet-stream")) {
+                throw new Error(`Invalid PDF response: ${contentType}`);
+            }
+            return {
+                size: Number(response.headers.get("content-length") || 0),
+                acceptsRanges: String(response.headers.get("accept-ranges") || "").toLowerCase().includes("bytes"),
+            };
+        } catch (error) {
+            // Some storage/CDN layers do not implement HEAD correctly. A small
+            // byte-range request verifies both access and PDF signature without
+            // loading the whole document into phone memory.
+            const response = await fetch(url, {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-cache",
+                headers: {
+                    Accept: "application/pdf",
+                    Range: "bytes=0-7",
+                },
+            });
+            if (!response.ok && response.status !== 206) throw error;
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            const signature = String.fromCharCode(...bytes.slice(0, 5));
+            if (signature !== "%PDF-") throw new Error("The server response is not a valid PDF file.");
+            const range = String(response.headers.get("content-range") || "");
+            const total = Number(range.split("/").pop() || 0);
+            return { size: total, acceptsRanges: response.status === 206 };
         }
     }
 
     async function renderPdfInsideDialog(url) {
         const token = ++activePdfRenderToken;
+        const fr = previewLocaleIsFrench();
 
         try { activePdfObserver?.disconnect?.(); } catch (_) {}
         activePdfObserver = null;
@@ -1966,8 +2006,8 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="preview-pdf-reader is-rendering" data-pdf-reader>
                 <div class="preview-pdf-loading">
                     <span></span>
-                    <strong>Loading document…</strong>
-                    <small>Preparing the first page</small>
+                    <strong>${fr ? "Ouverture du document…" : "Opening document…"}</strong>
+                    <small>${fr ? "Préparation de la première page" : "Preparing the first page"}</small>
                 </div>
                 <div class="preview-pdf-pages" data-pdf-pages></div>
             </div>`;
@@ -1979,7 +2019,9 @@ document.addEventListener("DOMContentLoaded", () => {
             await waitForPdfContainer(reader);
             if (token !== activePdfRenderToken) return;
 
-            console.info("[PDF.js] loading module", { moduleUrl, workerUrl, url });
+            const documentInfo = await probePdfDocument(url);
+            if (token !== activePdfRenderToken) return;
+
             const importedPdfJs = await importPdfJsModule(moduleUrl);
             const pdfjsLib = importedPdfJs.module;
             const effectiveWorkerUrl = importedPdfJs.moduleUrl.includes("/legacy/")
@@ -1993,67 +2035,40 @@ document.addEventListener("DOMContentLoaded", () => {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = effectiveWorkerUrl;
             }
 
-            const response = await fetch(url, {
-                method: "GET",
-                credentials: "same-origin",
-                cache: "force-cache",
-                headers: {
+            const disableWorker = shouldDisablePdfWorker();
+            // URL mode lets PDF.js request only the byte ranges and pages it
+            // needs. This avoids loading a large hospital brochure into RAM on
+            // physical iPhone/Android devices.
+            activePdfLoadingTask = pdfjsLib.getDocument({
+                url,
+                withCredentials: true,
+                httpHeaders: {
                     Accept: "application/pdf",
                     "X-Requested-With": "XMLHttpRequest",
                 },
-            });
-
-            if (!response.ok) throw new Error(`PDF HTTP ${response.status}`);
-
-            const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-            if (contentType && !contentType.includes("application/pdf") && !contentType.includes("octet-stream")) {
-                throw new Error(`Invalid PDF response: ${contentType}`);
-            }
-
-            const pdfBytes = new Uint8Array(await response.arrayBuffer());
-            if (!pdfBytes.length) throw new Error("The PDF file is empty.");
-
-            const signature = String.fromCharCode(...pdfBytes.slice(0, 5));
-            if (signature !== "%PDF-") {
-                throw new Error("The server response is not a valid PDF file.");
-            }
-            if (token !== activePdfRenderToken) return;
-
-            const disableWorker = shouldDisablePdfWorker();
-
-            activePdfLoadingTask = pdfjsLib.getDocument({
-                data: pdfBytes,
                 isEvalSupported: false,
                 disableWorker,
                 disableAutoFetch: isMobileViewport(),
-                disableStream: true,
-                useWorkerFetch: false,
+                disableStream: false,
+                rangeChunkSize: isMobileViewport() ? 65536 : 262144,
+                useWorkerFetch: !disableWorker,
                 verbosity: 0,
-            });
-
-            console.info("[PDF.js] document task created", {
-                disableWorker,
-                samsungInternet: isSamsungInternet(),
-                mobile: isMobileViewport(),
-                bytes: pdfBytes.length,
             });
 
             const pdf = await activePdfLoadingTask.promise;
             activePdfDocument = pdf;
             if (token !== activePdfRenderToken) return;
 
-            // Crée des emplacements légers. On ne crée pas tous les canvas à la fois.
             const shells = [];
             for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
                 const shell = document.createElement("article");
                 shell.className = "preview-pdf-page preview-pdf-page-placeholder";
                 shell.dataset.pageNumber = String(pageNumber);
-                shell.innerHTML = `<div class="preview-pdf-page-placeholder-label">Page ${pageNumber}</div>`;
+                shell.innerHTML = `<div class="preview-pdf-page-placeholder-label">${fr ? "Page" : "Page"} ${pageNumber}</div>`;
                 pagesRoot.appendChild(shell);
                 shells.push(shell);
             }
 
-            // La première page est rendue avant de retirer le loader.
             await renderPdfPage({
                 pdf,
                 pageNumber: 1,
@@ -2065,8 +2080,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
             reader.classList.remove("is-rendering");
             reader.classList.add("is-ready");
+            reader.dataset.pdfBytes = String(documentInfo.size || 0);
+            reader.dataset.rangeEnabled = documentInfo.acceptsRanges ? "1" : "0";
 
-            // Les autres pages sont rendues seulement quand elles approchent de l'écran.
             activePdfObserver = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
                     if (!entry.isIntersecting) return;
@@ -2077,12 +2093,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }, {
                 root: reader,
-                rootMargin: "700px 0px",
+                rootMargin: isMobileViewport() ? "320px 0px" : "700px 0px",
                 threshold: 0.01,
             });
 
+            // On mobile, the next two pages are prepared progressively. The
+            // remaining pages stay as lightweight placeholders until scrolling.
+            const immediatePages = isMobileViewport() ? Math.min(3, shells.length) : Math.min(2, shells.length);
+            for (let index = 1; index < immediatePages; index += 1) {
+                renderPdfPage({ pdf, pageNumber: index + 1, shell: shells[index], pagesRoot, token });
+            }
             shells.slice(1).forEach(shell => activePdfObserver.observe(shell));
-            console.info("[PDF.js] first page ready", { pages: pdf.numPages, url });
         } catch (error) {
             if (token !== activePdfRenderToken) return;
             renderFriendlyPdfFailure(url, error);
@@ -2104,14 +2125,16 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaFooter.innerHTML = "";
 
         if (hotspot.type === "pdf") {
-            const url = c.document_url || hotspot.media_file_url || "";
+            const url = c.document_stream_url || hotspot.document_stream_url || c.document_url || hotspot.media_file_url || "";
+            const downloadUrl = c.download_url || hotspot.media_file_url || url;
             if (!url) {
                 previewMediaBody.innerHTML = `<div class="preview-media-empty">${previewLocaleIsFrench() ? "Ce document n’est pas disponible." : "This document is not available."}</div>`;
             } else {
+                const fr = previewLocaleIsFrench();
                 previewMediaFooter.innerHTML = `
-                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>Reload</button>
-                    <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">Full screen</a>
-                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${escapeAttr(url)}" download>Download</a>`}`;
+                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>${fr ? "Recharger" : "Reload"}</button>
+                    <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">${fr ? "Plein écran" : "Full screen"}</a>
+                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${escapeAttr(downloadUrl)}" download>${fr ? "Télécharger" : "Download"}</a>`}`;
 
                 previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
                     renderPdfInsideDialog(url);
@@ -3384,7 +3407,6 @@ document.addEventListener("DOMContentLoaded", () => {
         let startY = 0;
         let lastX = 0;
         let lastY = 0;
-        let fired = false;
         let suppressNextClick = false;
         const moveTolerance = 13;
 
@@ -3396,11 +3418,12 @@ document.addEventListener("DOMContentLoaded", () => {
         function ignoredTarget(target) {
             return !!target?.closest?.(
                 "button,a,input,textarea,select,[role='button'],.hotspot,.hotspot-container," +
-                ".tour-ai-agent,.preview-info-panel,.preview-media-modal,.scene-stack-panel,.preview-control"
+                ".tour-ai-agent,.preview-info-panel,.preview-media-modal,.scene-stack-panel,.preview-control," +
+                ".preview-vision-selector"
             );
         }
 
-        function cancel() {
+        function cancelHold() {
             if (timer) window.clearTimeout(timer);
             timer = null;
             activePointerId = null;
@@ -3416,27 +3439,10 @@ document.addEventListener("DOMContentLoaded", () => {
             window.setTimeout(() => probe.remove(), 950);
         }
 
-        function fireLongPress(clientX, clientY) {
-            const view = getCurrentView();
-            if (!view || !currentSceneId) return;
-            const rect = previewViewer.getBoundingClientRect();
-            const x = clientX - rect.left;
-            const y = clientY - rect.top;
-            if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
-            const coords = view.screenToCoordinates({ x, y });
-            if (!Number.isFinite(coords?.yaw) || !Number.isFinite(coords?.pitch)) return;
-
-            fired = true;
+        function emitInspection(detail) {
             suppressNextClick = true;
-            showProbe(clientX, clientY);
+            showProbe(detail.clientX, detail.clientY);
             try { navigator.vibrate?.(24); } catch (_) {}
-            const detail = {
-                sceneId: currentSceneId,
-                yaw: coords.yaw,
-                pitch: coords.pitch,
-                clientX,
-                clientY,
-            };
             if (window.TwinscopesAgent?.inspectPoint) {
                 window.TwinscopesAgent.inspectPoint(detail);
             } else {
@@ -3444,18 +3450,393 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
+        function openVisionSelection(clientX, clientY) {
+            const view = getCurrentView();
+            if (!view || !currentSceneId) return;
+            let viewerRect = previewViewer.getBoundingClientRect();
+            const localX = clamp(clientX - viewerRect.left, 0, viewerRect.width);
+            const localY = clamp(clientY - viewerRect.top, 0, viewerRect.height);
+            if (!Number.isFinite(localX) || !Number.isFinite(localY)) return;
+
+            previewViewer.querySelector(".preview-vision-selector")?.remove();
+            document.documentElement.classList.remove("vision-selection-active");
+            document.body.classList.remove("vision-selection-active");
+            stopAutorotate({ suppress: true });
+
+            const selector = document.createElement("div");
+            selector.className = "preview-vision-selector";
+            selector.setAttribute("role", "dialog");
+            selector.setAttribute("aria-modal", "true");
+            selector.setAttribute("aria-label", "Frame the exact object to analyze");
+            selector.innerHTML = `
+                <div class="preview-vision-selector-shade"></div>
+                <div class="preview-vision-selector-guide">
+                    <span class="preview-vision-brand-mark" aria-hidden="true">
+                        <img src="${window.PREVIEW_CONFIG?.brandLogoUrl || ""}" alt="">
+                    </span>
+                    <span class="preview-vision-selector-guide-copy">
+                        <strong>Frame the exact object</strong>
+                        <span>Only the pixels inside this frame will be analyzed.</span>
+                    </span>
+                </div>
+                <div class="preview-vision-selection-box" data-vision-selection-box tabindex="0" aria-label="Movable scan selection">
+                    <span class="preview-vision-selection-grid"></span>
+                    <span class="preview-vision-selection-reticle"></span>
+                    <span class="preview-vision-selection-label">EXACT SELECTION</span>
+                    <button type="button" class="preview-vision-resize-handle nw" data-resize="nw" aria-label="Resize from top left"></button>
+                    <button type="button" class="preview-vision-resize-handle ne" data-resize="ne" aria-label="Resize from top right"></button>
+                    <button type="button" class="preview-vision-resize-handle sw" data-resize="sw" aria-label="Resize from bottom left"></button>
+                    <button type="button" class="preview-vision-resize-handle se" data-resize="se" aria-label="Resize from bottom right"></button>
+                </div>
+                <div class="preview-vision-selector-actions" role="group" aria-label="Selection actions">
+                    <span class="preview-vision-selector-status" role="status" aria-live="polite">Capturing only the pixels inside your frame…</span>
+                    <button type="button" class="preview-vision-selection-action secondary" data-vision-selection-cancel>
+                        <span class="ts-preview-icon ts-preview-icon--close" aria-hidden="true"></span>
+                        <span>Cancel</span>
+                    </button>
+                    <button type="button" class="preview-vision-selection-action primary" data-vision-selection-confirm>
+                        <span class="ts-preview-icon ts-preview-icon--scan" aria-hidden="true"></span>
+                        <span data-vision-confirm-label>Analyze selection</span>
+                    </button>
+                </div>`;
+            previewViewer.appendChild(selector);
+            document.documentElement.classList.add("vision-selection-active");
+            document.body.classList.add("vision-selection-active");
+
+            const box = selector.querySelector("[data-vision-selection-box]");
+            const confirmButton = selector.querySelector("[data-vision-selection-confirm]");
+            const cancelButton = selector.querySelector("[data-vision-selection-cancel]");
+            const confirmLabel = selector.querySelector("[data-vision-confirm-label]");
+            const guide = selector.querySelector(".preview-vision-selector-guide");
+            const actions = selector.querySelector(".preview-vision-selector-actions");
+            const guideRect = guide?.getBoundingClientRect();
+            const actionsRect = actions?.getBoundingClientRect();
+            const edgePadding = 14;
+            const selectionBounds = {
+                left: edgePadding,
+                right: Math.max(edgePadding + 96, viewerRect.width - edgePadding),
+                top: Math.max(edgePadding, (guideRect?.bottom || viewerRect.top) - viewerRect.top + 12),
+                bottom: Math.min(
+                    viewerRect.height - edgePadding,
+                    (actionsRect?.top || viewerRect.bottom) - viewerRect.top - 12,
+                ),
+            };
+            if (selectionBounds.bottom - selectionBounds.top < 112) {
+                selectionBounds.top = edgePadding;
+                selectionBounds.bottom = Math.max(edgePadding + 112, viewerRect.height - edgePadding - 82);
+            }
+            const availableWidth = Math.max(96, selectionBounds.right - selectionBounds.left);
+            const availableHeight = Math.max(96, selectionBounds.bottom - selectionBounds.top);
+            const minSize = Math.min(
+                Math.max(76, Math.min(viewerRect.width, viewerRect.height) * 0.11),
+                availableWidth,
+                availableHeight,
+            );
+            const maxWidth = Math.max(minSize, Math.min(viewerRect.width * 0.78, availableWidth));
+            const maxHeight = Math.max(minSize, Math.min(viewerRect.height * 0.72, availableHeight));
+            let state = {
+                x: clamp(localX - Math.min(220, viewerRect.width * 0.38) / 2, selectionBounds.left, Math.max(selectionBounds.left, selectionBounds.right - minSize)),
+                y: clamp(localY - Math.min(180, viewerRect.height * 0.32) / 2, selectionBounds.top, Math.max(selectionBounds.top, selectionBounds.bottom - minSize)),
+                width: clamp(Math.min(220, viewerRect.width * 0.38), minSize, maxWidth),
+                height: clamp(Math.min(180, viewerRect.height * 0.32), minSize, maxHeight),
+            };
+            state.x = clamp(state.x, selectionBounds.left, Math.max(selectionBounds.left, selectionBounds.right - state.width));
+            state.y = clamp(state.y, selectionBounds.top, Math.max(selectionBounds.top, selectionBounds.bottom - state.height));
+
+            function applyState() {
+                state.width = clamp(state.width, minSize, maxWidth);
+                state.height = clamp(state.height, minSize, maxHeight);
+                state.x = clamp(state.x, selectionBounds.left, Math.max(selectionBounds.left, selectionBounds.right - state.width));
+                state.y = clamp(state.y, selectionBounds.top, Math.max(selectionBounds.top, selectionBounds.bottom - state.height));
+                box.style.transform = `translate3d(${state.x}px, ${state.y}px, 0)`;
+                box.style.width = `${state.width}px`;
+                box.style.height = `${state.height}px`;
+            }
+            applyState();
+
+            let gesture = null;
+            let busy = false;
+            function beginGesture(event, mode, handle = "") {
+                if (busy) return;
+                event.preventDefault();
+                event.stopPropagation();
+                gesture = {
+                    pointerId: event.pointerId,
+                    mode,
+                    handle,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    initial: { ...state },
+                };
+                selector.setPointerCapture?.(event.pointerId);
+            }
+            box.addEventListener("pointerdown", (event) => {
+                const handle = event.target.closest("[data-resize]")?.dataset.resize || "";
+                beginGesture(event, handle ? "resize" : "move", handle);
+            }, { passive: false });
+            selector.addEventListener("pointermove", (event) => {
+                if (!gesture || event.pointerId !== gesture.pointerId || busy) return;
+                event.preventDefault();
+                event.stopPropagation();
+                const dx = event.clientX - gesture.startX;
+                const dy = event.clientY - gesture.startY;
+                const initial = gesture.initial;
+                if (gesture.mode === "move") {
+                    state.x = initial.x + dx;
+                    state.y = initial.y + dy;
+                } else {
+                    if (gesture.handle.includes("e")) state.width = initial.width + dx;
+                    if (gesture.handle.includes("s")) state.height = initial.height + dy;
+                    if (gesture.handle.includes("w")) {
+                        state.x = initial.x + dx;
+                        state.width = initial.width - dx;
+                    }
+                    if (gesture.handle.includes("n")) {
+                        state.y = initial.y + dy;
+                        state.height = initial.height - dy;
+                    }
+                }
+                applyState();
+            }, { passive: false });
+            ["pointerup", "pointercancel"].forEach((type) => {
+                selector.addEventListener(type, (event) => {
+                    if (gesture && event.pointerId === gesture.pointerId) gesture = null;
+                }, { passive: false });
+            });
+
+            function setBusy(value) {
+                busy = Boolean(value);
+                selector.classList.toggle("is-capturing", busy);
+                confirmButton.disabled = busy;
+                cancelButton.disabled = busy;
+                if (confirmLabel) confirmLabel.textContent = busy ? "Capturing selection…" : "Analyze selection";
+            }
+
+            function leaveSelectionMode() {
+                document.documentElement.classList.remove("vision-selection-active");
+                document.body.classList.remove("vision-selection-active");
+            }
+
+            function closeSelector() {
+                if (busy) return;
+                gesture = null;
+                leaveSelectionMode();
+                selector.remove();
+            }
+
+            function captureSelectionSnapshot() {
+                const selectionScreenRect = {
+                    left: viewerRect.left + state.x,
+                    top: viewerRect.top + state.y,
+                    right: viewerRect.left + state.x + state.width,
+                    bottom: viewerRect.top + state.y + state.height,
+                };
+                const activeLayer = previewViewer.querySelector(
+                    ".preview-layer.active-layer:not([aria-hidden='true']), .preview-layer.active-layer"
+                );
+                const canvases = [];
+                const seen = new Set();
+                [activeLayer, previewViewer].filter(Boolean).forEach((root) => {
+                    root.querySelectorAll("canvas").forEach((canvas) => {
+                        if (!seen.has(canvas)) {
+                            seen.add(canvas);
+                            canvases.push(canvas);
+                        }
+                    });
+                });
+                const candidates = canvases
+                    .map((canvas) => {
+                        const rect = canvas.getBoundingClientRect();
+                        const style = getComputedStyle(canvas);
+                        const layer = canvas.closest(".preview-layer");
+                        const layerStyle = layer ? getComputedStyle(layer) : null;
+                        const isActiveLayer = Boolean(layer?.classList.contains("active-layer"));
+                        const opacity = Number(style.opacity || 1) * Number(layerStyle?.opacity || 1);
+                        return {
+                            canvas,
+                            rect,
+                            isActiveLayer,
+                            opacity: Number.isFinite(opacity) ? opacity : 1,
+                            area: rect.width * rect.height,
+                        };
+                    })
+                    .filter(({ canvas, rect, opacity }) => (
+                        canvas.width > 0 && canvas.height > 0
+                        && rect.width >= viewerRect.width * 0.62
+                        && rect.height >= viewerRect.height * 0.62
+                        && opacity > 0.04
+                    ))
+                    .filter(({ rect }) => {
+                        const overlapWidth = Math.max(0, Math.min(rect.right, selectionScreenRect.right) - Math.max(rect.left, selectionScreenRect.left));
+                        const overlapHeight = Math.max(0, Math.min(rect.bottom, selectionScreenRect.bottom) - Math.max(rect.top, selectionScreenRect.top));
+                        return overlapWidth * overlapHeight >= state.width * state.height * 0.92;
+                    })
+                    .sort((a, b) => (
+                        Number(b.isActiveLayer) - Number(a.isActiveLayer)
+                        || b.opacity - a.opacity
+                        || b.area - a.area
+                    ));
+                const source = candidates[0];
+                if (!source) return null;
+
+                const scaleX = source.canvas.width / source.rect.width;
+                const scaleY = source.canvas.height / source.rect.height;
+                const sx = Math.max(0, (selectionScreenRect.left - source.rect.left) * scaleX);
+                const sy = Math.max(0, (selectionScreenRect.top - source.rect.top) * scaleY);
+                const sw = Math.min(source.canvas.width - sx, state.width * scaleX);
+                const sh = Math.min(source.canvas.height - sy, state.height * scaleY);
+                if (sw < 32 || sh < 32) return null;
+
+                const maxDimension = 1024;
+                const outputScale = Math.min(1, maxDimension / Math.max(sw, sh));
+                const width = Math.max(128, Math.round(sw * outputScale));
+                const height = Math.max(128, Math.round(sh * outputScale));
+                const output = document.createElement("canvas");
+                output.width = width;
+                output.height = height;
+                const context = output.getContext("2d", { alpha: false });
+                if (!context) return null;
+                context.imageSmoothingEnabled = true;
+                context.imageSmoothingQuality = "high";
+                context.drawImage(source.canvas, sx, sy, sw, sh, 0, 0, width, height);
+
+                // A tainted or unreadable WebGL canvas commonly produces a uniform
+                // black image. Sample the whole crop instead of trusting one corner.
+                const sampleCanvas = document.createElement("canvas");
+                sampleCanvas.width = 8;
+                sampleCanvas.height = 8;
+                const sampleContext = sampleCanvas.getContext("2d", { alpha: false });
+                if (!sampleContext) return null;
+                sampleContext.drawImage(output, 0, 0, 8, 8);
+                const sample = sampleContext.getImageData(0, 0, 8, 8).data;
+                let luminanceSum = 0;
+                let luminanceMin = 255;
+                let luminanceMax = 0;
+                for (let index = 0; index < sample.length; index += 4) {
+                    const luminance = sample[index] * .2126 + sample[index + 1] * .7152 + sample[index + 2] * .0722;
+                    luminanceSum += luminance;
+                    luminanceMin = Math.min(luminanceMin, luminance);
+                    luminanceMax = Math.max(luminanceMax, luminance);
+                }
+                const averageLuminance = luminanceSum / 64;
+                if (averageLuminance < 1.5 && luminanceMax - luminanceMin < 1.5) return null;
+
+                return {
+                    data_url: output.toDataURL("image/jpeg", 0.9),
+                    width,
+                    height,
+                    source: "active_viewer_canvas",
+                };
+            }
+
+            cancelButton?.addEventListener("click", closeSelector);
+            selector.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") closeSelector();
+            });
+            confirmButton?.addEventListener("click", () => {
+                const currentView = getCurrentView();
+                if (!currentView || !currentSceneId || busy) return closeSelector();
+                setBusy(true);
+
+                window.requestAnimationFrame(() => {
+                    const center = { x: state.x + state.width / 2, y: state.y + state.height / 2 };
+                    const cornersPixels = [
+                        { x: state.x, y: state.y },
+                        { x: state.x + state.width, y: state.y },
+                        { x: state.x + state.width, y: state.y + state.height },
+                        { x: state.x, y: state.y + state.height },
+                    ];
+                    const coords = currentView.screenToCoordinates(center);
+                    const corners = cornersPixels.map((point) => currentView.screenToCoordinates(point)).filter(
+                        (point) => Number.isFinite(point?.yaw) && Number.isFinite(point?.pitch)
+                    );
+                    if (!Number.isFinite(coords?.yaw) || !Number.isFinite(coords?.pitch) || corners.length !== 4) {
+                        setBusy(false);
+                        return;
+                    }
+
+                    let capture = null;
+                    try { capture = captureSelectionSnapshot(); } catch (error) {
+                        console.warn("Exact viewer capture was unavailable; using the panorama projection fallback.", error);
+                    }
+                    const detail = {
+                        sceneId: currentSceneId,
+                        yaw: coords.yaw,
+                        pitch: coords.pitch,
+                        clientX: viewerRect.left + center.x,
+                        clientY: viewerRect.top + center.y,
+                        selection: {
+                            version: capture ? 3 : 1,
+                            viewport: { width: viewerRect.width, height: viewerRect.height },
+                            bbox: {
+                                x: state.x,
+                                y: state.y,
+                                width: state.width,
+                                height: state.height,
+                                normalized: {
+                                    x: state.x / viewerRect.width,
+                                    y: state.y / viewerRect.height,
+                                    width: state.width / viewerRect.width,
+                                    height: state.height / viewerRect.height,
+                                },
+                            },
+                            corners: corners.map((point) => ({ yaw: point.yaw, pitch: point.pitch })),
+                            view_fov: Number(currentView.fov?.() || 0),
+                            capture,
+                        },
+                    };
+                    busy = false;
+                    leaveSelectionMode();
+                    selector.remove();
+                    emitInspection(detail);
+                });
+            });
+            const handleViewportChange = () => {
+                if (!selector.isConnected) return;
+                // Closing on a viewport geometry change prevents a stale crop
+                // from being sent after rotation, browser chrome resize, or a
+                // responsive dock transition.
+                closeSelector();
+            };
+            window.addEventListener("resize", handleViewportChange, { once: true, passive: true });
+            window.addEventListener("orientationchange", handleViewportChange, { once: true, passive: true });
+            confirmButton?.focus({ preventScroll: true });
+        }
+
+        window.addEventListener("twinscopes:vision-reframe", (event) => {
+            const rect = previewViewer.getBoundingClientRect();
+            const requestedX = Number(event.detail?.clientX);
+            const requestedY = Number(event.detail?.clientY);
+            const x = Number.isFinite(requestedX) ? requestedX : rect.left + rect.width / 2;
+            const y = Number.isFinite(requestedY) ? requestedY : rect.top + rect.height / 2;
+            openVisionSelection(x, y);
+        });
+        window.TwinscopesPreviewVision = {
+            openSelection: (clientX, clientY) => {
+                const rect = previewViewer.getBoundingClientRect();
+                openVisionSelection(
+                    Number.isFinite(Number(clientX)) ? Number(clientX) : rect.left + rect.width / 2,
+                    Number.isFinite(Number(clientY)) ? Number(clientY) : rect.top + rect.height / 2,
+                );
+            },
+        };
+
         previewViewer.addEventListener("pointerdown", (event) => {
             if (isTransitioning || ignoredTarget(event.target)) return;
             if (event.pointerType === "mouse" && event.button !== 0) return;
             if (!getCurrentView()) return;
-            cancel();
-            fired = false;
+            cancelHold();
             activePointerId = event.pointerId;
             startX = lastX = event.clientX;
             startY = lastY = event.clientY;
             timer = window.setTimeout(() => {
                 timer = null;
-                if (activePointerId === event.pointerId) fireLongPress(lastX, lastY);
+                if (activePointerId === event.pointerId) {
+                    activePointerId = null;
+                    suppressNextClick = true;
+                    try { navigator.vibrate?.(18); } catch (_) {}
+                    openVisionSelection(lastX, lastY);
+                }
             }, holdMs);
         }, { passive: true, capture: true });
 
@@ -3463,12 +3844,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (event.pointerId !== activePointerId) return;
             lastX = event.clientX;
             lastY = event.clientY;
-            if (Math.hypot(lastX - startX, lastY - startY) > moveTolerance) cancel();
+            if (Math.hypot(lastX - startX, lastY - startY) > moveTolerance) cancelHold();
         }, { passive: true, capture: true });
 
         ["pointerup", "pointercancel", "pointerleave"].forEach((type) => {
             previewViewer.addEventListener(type, (event) => {
-                if (event.pointerId === activePointerId) cancel();
+                if (event.pointerId === activePointerId) cancelHold();
             }, { passive: true, capture: true });
         });
 
@@ -3626,4 +4007,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     bootProgressivePreview();
+});
+
+
+/* Tour information modal interactions — V16 */
+document.addEventListener("DOMContentLoaded", () => {
+    const details = document.getElementById("previewTourDetails");
+    if (!details) return;
+
+    const modal = details.querySelector(".preview-tour-details-modal");
+    const summary = details.querySelector("summary");
+    const closeButton = details.querySelector("[data-tour-info-close]");
+
+    const closeTourInformation = () => {
+        if (!details.open) return;
+        details.open = false;
+        document.body.classList.remove("preview-tour-info-open");
+        summary?.focus({ preventScroll: true });
+    };
+
+    details.addEventListener("toggle", () => {
+        document.body.classList.toggle("preview-tour-info-open", details.open);
+        if (details.open) {
+            window.requestAnimationFrame(() => closeButton?.focus({ preventScroll: true }));
+        }
+    });
+
+    closeButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeTourInformation();
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+        if (!details.open) return;
+        const target = event.target;
+        if (!(target instanceof Node)) return;
+        if (modal?.contains(target) || summary?.contains(target)) return;
+        closeTourInformation();
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && details.open) {
+            event.preventDefault();
+            closeTourInformation();
+        }
+    });
 });

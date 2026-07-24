@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr" class="scroll-smooth">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -41,6 +41,7 @@
     <link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
     <link rel="stylesheet" href="{% static 'public/css/vendor-commerce-v9.css' %}">
     <link rel="stylesheet" href="{% static 'public/css/twinscopes-professional-theme-v1.css' %}">
+    <link rel="stylesheet" href="{% static 'public/css/discovery-launcher-v3.css' %}?v=3">
 
     <style>
         html,
@@ -5187,6 +5188,8 @@
         </div>
     </section>
 
+    {% include "public/partials/discovery_agent.html" %}
+
     <!-- CONTEXT-AWARE CATEGORIES -->
     <section class="category-section" aria-label="Explore categories">
         <div class="category-strip no-scrollbar" data-category-mode="tours">
@@ -5240,7 +5243,7 @@
                             data-card-scene
                             role="button"
                             tabindex="0"
-                            aria-label="{{ tour.title }}. Toucher pour voir les détails."
+                            aria-label="{{ tour.title }}. Tap to view details."
                             aria-pressed="false"
                         >
                             <div class="tour-card-3d">
@@ -5269,7 +5272,7 @@
                                             360°
                                         </span>
 
-                                        <button type="button" class="tour-card-flip-btn" data-card-flip aria-label="Voir les détails">
+                                        <button type="button" class="tour-card-flip-btn" data-card-flip aria-label="View details">
                                             ↻
                                         </button>
                                     </div>
@@ -5298,7 +5301,7 @@
                                                 <span>→</span>
                                             </a>
 
-                                            <button type="button" class="tour-card-secondary" data-card-flip aria-label="Voir les détails">
+                                            <button type="button" class="tour-card-secondary" data-card-flip aria-label="View details">
                                                 ↻
                                             </button>
                                         </div>
@@ -5527,6 +5530,7 @@
         const settingsMenu = document.getElementById("settingsMenu");
         const settingsTriggers = Array.from(document.querySelectorAll(".settings-trigger"));
         const searchTriggers = Array.from(document.querySelectorAll(".search-trigger"));
+        const dedicatedSearchUrl = "{% url 'public_search' %}";
         const themeToggleBtn = document.getElementById("themeToggleBtn");
         const themeLabel = document.getElementById("themeLabel");
         const languageSelect = document.getElementById("languageSelect");
@@ -5630,17 +5634,26 @@
             });
         });
 
+        searchTriggers.forEach((button) => {
+            button.addEventListener("click", () => {
+                window.location.assign(dedicatedSearchUrl);
+            });
+        });
+
         /* ========================= SETTINGS ========================= */
 
         function applyTheme(mode) {
             const dark = mode === "dark";
 
             document.body.classList.toggle("theme-dark", dark);
+            document.documentElement.dataset.marketTheme = dark ? "dark" : "light";
+            document.documentElement.style.colorScheme = dark ? "dark" : "light";
 
             if (themeLabel) {
                 themeLabel.textContent = dark ? "On" : "Off";
             }
 
+            localStorage.setItem("twinscopes-market-theme", dark ? "dark" : "light");
             localStorage.setItem("twinscopesTheme", dark ? "dark" : "light");
             localStorage.setItem("virtualToursTheme", dark ? "dark" : "light");
         }
@@ -6481,7 +6494,7 @@
                     data-card-image-source="${escapeHtml(item.card_image_source || 'none')}"
                     role="button"
                     tabindex="0"
-                    aria-label="${escapeHtml(title)}. Toucher pour voir les détails."
+                    aria-label="${escapeHtml(title)}. Tap to view details."
                     aria-pressed="false"
                 >
                     <div class="tour-card-3d">
@@ -6500,7 +6513,7 @@
                                     360°
                                 </span>
 
-                                <button type="button" class="tour-card-flip-btn" data-card-flip aria-label="Voir les détails">
+                                <button type="button" class="tour-card-flip-btn" data-card-flip aria-label="View details">
                                     ↻
                                 </button>
                             </div>
@@ -6529,7 +6542,7 @@
                                         <span>→</span>
                                     </a>
 
-                                    <button type="button" class="tour-card-secondary" data-card-flip aria-label="Voir les détails">
+                                    <button type="button" class="tour-card-secondary" data-card-flip aria-label="View details">
                                         ↻
                                     </button>
                                 </div>
@@ -6939,6 +6952,7 @@
 })();
 </script>
 
+    <script defer src="{% static 'public/js/discovery-launcher-v3.js' %}?v=3"></script>
     <script src="{% static 'public/js/product-commerce-v9.js' %}"></script>
 <script defer src="{% static 'public/js/pwa-register-v7.js' %}"></script>
 </body>

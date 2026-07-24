@@ -1,10 +1,43 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr" class="h-full">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#020617">
+    <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.marketTheme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){document.documentElement.dataset.marketTheme='dark';}})();</script>
+    <meta name="theme-color" content="#0891b2">
+    <meta name="color-scheme" content="dark light">
+    <meta name="application-name" content="Twinscopes">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+
+    <title>{{ seo_title|default:tour.title }}</title>
+    <meta name="description" content="{{ seo_description }}">
+    <meta name="author" content="{{ current_organization.name }}">
+    <meta name="robots" content="{{ seo_robots }}">
+    <meta name="googlebot" content="{{ seo_robots }}">
+    <link rel="canonical" href="{{ seo_canonical_url }}">
+    <link rel="alternate" hreflang="en" href="{{ seo_canonical_url }}">
+    <link rel="alternate" hreflang="x-default" href="{{ seo_canonical_url }}">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Twinscopes">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:title" content="{{ seo_title|default:tour.title }}">
+    <meta property="og:description" content="{{ seo_description }}">
+    <meta property="og:url" content="{{ seo_canonical_url }}">
+    <meta property="og:image" content="{{ seo_image_url }}">
+    <meta property="og:image:secure_url" content="{{ seo_image_url }}">
+    <meta property="og:image:alt" content="{{ seo_image_alt }}">
+    {% if not seo_image_is_dynamic %}<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">{% endif %}
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo_title|default:tour.title }}">
+    <meta name="twitter:description" content="{{ seo_description }}">
+    <meta name="twitter:image" content="{{ seo_image_url }}">
+    <meta name="twitter:image:alt" content="{{ seo_image_alt }}">
+    <script type="application/ld+json">{{ seo_structured_data|safe }}</script>
     <style>@-ms-viewport { width: device-width; }
 
         /* ========================= PREVIEW TOP ACTIONS: BACK + VIEWS + SHARES ========================= */
@@ -138,8 +171,6 @@
 .tour-shop-panel{position:absolute;inset:0;z-index:104;display:grid;place-items:center;padding:16px;opacity:0;visibility:hidden;pointer-events:none}.tour-shop-panel.open{opacity:1;visibility:visible;pointer-events:auto}.tour-shop-backdrop{position:absolute;inset:0;background:rgba(2,6,23,.58);backdrop-filter:blur(7px)}.tour-shop-card{position:relative;width:min(920px,100%);max-height:82dvh;overflow:auto;padding:28px;border:1px solid rgba(255,255,255,.18);border-radius:30px;color:#fff;background:linear-gradient(145deg,#07152a,#020617);box-shadow:0 34px 100px rgba(0,0,0,.48)}.tour-shop-card h3{margin:9px 0 20px;font-size:30px;font-weight:950}.tour-shop-close{position:absolute;right:16px;top:16px;width:42px;height:42px;border:1px solid rgba(255,255,255,.18);border-radius:50%;color:#fff;background:rgba(255,255,255,.08)}.tour-shop-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.tour-shop-grid article{overflow:hidden;border:1px solid rgba(255,255,255,.1);border-radius:20px;background:rgba(255,255,255,.06)}.tour-shop-grid img{width:100%;aspect-ratio:1/1;object-fit:cover}.tour-shop-grid article div{display:grid;gap:7px;padding:13px}.tour-shop-grid span{color:#67e8f9;font-weight:950}.tour-shop-grid a{padding:10px;border-radius:12px;color:#06111f;background:#67e8f9;text-align:center;font-weight:950;text-decoration:none}@media(max-width:720px){.tour-shop-panel{align-items:end;padding:8px}.tour-shop-card{padding:22px 14px;max-height:78dvh}.tour-shop-grid{grid-template-columns:1fr 1fr}}
 </style>
 
-    <title>{{ tour.title }} - Preview</title>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         window.tailwind = window.tailwind || {};
@@ -173,7 +204,7 @@
         };
     </script>
 
-    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=preview-info-modal-16">
 
     <style>
         #previewDebugDialog,
@@ -258,6 +289,26 @@
 </head>
 
 <body class="h-full overflow-hidden bg-slate-950 text-white antialiased">
+
+    <svg class="ts-icon-sprite" aria-hidden="true" focusable="false">
+        <symbol id="ts-icon-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+        <symbol id="ts-icon-eye" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+        <symbol id="ts-icon-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.7"/><circle cx="6" cy="12" r="2.7"/><circle cx="18" cy="19" r="2.7"/><path d="m8.5 10.7 6.9-4.1M8.5 13.3l6.9 4.1"/></symbol>
+        <symbol id="ts-icon-previous" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+        <symbol id="ts-icon-next" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+        <symbol id="ts-icon-zoom-out" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.8"/><path d="m20 20-4.7-4.7M7.5 10.5h6"/></symbol>
+        <symbol id="ts-icon-zoom-in" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.8"/><path d="m20 20-4.7-4.7M10.5 7.5v6M7.5 10.5h6"/></symbol>
+        <symbol id="ts-icon-reset" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.8"/><circle cx="12" cy="12" r="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></symbol>
+        <symbol id="ts-icon-rotate" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.35 5.65"/><path d="M20 4v7h-7"/></symbol>
+        <symbol id="ts-icon-focus" viewBox="0 0 24 24"><path d="M8 3H4a1 1 0 0 0-1 1v4M16 3h4a1 1 0 0 1 1 1v4M8 21H4a1 1 0 0 1-1-1v-4M16 21h4a1 1 0 0 0 1-1v-4"/><circle cx="12" cy="12" r="2.5"/></symbol>
+        <symbol id="ts-icon-shop" viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></symbol>
+        <symbol id="ts-icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3M13 14h3M8 17h3"/></symbol>
+        <symbol id="ts-icon-fullscreen" viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></symbol>
+        <symbol id="ts-icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+        <symbol id="ts-icon-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+        <symbol id="ts-icon-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></symbol>
+    </svg>
+
     {% include 'public/partials/loader_3d_global.html' %}
     <script src="{% static 'public/js/loader_3d_global-v11.js' %}"></script>
 
@@ -286,8 +337,8 @@
                             {% endif %}
 
                             <div class="min-w-0 text-center">
-                                <p class="brand-kicker">Virtual Tour</p>
-                                <h1 class="brand-company-name">{{ current_organization.name }}</h1>
+                                <p class="brand-kicker">{{ current_organization.name }}</p>
+                                <h1 class="brand-company-name">{{ tour.title }}</h1>
                             </div>
                         </div>
                     </div>
@@ -297,19 +348,19 @@
                             type="button"
                             data-ui="chrome"
                             class="preview-top-left-back"
-                            aria-label="Retour">
-                        ←
+                            aria-label="Back">
+                        <svg class="ts-control-icon ts-control-icon--lg" aria-hidden="true" focusable="false"><use href="#ts-icon-back"></use></svg>
                     </button>
 
                     <div id="previewTopRightStats"
                          data-ui="chrome"
                          class="preview-top-right-stats"
-                         aria-label="Statistiques du tour">
+                         aria-label="Tour statistics">
                         <div id="previewTourViewsBadge"
                              class="preview-tour-stat-badge"
                              data-initial-views="{{ tour.unique_views_count|default:tour.view_count|default:0 }}"
-                             aria-label="Nombre de vues">
-                            <span class="preview-tour-stat-badge-icon">👁</span>
+                             aria-label="Tour views">
+                            <svg class="ts-control-icon preview-tour-stat-badge-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-eye"></use></svg>
                             <span id="previewTourViewsCount" class="preview-tour-stat-badge-number">
                                 {{ tour.unique_views_count|default:tour.view_count|default:0 }}
                             </span>
@@ -319,14 +370,15 @@
                         <div id="previewTourSharesBadge"
                              class="preview-tour-stat-badge"
                              data-initial-shares="{{ tour.share_count|default:tour.shares.count|default:0 }}"
-                             aria-label="Nombre de partages">
-                            <span class="preview-tour-stat-badge-icon">↗</span>
+                             aria-label="Tour shares">
+                            <svg class="ts-control-icon preview-tour-stat-badge-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-share"></use></svg>
                             <span id="previewTourSharesCount" class="preview-tour-stat-badge-number">
                                 {{ tour.share_count|default:tour.shares.count|default:0 }}
                             </span>
                             <span class="preview-tour-stat-badge-label">shares</span>
                         </div>
                     </div>
+
 
                     <div class="pointer-events-none absolute inset-x-0 top-0 z-[6] h-32 bg-gradient-to-b from-slate-950/40 to-transparent"></div>
 
@@ -467,7 +519,7 @@
                     <button id="sceneStackToggle"
                             type="button"
                             class="scene-stack-toggle-inline"
-                            aria-label="Afficher les scènes"
+                            aria-label="Show scenes"
                             title="Scenes">
                         <div id="sceneStackMiniPreview" class="scene-stack-mini-preview"></div>
                         <span id="sceneCountBadge" class="scene-stack-badge">0</span>
@@ -475,23 +527,91 @@
 
                     <div class="dock-divider"></div>
 
-                    <button id="prevSceneBtn" type="button" class="control-btn" title="Scene précédente" aria-label="Scene précédente">◀</button>
-                    <button id="nextSceneBtn" type="button" class="control-btn" title="Scene suivante" aria-label="Scene suivante">▶</button>
+                    <button id="prevSceneBtn" type="button" class="control-btn" title="Previous scene" aria-label="Previous scene"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-previous"></use></svg></button>
+                    <button id="nextSceneBtn" type="button" class="control-btn" title="Next scene" aria-label="Next scene"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-next"></use></svg></button>
 
                     <div class="dock-divider"></div>
 
-                    <button id="zoomOutBtn" type="button" class="control-btn" title="Zoom arrière" aria-label="Zoom arrière">－</button>
-                    <button id="zoomInBtn" type="button" class="control-btn" title="Zoom avant" aria-label="Zoom avant">＋</button>
-                    <button id="resetViewBtn" type="button" class="control-btn" title="Recentrer" aria-label="Recentrer">⌾</button>
+                    <button id="zoomOutBtn" type="button" class="control-btn" title="Zoom out" aria-label="Zoom out"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-zoom-out"></use></svg></button>
+                    <button id="zoomInBtn" type="button" class="control-btn" title="Zoom in" aria-label="Zoom in"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-zoom-in"></use></svg></button>
+                    <button id="resetViewBtn" type="button" class="control-btn" title="Reset view" aria-label="Reset view"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-reset"></use></svg></button>
 
                     <div class="dock-divider"></div>
 
-                    <button id="autorotateBtn" type="button" class="control-btn" title="Auto rotate" aria-label="Auto rotate">⟳</button>
-                    <button id="focusModeBtn" type="button" class="control-btn" title="Mode focus" aria-label="Mode focus">✦</button>
-                    <button id="tourShopBtn" type="button" class="control-btn" title="Shop products" aria-label="Shop products">▣</button>
-                    <button id="appointmentBtn" type="button" class="control-btn" title="Book an appointment" aria-label="Book an appointment">⌁</button>
-                    <button id="shareBtn" type="button" class="control-btn" title="Partager" aria-label="Partager">↗</button>
-                    <button id="fullscreenBtn" type="button" class="control-btn" title="Plein écran" aria-label="Plein écran">⤢</button>
+                    <button id="autorotateBtn" type="button" class="control-btn" title="Auto rotate" aria-label="Auto rotate"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-rotate"></use></svg></button>
+                    <button id="focusModeBtn" type="button" class="control-btn" title="Focus mode" aria-label="Focus mode"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-focus"></use></svg></button>
+                    <button id="tourShopBtn" type="button" class="control-btn" title="Shop products" aria-label="Shop products"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-shop"></use></svg></button>
+                    <button id="appointmentBtn" type="button" class="control-btn" title="Book an appointment" aria-label="Book an appointment"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-calendar"></use></svg></button>
+                    <button id="shareBtn" type="button" class="control-btn" title="Share tour" aria-label="Share tour"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-share"></use></svg></button>
+                    <button id="fullscreenBtn" type="button" class="control-btn" title="Fullscreen" aria-label="Fullscreen"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-fullscreen"></use></svg></button>
+
+                    <details id="previewTourDetails" class="preview-tour-details preview-tour-details--dock" data-ui="chrome">
+                        <summary class="control-btn" aria-label="Open tour information" title="Tour information">
+                            <svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-info"></use></svg>
+                        </summary>
+
+                        <article class="preview-tour-details-modal" role="dialog" aria-modal="true" aria-labelledby="previewTourDetailsTitle">
+                            <header class="preview-tour-details-header">
+                                <div class="preview-tour-details-brand" aria-hidden="true">
+                                    <span class="preview-tour-details-brand-ring"></span>
+                                    <svg class="ts-control-icon" focusable="false"><use href="#ts-icon-info"></use></svg>
+                                </div>
+
+                                <div class="preview-tour-details-heading">
+                                    <p class="preview-tour-details-kicker">360° VIRTUAL TOUR</p>
+                                    <h2 id="previewTourDetailsTitle">{{ tour.title }}</h2>
+                                    <p class="preview-tour-details-organization">{{ current_organization.name }}</p>
+                                </div>
+
+                                <button type="button"
+                                        class="preview-tour-details-close"
+                                        data-tour-info-close
+                                        aria-label="Close tour information">
+                                    <svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-close"></use></svg>
+                                </button>
+                            </header>
+
+                            <div class="preview-tour-details-body">
+                                <section class="preview-tour-details-summary" aria-label="About this virtual tour">
+                                    <span class="preview-tour-details-section-label">About this experience</span>
+                                    <p class="preview-tour-details-description">{{ seo_long_description }}</p>
+                                </section>
+
+                                <dl class="preview-tour-details-facts">
+                                    <div>
+                                        <dt>Organization</dt>
+                                        <dd>{{ current_organization.name }}</dd>
+                                    </div>
+                                    {% if seo_category %}
+                                        <div>
+                                            <dt>Category</dt>
+                                            <dd>{{ seo_category }}</dd>
+                                        </div>
+                                    {% endif %}
+                                    {% if seo_location %}
+                                        <div>
+                                            <dt>Location</dt>
+                                            <dd>{{ seo_location }}</dd>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <dt>Scenes</dt>
+                                        <dd>{{ scene_list_json|length }}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+
+                            <footer class="preview-tour-details-footer">
+                                <span>Explore the space at your own pace.</span>
+                                {% if current_organization.website_url %}
+                                    <a href="{{ current_organization.website_url }}" target="_blank" rel="noopener noreferrer">
+                                        Official website
+                                        <svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-external"></use></svg>
+                                    </a>
+                                {% endif %}
+                            </footer>
+                        </article>
+                    </details>
                 </div>
             </div>
         </div>
@@ -562,6 +682,7 @@
                 website: "{% static 'dashboard/icons/business/website.png' %}"
             },
             locale: "{{ request.LANGUAGE_CODE|default:'en'|escapejs }}",
+            brandLogoUrl: "{% static 'public/branding/twinscopes-logo.png' %}",
             pdfJsModuleUrl: "{% static 'public/vendor/pdfjs/build/pdf.mjs' %}",
             pdfJsWorkerUrl: "{% static 'public/vendor/pdfjs/build/pdf.worker.mjs' %}",
             pdfJsLegacyModuleUrl: "{% static 'public/vendor/pdfjs/legacy/build/pdf.mjs' %}",
@@ -576,7 +697,7 @@
     {{ scene_list_json|json_script:"preview-scene-list-data" }}
 
     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
-    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=friendly-errors-pdf-8"></script>
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=preview-info-modal-16"></script>
     <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-sharp-20260698"></script>
 
 

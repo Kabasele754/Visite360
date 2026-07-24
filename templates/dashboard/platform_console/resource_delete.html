@@ -1,0 +1,15 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% block title %}Delete {{ resource.singular }} · Control Center{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=4">{% endblock %}
+{% block content %}
+<div class="ts-control-center ts-control-center--form">
+    <nav class="ts-control-breadcrumb"><a href="{% url 'platform-console-overview' %}">Control Center</a><span>›</span><a href="{% url 'platform-console-resource-list' resource.key %}">{{ resource.label }}</a><span>›</span><strong>Delete</strong></nav>
+    <section class="ts-control-card ts-control-delete">
+        <span class="ts-control-delete__icon">!</span>
+        <h1>Delete {{ resource.singular|lower }}?</h1>
+        <p>You are about to delete <strong>{{ object }}</strong>. Related records may also be removed by database rules.</p>
+        <form method="post">{% csrf_token %}<a href="{% url 'platform-console-resource-list' resource.key %}">Cancel</a><button type="submit">Delete permanently</button></form>
+    </section>
+</div>
+{% endblock %}

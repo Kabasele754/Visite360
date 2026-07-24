@@ -327,12 +327,21 @@ def extract_point_frame(
         # image itself so point inspection can still identify its central item.
         output = io.BytesIO()
         source.save(output, format="JPEG", quality=92, optimize=True)
-        return PanoramaFrameData(0, math.degrees(yaw), math.degrees(pitch), output.getvalue(), source.width, source.height, fov)
+        source_yaw_degrees = math.degrees(float(yaw))
+        projection_pitch_degrees = math.degrees(float(pitch)) * float(
+            getattr(settings, "VISION_MARZIPANO_PITCH_SIGN", -1.0)
+        )
+        return PanoramaFrameData(0, source_yaw_degrees, projection_pitch_degrees, output.getvalue(), source.width, source.height, fov)
 
+    source_yaw_degrees = math.degrees(float(yaw))
+    source_pitch_degrees = math.degrees(float(pitch))
+    projection_pitch_degrees = source_pitch_degrees * float(
+        getattr(settings, "VISION_MARZIPANO_PITCH_SIGN", -1.0)
+    )
     frame = _equirectangular_to_perspective(
         array,
-        yaw=math.degrees(float(yaw)),
-        pitch=math.degrees(float(pitch)),
+        yaw=source_yaw_degrees,
+        pitch=projection_pitch_degrees,
         fov=float(fov),
         size=max(384, int(size)),
     )
@@ -341,8 +350,8 @@ def extract_point_frame(
     pil_frame.save(buffer, format="JPEG", quality=92, optimize=True)
     return PanoramaFrameData(
         0,
-        math.degrees(float(yaw)),
-        math.degrees(float(pitch)),
+        source_yaw_degrees,
+        projection_pitch_degrees,
         buffer.getvalue(),
         pil_frame.width,
         pil_frame.height,

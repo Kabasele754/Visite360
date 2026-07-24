@@ -16,6 +16,7 @@ from .dashboard_views import (
 
     tour_builder_view,
     tour_preview_view,
+    public_hotspot_pdf_view,
 
     upload_scenes_ajax_view,
     reorder_scenes_ajax_view,
@@ -107,6 +108,12 @@ urlpatterns = [
         "dashboard/o/<slug:organization_slug>/tours/<int:tour_id>/preview/",
         tour_preview_view,
         name="tour-preview",
+    ),
+
+    path(
+        "<slug:organization_slug>/tours/<int:tour_id>/hotspots/<int:hotspot_id>/document/",
+        public_hotspot_pdf_view,
+        name="tour-hotspot-pdf-public",
     ),
 
     # Preview public propre, sans dupliquer le même name que tour-preview

@@ -7,6 +7,7 @@ VENV_DIR="${VENV_DIR:-.venv}"
 "$PYTHON_BIN" -m venv "$VENV_DIR"
 # shellcheck disable=SC1090
 source "$VENV_DIR/bin/activate"
+export PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install -r requirements.txt
 
@@ -14,7 +15,7 @@ python -m pip install -r requirements.txt
 # official CPU package index also works for Apple Silicon in supported Python
 # environments. Failure is non-fatal so YOLO/Gemini/OpenAI can still be tested.
 if ! python -c 'import paddle' >/dev/null 2>&1; then
-  python -m pip install "paddlepaddle>=3.2.1,<4" \
+  python -m pip install "paddlepaddle==3.3.0" \
     -i https://www.paddlepaddle.org.cn/packages/stable/cpu/ || true
 fi
 python -m pip install "paddleocr>=3.0,<4"

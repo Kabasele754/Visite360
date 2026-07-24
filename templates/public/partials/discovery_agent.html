@@ -1,0 +1,26 @@
+{% load static %}
+<section class="discovery-launcher" aria-label="Virtual tour search">
+    <form class="discovery-launcher__bar" action="{% url 'public_search' %}" method="get" role="search" data-home-search-launcher>
+        <span class="discovery-launcher__brand" aria-hidden="true">
+            <img src="{% static 'public/branding/twinscopes-logo.png' %}" alt="">
+        </span>
+        <span class="discovery-launcher__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+        </span>
+        <input
+            type="search"
+            name="q"
+            maxlength="500"
+            autocomplete="off"
+            spellcheck="false"
+            data-home-search-input
+            placeholder="Search virtual tours, homes, hotels or hospitals"
+            aria-label="Search virtual tours, homes, hotels or hospitals"
+        >
+        <span class="discovery-launcher__shortcut" aria-hidden="true">⌘ K</span>
+        <button type="submit" aria-label="Open smart search">
+            <span>Search</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+    </form>
+</section>

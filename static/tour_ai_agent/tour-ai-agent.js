@@ -25,6 +25,7 @@
     exactText: root.querySelector("[data-vision-text]"),
     attributes: root.querySelector("[data-vision-attributes]"),
     sources: root.querySelector("[data-vision-sources]"),
+    rescan: root.querySelector("[data-vision-rescan]"),
     ask: root.querySelector("[data-vision-ask]"),
   };
 
@@ -37,6 +38,7 @@
   let busy = false;
   let insightRequest = null;
   let activeInsight = null;
+  let lastInspectionPoint = null;
   let longPressMs = Number(cfg.longPressMs || 650);
 
   const csrfToken = (() => {
@@ -239,7 +241,8 @@
   function renderVision(data) {
     vision.loading.hidden = true; vision.content.hidden = false; activeInsight = data.insight || null;
     const item = data.insight || data;
-    vision.kind.textContent = data.status === "no_object"
+    const refineSelection = ["no_object", "refine_selection"].includes(data.status);
+    vision.kind.textContent = refineSelection
       ? (localeIsFrench() ? "Zone sélectionnée" : "Selected area")
       : item.kind === "text"
         ? (localeIsFrench() ? "Texte visible" : "Visible text")
@@ -256,7 +259,11 @@
     vision.description.textContent = cardText(item.description, 360) || (localeIsFrench()
       ? "Aucun détail précis n’a été confirmé à cet endroit."
       : "No specific detail was confirmed at this point.");
-    if (vision.ask) vision.ask.hidden = data.status === "no_object";
+    if (vision.ask) vision.ask.hidden = refineSelection;
+    if (vision.rescan) {
+      vision.rescan.hidden = !refineSelection;
+      vision.rescan.textContent = localeIsFrench() ? "Scanner à nouveau" : "Scan again";
+    }
 
     if (item.crop_url) { vision.image.src = item.crop_url; vision.figure.hidden = false; }
     else { vision.image.removeAttribute("src"); vision.figure.hidden = true; }
@@ -264,16 +271,31 @@
     else { vision.exactText.textContent = ""; vision.exactText.hidden = true; }
 
     clear(vision.attributes);
-    Object.entries(item.attributes || {}).slice(0, 6).forEach(([key, value]) => {
-      if (typeof value === "object" || value === "") return;
-      vision.attributes.appendChild(element("span", "", `${key.replaceAll("_", " ")}: ${value}`));
-    });
+    const publicAttributeLabels = {
+      category: localeIsFrench() ? "Catégorie" : "Category",
+      color: localeIsFrench() ? "Couleur" : "Color",
+      material: localeIsFrench() ? "Matériau" : "Material",
+      condition: localeIsFrench() ? "État" : "Condition",
+    };
+    Object.entries(item.attributes || {})
+      .filter(([key, value]) => publicAttributeLabels[key] && typeof value !== "object" && value !== "")
+      .slice(0, 4)
+      .forEach(([key, value]) => {
+        vision.attributes.appendChild(element("span", "", `${publicAttributeLabels[key]}: ${value}`));
+      });
     clear(vision.sources);
     if (vision.sources) vision.sources.hidden = true;
   }
 
   async function inspectPoint(point) {
     if (!cfg.inspectUrl || !point?.sceneId) return;
+    lastInspectionPoint = {
+      sceneId: point.sceneId,
+      yaw: Number(point.yaw),
+      pitch: Number(point.pitch),
+      clientX: Number(point.clientX),
+      clientY: Number(point.clientY),
+    };
     currentSceneId = String(point.sceneId);
     await bootstrap().catch(() => {});
     insightRequest?.abort();
@@ -281,7 +303,11 @@
     insightRequest = controller;
     openVisionLoading();
     try {
-      const requestPayload = payload({yaw: Number(point.yaw), pitch: Number(point.pitch)});
+      const requestPayload = payload({
+        yaw: Number(point.yaw),
+        pitch: Number(point.pitch),
+        selection: point.selection || null,
+      });
       const maxAttempts = 80;
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         const data = await post(cfg.inspectUrl, requestPayload, controller.signal);
@@ -304,7 +330,20 @@
       });
     } catch (error) {
       if (error.name === "AbortError") return;
-      reportTechnicalError("VISION", error, {tourId: cfg.tourId, sceneId: currentSceneId, point});
+      reportTechnicalError("VISION", error, {
+        tourId: cfg.tourId,
+        sceneId: currentSceneId,
+        point: {
+          sceneId: point?.sceneId,
+          yaw: point?.yaw,
+          pitch: point?.pitch,
+          selection: point?.selection ? {
+            version: point.selection.version,
+            bbox: point.selection.bbox,
+            hasCapture: Boolean(point.selection.capture),
+          } : null,
+        },
+      });
       renderVision({
         title: localeIsFrench() ? "Détails visuels temporairement indisponibles" : "Visual details temporarily unavailable",
         description: localeIsFrench()
@@ -324,6 +363,18 @@
   root.querySelectorAll("[data-ai-prompt]").forEach((button) => button.addEventListener("click", () => sendMessage(button.dataset.aiPrompt)));
   root.querySelectorAll("[data-vision-close],[data-vision-dismiss]").forEach((button) => button.addEventListener("click", closeVision));
   vision.backdrop?.addEventListener("click", closeVision);
+  vision.rescan?.addEventListener("click", () => {
+    const point = lastInspectionPoint || {};
+    closeVision();
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("twinscopes:vision-reframe", {
+        detail: {
+          clientX: Number.isFinite(point.clientX) ? point.clientX : undefined,
+          clientY: Number.isFinite(point.clientY) ? point.clientY : undefined,
+        },
+      }));
+    }, 190);
+  });
   vision.ask?.addEventListener("click", async () => {
     const target = activeInsight?.title || vision.title.textContent || "this visible detail";
     const exactText = activeInsight?.exact_text ? ` Visible text: ${activeInsight.exact_text}.` : "";

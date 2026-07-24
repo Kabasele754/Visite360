@@ -56,6 +56,9 @@ class Command(BaseCommand):
             "GOOGLE_APPLICATION_CREDENTIALS": getattr(settings, "GOOGLE_APPLICATION_CREDENTIALS", ""),
             "VISION_ENABLE_YOLO": getattr(settings, "VISION_ENABLE_YOLO", False),
             "VISION_ENABLE_PADDLEOCR": getattr(settings, "VISION_ENABLE_PADDLEOCR", False),
+            "PADDLEOCR_RUNTIME_READY": bool(
+                importlib.util.find_spec("paddleocr") and importlib.util.find_spec("paddle")
+            ),
             "VISION_ENABLE_GEMINI": getattr(settings, "VISION_ENABLE_GEMINI", False),
             "VISION_ENABLE_OPENAI": getattr(settings, "VISION_ENABLE_OPENAI", False),
             "VISION_PUBLIC_ON_DEMAND_SCAN": getattr(settings, "VISION_PUBLIC_ON_DEMAND_SCAN", False),

@@ -42,6 +42,74 @@ def _json(request):
         return {}
 
 
+def _normalize_point_selection(value):
+    if not isinstance(value, dict):
+        return None
+    bbox = value.get("bbox") if isinstance(value.get("bbox"), dict) else {}
+    normalized = bbox.get("normalized") if isinstance(bbox.get("normalized"), dict) else {}
+    try:
+        nx = float(normalized.get("x"))
+        ny = float(normalized.get("y"))
+        nw = float(normalized.get("width"))
+        nh = float(normalized.get("height"))
+    except (TypeError, ValueError):
+        return None
+    minimum = float(getattr(settings, "VISION_SELECTION_MIN_SIZE_RATIO", 0.08))
+    maximum = float(getattr(settings, "VISION_SELECTION_MAX_SIZE_RATIO", 0.72))
+    if not (0 <= nx <= 1 and 0 <= ny <= 1 and minimum <= nw <= maximum and minimum <= nh <= maximum):
+        return None
+    if nx + nw > 1.01 or ny + nh > 1.01:
+        return None
+    corners = []
+    for item in value.get("corners") or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            corner_yaw = float(item.get("yaw"))
+            corner_pitch = float(item.get("pitch"))
+        except (TypeError, ValueError):
+            continue
+        if -1.5709 <= corner_pitch <= 1.5709:
+            corners.append({"yaw": corner_yaw, "pitch": corner_pitch})
+    if len(corners) != 4:
+        return None
+
+    capture = None
+    raw_capture = value.get("capture")
+    if isinstance(raw_capture, dict):
+        data_url = str(raw_capture.get("data_url") or "")
+        max_data_url_length = int(getattr(settings, "VISION_POINT_CAPTURE_MAX_DATA_URL_LENGTH", 3_000_000))
+        allowed_prefixes = (
+            "data:image/jpeg;base64,",
+            "data:image/png;base64,",
+            "data:image/webp;base64,",
+        )
+        if data_url.startswith(allowed_prefixes) and len(data_url) <= max_data_url_length:
+            try:
+                capture_width = int(raw_capture.get("width") or 0)
+                capture_height = int(raw_capture.get("height") or 0)
+            except (TypeError, ValueError):
+                capture_width = capture_height = 0
+            if 96 <= capture_width <= 2048 and 96 <= capture_height <= 2048:
+                requested_source = str(raw_capture.get("source") or "active_viewer_canvas")
+                capture = {
+                    "data_url": data_url,
+                    "width": capture_width,
+                    "height": capture_height,
+                    "source": requested_source if requested_source in {"active_viewer_canvas", "viewer_canvas"} else "active_viewer_canvas",
+                }
+
+    normalized_selection = {
+        "version": 3 if capture else 1,
+        "bbox": {"normalized": {"x": nx, "y": ny, "width": nw, "height": nh}},
+        "corners": corners,
+        "view_fov": value.get("view_fov"),
+    }
+    if capture:
+        normalized_selection["capture"] = capture
+    return normalized_selection
+
+
 def _conversation(request, payload):
     tour = get_object_or_404(Tour.objects.select_related("organization", "place"), pk=payload.get("tour_id"))
     scene = None
@@ -201,8 +269,22 @@ def inspect_point(request):
         return JsonResponse({"ok": False, "error": "Valid yaw and pitch are required"}, status=400)
     if not (-1.5709 <= pitch <= 1.5709):
         return JsonResponse({"ok": False, "error": "Pitch is outside the panorama range"}, status=400)
+    selection = _normalize_point_selection(payload.get("selection"))
 
     locale = getattr(conversation, "locale", None) or getattr(request, "LANGUAGE_CODE", "en")
+    if bool(getattr(settings, "VISION_SELECTION_REQUIRED", True)) and selection is None:
+        is_french = str(locale or "").lower().startswith("fr")
+        return JsonResponse({
+            "ok": True,
+            "status": "selection_required",
+            "title": "Cadrez précisément l’objet" if is_french else "Frame the exact object",
+            "description": (
+                "Déplacez ou redimensionnez la zone, puis confirmez l’analyse."
+                if is_french
+                else "Move or resize the selection, then confirm the analysis."
+            ),
+            "scene_id": scene.id,
+        })
     analysis = latest_scene_analysis(scene)
     if analysis is None:
         active = latest_active_analysis(scene)
@@ -271,16 +353,20 @@ def inspect_point(request):
             "yaw": yaw, "pitch": pitch,
             "analysis_id": str(analysis.id),
             "insight_id": insight.id if insight else None,
+            "selection": selection.get("bbox", {}) if selection else {},
         },
     )
     original_insight = insight
-    needs_targeted_inspection = insight is None or (
+    # A confirmed crop always deserves an exact re-inspection. Reusing a broad
+    # panorama insight here would defeat the user's explicit selection and can
+    # return a nearby shelf, wall or room instead of the framed object.
+    needs_targeted_inspection = selection is not None or insight is None or (
         insight is not None and insight_requires_point_refinement(insight)
     )
     if needs_targeted_inspection and bool(getattr(settings, "VISION_POINT_ON_DEMAND_INSPECTION", True)):
         targeted_insight = None
         try:
-            targeted_insight = inspect_scene_point(analysis, yaw=yaw, pitch=pitch)
+            targeted_insight = inspect_scene_point(analysis, yaw=yaw, pitch=pitch, selection=selection)
             if targeted_insight is not None:
                 insight = targeted_insight
                 distance = 0.0
@@ -308,15 +394,31 @@ def inspect_point(request):
             distance = None
 
     if insight is None:
-        title, description = public_error_copy(locale, kind="no_object")
+        exact_capture_requested = bool(selection and isinstance(selection.get("capture"), dict))
+        response_status = "refine_selection" if exact_capture_requested else "no_object"
+        title, description = public_error_copy(locale, kind=response_status)
+        VisitorSignal.objects.create(
+            conversation=conversation,
+            signal_type="vision_point_refine_required",
+            scene=scene,
+            payload={
+                "yaw": yaw,
+                "pitch": pitch,
+                "analysis_id": str(analysis.id),
+                "exact_capture": exact_capture_requested,
+                "automatic_rescan_performed": exact_capture_requested,
+            },
+        )
         return JsonResponse({
             "ok": True,
-            "status": "no_object",
+            "status": response_status,
             "scene_id": scene.id,
             "analysis_id": str(analysis.id),
             "title": title,
             "description": description,
             "confidence_percent": 0,
+            "rescan_performed": exact_capture_requested,
+            "can_refine_selection": True,
         })
 
     return JsonResponse({

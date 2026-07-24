@@ -1,18 +1,22 @@
 import json
+import mimetypes
+import re
 from copy import deepcopy
+from pathlib import Path
+from urllib.parse import quote
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Prefetch
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from apps.organizations.models import Organization, OrganizationMember
 from apps.organizations.selectors import get_user_membership
@@ -22,6 +26,7 @@ from apps.tours.forms import TourForm
 from django.core.cache import cache
 
 from .models import Tour, Scene360, Hotspot
+from .seo import build_tour_preview_seo
 from .services import (
     generate_unique_tour_slug,
     handle_uploaded_scenes,
@@ -294,6 +299,34 @@ def _scene_statuses_payload(scene):
 
 
 def _serialize_hotspot_payload(request, hotspot):
+    payload = deepcopy(hotspot.payload or {})
+    raw_media_url = _safe_file_url(request, getattr(hotspot, "media_file", None))
+    document_stream_url = ""
+    document_size = None
+    if hotspot.type == Hotspot.Type.PDF and getattr(hotspot, "media_file", None):
+        document_stream_url = request.build_absolute_uri(
+            reverse(
+                "tour-hotspot-pdf-public",
+                kwargs={
+                    "organization_slug": hotspot.organization.slug,
+                    "tour_id": hotspot.scene.tour_id,
+                    "hotspot_id": hotspot.id,
+                },
+            )
+        )
+        try:
+            document_size = hotspot.media_file.size
+        except (OSError, ValueError, AttributeError):
+            document_size = None
+        content = payload.setdefault("content", {})
+        content["document_url"] = document_stream_url
+        content["document_stream_url"] = document_stream_url
+        content.setdefault("download_url", raw_media_url)
+        content["document_size"] = document_size
+        content["mobile_inline_max_bytes"] = int(
+            getattr(settings, "PDF_MOBILE_INLINE_MAX_BYTES", 18 * 1024 * 1024)
+        )
+
     return {
         "id": hotspot.id,
         "hotspot_id": hotspot.hotspot_id,
@@ -318,9 +351,11 @@ def _serialize_hotspot_payload(request, hotspot):
         "description": hotspot.description or "",
         "selected_icon": hotspot.selected_icon or "default",
         "ad_image_url": _safe_file_url(request, getattr(hotspot, "ad_image", None)),
-        "media_file_url": _safe_file_url(request, getattr(hotspot, "media_file", None)),
+        "media_file_url": raw_media_url,
+        "document_stream_url": document_stream_url,
+        "document_size": document_size,
         "poster_image_url": _safe_file_url(request, getattr(hotspot, "poster_image", None)),
-        "payload": hotspot.payload or {},
+        "payload": payload,
         "is_ai_generated": bool(getattr(hotspot, "is_ai_generated", False)),
     }
 
@@ -589,6 +624,7 @@ def tour_create_view(request, organization_slug):
                 tour.slug = generate_unique_tour_slug(tour.title)
 
             tour.save()
+            form.save_domain_profiles(tour)
 
             if is_ajax(request):
                 row_html = render_to_string(
@@ -655,6 +691,7 @@ def tour_edit_view(request, organization_slug, tour_id):
                 updated_tour.slug = generate_unique_tour_slug(updated_tour.title)
 
             updated_tour.save()
+            form.save_domain_profiles(updated_tour)
 
             if is_ajax(request):
                 row_html = render_to_string(
@@ -1038,6 +1075,127 @@ def _build_preview_payload_version(tour, scenes):
     return hashlib.md5(raw.encode("utf-8")).hexdigest()
 
 
+_PDF_RANGE_RE = re.compile(r"^bytes=(\d*)-(\d*)$")
+
+
+def _pdf_stream(file_field, start: int, length: int, chunk_size: int):
+    file_field.open("rb")
+    stream = file_field.file
+    stream.seek(start)
+    remaining = length
+    try:
+        while remaining > 0:
+            chunk = stream.read(min(chunk_size, remaining))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+            yield chunk
+    finally:
+        try:
+            file_field.close()
+        except Exception:
+            pass
+
+
+@require_http_methods(["GET", "HEAD"])
+def public_hotspot_pdf_view(request, organization_slug, tour_id, hotspot_id):
+    """Stream a hotspot PDF with HTTP Range support for iOS and Android.
+
+    The endpoint deliberately keeps the document under the same application
+    origin, validates public-tour access, returns an inline content disposition,
+    and supports partial byte requests used by mobile PDF readers.
+    """
+    hotspot = get_object_or_404(
+        Hotspot.objects.select_related("organization", "scene__tour"),
+        pk=hotspot_id,
+        organization__slug=organization_slug,
+        scene__tour_id=tour_id,
+        type=Hotspot.Type.PDF,
+    )
+    tour = hotspot.scene.tour
+    organization = hotspot.organization
+    can_manage = bool(
+        request.user.is_authenticated
+        and (
+            request.user.is_superuser
+            or get_user_membership(request.user, organization_slug)
+        )
+    )
+    if not can_manage and (
+        organization.status != Organization.Status.ACTIVE
+        or tour.status != Tour.Status.PUBLISHED
+        or not hotspot.scene.is_public
+    ):
+        return HttpResponse(status=404)
+    if not hotspot.media_file:
+        return HttpResponse(status=404)
+
+    try:
+        size = int(hotspot.media_file.size)
+    except (OSError, ValueError, AttributeError):
+        return HttpResponse(status=404)
+    if size <= 0:
+        return HttpResponse(status=404)
+
+    start = 0
+    end = size - 1
+    status = 200
+    range_header = request.headers.get("Range", "").strip()
+    if range_header:
+        match = _PDF_RANGE_RE.match(range_header)
+        if not match:
+            response = HttpResponse(status=416)
+            response["Content-Range"] = f"bytes */{size}"
+            return response
+        first, last = match.groups()
+        if first:
+            start = int(first)
+            end = int(last) if last else end
+        elif last:
+            suffix = int(last)
+            if suffix <= 0:
+                response = HttpResponse(status=416)
+                response["Content-Range"] = f"bytes */{size}"
+                return response
+            start = max(0, size - suffix)
+        if start >= size or start > end:
+            response = HttpResponse(status=416)
+            response["Content-Range"] = f"bytes */{size}"
+            return response
+        end = min(end, size - 1)
+        status = 206
+
+    length = end - start + 1
+    filename = Path(hotspot.media_file.name).name or "document.pdf"
+    content_type = mimetypes.guess_type(filename)[0] or "application/pdf"
+    if content_type != "application/pdf":
+        content_type = "application/pdf"
+
+    if request.method == "HEAD":
+        response = HttpResponse(status=status, content_type=content_type)
+    else:
+        response = StreamingHttpResponse(
+            _pdf_stream(
+                hotspot.media_file,
+                start,
+                length,
+                int(getattr(settings, "PDF_STREAM_CHUNK_SIZE", 65536)),
+            ),
+            status=status,
+            content_type=content_type,
+        )
+    response["Accept-Ranges"] = "bytes"
+    response["Content-Length"] = str(length)
+    if status == 206:
+        response["Content-Range"] = f"bytes {start}-{end}/{size}"
+    response["Content-Disposition"] = f"inline; filename*=UTF-8''{quote(filename)}"
+    response["Cache-Control"] = f"private, max-age={int(getattr(settings, 'PDF_PUBLIC_CACHE_SECONDS', 900))}"
+    response["X-Content-Type-Options"] = "nosniff"
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    response["Cross-Origin-Resource-Policy"] = "same-origin"
+    return response
+
+
 def tour_preview_view(request, organization_slug, tour_id):
     organization = _get_org_or_403(request, organization_slug, allow_public=True)
 
@@ -1054,6 +1212,16 @@ def tour_preview_view(request, organization_slug, tour_id):
         tour.scenes
         .all()
         .order_by("order", "id")
+    )
+    public_list_scenes = [
+        scene for scene in all_scenes
+        if bool(getattr(scene, "is_public", True))
+    ]
+    seo_context = build_tour_preview_seo(
+        request,
+        tour=tour,
+        organization=organization,
+        scenes=public_list_scenes or all_scenes,
     )
 
     payload_version = _build_preview_payload_version(tour, all_scenes)
@@ -1079,13 +1247,9 @@ def tour_preview_view(request, organization_slug, tour_id):
                 "scene_list_json": cached_payload["scene_list_json"],
                 "appointment_types": AppointmentType.objects.filter(organization=organization, is_active=True),
                 "tour_products": Product.objects.filter(organization=organization, status=Product.Status.ACTIVE).order_by("-is_featured", "-created_at")[:8],
+                **seo_context,
             },
         )
-
-    public_list_scenes = [
-        scene for scene in all_scenes
-        if bool(getattr(scene, "is_public", True))
-    ]
 
     prefetch_map = _build_prefetch_map(request, all_scenes)
 
@@ -1126,6 +1290,7 @@ def tour_preview_view(request, organization_slug, tour_id):
             "scene_list_json": scene_list_payload,
             "appointment_types": AppointmentType.objects.filter(organization=organization, is_active=True),
             "tour_products": Product.objects.filter(organization=organization, status=Product.Status.ACTIVE).order_by("-is_featured", "-created_at")[:8],
+            **seo_context,
         },
     )
 

@@ -1,0 +1,139 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-market-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#07111f">
+    <title>Smart Search · Twinscopes</title>
+    <script>
+        (function () {
+            try {
+                const saved = localStorage.getItem("twinscopes-market-theme")
+                    || localStorage.getItem("twinscopesTheme")
+                    || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+                const theme = saved === "dark" ? "dark" : "light";
+                document.documentElement.dataset.marketTheme = theme;
+                document.documentElement.style.colorScheme = theme;
+            } catch (_) {}
+        })();
+    </script>
+    <link rel="shortcut icon" type="image/png" href="{% static 'public/branding/favicon-32.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'public/branding/apple-touch-icon.png' %}">
+    <link rel="stylesheet" href="{% static 'public/css/discovery-search-page-v3.css' %}">
+</head>
+<body>
+<main
+    class="ts-search-page"
+    data-discovery-search-page
+    data-search-url="{% url 'domain_intelligence:public-discovery-search' %}"
+    data-appointment-url="{% url 'domain_intelligence:public-healthcare-appointment' %}"
+    data-home-url="{% url 'public_home' %}"
+    data-initial-query="{{ initial_query|escape }}"
+    data-initial-city="{{ initial_city|escape }}"
+>
+    <header class="ts-search-header">
+        <button type="button" class="ts-search-back" data-search-back aria-label="Go back">
+            <span class="ts-search-icon ts-search-icon--back" aria-hidden="true"></span>
+            <span>Back</span>
+        </button>
+        <a class="ts-search-brand" href="{% url 'public_home' %}" aria-label="Twinscopes home">
+            <span><img src="{% static 'public/branding/twinscopes-logo.png' %}" alt=""></span>
+            <strong>Twinscopes</strong>
+        </a>
+        <button type="button" class="ts-search-theme" data-search-theme-toggle aria-label="Toggle dark mode">
+            <span class="ts-search-icon ts-search-icon--theme" aria-hidden="true"></span>
+        </button>
+    </header>
+
+    <section class="ts-search-hero">
+        <span class="ts-search-kicker">Smart discovery</span>
+        <h1>Find the right place before you visit.</h1>
+        <p>Search virtual tours, homes, hotels, hospitals, doctors and services in one focused workspace.</p>
+    </section>
+
+    <section class="ts-search-workspace">
+        <form class="ts-search-form" data-discovery-form role="search">
+            {% csrf_token %}
+            <label class="ts-search-query">
+                <span class="ts-search-icon ts-search-icon--search" aria-hidden="true"></span>
+                <input
+                    type="search"
+                    maxlength="500"
+                    autocomplete="off"
+                    spellcheck="false"
+                    data-discovery-query
+                    value="{{ initial_query }}"
+                    placeholder="Try “3 bedroom house in Sandton” or “cardiology hospital”"
+                    aria-label="What are you looking for?"
+                    autofocus
+                >
+                <button type="button" class="ts-search-clear" data-discovery-clear aria-label="Clear search" hidden>×</button>
+                <button type="submit" class="ts-search-submit" data-discovery-submit>
+                    <span data-discovery-submit-label>Search</span>
+                    <span class="ts-search-icon ts-search-icon--arrow" aria-hidden="true"></span>
+                </button>
+            </label>
+
+            <div class="ts-search-secondary">
+                <label class="ts-search-location">
+                    <span class="ts-search-icon ts-search-icon--pin" aria-hidden="true"></span>
+                    <input type="text" maxlength="120" data-discovery-city value="{{ initial_city }}" placeholder="City, area or address (optional)">
+                </label>
+                <button type="button" class="ts-search-locate" data-discovery-locate>
+                    <span class="ts-search-icon ts-search-icon--target" aria-hidden="true"></span>
+                    <span data-locate-label>Use my location</span>
+                </button>
+            </div>
+        </form>
+
+        <div class="ts-search-suggestions" data-discovery-suggestions>
+            <span>Popular searches</span>
+            <div>
+                <button type="button" data-discovery-example="3 bedroom house for rent with parking">3 bedroom house</button>
+                <button type="button" data-discovery-example="Hotel near me with Wi-Fi">Hotel near me</button>
+                <button type="button" data-discovery-example="Hospital with cardiology services">Cardiology hospital</button>
+                <button type="button" data-discovery-example="Virtual tour">All virtual tours</button>
+            </div>
+        </div>
+
+        <div class="ts-search-status" data-discovery-status hidden aria-live="polite"></div>
+        <div class="ts-search-results" data-discovery-results aria-live="polite"></div>
+    </section>
+
+    <div class="ts-appointment" data-discovery-appointment hidden aria-hidden="true">
+        <button type="button" class="ts-appointment__backdrop" data-appointment-close aria-label="Close"></button>
+        <section class="ts-appointment__dialog" role="dialog" aria-modal="true" aria-labelledby="appointmentTitle">
+            <header>
+                <div>
+                    <span>Medical appointment</span>
+                    <h2 id="appointmentTitle" data-appointment-title>Request an appointment</h2>
+                    <p data-appointment-description>Your request will be saved and confirmed by the healthcare facility.</p>
+                </div>
+                <button type="button" class="ts-appointment__close" data-appointment-close aria-label="Close">×</button>
+            </header>
+            <form data-appointment-form>
+                <input type="hidden" name="organization_slug">
+                <input type="hidden" name="tour_id">
+                <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="ts-appointment__honeypot">
+                <div class="ts-appointment__grid">
+                    <label><span>Full name *</span><input name="full_name" maxlength="255" required autocomplete="name"></label>
+                    <label><span>Phone *</span><input name="phone" maxlength="40" required autocomplete="tel" inputmode="tel"></label>
+                    <label><span>Email</span><input name="email" maxlength="254" type="email" autocomplete="email"></label>
+                    <label><span>Specialty</span><select name="specialty_id" data-appointment-specialty><option value="">All specialties</option></select></label>
+                    <label><span>Preferred doctor</span><select name="practitioner_id" data-appointment-practitioner><option value="">First available specialist</option></select></label>
+                    <label><span>Preferred date *</span><input name="preferred_date" type="date" required></label>
+                    <label><span>Preferred time</span><input name="preferred_time" type="time"></label>
+                    <label><span>Appointment mode</span><select name="appointment_mode"><option value="in_person">In person</option><option value="telemedicine">Telemedicine</option></select></label>
+                    <label class="ts-appointment__wide"><span>Administrative reason for the visit</span><textarea name="reason_for_visit" maxlength="1500" rows="3" placeholder="Example: cardiology consultation request"></textarea></label>
+                </div>
+                <p class="ts-appointment__notice">This form does not provide medical advice and must not be used for emergencies.</p>
+                <div class="ts-appointment__status" data-appointment-status hidden></div>
+                <button type="submit" class="ts-appointment__submit" data-appointment-submit>Send request</button>
+            </form>
+        </section>
+    </div>
+</main>
+<script defer src="{% static 'public/js/discovery-search-page-v3.js' %}"></script>
+</body>
+</html>

@@ -15,6 +15,7 @@ from apps.vendors.models import Product
 
 XML_HEADER = '<?xml version="1.0" encoding="UTF-8"?>\n'
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
+IMAGE_SITEMAP_NS = 'http://www.google.com/schemas/sitemap-image/1.1'
 
 
 def _absolute(request, path: str) -> str:
@@ -29,7 +30,15 @@ def _iso(value) -> str:
     return value.isoformat()
 
 
-def _url_entry(*, loc: str, lastmod=None, changefreq="weekly", priority="0.7") -> str:
+def _url_entry(
+    *,
+    loc: str,
+    lastmod=None,
+    changefreq="weekly",
+    priority="0.7",
+    image_url: str = "",
+    image_title: str = "",
+) -> str:
     parts = ["  <url>", f"    <loc>{escape(loc)}</loc>"]
     if lastmod:
         parts.append(f"    <lastmod>{escape(_iso(lastmod))}</lastmod>")
@@ -37,6 +46,13 @@ def _url_entry(*, loc: str, lastmod=None, changefreq="weekly", priority="0.7") -
         parts.append(f"    <changefreq>{escape(changefreq)}</changefreq>")
     if priority:
         parts.append(f"    <priority>{escape(str(priority))}</priority>")
+    if image_url:
+        parts.extend([
+            "    <image:image>",
+            f"      <image:loc>{escape(image_url)}</image:loc>",
+            *([f"      <image:title>{escape(image_title)}</image:title>"] if image_title else []),
+            "    </image:image>",
+        ])
     parts.append("  </url>")
     return "\n".join(parts)
 
@@ -115,13 +131,13 @@ def product_sitemap(request):
 @require_GET
 def tour_sitemap(request):
     tours = (
-        Tour.objects.select_related("organization", "place")
+        Tour.objects.select_related("organization")
         .filter(
             status=Tour.Status.PUBLISHED,
             organization__status=Organization.Status.ACTIVE,
             place__status=Place.Status.PUBLISHED,
         )
-        .only("id", "updated_at", "organization__slug")
+        .only("id", "title", "updated_at", "is_featured", "thumbnail_image", "organization__slug")
         .order_by("pk")
     )
     rows = []
@@ -133,15 +149,28 @@ def tour_sitemap(request):
             )
         except Exception:
             path = f"/{tour.organization.slug}/tours/{tour.id}/preview/"
+        image_url = ""
+        try:
+            if tour.thumbnail_image:
+                image_url = _absolute(request, tour.thumbnail_image.url)
+        except (AttributeError, ValueError):
+            image_url = ""
         rows.append(
             _url_entry(
                 loc=_absolute(request, path),
                 lastmod=tour.updated_at,
                 changefreq="weekly",
                 priority="0.85" if tour.is_featured else "0.75",
+                image_url=image_url,
+                image_title=f"{tour.title} 360° virtual tour" if image_url else "",
             )
         )
-    xml = XML_HEADER + f'<urlset xmlns="{SITEMAP_NS}">\n' + "\n".join(rows) + "\n</urlset>\n"
+    xml = (
+        XML_HEADER
+        + f'<urlset xmlns="{SITEMAP_NS}" xmlns:image="{IMAGE_SITEMAP_NS}">\n'
+        + "\n".join(rows)
+        + "\n</urlset>\n"
+    )
     return HttpResponse(xml, content_type="application/xml; charset=utf-8")
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from apps.knowledge.models import ServiceOffering
 from apps.knowledge.services.search import semantic_search
+from apps.domain_intelligence.services.grounding import build_domain_grounding
 
 
 def _social_links(organization) -> dict:
@@ -40,4 +41,5 @@ def build_organization_grounding(organization, query: str, *, limit: int = 8) ->
         },
         "services": services,
         "knowledge_sources": sources,
+        "domain_intelligence": build_domain_grounding(organization, query, limit=limit),
     }

@@ -39,6 +39,25 @@ def test_view(request):
 
 
 
+
+
+class PublicSearchView(TemplateView):
+    """Dedicated public discovery workspace.
+
+    The home page intentionally keeps only a compact launcher. Dynamic search,
+    location ranking and appointment requests live on this focused page so the
+    visitor is not distracted by a full-screen modal layered over the home feed.
+    """
+
+    template_name = "public/search.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["initial_query"] = (self.request.GET.get("q") or "").strip()[:500]
+        context["initial_city"] = (self.request.GET.get("city") or "").strip()[:120]
+        return context
+
+
 class PublicHomeView(TemplateView):
     template_name = "public/home.html"
 

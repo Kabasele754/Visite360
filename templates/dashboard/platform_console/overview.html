@@ -1,0 +1,164 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Platform Control Center · Twinscopes{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=4">
+{% endblock %}
+
+{% block content %}
+<div class="ts-control-center" data-control-center>
+    <section class="ts-control-hero">
+        <div class="ts-control-hero__copy">
+            <span class="ts-control-kicker">Platform administration</span>
+            <h1>Twinscopes Control Center</h1>
+            <p>One operational workspace for tours, healthcare, properties, AI, knowledge, traffic and customer activity.</p>
+            <div class="ts-control-hero__status">
+                <span class="ts-control-live-dot" aria-hidden="true"></span>
+                <strong>Production workspace</strong>
+                <small>Live platform data</small>
+            </div>
+        </div>
+        <div class="ts-control-hero__actions">
+            <a href="{% url 'platform-console-resource-list' 'appointments' %}">Review appointments</a>
+            <a class="secondary" href="{% url 'platform-console-resource-list' 'ai-runs' %}">Monitor AI</a>
+        </div>
+    </section>
+
+    <section class="ts-control-command" aria-label="Control Center navigation">
+        <label class="ts-control-command__search">
+            <span aria-hidden="true">⌕</span>
+            <input type="search" data-control-resource-filter placeholder="Find a control, resource or operation">
+            <kbd>⌘ K</kbd>
+        </label>
+        <nav class="ts-control-command__links">
+            <a href="#platform-health">Health</a>
+            <a href="#live-operations">Live operations</a>
+            <a href="#resource-management">Resources</a>
+            <a href="#recent-activity">Activity</a>
+        </nav>
+    </section>
+
+    <section id="platform-health" class="ts-control-section">
+        <header class="ts-control-section__head">
+            <div><span>Overview</span><h2>Platform health</h2></div>
+            <p>Current operational totals across the main Twinscopes services.</p>
+        </header>
+        <div class="ts-control-metrics" aria-label="Platform metrics">
+            {% for metric in metrics %}
+            <article class="ts-control-metric">
+                <span class="ts-control-metric__icon">{{ metric.icon }}</span>
+                <div>
+                    <p>{{ metric.label }}</p>
+                    <strong>{{ metric.value }}</strong>
+                    <small>{{ metric.detail }}</small>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section id="live-operations" class="ts-control-section">
+        <header class="ts-control-section__head">
+            <div><span>Monitoring</span><h2>Live operations</h2></div>
+            <p>Traffic, AI execution, visual analysis and appointment workflow.</p>
+        </header>
+        <div class="ts-control-grid ts-control-grid--charts">
+            <article class="ts-control-card ts-control-card--wide">
+                <header><div><span>Traffic</span><h3>Platform activity</h3></div><small>Last 14 days</small></header>
+                <div class="ts-chart-wrap"><canvas id="trafficChart" aria-label="Traffic chart"></canvas></div>
+            </article>
+            <article class="ts-control-card">
+                <header><div><span>Computer vision</span><h3>Analysis status</h3></div></header>
+                <div class="ts-chart-wrap ts-chart-wrap--compact"><canvas id="visionChart" aria-label="Vision status chart"></canvas></div>
+            </article>
+            <article class="ts-control-card ts-control-card--wide">
+                <header><div><span>Artificial intelligence</span><h3>AI runs by provider</h3></div><small>Last 30 days</small></header>
+                <div class="ts-chart-wrap"><canvas id="aiChart" aria-label="AI provider chart"></canvas></div>
+            </article>
+            <article class="ts-control-card">
+                <header><div><span>Operations</span><h3>Appointment status</h3></div></header>
+                <div class="ts-chart-wrap ts-chart-wrap--compact"><canvas id="appointmentChart" aria-label="Appointment status chart"></canvas></div>
+            </article>
+        </div>
+    </section>
+
+    <section id="resource-management" class="ts-control-section">
+        <header class="ts-control-section__head">
+            <div><span>Administration</span><h2>Resource management</h2></div>
+            <p>Controls are grouped by business purpose so the right workspace is easy to find.</p>
+        </header>
+        <div class="ts-control-layout">
+            <div class="ts-control-resources" data-control-resource-groups>
+                {% for group_label, resources in resource_groups %}
+                <section class="ts-control-resource-group" data-resource-group>
+                    <header>
+                        <div><span>{{ forloop.counter|stringformat:"02d" }}</span><h3>{{ group_label }}</h3></div>
+                        <small>{{ resources|length }} controls</small>
+                    </header>
+                    <div class="ts-control-resource-grid">
+                        {% for resource in resources %}
+                        <a href="{% url 'platform-console-resource-list' resource.key %}" class="ts-control-resource" data-control-resource data-resource-search="{{ resource.label }} {{ resource.description }} {{ group_label }}">
+                            <span class="ts-control-resource__icon">{{ resource.icon }}</span>
+                            <span><strong>{{ resource.label }}</strong><small>{{ resource.description }}</small></span>
+                            <b aria-hidden="true">→</b>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endfor %}
+                <div class="ts-control-resource-empty" data-control-resource-empty hidden>No control matches this search.</div>
+            </div>
+
+            <aside class="ts-control-sidebar" id="recent-activity">
+                <article class="ts-control-card ts-control-health">
+                    <header><div><span>Knowledge</span><h3>Index health</h3></div></header>
+                    <div class="ts-control-health__numbers">
+                        <div><strong>{{ knowledge_summary.total }}</strong><span>Total sources</span></div>
+                        <div><strong>{{ knowledge_summary.indexed }}</strong><span>Indexed</span></div>
+                        <div><strong>{{ knowledge_summary.failed }}</strong><span>Failed</span></div>
+                    </div>
+                    <a href="{% url 'platform-console-resource-list' 'knowledge-sources' %}">Manage knowledge sources</a>
+                </article>
+
+                <article class="ts-control-card ts-control-activity">
+                    <header><div><span>Latest activity</span><h3>AI operations</h3></div></header>
+                    <div class="ts-control-activity__list">
+                        {% for run in recent_ai_runs %}
+                        <a href="{% url 'platform-console-resource-list' 'ai-runs' %}?q={{ run.trace_id|urlencode }}">
+                            <span class="ts-status-dot ts-status-dot--{{ run.status }}"></span>
+                            <span><strong>{{ run.operation|default:"AI operation" }}</strong><small>{{ run.provider|default:"Provider" }} · {{ run.created_at|timesince }} ago</small></span>
+                            <em>{{ run.status }}</em>
+                        </a>
+                        {% empty %}<p class="ts-control-empty">No AI activity yet.</p>{% endfor %}
+                    </div>
+                </article>
+
+                <article class="ts-control-card ts-control-activity">
+                    <header><div><span>Latest activity</span><h3>Appointments</h3></div></header>
+                    <div class="ts-control-activity__list">
+                        {% for appointment in recent_appointments %}
+                        <a href="{% url 'platform-console-resource-edit' 'appointments' appointment.pk %}">
+                            <span class="ts-status-dot ts-status-dot--{{ appointment.status }}"></span>
+                            <span><strong>{{ appointment.full_name }}</strong><small>{{ appointment.organization.name }} · {{ appointment.created_at|timesince }} ago</small></span>
+                            <em>{{ appointment.status }}</em>
+                        </a>
+                        {% empty %}<p class="ts-control-empty">No appointment requests yet.</p>{% endfor %}
+                    </div>
+                </article>
+            </aside>
+        </div>
+    </section>
+</div>
+
+{{ traffic_chart|json_script:"traffic-chart-data" }}
+{{ ai_chart|json_script:"ai-chart-data" }}
+{{ vision_chart|json_script:"vision-chart-data" }}
+{{ appointment_chart|json_script:"appointment-chart-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'platform_console/js/control-center.js' %}?v=4" defer></script>
+{% endblock %}
