@@ -3961,6 +3961,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const initialScene = getInitialSceneFromUrl() || scenes[0];
     currentSceneId = initialScene.id;
 
+    // Public bridge used by the Three.js spatial tour map. The spatial module
+    // never reaches into Marzipano internals; it asks the main Preview to
+    // perform the normal cinematic scene transition.
+    window.addEventListener("twinscopes:navigate-scene", (event) => {
+        const requestedId = event.detail?.sceneId;
+        const targetScene = findScene(requestedId);
+        if (!targetScene || isTransitioning) return;
+        closeInfoPanel();
+        closeSceneStack();
+        goToSceneWithWalk(targetScene);
+    });
+
     async function bootProgressivePreview() {
         cancelProgressiveWork();
         const generation = progressiveGeneration;

@@ -403,10 +403,71 @@ def _build_prefetch_map(request, scenes):
     return prefetch_map
 
 
+def _preview_public_asset_url(request, value):
+    """Return a browser-safe absolute URL for optional AI-generated assets."""
+    if not value:
+        return ""
+
+    try:
+        if hasattr(value, "url"):
+            value = value.url
+    except Exception:
+        return ""
+
+    value = str(value or "").strip()
+    if not value:
+        return ""
+
+    if value.startswith(("https://", "http://")):
+        return value
+    if value.startswith("/"):
+        return request.build_absolute_uri(value)
+
+    # AI pipelines may store media-relative paths such as depth_maps/scene-1.png.
+    if ".." in Path(value).parts:
+        return ""
+    return request.build_absolute_uri(f"{settings.MEDIA_URL.rstrip('/')}/{value.lstrip('/')}")
+
+
+def _scene_spatial_payload(request, scene):
+    analysis = getattr(scene, "ai_analysis", {}) or {}
+    depth = analysis.get("depth") if isinstance(analysis.get("depth"), dict) else {}
+    depth_url = (
+        analysis.get("depth_map_url")
+        or analysis.get("depth_url")
+        or depth.get("url")
+        or depth.get("depth_map_url")
+        or getattr(scene, "depth_map_url", "")
+    )
+    depth_url = _preview_public_asset_url(request, depth_url)
+
+    raw_confidence = (
+        depth.get("confidence")
+        or analysis.get("depth_confidence")
+        or 0.0
+    )
+    try:
+        depth_confidence = float(raw_confidence)
+    except (TypeError, ValueError):
+        depth_confidence = 0.0
+
+    return {
+        "depth_map_url": depth_url,
+        "depth_ready": bool(depth_url),
+        "depth_confidence": depth_confidence,
+        "depth_source": str(
+            depth.get("source")
+            or analysis.get("depth_source")
+            or ""
+        ),
+    }
+
+
 def _serialize_scene_payload(request, scene, include_hotspots=True, prefetch=None):
     assets = _scene_assets_payload(request, scene)
     tiles = _scene_tiles_payload(request, scene)
     statuses = _scene_statuses_payload(scene)
+    spatial = _scene_spatial_payload(request, scene)
 
     return {
         "id": scene.id,
@@ -442,6 +503,7 @@ def _serialize_scene_payload(request, scene, include_hotspots=True, prefetch=Non
 
         "ai_analysis": getattr(scene, "ai_analysis", {}) or {},
         "ai_hotspot_suggestions": getattr(scene, "ai_hotspot_suggestions", []) or [],
+        "spatial": spatial,
 
         "prefetch": prefetch or getattr(scene, "prefetch_manifest", {}) or {},
 
@@ -1248,10 +1310,60 @@ def tour_preview_view(request, organization_slug, tour_id):
         scenes=public_list_scenes or all_scenes,
     )
 
+    place = getattr(tour, "place", None)
+    preview_latitude = getattr(place, "latitude", None) or getattr(tour, "lat", None)
+    preview_longitude = getattr(place, "longitude", None) or getattr(tour, "lng", None)
+    preview_runtime_context = {
+        "google_maps_browser_key": (
+            getattr(settings, "GOOGLE_MAPS_BROWSER_KEY", "")
+            or getattr(settings, "GOOGLE_MAPS_API_KEY", "")
+        ),
+        "google_maps_3d_map_id": getattr(settings, "GOOGLE_MAPS_3D_MAP_ID", ""),
+        "preview_spatial_3d_enabled": bool(
+            getattr(settings, "PREVIEW_SPATIAL_3D_ENABLED", True)
+        ),
+        "preview_three_module_url": getattr(
+            settings,
+            "PREVIEW_THREE_MODULE_URL",
+            "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+        ),
+        "preview_google_maps_3d_enabled": bool(
+            getattr(settings, "PREVIEW_GOOGLE_MAPS_3D_ENABLED", True)
+        ),
+        "preview_spatial_depth_strength": float(
+            getattr(settings, "PREVIEW_SPATIAL_DEPTH_STRENGTH", 0.55)
+        ),
+        "preview_spatial_depth_invert": bool(
+            getattr(settings, "PREVIEW_SPATIAL_DEPTH_INVERT", True)
+        ),
+        "preview_spatial_point_budget": int(
+            getattr(settings, "PREVIEW_SPATIAL_POINT_BUDGET", 42000)
+        ),
+        "preview_spatial_mesh_segments": int(
+            getattr(settings, "PREVIEW_SPATIAL_MESH_SEGMENTS", 220)
+        ),
+        "preview_spatial_graph_max_nodes": int(
+            getattr(settings, "PREVIEW_SPATIAL_GRAPH_MAX_NODES", 48)
+        ),
+        "preview_location": {
+            "latitude": float(preview_latitude) if preview_latitude is not None else None,
+            "longitude": float(preview_longitude) if preview_longitude is not None else None,
+            "label": getattr(place, "name", "") or tour.title,
+            "address": ", ".join(
+                part for part in [
+                    getattr(place, "address_line", "") if place else "",
+                    getattr(place, "city", "") if place else "",
+                    getattr(place, "country", "") if place else "",
+                ]
+                if part
+            ),
+        },
+    }
+
     payload_version = _build_preview_payload_version(tour, all_scenes)
 
     cache_key = (
-        f"tour_preview_payload:v6:"
+        f"tour_preview_payload:v7:"
         f"{request.get_host()}:"
         f"{organization.slug}:"
         f"{tour.id}:"
@@ -1271,6 +1383,7 @@ def tour_preview_view(request, organization_slug, tour_id):
                 "scene_list_json": cached_payload["scene_list_json"],
                 "appointment_types": AppointmentType.objects.filter(organization=organization, is_active=True),
                 "tour_products": Product.objects.filter(organization=organization, status=Product.Status.ACTIVE).order_by("-is_featured", "-created_at")[:8],
+                **preview_runtime_context,
                 **seo_context,
             },
         )
@@ -1314,6 +1427,7 @@ def tour_preview_view(request, organization_slug, tour_id):
             "scene_list_json": scene_list_payload,
             "appointment_types": AppointmentType.objects.filter(organization=organization, is_active=True),
             "tour_products": Product.objects.filter(organization=organization, status=Product.Status.ACTIVE).order_by("-is_featured", "-created_at")[:8],
+            **preview_runtime_context,
             **seo_context,
         },
     )

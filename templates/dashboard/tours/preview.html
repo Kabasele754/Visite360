@@ -204,7 +204,7 @@
         };
     </script>
 
-    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=preview-centered-info-modal-18">
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-tailwind.css' %}?v=preview-spatial-reconstruction-26">
 
     <style>
         #previewDebugDialog,
@@ -282,6 +282,7 @@
     </style>
 
     <link rel="stylesheet" href="{% static 'public/css/loader_3d_global-v11.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/css/preview-spatial-3d.css' %}?v=preview-spatial-reconstruction-26">
 
 <style>
 .tour-appointment-modal{position:absolute;inset:0;z-index:105;display:grid;place-items:center;padding:18px;opacity:0;visibility:hidden;pointer-events:none;transition:.25s}.tour-appointment-modal.open{opacity:1;visibility:visible;pointer-events:auto}.tour-appointment-backdrop{position:absolute;inset:0;background:rgba(2,6,23,.62);backdrop-filter:blur(8px)}.tour-appointment-card{position:relative;width:min(560px,100%);max-height:min(86dvh,760px);overflow:auto;padding:28px;border:1px solid rgba(255,255,255,.18);border-radius:30px;color:#fff;background:radial-gradient(circle at 8% 0%,rgba(34,211,238,.18),transparent 34%),linear-gradient(145deg,#07152a,#020617);box-shadow:0 34px 100px rgba(0,0,0,.5)}.tour-appointment-close{position:absolute;right:16px;top:16px;width:42px;height:42px;border:1px solid rgba(255,255,255,.18);border-radius:50%;color:#fff;background:rgba(255,255,255,.07)}.tour-appointment-kicker{color:#67e8f9;font-size:10px;font-weight:950;letter-spacing:.24em}.tour-appointment-card h3{margin:10px 0;font-size:30px;font-weight:950}.tour-appointment-card>p{color:rgba(255,255,255,.65)}.tour-appointment-card form{display:grid;gap:13px;margin-top:22px}.tour-appointment-card label{display:grid;gap:7px;color:rgba(255,255,255,.72);font-size:12px;font-weight:850}.tour-appointment-card input,.tour-appointment-card select,.tour-appointment-card textarea{width:100%;padding:12px 13px;border:1px solid rgba(255,255,255,.14);border-radius:14px;color:#fff;background:rgba(255,255,255,.07)}.tour-appointment-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tour-appointment-card button[type=submit]{min-height:48px;border:0;border-radius:16px;color:#05131d;background:linear-gradient(135deg,#67e8f9,#38bdf8);font-weight:950}.tour-appointment-status{min-height:20px;color:#a5f3fc;font-weight:800}@media(max-width:600px){.tour-appointment-modal{align-items:end;padding:8px}.tour-appointment-card{max-height:82dvh;padding:22px 16px;border-radius:26px}.tour-appointment-grid{grid-template-columns:1fr}}
@@ -307,6 +308,13 @@
         <symbol id="ts-icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
         <symbol id="ts-icon-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
         <symbol id="ts-icon-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></symbol>
+        <symbol id="ts-icon-cube" viewBox="0 0 24 24"><path d="m12 2.5 8 4.4v9.2l-8 5.4-8-5.4V6.9l8-4.4Z"/><path d="m4.4 7.1 7.6 4.4 7.6-4.4M12 11.5v9.7"/></symbol>
+        <symbol id="ts-icon-map" viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15M15 6v15"/></symbol>
+        <symbol id="ts-icon-location" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+        <symbol id="ts-icon-motion" viewBox="0 0 24 24"><path d="M7 4a9 9 0 0 0 0 16M17 4a9 9 0 0 1 0 16M10 7a5 5 0 0 0 0 10M14 7a5 5 0 0 1 0 10"/><circle cx="12" cy="12" r="1.5"/></symbol>
+        <symbol id="ts-icon-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></symbol>
+        <symbol id="ts-icon-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8 4.8-2.2Z"/></symbol>
+        <symbol id="ts-icon-user-location" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></symbol>
     </svg>
 
     {% include 'public/partials/loader_3d_global.html' %}
@@ -542,6 +550,10 @@
                     <button id="focusModeBtn" type="button" class="control-btn" title="Focus mode" aria-label="Focus mode"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-focus"></use></svg></button>
                     <button id="tourShopBtn" type="button" class="control-btn" title="Shop products" aria-label="Shop products"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-shop"></use></svg></button>
                     <button id="appointmentBtn" type="button" class="control-btn" title="Book an appointment" aria-label="Book an appointment"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-calendar"></use></svg></button>
+                    {% if preview_spatial_3d_enabled %}
+                        <button id="previewSpatial3DBtn" type="button" class="control-btn control-btn--spatial" title="Spatial reconstruction" aria-label="Open spatial reconstruction"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-cube"></use></svg></button>
+                    {% endif %}
+                    <button id="previewLocation3DBtn" type="button" class="control-btn control-btn--map" title="Location map" aria-label="Open tour location map"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-map"></use></svg></button>
                     <button id="shareBtn" type="button" class="control-btn" title="Share tour" aria-label="Share tour"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-share"></use></svg></button>
                     <button id="fullscreenBtn" type="button" class="control-btn" title="Fullscreen" aria-label="Fullscreen"><svg class="ts-control-icon" aria-hidden="true" focusable="false"><use href="#ts-icon-fullscreen"></use></svg></button>
 
@@ -602,7 +614,15 @@
                             </div>
 
                             <footer class="preview-tour-details-footer">
-                                <span>Explore the space at your own pace.</span>
+                                <div class="preview-tour-details-footer-copy">
+                                    <span class="preview-tour-details-footer-icon" aria-hidden="true">
+                                        <svg class="ts-control-icon" focusable="false"><use href="#ts-icon-compass"></use></svg>
+                                    </span>
+                                    <span class="preview-tour-details-footer-text">
+                                        <strong>Ready to explore?</strong>
+                                        <small>Move through every scene and discover the space at your own pace.</small>
+                                    </span>
+                                </div>
                                 {% if current_organization.website_url %}
                                     <a href="{{ current_organization.website_url }}" target="_blank" rel="noopener noreferrer">
                                         Official website
@@ -618,6 +638,133 @@
 
 
 
+
+        <div id="previewSpatialModal" class="preview-experience-modal preview-spatial-modal" aria-hidden="true" inert>
+            <div class="preview-experience-backdrop" data-spatial-close></div>
+            <section class="preview-experience-card" role="dialog" aria-modal="true" aria-labelledby="previewSpatialTitle">
+                <header class="preview-experience-header">
+                    <div class="preview-experience-brand" aria-hidden="true"><svg class="ts-control-icon"><use href="#ts-icon-cube"></use></svg></div>
+                    <div class="preview-experience-heading">
+                        <p>SPATIAL RECONSTRUCTION</p>
+                        <h2 id="previewSpatialTitle">Explore the tour in 3D</h2>
+                        <span id="previewSpatialSceneLabel">{{ tour.title }}</span>
+                    </div>
+                    <button type="button" class="preview-experience-close" data-spatial-close aria-label="Close spatial reconstruction"><svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-close"></use></svg></button>
+                </header>
+
+                <div class="preview-spatial-stage">
+                    <div id="previewSpatialCanvasHost" class="preview-spatial-canvas-host" aria-label="Interactive spatial reconstruction"></div>
+                    <div id="previewSpatialLoading" class="preview-experience-state">
+                        <span class="preview-spatial-loader" aria-hidden="true"></span>
+                        <strong>Preparing the spatial experience</strong>
+                        <small>Building the tour map and scene geometry.</small>
+                    </div>
+                    <div id="previewSpatialError" class="preview-experience-state is-error" hidden>
+                        <strong>3D view is temporarily unavailable</strong>
+                        <small>The standard 360° tour remains available.</small>
+                    </div>
+                    <div class="preview-spatial-badge" id="previewSpatialModeBadge">SPATIAL TOUR MAP</div>
+                    <div id="previewSpatialHint" class="preview-spatial-hint">
+                        <strong>Drag to orbit</strong>
+                        <span>Click a scene card to move through the tour.</span>
+                    </div>
+                </div>
+
+                <footer class="preview-experience-toolbar preview-spatial-toolbar">
+                    <div class="preview-spatial-primary-controls">
+                        <div class="preview-spatial-mode-switch" role="tablist" aria-label="Spatial rendering mode">
+                            <button type="button" id="previewSpatialGraphBtn" class="preview-spatial-mode-button" data-spatial-mode="graph" role="tab" aria-selected="true">
+                                <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-map"></use></svg>
+                                <span>Tour map</span>
+                            </button>
+                            <button type="button" id="previewSpatialCloudBtn" class="preview-spatial-mode-button" data-spatial-mode="pointcloud" role="tab" aria-selected="false">
+                                <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-motion"></use></svg>
+                                <span>Point cloud</span>
+                            </button>
+                            <button type="button" id="previewSpatialMeshBtn" class="preview-spatial-mode-button" data-spatial-mode="mesh" role="tab" aria-selected="false">
+                                <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-layers"></use></svg>
+                                <span>Depth mesh</span>
+                            </button>
+                            <button type="button" id="previewSpatialPanoramaBtn" class="preview-spatial-mode-button" data-spatial-mode="panorama" role="tab" aria-selected="false">
+                                <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-cube"></use></svg>
+                                <span>360°</span>
+                            </button>
+                        </div>
+
+                        <label class="preview-spatial-scene-picker">
+                            <span>Scene</span>
+                            <select id="previewSpatialSceneSelect" aria-label="Choose a scene for the spatial view"></select>
+                        </label>
+                    </div>
+
+                    <div class="preview-experience-actions">
+                        <button type="button" id="previewSpatialStepBtn" class="preview-experience-action" title="Move a small step forward inside depth modes">
+                            <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-next"></use></svg>
+                            <span>Step</span>
+                        </button>
+                        <button type="button" id="previewSpatialMotionBtn" class="preview-experience-action" aria-pressed="false">
+                            <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-motion"></use></svg>
+                            <span>Motion</span>
+                        </button>
+                        <button type="button" id="previewSpatialResetBtn" class="preview-experience-action">
+                            <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-reset"></use></svg>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+                </footer>
+            </section>
+        </div>
+
+        <div id="previewLocationModal" class="preview-experience-modal preview-location-modal" aria-hidden="true" inert>
+            <div class="preview-experience-backdrop" data-location-close></div>
+            <section class="preview-experience-card" role="dialog" aria-modal="true" aria-labelledby="previewLocationTitle">
+                <header class="preview-experience-header">
+                    <div class="preview-experience-brand" aria-hidden="true"><svg class="ts-control-icon"><use href="#ts-icon-map"></use></svg></div>
+                    <div class="preview-experience-heading">
+                        <p>LOCATION EXPERIENCE</p>
+                        <h2 id="previewLocationTitle">Explore this place on the map</h2>
+                        <span>{{ preview_location.address|default:tour.location|default:current_organization.name }}</span>
+                    </div>
+                    <button type="button" class="preview-experience-close" data-location-close aria-label="Close location map"><svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-close"></use></svg></button>
+                </header>
+
+                <div class="preview-location-stage">
+                    <div id="previewLocationMap" class="preview-location-map" aria-label="Interactive tour location map"></div>
+                    <div id="previewLocationState" class="preview-experience-state">
+                        <strong>Preparing the location</strong>
+                        <small>Map details will appear here.</small>
+                    </div>
+                    <div class="preview-location-card">
+                        <span class="preview-location-card-icon" aria-hidden="true"><svg class="ts-control-icon"><use href="#ts-icon-location"></use></svg></span>
+                        <span>
+                            <strong>{{ preview_location.label|default:tour.title }}</strong>
+                            <small id="previewLocationSummary">{{ preview_location.address|default:"Tour location" }}</small>
+                        </span>
+                    </div>
+                </div>
+
+                <footer class="preview-experience-toolbar preview-location-toolbar">
+                    <div class="preview-location-status">
+                        <strong id="previewLocationDistance">Tour location</strong>
+                        <span id="previewLocationHint">Use the controls to explore the area.</span>
+                    </div>
+                    <div class="preview-experience-actions">
+                        <button type="button" id="previewLocateMeBtn" class="preview-experience-action">
+                            <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-user-location"></use></svg>
+                            <span>Locate me</span>
+                        </button>
+                        <button type="button" id="previewMapModeBtn" class="preview-experience-action" aria-pressed="true">
+                            <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-cube"></use></svg>
+                            <span>3D map</span>
+                        </button>
+                        <button type="button" id="previewMapResetBtn" class="preview-experience-action">
+                            <svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-reset"></use></svg>
+                            <span>Reset</span>
+                        </button>
+                    </div>
+                </footer>
+            </section>
+        </div>
 
         {% if tour_products %}<div id="tourShopPanel" class="tour-shop-panel" aria-hidden="true" inert><div class="tour-shop-backdrop" data-shop-close></div><section class="tour-shop-card"><button class="tour-shop-close" data-shop-close>✕</button><p class="tour-appointment-kicker">SHOP DURING THE TOUR</p><h3>Products from {{ current_organization.name }}</h3><div class="tour-shop-grid">{% for product in tour_products %}<article>{% if product.cover_image %}<img src="{{ product.cover_image.url }}" alt="{{ product.name }}">{% endif %}<div><strong>{{ product.name }}</strong><span>{{ product.currency }} {{ product.price }}</span><a href="{% url 'vendors:product_detail' product.organization.slug product.slug %}" target="_blank" rel="noopener">View & order</a></div></article>{% endfor %}</div></section></div>{% endif %}
 
@@ -689,16 +836,29 @@
             pdfJsLegacyWorkerUrl: "{% static 'public/vendor/pdfjs/legacy/build/pdf.worker.mjs' %}",
             engagementUrl: "/api/public/tours/{{ tour.organization.slug }}/{{ tour.id }}/engagement/",
             initialViews: "{{ tour.unique_views_count|default:tour.view_count|default:0 }}",
-            initialShares: "{{ tour.share_count|default:tour.shares.count|default:0 }}"
+            initialShares: "{{ tour.share_count|default:tour.shares.count|default:0 }}",
+            spatial3DEnabled: {{ preview_spatial_3d_enabled|yesno:"true,false" }},
+            threeModuleUrl: "{{ preview_three_module_url|escapejs }}",
+            googleMaps3DEnabled: {{ preview_google_maps_3d_enabled|yesno:"true,false" }},
+            googleMapsBrowserKey: "{{ google_maps_browser_key|default:''|escapejs }}",
+            googleMaps3DMapId: "{{ google_maps_3d_map_id|default:''|escapejs }}",
+            spatialDepthStrength: {{ preview_spatial_depth_strength|default:0.55 }},
+            spatialDepthInvert: {{ preview_spatial_depth_invert|yesno:"true,false" }},
+            spatialPointBudget: {{ preview_spatial_point_budget|default:42000 }},
+            spatialMeshSegments: {{ preview_spatial_mesh_segments|default:220 }},
+            spatialGraphMaxNodes: {{ preview_spatial_graph_max_nodes|default:48 }},
+            mapLocationElementId: "preview-location-data"
         };
     </script>
 
     {{ scenes_json|json_script:"preview-scenes-data" }}
     {{ scene_list_json|json_script:"preview-scene-list-data" }}
+    {{ preview_location|json_script:"preview-location-data" }}
 
     <script src="{% static 'public/vendor/marzipano/marzipano.js' %}"></script>
-    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=preview-centered-info-modal-18"></script>
+    <script src="{% static 'dashboard/js/preview-tailwind.js' %}?v=preview-spatial-reconstruction-26"></script>
     <script src="{% static 'dashboard/js/preview-hotspot-modal-3d.js' %}?v=3d-hotspot-modal-sharp-20260698"></script>
+    <script src="{% static 'dashboard/js/preview-spatial-3d.js' %}?v=preview-spatial-reconstruction-26" defer></script>
 
 
 

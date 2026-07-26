@@ -1,0 +1,4 @@
+# Optional local relative-depth generation for Preview Spatial 3D.
+# Install only in the AI worker / local AI environment.
+transformers>=4.48,<6
+safetensors>=0.4,<1

@@ -1,0 +1,882 @@
+/* =====================================================================
+   TWINSCOPE PREVIEW — SPATIAL 3D + LOCATION EXPERIENCE V24
+   - Centered spatial panorama and map dialogs on desktop/mobile.
+   - Depth-aware Three.js renderer when a depth map exists.
+   - Google Maps 3D with graceful 2D/friendly fallback.
+   - Refined Tour Information footer.
+===================================================================== */
+
+:root {
+    --ts-spatial-cyan: #22d3ee;
+    --ts-spatial-cyan-deep: #0891b2;
+    --ts-spatial-ink: #020617;
+    --ts-spatial-panel: rgba(8, 18, 36, .97);
+    --ts-spatial-line: rgba(148, 163, 184, .18);
+}
+
+.control-btn--spatial,
+.control-btn--map {
+    position: relative;
+    overflow: visible;
+}
+
+.control-btn--spatial::after,
+.control-btn--map::after {
+    content: "";
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: #67e8f9;
+    box-shadow: 0 0 10px rgba(103, 232, 249, .9);
+}
+
+.control-btn--spatial:hover,
+.control-btn--map:hover,
+.control-btn--spatial:focus-visible,
+.control-btn--map:focus-visible {
+    border-color: rgba(103, 232, 249, .46) !important;
+    color: #cffafe !important;
+    background: rgba(8, 145, 178, .20) !important;
+}
+
+body.preview-experience-open {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+}
+
+body.preview-experience-open #previewControlDock,
+body.preview-experience-open .tour-ai-nudge,
+body.preview-experience-open #tourAiAgent {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+.preview-experience-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2147482000;
+    display: grid;
+    place-items: center;
+    padding:
+        max(14px, env(safe-area-inset-top, 0px))
+        max(14px, env(safe-area-inset-right, 0px))
+        max(14px, env(safe-area-inset-bottom, 0px))
+        max(14px, env(safe-area-inset-left, 0px));
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .24s ease, visibility .24s ease;
+}
+
+.preview-experience-modal.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.preview-experience-backdrop {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 18%, rgba(34, 211, 238, .13), transparent 34%),
+        rgba(2, 6, 23, .82);
+    backdrop-filter: blur(16px) saturate(132%);
+    -webkit-backdrop-filter: blur(16px) saturate(132%);
+}
+
+.preview-experience-card {
+    position: relative;
+    width: min(1180px, calc(100vw - 28px));
+    height: min(820px, calc(100dvh - 28px));
+    min-height: 420px;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 30px;
+    color: #f8fafc;
+    background:
+        radial-gradient(circle at 5% 0%, rgba(34, 211, 238, .15), transparent 30%),
+        radial-gradient(circle at 100% 100%, rgba(59, 130, 246, .10), transparent 35%),
+        linear-gradient(145deg, rgba(15, 23, 42, .99), rgba(2, 6, 23, .995));
+    box-shadow:
+        0 48px 140px rgba(0, 0, 0, .70),
+        inset 0 1px 0 rgba(255, 255, 255, .10);
+    isolation: isolate;
+    transform: translateY(14px) scale(.98);
+    transition: transform .34s cubic-bezier(.22, 1, .36, 1);
+}
+
+.preview-experience-modal.open .preview-experience-card {
+    transform: translateY(0) scale(1);
+}
+
+.preview-experience-header {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 50px minmax(0, 1fr) 42px;
+    align-items: center;
+    gap: 13px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--ts-spatial-line);
+    background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+}
+
+.preview-experience-brand {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    border: 1px solid rgba(103, 232, 249, .34);
+    color: #cffafe;
+    background:
+        radial-gradient(circle at 28% 20%, rgba(103, 232, 249, .25), transparent 48%),
+        rgba(8, 145, 178, .13);
+    box-shadow: 0 16px 40px rgba(8, 145, 178, .20);
+}
+
+.preview-experience-brand .ts-control-icon {
+    width: 23px !important;
+    height: 23px !important;
+}
+
+.preview-experience-heading {
+    min-width: 0;
+}
+
+.preview-experience-heading p {
+    margin: 0 0 4px;
+    color: #67e8f9;
+    font-size: 9.5px;
+    line-height: 1.2;
+    font-weight: 950;
+    letter-spacing: .18em;
+}
+
+.preview-experience-heading h2 {
+    margin: 0;
+    overflow: hidden;
+    color: #fff;
+    font-size: clamp(20px, 2.7vw, 28px);
+    line-height: 1.12;
+    font-weight: 930;
+    letter-spacing: -.035em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-experience-heading > span {
+    display: block;
+    margin-top: 5px;
+    overflow: hidden;
+    color: rgba(203, 213, 225, .80);
+    font-size: 12px;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-experience-close {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px;
+    color: #fff;
+    background: rgba(255,255,255,.055);
+    cursor: pointer;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.preview-experience-close:hover,
+.preview-experience-close:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(103,232,249,.42);
+    background: rgba(8,145,178,.18);
+}
+
+.preview-experience-close .ts-control-icon {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+.preview-spatial-stage,
+.preview-location-stage {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 40%, rgba(34, 211, 238, .08), transparent 36%),
+        #01040b;
+}
+
+.preview-spatial-canvas-host,
+.preview-location-map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.preview-spatial-canvas-host canvas,
+.preview-location-map > *,
+.preview-location-map gmp-map-3d {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.preview-spatial-canvas-host canvas {
+    cursor: grab;
+    touch-action: none;
+}
+
+.preview-spatial-canvas-host canvas:active {
+    cursor: grabbing;
+}
+
+.preview-experience-state {
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    top: 50%;
+    width: min(360px, calc(100% - 36px));
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 22px;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 22px;
+    color: #e2e8f0;
+    text-align: center;
+    background: rgba(2, 6, 23, .82);
+    box-shadow: 0 26px 80px rgba(0,0,0,.45);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.preview-experience-state[hidden] {
+    display: none !important;
+}
+
+.preview-experience-state strong {
+    font-size: 15px;
+    line-height: 1.3;
+}
+
+.preview-experience-state small {
+    color: rgba(203, 213, 225, .72);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.preview-experience-state.is-error {
+    border-color: rgba(251, 113, 133, .30);
+    background: rgba(31, 9, 18, .88);
+}
+
+.preview-spatial-loader {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(103,232,249,.18);
+    border-top-color: #67e8f9;
+    border-radius: 999px;
+    animation: previewSpatialSpin .8s linear infinite;
+}
+
+@keyframes previewSpatialSpin { to { transform: rotate(360deg); } }
+
+.preview-spatial-badge {
+    position: absolute;
+    z-index: 3;
+    top: 14px;
+    left: 14px;
+    max-width: calc(100% - 28px);
+    padding: 8px 11px;
+    border: 1px solid rgba(103,232,249,.28);
+    border-radius: 999px;
+    color: #cffafe;
+    background: rgba(2,6,23,.68);
+    box-shadow: 0 14px 34px rgba(0,0,0,.28);
+    backdrop-filter: blur(12px);
+    font-size: 9px;
+    line-height: 1;
+    font-weight: 950;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+}
+
+.preview-experience-toolbar {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--ts-spatial-line);
+    background:
+        linear-gradient(180deg, rgba(15,23,42,.78), rgba(2,6,23,.96));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.preview-spatial-scene-picker {
+    min-width: min(290px, 45%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.preview-spatial-scene-picker > span {
+    color: rgba(148,163,184,.90);
+    font-size: 9.5px;
+    font-weight: 900;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.preview-spatial-scene-picker select {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    padding: 0 36px 0 12px;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 13px;
+    color: #f8fafc;
+    background: rgba(255,255,255,.055);
+    font-size: 12px;
+    font-weight: 760;
+}
+
+.preview-experience-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.preview-experience-action {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 13px;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 13px;
+    color: #e2e8f0;
+    background: rgba(255,255,255,.055);
+    cursor: pointer;
+    font-size: 11.5px;
+    font-weight: 840;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+}
+
+.preview-experience-action:hover:not(:disabled),
+.preview-experience-action:focus-visible:not(:disabled),
+.preview-experience-action[aria-pressed="true"] {
+    transform: translateY(-1px);
+    border-color: rgba(103,232,249,.40);
+    color: #cffafe;
+    background: rgba(8,145,178,.18);
+}
+
+.preview-experience-action:disabled {
+    opacity: .42;
+    cursor: not-allowed;
+}
+
+.preview-experience-action .ts-control-icon {
+    width: 17px !important;
+    height: 17px !important;
+}
+
+.preview-location-card {
+    position: absolute;
+    z-index: 3;
+    left: 14px;
+    bottom: 14px;
+    max-width: min(390px, calc(100% - 28px));
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 17px;
+    color: #f8fafc;
+    background: rgba(2,6,23,.76);
+    box-shadow: 0 18px 44px rgba(0,0,0,.35);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.preview-location-card-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    color: #cffafe;
+    background: rgba(8,145,178,.22);
+}
+
+.preview-location-card-icon .ts-control-icon {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+.preview-location-card > span:last-child {
+    min-width: 0;
+}
+
+.preview-location-card strong,
+.preview-location-card small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-location-card strong {
+    font-size: 12.5px;
+    line-height: 1.3;
+}
+
+.preview-location-card small {
+    margin-top: 3px;
+    color: rgba(203,213,225,.74);
+    font-size: 10.5px;
+}
+
+.preview-location-status {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+}
+
+.preview-location-status strong {
+    color: #f8fafc;
+    font-size: 12px;
+}
+
+.preview-location-status span {
+    overflow: hidden;
+    color: rgba(148,163,184,.86);
+    font-size: 10.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Tour Information footer — refined card-style action row. */
+.preview-tour-details-footer {
+    min-height: 76px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 14px !important;
+    padding: 13px 18px max(13px, env(safe-area-inset-bottom, 0px)) !important;
+    border-top: 1px solid rgba(148,163,184,.14) !important;
+    background:
+        linear-gradient(180deg, rgba(15,23,42,.72), rgba(2,6,23,.94)) !important;
+}
+
+.preview-tour-details-footer-copy {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+}
+
+.preview-tour-details-footer-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(103,232,249,.24);
+    border-radius: 13px;
+    color: #cffafe;
+    background: rgba(8,145,178,.14);
+}
+
+.preview-tour-details-footer-icon .ts-control-icon {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+.preview-tour-details-footer-text {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+}
+
+.preview-tour-details-footer-text strong {
+    color: #f8fafc;
+    font-size: 12px;
+    line-height: 1.25;
+    font-weight: 850;
+}
+
+.preview-tour-details-footer-text small {
+    overflow: hidden;
+    color: rgba(148,163,184,.88);
+    font-size: 10.5px;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-tour-details.preview-tour-details--dock .preview-tour-details-footer > a,
+.preview-tour-details-modal.preview-tour-details-modal--portal .preview-tour-details-footer > a {
+    min-height: 43px !important;
+    padding: 0 14px !important;
+    border-radius: 13px !important;
+}
+
+@media (max-width: 760px) {
+    .preview-experience-modal {
+        padding: max(7px, env(safe-area-inset-top, 0px)) 7px max(7px, env(safe-area-inset-bottom, 0px));
+    }
+
+    .preview-experience-card {
+        width: calc(100vw - 14px);
+        height: calc(100dvh - 14px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        min-height: 360px;
+        border-radius: 24px;
+    }
+
+    .preview-experience-header {
+        grid-template-columns: 42px minmax(0, 1fr) 38px;
+        gap: 9px;
+        padding: 12px;
+    }
+
+    .preview-experience-brand {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+    }
+
+    .preview-experience-heading h2 {
+        font-size: 19px;
+    }
+
+    .preview-experience-close {
+        width: 38px;
+        height: 38px;
+    }
+
+    .preview-experience-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 9px;
+        padding: 10px 11px max(10px, env(safe-area-inset-bottom, 0px));
+    }
+
+    .preview-spatial-scene-picker {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .preview-experience-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .preview-experience-action {
+        min-width: 0;
+        padding: 0 8px;
+    }
+
+    .preview-location-status {
+        padding: 0 2px;
+    }
+
+    .preview-location-card {
+        left: 9px;
+        bottom: 9px;
+        max-width: calc(100% - 18px);
+    }
+
+    .preview-tour-details-footer {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        padding: 11px 13px max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .preview-tour-details-footer-text small {
+        white-space: normal;
+    }
+
+    .preview-tour-details.preview-tour-details--dock .preview-tour-details-footer > a,
+    .preview-tour-details-modal.preview-tour-details-modal--portal .preview-tour-details-footer > a {
+        width: 100% !important;
+        min-height: 45px !important;
+    }
+}
+
+@media (max-width: 390px) {
+    .preview-experience-action span {
+        font-size: 10px;
+    }
+
+    .preview-spatial-badge {
+        top: 9px;
+        left: 9px;
+        max-width: calc(100% - 18px);
+    }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+    .preview-experience-card {
+        width: calc(100vw - 12px);
+        height: calc(100dvh - 12px);
+        border-radius: 20px;
+    }
+
+    .preview-experience-header {
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    .preview-experience-toolbar {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .preview-spatial-scene-picker {
+        width: min(300px, 42%);
+    }
+
+    .preview-experience-actions {
+        width: auto;
+        display: flex;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .preview-experience-modal,
+    .preview-experience-card,
+    .preview-spatial-loader,
+    .preview-experience-action,
+    .preview-experience-close {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* =====================================================================
+   SPATIAL RECONSTRUCTION V26
+   A visible Three.js tour graph plus depth point-cloud and depth-mesh modes.
+===================================================================== */
+.preview-spatial-toolbar {
+    align-items: stretch !important;
+    gap: 12px !important;
+}
+
+.preview-spatial-primary-controls {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.preview-spatial-mode-switch {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid rgba(148, 163, 184, .16);
+    border-radius: 16px;
+    background: rgba(2, 6, 23, .58);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.preview-spatial-mode-button {
+    min-width: 0;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 11px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: rgba(203, 213, 225, .78);
+    background: transparent;
+    cursor: pointer;
+    font-size: 10.5px;
+    line-height: 1;
+    font-weight: 850;
+    white-space: nowrap;
+    transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.preview-spatial-mode-button .ts-control-icon {
+    width: 16px !important;
+    height: 16px !important;
+}
+
+.preview-spatial-mode-button:hover:not(:disabled),
+.preview-spatial-mode-button:focus-visible:not(:disabled) {
+    color: #ecfeff;
+    border-color: rgba(103,232,249,.20);
+    background: rgba(8,145,178,.13);
+    transform: translateY(-1px);
+}
+
+.preview-spatial-mode-button.is-active,
+.preview-spatial-mode-button[aria-selected="true"] {
+    color: #ecfeff;
+    border-color: rgba(103,232,249,.34);
+    background: linear-gradient(135deg, rgba(8,145,178,.58), rgba(14,116,144,.34));
+    box-shadow: 0 8px 22px rgba(8,145,178,.18), inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.preview-spatial-mode-button:disabled {
+    opacity: .34;
+    cursor: not-allowed;
+}
+
+.preview-spatial-hint {
+    position: absolute;
+    z-index: 3;
+    left: 14px;
+    bottom: 14px;
+    width: min(370px, calc(100% - 28px));
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 15px;
+    color: #e2e8f0;
+    background: rgba(2,6,23,.68);
+    box-shadow: 0 16px 42px rgba(0,0,0,.28);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    pointer-events: none;
+}
+
+.preview-spatial-hint strong {
+    font-size: 11px;
+    line-height: 1.25;
+    font-weight: 880;
+}
+
+.preview-spatial-hint span {
+    color: rgba(148,163,184,.92);
+    font-size: 10px;
+    line-height: 1.42;
+}
+
+.preview-spatial-scene-picker {
+    flex: 1 1 220px;
+    max-width: 300px;
+}
+
+.preview-spatial-canvas-host canvas {
+    cursor: grab;
+}
+
+.preview-spatial-canvas-host canvas:active {
+    cursor: grabbing;
+}
+
+.preview-experience-action:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+@media (max-width: 1080px) {
+    .preview-spatial-toolbar {
+        flex-direction: column !important;
+    }
+
+    .preview-spatial-primary-controls {
+        width: 100%;
+    }
+
+    .preview-spatial-mode-switch {
+        flex: 1 1 auto;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .preview-spatial-mode-switch::-webkit-scrollbar {
+        display: none;
+    }
+
+    .preview-spatial-scene-picker {
+        flex: 0 1 240px;
+    }
+
+    .preview-spatial-toolbar .preview-experience-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 720px) {
+    .preview-spatial-primary-controls {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .preview-spatial-mode-switch {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        overflow: visible;
+    }
+
+    .preview-spatial-mode-button {
+        min-height: 42px;
+        padding-inline: 7px;
+        font-size: 9px;
+    }
+
+    .preview-spatial-mode-button span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .preview-spatial-scene-picker {
+        width: 100%;
+        max-width: none;
+        flex-basis: auto;
+    }
+
+    .preview-spatial-toolbar .preview-experience-actions {
+        justify-content: stretch;
+    }
+
+    .preview-spatial-toolbar .preview-experience-action {
+        flex: 1 1 0;
+    }
+
+    .preview-spatial-hint {
+        left: 10px;
+        bottom: 10px;
+        width: calc(100% - 20px);
+    }
+}
+
+@media (max-width: 420px) {
+    .preview-spatial-mode-switch {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

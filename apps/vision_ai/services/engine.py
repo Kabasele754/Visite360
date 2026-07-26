@@ -460,7 +460,14 @@ def execute_analysis(analysis: VisionAnalysis) -> VisionAnalysis:
                 if analysis.status in {VisionAnalysis.Status.SUCCEEDED, VisionAnalysis.Status.PARTIAL}
                 else PipelineStatus.FAILED
             )
+            previous_scene_analysis = dict(getattr(scene, "ai_analysis", {}) or {})
+            preserved_spatial = {
+                key: previous_scene_analysis[key]
+                for key in ("depth", "depth_map_url", "spatial_reconstruction")
+                if previous_scene_analysis.get(key)
+            }
             scene.ai_analysis = {
+                **preserved_spatial,
                 "enterprise_analysis_id": str(analysis.pk),
                 "scene_type": analysis.scene_type,
                 "summary": analysis.summary,

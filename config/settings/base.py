@@ -148,6 +148,28 @@ SPECTACULAR_SETTINGS = {
 
 GOOGLE_MAPS_API_KEY = config("GOOGLE_MAPS_API_KEY", default="")
 GOOGLE_MAPS_BROWSER_KEY = config("GOOGLE_MAPS_BROWSER_KEY", default="")
+GOOGLE_MAPS_3D_MAP_ID = config("GOOGLE_MAPS_3D_MAP_ID", default="")
+PREVIEW_SPATIAL_3D_ENABLED = config("PREVIEW_SPATIAL_3D_ENABLED", default=True, cast=bool)
+PREVIEW_THREE_MODULE_URL = config(
+    "PREVIEW_THREE_MODULE_URL",
+    default="https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+)
+PREVIEW_GOOGLE_MAPS_3D_ENABLED = config("PREVIEW_GOOGLE_MAPS_3D_ENABLED", default=True, cast=bool)
+PREVIEW_SPATIAL_DEPTH_STRENGTH = config("PREVIEW_SPATIAL_DEPTH_STRENGTH", default=0.55, cast=float)
+PREVIEW_SPATIAL_DEPTH_INVERT = config("PREVIEW_SPATIAL_DEPTH_INVERT", default=True, cast=bool)
+PREVIEW_SPATIAL_POINT_BUDGET = config("PREVIEW_SPATIAL_POINT_BUDGET", default=42000, cast=int)
+PREVIEW_SPATIAL_MESH_SEGMENTS = config("PREVIEW_SPATIAL_MESH_SEGMENTS", default=220, cast=int)
+PREVIEW_SPATIAL_GRAPH_MAX_NODES = config("PREVIEW_SPATIAL_GRAPH_MAX_NODES", default=48, cast=int)
+
+# Optional monocular relative-depth generation for the Three.js spatial preview.
+# Disabled by default because it downloads/loads a local vision model.
+TOUR_DEPTH_MAP_ENABLED = config("TOUR_DEPTH_MAP_ENABLED", default=False, cast=bool)
+TOUR_DEPTH_MODEL = config(
+    "TOUR_DEPTH_MODEL",
+    default="depth-anything/Depth-Anything-V2-Small-hf",
+)
+TOUR_DEPTH_DEVICE = config("TOUR_DEPTH_DEVICE", default=-1, cast=int)
+TOUR_DEPTH_MAX_WIDTH = config("TOUR_DEPTH_MAX_WIDTH", default=2048, cast=int)
 
 REDIS_HOST = config("REDIS_HOST", default="redis")
 REDIS_PORT = config("REDIS_PORT", default=6379, cast=int)
