@@ -182,6 +182,7 @@ CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_TASK_ROUTES = {
     "apps.vision_ai.tasks.*": {"queue": "ai"},
     "apps.knowledge.tasks.*": {"queue": "ai"},
+    "apps.domain_intelligence.tasks.*": {"queue": "ai"},
     "apps.ai_agents.tasks.*": {"queue": "ai"},
 }
 
@@ -392,6 +393,21 @@ KNOWLEDGE_CRAWLER_USER_AGENT = config(
 )
 KNOWLEDGE_CRAWLER_MAX_PAGES = config("KNOWLEDGE_CRAWLER_MAX_PAGES", default=50, cast=int)
 KNOWLEDGE_CRAWLER_TIMEOUT_SECONDS = config("KNOWLEDGE_CRAWLER_TIMEOUT_SECONDS", default=20, cast=int)
+DOMAIN_INTELLIGENCE_ENABLE_AI_EXTRACTION = config(
+    "DOMAIN_INTELLIGENCE_ENABLE_AI_EXTRACTION", default=True, cast=bool
+)
+DOMAIN_INTELLIGENCE_DEFAULT_MAX_PAGES = config(
+    "DOMAIN_INTELLIGENCE_DEFAULT_MAX_PAGES", default=25, cast=int
+)
+DOMAIN_INTELLIGENCE_AUTO_APPLY_MIN_CONFIDENCE = config(
+    "DOMAIN_INTELLIGENCE_AUTO_APPLY_MIN_CONFIDENCE", default=0.82, cast=float
+)
+DOMAIN_INTELLIGENCE_SYNC_INTERVAL_DAYS = config(
+    "DOMAIN_INTELLIGENCE_SYNC_INTERVAL_DAYS", default=7, cast=int
+)
+DOMAIN_INTELLIGENCE_SCHEDULE_BATCH_SIZE = config(
+    "DOMAIN_INTELLIGENCE_SCHEDULE_BATCH_SIZE", default=10, cast=int
+)
 KNOWLEDGE_CHUNK_SIZE = config("KNOWLEDGE_CHUNK_SIZE", default=1200, cast=int)
 KNOWLEDGE_CHUNK_OVERLAP = config("KNOWLEDGE_CHUNK_OVERLAP", default=180, cast=int)
 

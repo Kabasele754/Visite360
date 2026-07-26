@@ -166,3 +166,29 @@ CSP_HEADER = {
 
 # Development-only fallback for semantic indexing without cloud credentials.
 AI_ALLOW_DETERMINISTIC_EMBEDDINGS = True
+
+# Organization Intelligence runs in a background thread during local development.
+# This keeps runserver responsive and avoids a permanently queued dashboard run
+# when Redis/Celery is not running on the developer machine.
+DOMAIN_INTELLIGENCE_EXECUTION_MODE = config(
+    "DOMAIN_INTELLIGENCE_EXECUTION_MODE",
+    default="thread",
+)
+DOMAIN_INTELLIGENCE_LOCAL_THREAD_WORKERS = config(
+    "DOMAIN_INTELLIGENCE_LOCAL_THREAD_WORKERS",
+    default=1,
+    cast=int,
+)
+DOMAIN_INTELLIGENCE_STALE_QUEUE_SECONDS = config(
+    "DOMAIN_INTELLIGENCE_STALE_QUEUE_SECONDS",
+    default=20,
+    cast=int,
+)
+
+# Keep Celery asynchronous unless explicitly enabled for a focused test.
+CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=False, cast=bool)
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# Reduce transient SQLite lock errors while the local collector updates progress
+# and the browser polls the run status at the same time.
+DATABASES["default"].setdefault("OPTIONS", {})["timeout"] = 30

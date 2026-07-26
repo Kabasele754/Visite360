@@ -12,6 +12,8 @@ from apps.domain_intelligence.models import (
     MedicalPractitioner,
     MedicalSpecialty,
     OrganizationIntelligenceProfile,
+    OrganizationIntelligenceRun,
+    IntelligenceReviewItem,
     PractitionerAvailability,
     PropertyListingProfile,
 )
@@ -112,6 +114,20 @@ RESOURCE_DEFINITIONS = {
         search_fields=("organization__name", "domain_kind", "last_sync_status"),
         form_fields=("organization", "domain_kind", "default_locale", "timezone", "country_code", "auto_sync_website", "website_sync_max_pages", "last_synced_at", "last_sync_status", "metadata"),
         select_related=("organization",), description="Configure healthcare, real-estate, hospitality and general AI behavior.",
+    ),
+    "intelligence-runs": ResourceDefinition(
+        key="intelligence-runs", label="Intelligence collection runs", singular="Intelligence collection run", icon="◉", model=OrganizationIntelligenceRun,
+        columns=(("organization", "Organization"), ("status", "Status"), ("pages_crawled", "Pages"), ("documents_indexed", "Documents"), ("readiness_after", "Readiness"), ("created_at", "Created")),
+        search_fields=("organization__name", "status", "task_id", "website_url", "error_code"),
+        select_related=("organization", "requested_by"), readonly=True, allow_delete=False,
+        description="Monitor official-website collection, structured extraction, indexing and readiness progress.",
+    ),
+    "intelligence-reviews": ResourceDefinition(
+        key="intelligence-reviews", label="Intelligence review queue", singular="Intelligence review item", icon="✓", model=IntelligenceReviewItem,
+        columns=(("organization", "Organization"), ("item_type", "Type"), ("label", "Suggestion"), ("confidence", "Confidence"), ("status", "Status"), ("created_at", "Created")),
+        search_fields=("organization__name", "item_type", "target_model", "target_field", "label", "source_url", "status"),
+        select_related=("organization", "place", "run", "reviewed_by"), readonly=True, allow_delete=False,
+        description="Review conflicts and lower-confidence website facts before they replace curated client data.",
     ),
     "healthcare-facilities": ResourceDefinition(
         key="healthcare-facilities", label="Healthcare facilities", singular="Healthcare facility", icon="🏥", model=HealthcareFacilityProfile,

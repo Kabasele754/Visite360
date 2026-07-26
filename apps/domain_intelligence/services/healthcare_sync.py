@@ -195,7 +195,15 @@ def _upsert_fact(*, organization, place, entity_type, entity_key, field_name, va
     return fact
 
 
-def sync_healthcare_organization(organization: Organization, *, max_pages: int | None = None) -> dict:
+def sync_healthcare_organization(
+    organization: Organization,
+    *,
+    max_pages: int | None = None,
+    pages: list[CrawledPage] | None = None,
+    source: KnowledgeSource | None = None,
+    index_pages: bool = True,
+    manage_profile_status: bool = True,
+) -> dict:
     profile, _ = OrganizationIntelligenceProfile.objects.get_or_create(
         organization=organization,
         defaults={"domain_kind": OrganizationIntelligenceProfile.DomainKind.HEALTHCARE},
@@ -207,14 +215,15 @@ def sync_healthcare_organization(organization: Organization, *, max_pages: int |
     if not website_url:
         raise ValueError("The organization does not have a website URL.")
 
-    profile.last_sync_status = "running"
-    profile.last_sync_error = ""
-    profile.save(update_fields=("domain_kind", "last_sync_status", "last_sync_error", "updated_at"))
+    if manage_profile_status:
+        profile.last_sync_status = "running"
+        profile.last_sync_error = ""
+        profile.save(update_fields=("domain_kind", "last_sync_status", "last_sync_error", "updated_at"))
 
     page_limit = max_pages or profile.website_sync_max_pages or 30
-    pages = crawl_website(website_url, max_pages=page_limit, same_domain_only=True)
+    pages = pages if pages is not None else crawl_website(website_url, max_pages=page_limit, same_domain_only=True)
     place = _place_for_organization(organization)
-    source, _ = KnowledgeSource.objects.update_or_create(
+    source = source or KnowledgeSource.objects.update_or_create(
         organization=organization,
         name="Official organization website",
         defaults={
@@ -226,7 +235,7 @@ def sync_healthcare_organization(organization: Organization, *, max_pages: int |
             "is_active": True,
             "last_error": "",
         },
-    )
+    )[0]
 
     discovered = discover_social_links(pages)
     changed = []
@@ -250,14 +259,15 @@ def sync_healthcare_organization(organization: Organization, *, max_pages: int |
             facility, _ = HealthcareFacilityProfile.objects.get_or_create(place=place)
 
         for page in pages:
-            document = upsert_document(
-                source=source,
-                title=page.title,
-                content=page.text,
-                canonical_url=page.url,
-                metadata={"crawler": "beautifulsoup", "domain_intelligence": True},
-            )
-            indexed_chunks += index_document(document)
+            if index_pages:
+                document = upsert_document(
+                    source=source,
+                    title=page.title,
+                    content=page.text,
+                    canonical_url=page.url,
+                    metadata={"crawler": "beautifulsoup", "domain_intelligence": True},
+                )
+                indexed_chunks += index_document(document)
 
             # Many hospital websites do not publish complete JSON-LD. Extract
             # only explicit public contact links and clearly labelled doctor or
@@ -422,14 +432,16 @@ def sync_healthcare_organization(organization: Organization, *, max_pages: int |
                             source_url=source_url,
                         )
 
-        source.status = KnowledgeSource.Status.INDEXED
-        source.last_synced_at = timezone.now()
-        source.last_error = ""
-        source.save(update_fields=("status", "last_synced_at", "last_error", "updated_at"))
-        profile.last_synced_at = timezone.now()
-        profile.last_sync_status = "succeeded"
-        profile.last_sync_error = ""
-        profile.save(update_fields=("last_synced_at", "last_sync_status", "last_sync_error", "updated_at"))
+        if index_pages:
+            source.status = KnowledgeSource.Status.INDEXED
+            source.last_synced_at = timezone.now()
+            source.last_error = ""
+            source.save(update_fields=("status", "last_synced_at", "last_error", "updated_at"))
+        if manage_profile_status:
+            profile.last_synced_at = timezone.now()
+            profile.last_sync_status = "succeeded"
+            profile.last_sync_error = ""
+            profile.save(update_fields=("last_synced_at", "last_sync_status", "last_sync_error", "updated_at"))
 
     return {
         "organization_id": organization.id,

@@ -4010,26 +4010,63 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-/* Tour information modal interactions — V16 */
+/* Tour information modal interactions — V18 centered viewport portal */
 document.addEventListener("DOMContentLoaded", () => {
     const details = document.getElementById("previewTourDetails");
     if (!details) return;
 
     const modal = details.querySelector(".preview-tour-details-modal");
     const summary = details.querySelector("summary");
-    const closeButton = details.querySelector("[data-tour-info-close]");
+    const closeButton = modal?.querySelector("[data-tour-info-close]");
+    if (!modal || !summary) return;
 
-    const closeTourInformation = () => {
+    const modalHome = document.createComment("preview-tour-details-modal-home");
+    details.insertBefore(modalHome, modal);
+
+    const focusableSelector = [
+        "a[href]",
+        "button:not([disabled])",
+        "input:not([disabled])",
+        "select:not([disabled])",
+        "textarea:not([disabled])",
+        "[tabindex]:not([tabindex='-1'])"
+    ].join(",");
+
+    const mountModalInViewport = () => {
+        if (modal.parentNode !== document.body) {
+            document.body.appendChild(modal);
+        }
+        modal.classList.add("preview-tour-details-modal--portal");
+        modal.removeAttribute("hidden");
+    };
+
+    const restoreModalHome = () => {
+        modal.classList.remove("preview-tour-details-modal--portal");
+        if (modalHome.parentNode) {
+            modalHome.parentNode.insertBefore(modal, modalHome.nextSibling);
+        }
+    };
+
+    const closeTourInformation = ({ restoreFocus = true } = {}) => {
         if (!details.open) return;
         details.open = false;
         document.body.classList.remove("preview-tour-info-open");
-        summary?.focus({ preventScroll: true });
+        restoreModalHome();
+        if (restoreFocus) {
+            summary.focus({ preventScroll: true });
+        }
     };
 
     details.addEventListener("toggle", () => {
         document.body.classList.toggle("preview-tour-info-open", details.open);
+
         if (details.open) {
-            window.requestAnimationFrame(() => closeButton?.focus({ preventScroll: true }));
+            mountModalInViewport();
+            window.requestAnimationFrame(() => {
+                closeButton?.focus({ preventScroll: true });
+            });
+        } else {
+            restoreModalHome();
         }
     });
 
@@ -4043,14 +4080,44 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!details.open) return;
         const target = event.target;
         if (!(target instanceof Node)) return;
-        if (modal?.contains(target) || summary?.contains(target)) return;
+        if (modal.contains(target) || summary.contains(target)) return;
         closeTourInformation();
     });
 
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && details.open) {
+        if (!details.open) return;
+
+        if (event.key === "Escape") {
             event.preventDefault();
             closeTourInformation();
+            return;
         }
+
+        if (event.key !== "Tab") return;
+
+        const focusable = Array.from(modal.querySelectorAll(focusableSelector))
+            .filter((element) => element instanceof HTMLElement && !element.hidden && element.offsetParent !== null);
+
+        if (!focusable.length) {
+            event.preventDefault();
+            modal.focus({ preventScroll: true });
+            return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
+
+    window.addEventListener("pagehide", () => {
+        document.body.classList.remove("preview-tour-info-open");
+        restoreModalHome();
     });
 });

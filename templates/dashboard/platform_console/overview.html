@@ -4,7 +4,7 @@
 {% block title %}Platform Control Center · Twinscopes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=5">
 {% endblock %}
 
 {% block content %}
@@ -21,7 +21,8 @@
             </div>
         </div>
         <div class="ts-control-hero__actions">
-            <a href="{% url 'platform-console-resource-list' 'appointments' %}">Review appointments</a>
+            <a href="{% url 'platform-console-intelligence-hub' %}">Organization intelligence</a>
+            <a class="secondary" href="{% url 'platform-console-resource-list' 'appointments' %}">Review appointments</a>
             <a class="secondary" href="{% url 'platform-console-resource-list' 'ai-runs' %}">Monitor AI</a>
         </div>
     </section>
@@ -34,6 +35,7 @@
         </label>
         <nav class="ts-control-command__links">
             <a href="#platform-health">Health</a>
+            <a href="#organization-intelligence">Intelligence</a>
             <a href="#live-operations">Live operations</a>
             <a href="#resource-management">Resources</a>
             <a href="#recent-activity">Activity</a>
@@ -56,6 +58,43 @@
                 </div>
             </article>
             {% endfor %}
+        </div>
+    </section>
+
+    <section id="organization-intelligence" class="ts-control-section">
+        <header class="ts-control-section__head">
+            <div><span>Client readiness</span><h2>Organization intelligence operations</h2></div>
+            <p>Collect official website data, index knowledge, structure domain information and approve client-facing facts.</p>
+        </header>
+        <div class="ts-intel-overview-grid">
+            <article class="ts-control-card ts-intel-summary-card">
+                <div class="ts-intel-summary-card__head">
+                    <div><span>Ready organizations</span><strong>{{ intelligence_summary.ready }}</strong></div>
+                    <a href="{% url 'platform-console-intelligence-hub' %}?status=ready">Open workspace</a>
+                </div>
+                <div class="ts-intel-mini-stats">
+                    <div><b>{{ intelligence_summary.review }}</b><span>Need review</span></div>
+                    <div><b>{{ intelligence_summary.active_runs }}</b><span>Active runs</span></div>
+                    <div><b>{{ intelligence_summary.pending_reviews }}</b><span>Pending approvals</span></div>
+                </div>
+                <a class="ts-intel-primary-link" href="{% url 'platform-console-intelligence-hub' %}">Manage organization intelligence <span>→</span></a>
+            </article>
+            <article class="ts-control-card">
+                <header><div><span>Readiness</span><h3>Client data status</h3></div></header>
+                <div class="ts-chart-wrap ts-chart-wrap--compact"><canvas id="readinessChart" aria-label="Organization readiness chart"></canvas></div>
+            </article>
+            <article class="ts-control-card ts-intel-runs-card">
+                <header><div><span>Latest operations</span><h3>Website collection runs</h3></div><a href="{% url 'platform-console-resource-list' 'intelligence-runs' %}">View all</a></header>
+                <div class="ts-intel-run-list">
+                    {% for run in recent_intelligence_runs %}
+                    <a href="{% url 'platform-console-intelligence-run' run.id %}">
+                        <span class="ts-status-dot ts-status-dot--{{ run.status }}"></span>
+                        <span><strong>{{ run.organization.name }}</strong><small>{{ run.get_status_display }} · {{ run.created_at|timesince }} ago</small></span>
+                        <em>{{ run.readiness_before }}→{{ run.readiness_after }}%</em>
+                    </a>
+                    {% empty %}<p class="ts-control-empty">No website collection has been started yet.</p>{% endfor %}
+                </div>
+            </article>
         </div>
     </section>
 
@@ -156,9 +195,10 @@
 {{ ai_chart|json_script:"ai-chart-data" }}
 {{ vision_chart|json_script:"vision-chart-data" }}
 {{ appointment_chart|json_script:"appointment-chart-data" }}
+{{ readiness_chart|json_script:"readiness-chart-data" }}
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
-<script src="{% static 'platform_console/js/control-center.js' %}?v=4" defer></script>
+<script src="{% static 'platform_console/js/control-center.js' %}?v=5" defer></script>
 {% endblock %}

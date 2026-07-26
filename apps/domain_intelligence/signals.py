@@ -79,10 +79,7 @@ def queue_domain_sync_when_website_changes(sender, instance: Organization, creat
     if not getattr(settings, "DOMAIN_INTELLIGENCE_AUTO_SYNC", True):
         return
     profile, _ = OrganizationIntelligenceProfile.objects.get_or_create(organization=instance)
-    if not profile.auto_sync_website or profile.domain_kind not in {
-        OrganizationIntelligenceProfile.DomainKind.HEALTHCARE,
-        OrganizationIntelligenceProfile.DomainKind.MIXED,
-    }:
+    if not profile.auto_sync_website or not instance.ai_use_website:
         return
     from .tasks import sync_domain_intelligence
     transaction.on_commit(lambda: sync_domain_intelligence.delay(instance.id))
@@ -96,14 +93,6 @@ def ensure_place_domain_profile(sender, instance: Place, created: bool, **kwargs
     if instance.category in HEALTHCARE_CATEGORIES:
         HealthcareFacilityProfile.objects.get_or_create(place=instance)
         _refresh_organization_domain_kind(instance.organization, organization_profile)
-        if (
-            created
-            and instance.organization.website_url
-            and organization_profile.auto_sync_website
-            and getattr(settings, "DOMAIN_INTELLIGENCE_AUTO_SYNC", True)
-        ):
-            from .tasks import sync_domain_intelligence
-            transaction.on_commit(lambda: sync_domain_intelligence.delay(instance.organization_id))
     elif instance.category in REAL_ESTATE_CATEGORIES:
         type_map = {
             Place.Category.HOUSE: PropertyListingProfile.PropertyType.HOUSE,
@@ -124,6 +113,16 @@ def ensure_place_domain_profile(sender, instance: Place, created: bool, **kwargs
         _refresh_organization_domain_kind(instance.organization, organization_profile)
     else:
         _refresh_organization_domain_kind(instance.organization, organization_profile)
+
+    if (
+        created
+        and instance.organization.website_url
+        and instance.organization.ai_use_website
+        and organization_profile.auto_sync_website
+        and getattr(settings, "DOMAIN_INTELLIGENCE_AUTO_SYNC", True)
+    ):
+        from .tasks import sync_domain_intelligence
+        transaction.on_commit(lambda: sync_domain_intelligence.delay(instance.organization_id))
 
 
 @receiver(post_save, sender=Tour)

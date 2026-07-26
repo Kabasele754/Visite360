@@ -10,3 +10,68 @@
 .tour-ai-vision-actions:has([data-vision-rescan]:not([hidden])){grid-template-columns:minmax(0,1fr) auto}
 [data-vision-rescan]:not([hidden]){box-shadow:0 12px 30px rgba(6,182,212,.24)}
 @media(max-width:640px){.tour-ai-vision-actions:has([data-vision-rescan]:not([hidden])){grid-template-columns:1fr 1fr}.tour-ai-vision-actions:has([data-vision-rescan]:not([hidden])) [data-vision-rescan]{grid-column:1/-1}}
+
+/* =====================================================================
+   MOBILE AI NUDGE V17
+   - Gives the prompt a real responsive width instead of inheriting the
+     launcher's narrow containing block.
+   - Keeps the sentence inside the bubble and reserves a dedicated close area.
+===================================================================== */
+.tour-ai-nudge {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 40px !important;
+    align-items: stretch !important;
+    width: min(276px, calc(100vw - 28px)) !important;
+    max-width: min(276px, calc(100vw - 28px)) !important;
+    min-width: min(210px, calc(100vw - 28px)) !important;
+    white-space: normal !important;
+    transition: opacity .18s ease, transform .18s ease, visibility .18s ease !important;
+}
+
+.tour-ai-nudge [data-ai-open] {
+    min-width: 0 !important;
+    padding: 12px 14px !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+    white-space: normal !important;
+    text-align: left !important;
+    font-size: 13px !important;
+    font-weight: 650 !important;
+    line-height: 1.38 !important;
+}
+
+.tour-ai-nudge [data-ai-dismiss] {
+    width: 40px !important;
+    min-width: 40px !important;
+    padding: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    border-left: 1px solid rgba(255,255,255,.10) !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+}
+
+@media (max-width: 640px) {
+    .tour-ai-nudge {
+        right: 0 !important;
+        bottom: 64px !important;
+        width: min(268px, calc(100vw - 28px)) !important;
+        max-width: min(268px, calc(100vw - 28px)) !important;
+        min-width: min(208px, calc(100vw - 28px)) !important;
+        border-radius: 17px !important;
+    }
+
+    .tour-ai-nudge [data-ai-open] {
+        padding: 12px 13px !important;
+        font-size: 12.5px !important;
+        line-height: 1.36 !important;
+    }
+}
+
+@media (max-width: 340px) {
+    .tour-ai-nudge {
+        width: calc(100vw - 22px) !important;
+        max-width: calc(100vw - 22px) !important;
+        min-width: 0 !important;
+    }
+}

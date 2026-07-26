@@ -7,6 +7,8 @@ from .models import (
     MedicalPractitioner,
     MedicalSpecialty,
     OrganizationIntelligenceProfile,
+    OrganizationIntelligenceRun,
+    IntelligenceReviewItem,
     PractitionerAvailability,
     PropertyListingProfile,
     VerifiedSourceFact,
@@ -71,3 +73,19 @@ class VerifiedSourceFactAdmin(admin.ModelAdmin):
 class DiscoverySearchLogAdmin(admin.ModelAdmin):
     list_display = ("query", "result_count", "session_key", "created_at")
     readonly_fields = ("query", "normalized_intent", "result_count", "session_key", "selected_tour", "metadata", "created_at", "updated_at")
+
+@admin.register(OrganizationIntelligenceRun)
+class OrganizationIntelligenceRunAdmin(admin.ModelAdmin):
+    list_display = ("organization", "status", "pages_crawled", "documents_indexed", "readiness_before", "readiness_after", "created_at")
+    list_filter = ("status", "trigger")
+    search_fields = ("organization__name", "task_id", "website_url", "error_code")
+    readonly_fields = tuple(field.name for field in OrganizationIntelligenceRun._meta.fields)
+
+
+@admin.register(IntelligenceReviewItem)
+class IntelligenceReviewItemAdmin(admin.ModelAdmin):
+    list_display = ("organization", "item_type", "label", "confidence", "status", "created_at")
+    list_filter = ("status", "item_type", "target_model")
+    search_fields = ("organization__name", "label", "target_field", "source_url")
+    readonly_fields = ("created_at", "updated_at")
+

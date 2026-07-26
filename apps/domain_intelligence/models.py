@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
+import uuid
+
+from django.conf import settings
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -36,6 +39,23 @@ class OrganizationIntelligenceProfile(TimeStampedModel):
     last_synced_at = models.DateTimeField(null=True, blank=True)
     last_sync_status = models.CharField(max_length=24, blank=True)
     last_sync_error = models.TextField(blank=True)
+
+    class ReadinessStatus(models.TextChoices):
+        NOT_READY = "not_ready", "Not ready"
+        IN_PROGRESS = "in_progress", "In progress"
+        REVIEW = "review", "Needs review"
+        READY = "ready", "Client ready"
+
+    readiness_score = models.PositiveSmallIntegerField(default=0)
+    readiness_status = models.CharField(
+        max_length=24,
+        choices=ReadinessStatus.choices,
+        default=ReadinessStatus.NOT_READY,
+        db_index=True,
+    )
+    readiness_breakdown = models.JSONField(default=dict, blank=True)
+    readiness_checked_at = models.DateTimeField(null=True, blank=True)
+    next_sync_at = models.DateTimeField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
@@ -347,3 +367,139 @@ class DiscoverySearchLog(TimeStampedModel):
 
     class Meta:
         ordering = ("-created_at",)
+
+class OrganizationIntelligenceRun(TimeStampedModel):
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        RUNNING = "running", "Running"
+        SUCCEEDED = "succeeded", "Succeeded"
+        PARTIAL = "partial", "Partial"
+        FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Trigger(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        SCHEDULED = "scheduled", "Scheduled"
+        ONBOARDING = "onboarding", "Onboarding"
+        API = "api", "API"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="intelligence_runs",
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="requested_intelligence_runs",
+    )
+    trigger = models.CharField(max_length=24, choices=Trigger.choices, default=Trigger.MANUAL)
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.QUEUED, db_index=True)
+    task_id = models.CharField(max_length=255, blank=True, db_index=True)
+    website_url = models.URLField(blank=True)
+    max_pages = models.PositiveSmallIntegerField(default=25)
+    pages_crawled = models.PositiveIntegerField(default=0)
+    documents_indexed = models.PositiveIntegerField(default=0)
+    chunks_indexed = models.PositiveIntegerField(default=0)
+    services_collected = models.PositiveIntegerField(default=0)
+    facts_collected = models.PositiveIntegerField(default=0)
+    review_items_created = models.PositiveIntegerField(default=0)
+    practitioners_collected = models.PositiveIntegerField(default=0)
+    specialties_collected = models.PositiveIntegerField(default=0)
+    social_links_collected = models.PositiveIntegerField(default=0)
+    readiness_before = models.PositiveSmallIntegerField(default=0)
+    readiness_after = models.PositiveSmallIntegerField(default=0)
+    summary = models.JSONField(default=dict, blank=True)
+    warnings = models.JSONField(default=list, blank=True)
+    error_code = models.CharField(max_length=80, blank=True)
+    error_message = models.TextField(blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=("organization", "status")),
+            models.Index(fields=("status", "created_at")),
+        ]
+
+    def __str__(self):
+        return f"{self.organization.name} — {self.get_status_display()}"
+
+
+class IntelligenceReviewItem(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        APPLIED = "applied", "Applied"
+        REJECTED = "rejected", "Rejected"
+
+    class ItemType(models.TextChoices):
+        PROFILE = "profile", "Organization profile"
+        CONTACT = "contact", "Public contact"
+        SOCIAL = "social", "Social media"
+        LOCATION = "location", "Location"
+        SERVICE = "service", "Service offering"
+        HEALTHCARE = "healthcare", "Healthcare information"
+        PROPERTY = "property", "Property information"
+        HOSPITALITY = "hospitality", "Hospitality information"
+        OTHER = "other", "Other"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="intelligence_review_items",
+    )
+    run = models.ForeignKey(
+        OrganizationIntelligenceRun,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="review_items",
+    )
+    place = models.ForeignKey(
+        "places.Place",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="intelligence_review_items",
+    )
+    item_type = models.CharField(max_length=24, choices=ItemType.choices, default=ItemType.OTHER, db_index=True)
+    target_model = models.CharField(max_length=80)
+    target_field = models.CharField(max_length=120, blank=True)
+    entity_key = models.CharField(max_length=255, blank=True)
+    label = models.CharField(max_length=255)
+    current_value = models.JSONField(default=dict, blank=True)
+    proposed_value = models.JSONField(default=dict, blank=True)
+    source_url = models.URLField()
+    confidence = models.DecimalField(
+        max_digits=4,
+        decimal_places=3,
+        default=Decimal("0.750"),
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+    )
+    reason = models.TextField(blank=True)
+    is_public_safe = models.BooleanField(default=True)
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.PENDING, db_index=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_intelligence_items",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=("organization", "status")),
+            models.Index(fields=("target_model", "target_field")),
+        ]
+
+    def __str__(self):
+        return f"{self.organization.name} — {self.label}"
+

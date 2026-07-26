@@ -29,4 +29,14 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(day_of_week="sunday", hour=4, minute=0),
         "options": {"expires": 60 * 60 * 6},
     },
+    "organization-intelligence-due-sync": {
+        "task": "apps.domain_intelligence.tasks.queue_due_organization_intelligence",
+        "schedule": crontab(hour="*/6", minute=20),
+        "options": {"expires": 60 * 60 * 5},
+    },
+    "organization-intelligence-readiness-nightly": {
+        "task": "apps.domain_intelligence.tasks.refresh_all_intelligence_readiness",
+        "schedule": crontab(hour=1, minute=50),
+        "options": {"expires": 60 * 60 * 4},
+    },
 }

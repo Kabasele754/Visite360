@@ -70,6 +70,21 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
 
 
+# Organization intelligence is executed by the dedicated AI Celery worker in production.
+DOMAIN_INTELLIGENCE_EXECUTION_MODE = config(
+    "DOMAIN_INTELLIGENCE_EXECUTION_MODE",
+    default="celery",
+)
+DOMAIN_INTELLIGENCE_CELERY_QUEUE = config(
+    "DOMAIN_INTELLIGENCE_CELERY_QUEUE",
+    default="ai",
+)
+DOMAIN_INTELLIGENCE_STALE_QUEUE_SECONDS = config(
+    "DOMAIN_INTELLIGENCE_STALE_QUEUE_SECONDS",
+    default=120,
+    cast=int,
+)
+
 # =============================================================================
 # SITE
 # =============================================================================

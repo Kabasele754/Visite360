@@ -1,0 +1,112 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Organization Intelligence · Twinscopes{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=5">
+{% endblock %}
+
+{% block content %}
+<div class="ts-control-center ts-intelligence-workspace" data-intelligence-workspace>
+    <section class="ts-intel-hero">
+        <div>
+            <nav class="ts-control-breadcrumb"><a href="{% url 'platform-console-overview' %}">Control Center</a><span>›</span><strong>Organization Intelligence</strong></nav>
+            <span class="ts-control-kicker">AI data operations</span>
+            <h1>Client-ready organization intelligence</h1>
+            <p>Collect official website information, build the knowledge base, structure domain data and review every customer-facing fact from one workspace.</p>
+            <div class="ts-intel-hero__badges">
+                <span><b>{{ summary.ready }}</b> client ready</span>
+                <span><b>{{ summary.review }}</b> need review</span>
+                <span><b>{{ summary.active }}</b> active runs</span>
+            </div>
+        </div>
+        <form method="post" action="{% url 'platform-console-intelligence-bulk-collect' %}" class="ts-intel-bulk-form">
+            {% csrf_token %}
+            <label><span>Organizations to queue</span><select name="limit"><option>5</option><option selected>10</option><option>15</option><option>25</option></select></label>
+            <button type="submit">Collect missing intelligence</button>
+            <small>Only organizations with an official website and no active run are queued.</small>
+        </form>
+    </section>
+
+    <section class="ts-intel-stat-grid" aria-label="Organization intelligence summary">
+        <article><span>Organizations</span><strong>{{ summary.organizations }}</strong><small>Registered platform clients</small></article>
+        <article><span>Client ready</span><strong>{{ summary.ready }}</strong><small>Complete and approved</small></article>
+        <article><span>Review queue</span><strong>{{ summary.pending_reviews }}</strong><small>Suggestions awaiting a decision</small></article>
+        <article><span>Active collection</span><strong>{{ summary.active }}</strong><small>Queued or currently running</small></article>
+    </section>
+
+    <section class="ts-control-grid ts-intel-chart-grid">
+        <article class="ts-control-card">
+            <header><div><span>Readiness</span><h3>Client data readiness</h3></div></header>
+            <div class="ts-chart-wrap ts-chart-wrap--compact"><canvas id="intelligenceReadinessChart"></canvas></div>
+        </article>
+        <article class="ts-control-card">
+            <header><div><span>Coverage</span><h3>Organizations by domain</h3></div></header>
+            <div class="ts-chart-wrap ts-chart-wrap--compact"><canvas id="intelligenceDomainChart"></canvas></div>
+        </article>
+        <article class="ts-control-card ts-intel-process-card">
+            <header><div><span>Collection pipeline</span><h3>What the agent prepares</h3></div></header>
+            <ol class="ts-intel-process">
+                <li><b>01</b><span><strong>Official website crawl</strong><small>Same-domain pages, robots rules and SSRF protection.</small></span></li>
+                <li><b>02</b><span><strong>Knowledge indexing</strong><small>Documents, chunks and embeddings for grounded answers.</small></span></li>
+                <li><b>03</b><span><strong>Domain extraction</strong><small>Services, contacts, doctors, hospitality or property data.</small></span></li>
+                <li><b>04</b><span><strong>Human review</strong><small>Conflicts are staged instead of replacing curated information.</small></span></li>
+            </ol>
+        </article>
+    </section>
+
+    <section class="ts-control-section">
+        <header class="ts-control-section__head">
+            <div><span>Customer data</span><h2>Organization readiness workspace</h2></div>
+            <p>Open an organization to collect its website, review proposed changes and confirm that the client-facing agent has complete information.</p>
+        </header>
+        <form method="get" class="ts-control-toolbar ts-intel-filterbar">
+            <label class="ts-control-search"><span aria-hidden="true">⌕</span><input type="search" name="q" value="{{ query }}" placeholder="Search organization or website"></label>
+            <select name="status"><option value="">All readiness states</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+            <select name="domain"><option value="">All domains</option>{% for value,label in domain_choices %}<option value="{{ value }}" {% if selected_domain == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+            <button type="submit">Apply filters</button>
+            {% if query or selected_status or selected_domain %}<a href="{% url 'platform-console-intelligence-hub' %}">Reset</a>{% endif %}
+        </form>
+
+        <div class="ts-intel-org-grid">
+            {% for row in rows %}
+            <article class="ts-intel-org-card ts-intel-org-card--{{ row.profile.readiness_status }}">
+                <header>
+                    <div class="ts-intel-org-avatar">{% if row.organization.logo %}<img src="{{ row.organization.logo.url }}" alt="">{% else %}{{ row.organization.name|slice:':1'|upper }}{% endif %}</div>
+                    <div><h3>{{ row.organization.name }}</h3><a href="{{ row.organization.website_url }}" target="_blank" rel="noopener">{{ row.organization.website_url|default:"Website not configured" }}</a></div>
+                    <span class="ts-intel-status ts-intel-status--{{ row.profile.readiness_status }}">{{ row.profile.get_readiness_status_display }}</span>
+                </header>
+                <div class="ts-intel-score-row">
+                    <div class="ts-intel-score" style="--readiness:{{ row.profile.readiness_score }}"><strong>{{ row.profile.readiness_score }}%</strong><span>Ready</span></div>
+                    <dl>
+                        <div><dt>Domain</dt><dd>{{ row.profile.get_domain_kind_display }}</dd></div>
+                        <div><dt>Knowledge</dt><dd>{{ row.counts.indexed_sources|default:0 }}/{{ row.counts.knowledge_sources|default:0 }} indexed</dd></div>
+                        <div><dt>Content</dt><dd>{{ row.counts.documents|default:0 }} documents · {{ row.counts.services|default:0 }} services</dd></div>
+                        <div><dt>Review</dt><dd>{{ row.counts.pending_reviews|default:0 }} pending</dd></div>
+                    </dl>
+                </div>
+                <footer>
+                    <span>{% if row.latest_run %}Last run: {{ row.latest_run.get_status_display }} · {{ row.latest_run.created_at|timesince }} ago{% else %}No collection run yet{% endif %}</span>
+                    <a href="{% url 'platform-console-intelligence-organization' row.organization.id %}">Open intelligence workspace <b>→</b></a>
+                </footer>
+            </article>
+            {% empty %}
+            <div class="ts-intel-empty"><strong>No organization matches these filters.</strong><span>Adjust the readiness, domain or search filters.</span></div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="ts-control-pagination"><span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span><div>{% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&status={{ selected_status }}&domain={{ selected_domain }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}{% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&status={{ selected_status }}&domain={{ selected_domain }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}</div></nav>
+        {% endif %}
+    </section>
+</div>
+
+{{ readiness_chart|json_script:"intelligence-readiness-data" }}
+{{ domain_chart|json_script:"intelligence-domain-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'platform_console/js/intelligence-console.js' %}?v=1" defer></script>
+{% endblock %}

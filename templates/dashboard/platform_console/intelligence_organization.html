@@ -1,0 +1,106 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}{{ organization.name }} Intelligence · Twinscopes{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=5">
+{% endblock %}
+
+{% block content %}
+<div class="ts-control-center ts-intelligence-workspace">
+    <nav class="ts-control-breadcrumb"><a href="{% url 'platform-console-overview' %}">Control Center</a><span>›</span><a href="{% url 'platform-console-intelligence-hub' %}">Organization Intelligence</a><span>›</span><strong>{{ organization.name }}</strong></nav>
+
+    <section class="ts-intel-org-hero">
+        <div class="ts-intel-org-hero__identity">
+            <div class="ts-intel-org-avatar ts-intel-org-avatar--large">{% if organization.logo %}<img src="{{ organization.logo.url }}" alt="">{% else %}{{ organization.name|slice:':1'|upper }}{% endif %}</div>
+            <div><span class="ts-control-kicker">{{ profile.get_domain_kind_display }} intelligence</span><h1>{{ organization.name }}</h1><p>{{ organization.website_url|default:"No official website configured" }}</p></div>
+        </div>
+        <div class="ts-intel-org-hero__actions">
+            {% if active_run %}<a href="{% url 'platform-console-intelligence-run' active_run.id %}" class="ts-intel-action ts-intel-action--running">View active run</a>{% endif %}
+            <a href="{% url 'platform-console-resource-edit' 'organizations' organization.id %}" class="ts-intel-action ts-intel-action--secondary">Edit organization</a>
+            <form method="post" action="{% url 'platform-console-intelligence-collect' organization.id %}">{% csrf_token %}<input type="hidden" name="max_pages" value="{{ profile.website_sync_max_pages }}"><button type="submit" {% if active_run or not organization.website_url %}disabled{% endif %}>Collect official website</button></form>
+        </div>
+    </section>
+
+    <section class="ts-intel-readiness-panel">
+        <div class="ts-intel-readiness-main">
+            <div class="ts-intel-score ts-intel-score--large" style="--readiness:{{ readiness.score }}"><strong>{{ readiness.score }}%</strong><span>{{ profile.get_readiness_status_display }}</span></div>
+            <div><span class="ts-control-kicker">Client readiness</span><h2>{% if profile.readiness_status == 'ready' %}Information is ready for the client-facing agent{% elif profile.readiness_status == 'in_progress' %}The collection agent is preparing this organization{% else %}Complete the remaining data and review suggestions{% endif %}</h2><p>Readiness combines public identity, contacts, knowledge indexing, tour discovery and domain-specific information.</p></div>
+        </div>
+        <div class="ts-intel-readiness-sections">
+            {% for key,section in readiness.breakdown.sections.items %}
+            <article><header><span>{{ section.label }}</span><strong>{{ section.score }}/{{ section.max }}</strong></header><div><i style="width:{% widthratio section.score section.max 100 %}%"></i></div><small>{{ section.detail }}</small></article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="ts-intel-inventory-grid">
+        <article><span>Knowledge sources</span><strong>{{ readiness.breakdown.counts.knowledge_sources }}</strong><small>{{ readiness.breakdown.counts.indexed_sources }} indexed</small></article>
+        <article><span>Knowledge documents</span><strong>{{ documents_count }}</strong><small>{{ chunks_count }} searchable chunks</small></article>
+        <article><span>Verified facts</span><strong>{{ readiness.breakdown.counts.verified_facts }}</strong><small>Official-source facts</small></article>
+        <article><span>Service offerings</span><strong>{{ readiness.breakdown.counts.services }}</strong><small>Discoverable client services</small></article>
+        <article><span>Medical practitioners</span><strong>{{ practitioners_count }}</strong><small>Active public profiles</small></article>
+        <article><span>Pending review</span><strong>{{ readiness.breakdown.counts.pending_reviews }}</strong><small>Needs an administrator decision</small></article>
+    </section>
+
+    <div class="ts-intel-detail-layout">
+        <main>
+            <section class="ts-control-card ts-intel-data-section">
+                <header><div><span>Human approval</span><h3>Intelligence review queue</h3></div><small>Conflicting and lower-confidence information is never silently published.</small></header>
+                <div class="ts-intel-review-list">
+                    {% for item in review_items %}
+                    <article class="ts-intel-review ts-intel-review--{{ item.status }}">
+                        <div class="ts-intel-review__head"><span class="ts-intel-status ts-intel-status--{{ item.status }}">{{ item.get_status_display }}</span><b>{{ item.get_item_type_display }}</b><em>{{ item.confidence|floatformat:2 }} confidence</em></div>
+                        <h4>{{ item.label }}</h4>
+                        <div class="ts-intel-review__values"><div><span>Current</span><pre>{{ item.current_value }}</pre></div><div><span>Proposed</span><pre>{{ item.proposed_value }}</pre></div></div>
+                        <p>{{ item.reason|default:"Collected from the official website." }}</p>
+                        <footer><a href="{{ item.source_url }}" target="_blank" rel="noopener">Open source page ↗</a>{% if item.status == 'pending' %}<div><form method="post" action="{% url 'platform-console-intelligence-review-reject' item.id %}">{% csrf_token %}<button class="reject" type="submit">Reject</button></form><form method="post" action="{% url 'platform-console-intelligence-review-apply' item.id %}">{% csrf_token %}<button type="submit">Approve and apply</button></form></div>{% else %}<small>Reviewed {% if item.reviewed_at %}{{ item.reviewed_at|timesince }} ago{% endif %}</small>{% endif %}</footer>
+                    </article>
+                    {% empty %}<div class="ts-intel-empty ts-intel-empty--compact"><strong>No review is waiting.</strong><span>Conflicting website values will appear here before publication.</span></div>{% endfor %}
+                </div>
+            </section>
+
+            <section class="ts-control-card ts-intel-data-section">
+                <header><div><span>Client catalogue</span><h3>Discoverable services</h3></div><a href="{% url 'platform-console-resource-list' 'services' %}?q={{ organization.name|urlencode }}">Manage all</a></header>
+                <div class="ts-intel-service-grid">
+                    {% for service in services %}<article><span>{{ service.category|default:"Service" }}</span><h4>{{ service.name }}</h4><p>{{ service.short_description|default:service.description|truncatechars:150 }}</p>{% if service.booking_url %}<a href="{{ service.booking_url }}" target="_blank" rel="noopener">Booking page ↗</a>{% endif %}</article>{% empty %}<div class="ts-intel-empty ts-intel-empty--compact"><strong>No service has been structured yet.</strong><span>Run the website collector or create services manually.</span></div>{% endfor %}
+                </div>
+            </section>
+
+            <section class="ts-control-card ts-intel-data-section">
+                <header><div><span>Grounding</span><h3>Latest verified facts</h3></div><a href="{% url 'platform-console-resource-list' 'verified-facts' %}?q={{ organization.name|urlencode }}">Open facts</a></header>
+                <div class="ts-intel-fact-table"><div class="head"><span>Entity</span><span>Field</span><span>Value</span><span>Verified</span></div>{% for fact in facts %}<a href="{{ fact.source_url }}" target="_blank" rel="noopener"><span>{{ fact.entity_type }}</span><span>{{ fact.field_name }}</span><span>{{ fact.value|truncatechars:100 }}</span><span>{{ fact.verified_at|date:"d M Y" }}</span></a>{% empty %}<p>No verified fact has been collected yet.</p>{% endfor %}</div>
+            </section>
+        </main>
+
+        <aside>
+            <section class="ts-control-card ts-intel-side-card">
+                <header><div><span>Knowledge</span><h3>Official sources</h3></div></header>
+                <div class="ts-intel-source-list">
+                    {% for source in sources %}<article><div><span class="ts-intel-status ts-intel-status--{{ source.status }}">{{ source.get_status_display }}</span><h4>{{ source.name }}</h4><a href="{{ source.url }}" target="_blank" rel="noopener">{{ source.url|truncatechars:44 }}</a><small>{% if source.last_synced_at %}Synced {{ source.last_synced_at|timesince }} ago{% else %}Not synced yet{% endif %}</small></div><form method="post" action="{% url 'platform-console-intelligence-source-reindex' source.id %}">{% csrf_token %}<button type="submit">Reindex</button></form></article>{% empty %}<p class="ts-control-empty">No source configured.</p>{% endfor %}
+                </div>
+            </section>
+
+            <section class="ts-control-card ts-intel-side-card">
+                <header><div><span>Operations</span><h3>Collection history</h3></div></header>
+                <div class="ts-intel-run-list">
+                    {% for run in runs %}<a href="{% url 'platform-console-intelligence-run' run.id %}"><span class="ts-status-dot ts-status-dot--{{ run.status }}"></span><span><strong>{{ run.get_status_display }}</strong><small>{{ run.created_at|date:"d M Y H:i" }} · {{ run.pages_crawled }} pages</small></span><em>{{ run.readiness_before }}→{{ run.readiness_after }}%</em></a>{% empty %}<p class="ts-control-empty">No collection history.</p>{% endfor %}
+                </div>
+            </section>
+
+            <section class="ts-control-card ts-intel-side-card">
+                <header><div><span>Readiness plan</span><h3>Recommended next actions</h3></div></header>
+                <div class="ts-intel-action-list">
+                    {% for action in readiness.breakdown.next_actions %}<article class="ts-intel-action-list__item ts-intel-action-list__item--{{ action.priority }}"><span>{{ forloop.counter|stringformat:"02d" }}</span><div><strong>{{ action.label }}</strong><small>{{ action.detail }}</small></div></article>{% empty %}<div class="ts-intel-empty ts-intel-empty--compact"><strong>No blocking action remains.</strong><span>This organization is ready for client-facing use.</span></div>{% endfor %}
+                </div>
+            </section>
+
+            <section class="ts-control-card ts-intel-side-card ts-intel-public-profile">
+                <header><div><span>Public profile</span><h3>Client-facing information</h3></div></header>
+                <dl><div><dt>Email</dt><dd>{{ organization.public_email|default:"Not configured" }}</dd></div><div><dt>Phone</dt><dd>{{ organization.public_phone|default:"Not configured" }}</dd></div><div><dt>Booking</dt><dd>{{ organization.booking_url|default:"Not configured"|truncatechars:40 }}</dd></div><div><dt>Last sync</dt><dd>{% if profile.last_synced_at %}{{ profile.last_synced_at|date:"d M Y H:i" }}{% else %}Never{% endif %}</dd></div></dl>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}

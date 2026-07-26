@@ -95,6 +95,7 @@
     const ai = parseData("ai-chart-data");
     const vision = parseData("vision-chart-data");
     const appointments = parseData("appointment-chart-data");
+    const readiness = parseData("readiness-chart-data");
     const colors = themeColors();
 
     const trafficCanvas = document.getElementById("trafficChart");
@@ -201,6 +202,24 @@
           datasets: [{
             data: appointments.data,
             backgroundColor: ["#f59e0b", "#2563eb", "#10b981", "#ef4444", "#94a3b8"],
+            borderColor: colors.doughnutBorder,
+            borderWidth: 3,
+            hoverOffset: 6,
+          }],
+        },
+        options: doughnutOptions,
+      }));
+    }
+
+    const readinessCanvas = document.getElementById("readinessChart");
+    if (readinessCanvas && readiness) {
+      charts.push(new Chart(readinessCanvas, {
+        type: "doughnut",
+        data: {
+          labels: readiness.labels,
+          datasets: [{
+            data: readiness.data,
+            backgroundColor: ["#64748b", "#3b82f6", "#f59e0b", "#10b981"],
             borderColor: colors.doughnutBorder,
             borderWidth: 3,
             hoverOffset: 6,
