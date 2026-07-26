@@ -32,6 +32,13 @@ from .dashboard_views import (
     tour_scenes_pipeline_status_ajax_view,
     queue_scene_pipeline_ajax_view,
     queue_tour_prefetch_ajax_view,
+    tour_architect_view,
+    queue_tour_architect_ajax_view,
+    tour_architect_status_ajax_view,
+    review_scene_object_ajax_view,
+    rerun_scene_intelligence_ajax_view,
+    review_scene_link_ajax_view,
+    bulk_apply_scene_links_ajax_view,
 )
 
 
@@ -177,6 +184,46 @@ urlpatterns = [
         "dashboard/o/<slug:organization_slug>/hotspots/<int:hotspot_id>/delete/",
         delete_hotspot_ajax_view,
         name="dashboard-delete-hotspot-ajax",
+    ),
+
+
+    # ======================================================================
+    # AI TOUR ARCHITECT
+    # ======================================================================
+    path(
+        "dashboard/o/<slug:organization_slug>/tours/<int:tour_id>/architect/",
+        tour_architect_view,
+        name="dashboard-tour-architect",
+    ),
+    path(
+        "dashboard/o/<slug:organization_slug>/tours/<int:tour_id>/architect/run/",
+        queue_tour_architect_ajax_view,
+        name="dashboard-tour-architect-run-ajax",
+    ),
+    path(
+        "dashboard/o/<slug:organization_slug>/tours/<int:tour_id>/architect/runs/<uuid:run_id>/status/",
+        tour_architect_status_ajax_view,
+        name="dashboard-tour-architect-status-ajax",
+    ),
+    path(
+        "dashboard/o/<slug:organization_slug>/architect/objects/<int:candidate_id>/review/",
+        review_scene_object_ajax_view,
+        name="dashboard-scene-object-review-ajax",
+    ),
+    path(
+        "dashboard/o/<slug:organization_slug>/architect/scenes/<int:scene_id>/rerun/",
+        rerun_scene_intelligence_ajax_view,
+        name="dashboard-scene-intelligence-rerun-ajax",
+    ),
+    path(
+        "dashboard/o/<slug:organization_slug>/architect/links/<int:proposal_id>/review/",
+        review_scene_link_ajax_view,
+        name="dashboard-scene-link-review-ajax",
+    ),
+    path(
+        "dashboard/o/<slug:organization_slug>/tours/<int:tour_id>/architect/apply-safe/",
+        bulk_apply_scene_links_ajax_view,
+        name="dashboard-tour-architect-apply-safe-ajax",
     ),
 
     # ======================================================================

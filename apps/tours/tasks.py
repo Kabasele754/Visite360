@@ -282,39 +282,19 @@ def _mock_ai_analysis(scene):
 
 
 def _generate_ai_hotspots(scene, analysis):
-    suggestions = analysis.get("recommended_hotspots", [])
-    created_ids = []
+    """Disable the legacy generic-hotspot generator.
 
-    # Supprimer anciens hotspots IA
-    scene.hotspots.filter(is_ai_generated=True).delete()
-
-    for item in suggestions:
-        payload = {
-            "ai_generated": True,
-            "content": {
-                "title": item.get("title") or item.get("label"),
-                "description": item.get("description", ""),
-            },
-            "source": "mock-ai",
-        }
-
-        hotspot = Hotspot.objects.create(
-            organization=scene.organization,
-            scene=scene,
-            type=item.get("type", Hotspot.Type.INFO),
-            label=item.get("label", "AI Hotspot"),
-            title=item.get("title", ""),
-            description=item.get("description", ""),
-            tooltip_text=item.get("label", ""),
-            selected_icon=item.get("selected_icon", "info"),
-            yaw=item.get("yaw", 0),
-            pitch=item.get("pitch", 0),
-            payload=payload,
-            is_ai_generated=True,
-        )
-        created_ids.append(hotspot.id)
-
-    return created_ids
+    The previous fallback created generic ``Info``/``Discover`` suggestions for
+    every panorama. Tour Architect now stages exact detected objects and scene
+    links in dedicated review models, so this legacy field is cleared. Manual
+    hotspots are never deleted or replaced here.
+    """
+    Scene360.objects.filter(pk=scene.pk).update(
+        ai_hotspot_suggestions=[],
+        updated_at=timezone.now(),
+    )
+    scene.ai_hotspot_suggestions = []
+    return []
 
 
 def _build_prefetch_manifest_for_tour(tour):
@@ -731,6 +711,7 @@ def run_scene_pipeline_task(self, scene_id):
         "tiles": None,
         "ai_analysis": None,
         "ai_hotspots": None,
+        "enterprise_vision": None,
         "prefetch": None,
     }
 
@@ -908,7 +889,40 @@ def run_scene_pipeline_task(self, scene_id):
         raise
 
     # ============================================================
-    # 5. PREFETCH TOUR
+    # 5. ENTERPRISE VISION CATALOGUE
+    # ============================================================
+    # The full 24-frame vision pipeline extracts every supported object, OCR
+    # region and navigation anchor. Its post-processing stage builds reviewable
+    # crops, visual-quality recommendations and Tour Architect proposals.
+    try:
+        from apps.vision_ai.services.queueing import dispatch_scene_analysis
+
+        scene.refresh_from_db()
+        vision_dispatch = dispatch_scene_analysis(
+            scene,
+            # A scene pipeline is normally triggered after a new panorama was
+            # uploaded or replaced, so a previous VisionAnalysis is stale.
+            force=True,
+            requested_providers=["yolo", "paddleocr", "gemini", "openai"],
+            mode="auto",
+        )
+        result["enterprise_vision"] = {
+            "ok": True,
+            "analysis_id": str(vision_dispatch.analysis.pk),
+            "created": vision_dispatch.created,
+            "mode": vision_dispatch.mode,
+            "task_id": vision_dispatch.task_id,
+        }
+    except Exception as exc:
+        # Asset generation remains usable even when an AI provider is not yet
+        # configured. The dashboard exposes a safe retry action.
+        result["enterprise_vision"] = {
+            "ok": False,
+            "error": "vision_dispatch_unavailable",
+        }
+
+    # ============================================================
+    # 6. PREFETCH TOUR
     # ============================================================
     try:
         tour = Tour.objects.filter(pk=scene.tour_id).first()
@@ -933,3 +947,18 @@ def run_scene_pipeline_task(self, scene_id):
         raise
 
     return result
+
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 1}, soft_time_limit=60 * 12)
+def run_tour_architect_task(self, run_id: str, force: bool = False):
+    from apps.tours.intelligence.scene_architect import build_tour_architecture
+    from apps.tours.models import TourArchitectureRun
+
+    run = TourArchitectureRun.objects.select_related("tour", "organization").get(pk=run_id)
+    build_tour_architecture(run.tour, run=run, force=force)
+    run.refresh_from_db()
+    return {
+        "run_id": str(run.pk),
+        "status": run.status,
+        "proposal_count": run.proposal_count,
+        "applied_count": run.applied_count,
+    }

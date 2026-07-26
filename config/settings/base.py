@@ -181,6 +181,7 @@ CELERY_TASK_REJECT_ON_WORKER_LOST = True
 
 CELERY_TASK_ROUTES = {
     "apps.vision_ai.tasks.*": {"queue": "ai"},
+    "apps.tours.tasks.run_tour_architect_task": {"queue": "ai"},
     "apps.knowledge.tasks.*": {"queue": "ai"},
     "apps.domain_intelligence.tasks.*": {"queue": "ai"},
     "apps.ai_agents.tasks.*": {"queue": "ai"},
@@ -374,6 +375,53 @@ VISION_SELECTION_MAX_SIZE_RATIO = config("VISION_SELECTION_MAX_SIZE_RATIO", defa
 # Marzipano uses positive pitch upwards while the panorama projection uses positive pitch downwards.
 VISION_MARZIPANO_PITCH_SIGN = config("VISION_MARZIPANO_PITCH_SIGN", default=-1.0, cast=float)
 
+# ---------------------------------------------------------------------
+# AI Tour Architect — object catalogue, scene quality and navigation graph
+# ---------------------------------------------------------------------
+TOUR_ARCHITECT_ENABLED = config("TOUR_ARCHITECT_ENABLED", default=True, cast=bool)
+TOUR_ARCHITECT_AUTO_RUN = config("TOUR_ARCHITECT_AUTO_RUN", default=True, cast=bool)
+TOUR_ARCHITECT_REQUIRE_ALL_SCENES_ANALYZED = config(
+    "TOUR_ARCHITECT_REQUIRE_ALL_SCENES_ANALYZED", default=True, cast=bool
+)
+TOUR_ARCHITECT_GEMINI_MODEL = config(
+    "TOUR_ARCHITECT_GEMINI_MODEL", default=GOOGLE_TEXT_MODEL
+)
+TOUR_ARCHITECT_LOCAL_THREAD_WORKERS = config(
+    "TOUR_ARCHITECT_LOCAL_THREAD_WORKERS", default=1, cast=int
+)
+TOUR_ARCHITECT_STALE_MINUTES = config("TOUR_ARCHITECT_STALE_MINUTES", default=45, cast=int)
+TOUR_ARCHITECT_TIMEOUT_SECONDS = config("TOUR_ARCHITECT_TIMEOUT_SECONDS", default=150, cast=int)
+TOUR_ARCHITECT_MAX_OUTPUT_TOKENS = config(
+    "TOUR_ARCHITECT_MAX_OUTPUT_TOKENS", default=5000, cast=int
+)
+TOUR_ARCHITECT_MAX_ANCHORS_PER_SCENE = config(
+    "TOUR_ARCHITECT_MAX_ANCHORS_PER_SCENE", default=6, cast=int
+)
+TOUR_ARCHITECT_MAX_OUTGOING_LINKS = config(
+    "TOUR_ARCHITECT_MAX_OUTGOING_LINKS", default=4, cast=int
+)
+TOUR_ARCHITECT_INCLUDE_ANCHOR_CROPS = config(
+    "TOUR_ARCHITECT_INCLUDE_ANCHOR_CROPS", default=True, cast=bool
+)
+TOUR_ARCHITECT_AUTO_APPLY_SAFE_LINKS = config(
+    "TOUR_ARCHITECT_AUTO_APPLY_SAFE_LINKS", default=False, cast=bool
+)
+TOUR_ARCHITECT_AUTO_APPLY_MIN_CONFIDENCE = config(
+    "TOUR_ARCHITECT_AUTO_APPLY_MIN_CONFIDENCE", default=0.94, cast=float
+)
+TOUR_OBJECT_CATALOG_MIN_CONFIDENCE = config(
+    "TOUR_OBJECT_CATALOG_MIN_CONFIDENCE", default=0.25, cast=float
+)
+TOUR_OBJECT_CATALOG_MAX_CANDIDATES = config(
+    "TOUR_OBJECT_CATALOG_MAX_CANDIDATES", default=90, cast=int
+)
+TOUR_OBJECT_CLIENT_READY_MIN_CONFIDENCE = config(
+    "TOUR_OBJECT_CLIENT_READY_MIN_CONFIDENCE", default=0.58, cast=float
+)
+TOUR_OBJECT_CLIENT_READY_MIN_CLARITY = config(
+    "TOUR_OBJECT_CLIENT_READY_MIN_CLARITY", default=0.46, cast=float
+)
+
 PDF_MOBILE_INLINE_MAX_BYTES = config("PDF_MOBILE_INLINE_MAX_BYTES", default=18874368, cast=int)
 PDF_PUBLIC_CACHE_SECONDS = config("PDF_PUBLIC_CACHE_SECONDS", default=900, cast=int)
 PDF_STREAM_CHUNK_SIZE = config("PDF_STREAM_CHUNK_SIZE", default=65536, cast=int)
@@ -392,6 +440,7 @@ KNOWLEDGE_CRAWLER_USER_AGENT = config(
     "KNOWLEDGE_CRAWLER_USER_AGENT", default="TwinscopesKnowledgeBot/1.0"
 )
 KNOWLEDGE_CRAWLER_MAX_PAGES = config("KNOWLEDGE_CRAWLER_MAX_PAGES", default=50, cast=int)
+KNOWLEDGE_CRAWLER_MAX_ATTEMPTS = config("KNOWLEDGE_CRAWLER_MAX_ATTEMPTS", default=75, cast=int)
 KNOWLEDGE_CRAWLER_TIMEOUT_SECONDS = config("KNOWLEDGE_CRAWLER_TIMEOUT_SECONDS", default=20, cast=int)
 DOMAIN_INTELLIGENCE_ENABLE_AI_EXTRACTION = config(
     "DOMAIN_INTELLIGENCE_ENABLE_AI_EXTRACTION", default=True, cast=bool

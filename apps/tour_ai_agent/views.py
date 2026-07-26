@@ -17,6 +17,7 @@ from apps.tour_ai_agent.tools.booking_tools import create_appointment, booking_f
 from apps.tour_ai_agent.tools.lead_tools import create_sales_lead
 from apps.tour_ai_agent.tools.contact_tools import contact_options
 from apps.tour_ai_agent.services.grounded_context import build_organization_grounding
+from apps.tour_ai_agent.services.public_response import serialize_public_contact, serialize_public_sources
 from django.core import signing
 from apps.vision_ai.models import VisionAnalysis, VisionInsight
 from apps.ai_core.services.error_safety import public_error_copy
@@ -145,6 +146,7 @@ def bootstrap(request):
         "scene": context["scene"],
         "products": context["products"],
         "quick_actions": ["book_appointment", "view_products", "contact_business"],
+        "contact": serialize_public_contact(contact_options(tour.organization, tour)),
         "booking_form": booking_form_payload(tour.organization),
         "auto_prompt_delay": int(getattr(settings, "TOUR_AI_AUTO_PROMPT_DELAY_SECONDS", 15)),
         "vision_long_press_duration_ms": int(getattr(settings, "VISION_LONG_PRESS_DURATION_MS", 650)),
@@ -203,7 +205,13 @@ def message(request):
     result = run_agent(text=text, context=context)
     conversation.detected_intent = result.get("intent", "question")
     conversation.save(update_fields=["detected_intent", "last_activity_at"])
-    response_payload = {**result, "products": context["products"], "booking_form": booking_form_payload(tour.organization)}
+    response_payload = {
+        **result,
+        "products": context["products"],
+        "contact": serialize_public_contact(context.get("contact")),
+        "sources": serialize_public_sources(context),
+        "booking_form": booking_form_payload(tour.organization),
+    }
     add_message(conversation, "assistant", result["text"], {
         "provider": result.get("provider"), "intent": result.get("intent"),
         "request_id": request_id, "response_payload": response_payload,
@@ -237,7 +245,7 @@ def action(request):
     elif action_type in {"create_lead", "request_quote"}:
         result = create_sales_lead(organization=tour.organization, tour=tour, payload=data)
     elif action_type == "contact_business":
-        result = {"ok": True, "contact": contact_options(tour.organization, tour)}
+        result = {"ok": True, "contact": serialize_public_contact(contact_options(tour.organization, tour))}
     else:
         return JsonResponse({"ok": False, "error": "Unsupported action"}, status=400)
     record_action(conversation, action_type, data, result, bool(result.get("ok")))

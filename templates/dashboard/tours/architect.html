@@ -1,0 +1,252 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}AI Tour Architect · {{ tour.title }}{% endblock %}
+{% block page_title %}AI Tour Architect{% endblock %}
+{% block page_title_desktop %}AI Tour Architect{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/tour_architect_ai.css' %}?v=architect-23">
+{% endblock %}
+
+{% block content %}
+<div class="ta-shell"
+     data-run-url="{% url 'dashboard-tour-architect-run-ajax' current_organization.slug tour.id %}"
+     data-apply-url="{% url 'dashboard-tour-architect-apply-safe-ajax' current_organization.slug tour.id %}"
+     data-builder-url="{% url 'tour-builder' current_organization.slug tour.id %}"
+     {% if latest_run %}data-status-url="{% url 'dashboard-tour-architect-status-ajax' current_organization.slug tour.id latest_run.id %}"{% endif %}>
+    {% csrf_token %}
+
+    <section class="ta-hero">
+        <div class="ta-hero-copy">
+            <span class="ta-eyebrow"><span class="ta-live-dot"></span> Gemini scene topology + computer vision</span>
+            <h1>Build an intelligent 360° tour without generic hotspots.</h1>
+            <p>
+                Every uploaded panorama is inspected for objects, readable text, doors and visual quality.
+                Gemini then proposes a balanced scene graph. Nothing public is created until you review it.
+            </p>
+            <div class="ta-hero-actions">
+                <a href="{% url 'tour-builder' current_organization.slug tour.id %}" class="ta-btn ta-btn-secondary">
+                    <span aria-hidden="true">←</span> Back to Builder
+                </a>
+                <button type="button" class="ta-btn ta-btn-primary" id="runArchitectBtn">
+                    <span aria-hidden="true">✦</span> Analyze and connect scenes
+                </button>
+                <button type="button" class="ta-btn ta-btn-success" id="applySafeLinksBtn" {% if not proposals %}disabled{% endif %}>
+                    Apply reviewed-safe links
+                </button>
+            </div>
+        </div>
+        <div class="ta-hero-status">
+            <div class="ta-tour-badge">
+                {% if tour.thumbnail_image %}<img src="{{ tour.thumbnail_image.url }}" alt="">{% else %}<span>360°</span>{% endif %}
+            </div>
+            <div>
+                <small>{{ current_organization.name }}</small>
+                <strong>{{ tour.title }}</strong>
+                <span>{{ stats.scene_count }} scenes · {{ stats.portal_count }} navigation anchors</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="ta-run-strip {% if latest_run.status == 'failed' %}is-failed{% elif latest_run.status == 'review' %}is-ready{% elif latest_run.status == 'running' or latest_run.status == 'queued' %}is-running{% endif %}" id="architectRunStrip">
+        <div>
+            <span class="ta-run-label">LATEST ARCHITECT RUN</span>
+            <strong id="architectRunTitle">
+                {% if latest_run %}{{ latest_run.get_status_display }}{% else %}No architecture run yet{% endif %}
+            </strong>
+            <p id="architectRunStage">
+                {% if latest_run %}{{ latest_run.stage|default:"Waiting"|cut:"_"|title }}{% else %}Run Gemini after at least two scenes have completed vision analysis.{% endif %}
+            </p>
+        </div>
+        <div class="ta-run-meta">
+            <span><b id="runSceneCount">{{ latest_run.scene_count|default:stats.scene_count }}</b> scenes</span>
+            <span><b id="runObjectCount">{{ latest_run.object_count|default:stats.object_count }}</b> objects</span>
+            <span><b id="runProposalCount">{{ latest_run.proposal_count|default:stats.proposal_count }}</b> links</span>
+            <span><b id="runAppliedCount">{{ latest_run.applied_count|default:stats.applied_count }}</b> applied</span>
+        </div>
+    </section>
+
+    <section class="ta-stats-grid">
+        <article><span class="ta-stat-icon">◉</span><small>Vision ready</small><strong>{{ stats.vision_ready }}/{{ stats.scene_count }}</strong><p>Scenes with completed multi-frame analysis</p></article>
+        <article><span class="ta-stat-icon">◇</span><small>Visual QA</small><strong>{{ stats.quality_ready }}/{{ stats.scene_count }}</strong><p>Panoramas with clarity and capture guidance</p></article>
+        <article><span class="ta-stat-icon">⌁</span><small>Object catalogue</small><strong>{{ stats.object_count }}</strong><p>{{ stats.client_ready_count }} currently suitable for visitors</p></article>
+        <article><span class="ta-stat-icon">⇄</span><small>Navigation graph</small><strong>{{ stats.proposal_count }}</strong><p>{{ stats.existing_link_count }} existing links · {{ stats.applied_count }} proposals applied</p></article>
+    </section>
+
+    <nav class="ta-tabs" aria-label="Tour architect sections">
+        <button type="button" class="is-active" data-ta-tab="overview">Overview</button>
+        <button type="button" data-ta-tab="quality">Scene quality</button>
+        <button type="button" data-ta-tab="objects">Object catalogue</button>
+        <button type="button" data-ta-tab="navigation">Navigation proposals</button>
+    </nav>
+
+    <section class="ta-panel is-active" data-ta-panel="overview">
+        <div class="ta-overview-grid">
+            <article class="ta-card ta-graph-card">
+                <div class="ta-card-head">
+                    <div><span class="ta-kicker">TOUR GRAPH</span><h2>Proposed visitor flow</h2></div>
+                    <span class="ta-legend"><i></i> Suggested <i class="applied"></i> Applied</span>
+                </div>
+                <div class="ta-graph-wrap"><svg id="tourArchitectureGraph" role="img" aria-label="Scene navigation graph"></svg></div>
+                <p class="ta-card-note">Drag-free visual overview. Edit exact yaw and pitch in Navigation proposals before applying.</p>
+            </article>
+
+            <article class="ta-card ta-checklist-card">
+                <div class="ta-card-head"><div><span class="ta-kicker">READINESS</span><h2>Before publishing</h2></div></div>
+                <ul class="ta-checklist">
+                    <li class="{% if stats.vision_ready == stats.scene_count and stats.scene_count %}is-complete{% endif %}"><span></span><div><strong>Analyze every scene</strong><p>YOLO, OCR and semantic vision should finish for each panorama.</p></div></li>
+                    <li class="{% if stats.quality_ready == stats.scene_count and stats.scene_count %}is-complete{% endif %}"><span></span><div><strong>Review visual quality</strong><p>Replace or enhance scenes where small objects cannot be read reliably.</p></div></li>
+                    <li class="{% if stats.client_ready_count %}is-complete{% endif %}"><span></span><div><strong>Approve useful objects</strong><p>Only verified object cards should be available to the final visitor.</p></div></li>
+                    <li class="{% if stats.applied_count %}is-complete{% endif %}"><span></span><div><strong>Apply navigation links</strong><p>Confirm Gemini proposals and keep manual hotspots untouched.</p></div></li>
+                </ul>
+            </article>
+        </div>
+
+        {% if latest_run.summary.layout_summary %}
+        <article class="ta-card ta-summary-card">
+            <span class="ta-kicker">GEMINI LAYOUT SUMMARY</span>
+            <p>{{ latest_run.summary.layout_summary }}</p>
+            {% if latest_run.summary.warnings %}
+            <div class="ta-warning-list">{% for warning in latest_run.summary.warnings %}<span>{{ warning }}</span>{% endfor %}</div>
+            {% endif %}
+        </article>
+        {% endif %}
+    </section>
+
+    <section class="ta-panel" data-ta-panel="quality">
+        <div class="ta-section-heading"><div><span class="ta-kicker">CAPTURE QUALITY</span><h2>Make every scene easier to explore and scan</h2></div><p>Enhanced previews are suggestions only. Original panoramas are never overwritten.</p></div>
+        <div class="ta-quality-grid">
+            {% for scene in scenes %}
+            <article class="ta-scene-card" data-scene-id="{{ scene.id }}">
+                <div class="ta-scene-media">
+                    {% if scene.thumbnail_image %}<img src="{{ scene.thumbnail_image.url }}" alt="{{ scene.title }}">
+                    {% elif scene.image_360_preview %}<img src="{{ scene.image_360_preview.url }}" alt="{{ scene.title }}">
+                    {% else %}<div class="ta-empty-media">360°</div>{% endif %}
+                    <span class="ta-scene-order">Scene {{ forloop.counter }}</span>
+                    {% if scene.architect_quality.requires_reupload %}<span class="ta-quality-alert">Recapture advised</span>{% endif %}
+                </div>
+                <div class="ta-scene-body">
+                    <div class="ta-scene-title"><div><h3>{{ scene.title }}</h3><p>{{ scene.get_ai_analysis_status_display }}</p></div>
+                        <strong>{% if scene.architect_quality %}{{ scene.architect_quality.overall_score|floatformat:2 }}{% else %}—{% endif %}</strong>
+                    </div>
+                    {% if scene.architect_quality %}
+                    <div class="ta-score-bar"><span style="width:{% widthratio scene.architect_quality.overall_score 1 100 %}%"></span></div>
+                    <div class="ta-mini-metrics">
+                        <span>Sharpness <b>{{ scene.architect_quality.sharpness_score|floatformat:2 }}</b></span>
+                        <span>Exposure <b>{{ scene.architect_quality.exposure_score|floatformat:2 }}</b></span>
+                        <span>Resolution <b>{{ scene.architect_quality.resolution_score|floatformat:2 }}</b></span>
+                    </div>
+                    {% if scene.architect_quality.issues %}<ul class="ta-issues">{% for issue in scene.architect_quality.issues|slice:":3" %}<li><b>{{ issue.title }}</b><span>{{ issue.detail }}</span></li>{% endfor %}</ul>{% endif %}
+                    {% if scene.architect_quality.enhanced_preview %}<a class="ta-preview-link" href="{{ scene.architect_quality.enhanced_preview.url }}" data-preview-image>Compare enhanced preview</a>{% endif %}
+                    {% else %}<p class="ta-muted">Quality analysis will appear after enterprise vision completes.</p>{% endif %}
+                    <button type="button" class="ta-inline-btn" data-rerun-scene data-url="{% url 'dashboard-scene-intelligence-rerun-ajax' current_organization.slug scene.id %}">Re-run scene intelligence</button>
+                </div>
+            </article>
+            {% empty %}<div class="ta-empty-state">Upload at least one panorama in the Tour Builder.</div>{% endfor %}
+        </div>
+    </section>
+
+    <section class="ta-panel" data-ta-panel="objects">
+        <div class="ta-section-heading"><div><span class="ta-kicker">OBJECT CATALOGUE</span><h2>Review what visitors will be able to inspect</h2></div><p>Portal candidates also guide Gemini when placing scene navigation.</p></div>
+        {% for scene in scenes %}
+        <article class="ta-object-scene">
+            <header><div><h3>{{ scene.title }}</h3><p>{{ scene.architect_candidates|length }} visual candidates</p></div><span>{{ scene.order }}</span></header>
+            <div class="ta-object-grid">
+                {% for candidate in scene.architect_candidates %}
+                <article class="ta-object-card is-{{ candidate.review_status }}" data-candidate-id="{{ candidate.id }}">
+                    <div class="ta-object-images">
+                        {% if candidate.crop_image %}<img src="{{ candidate.crop_image.url }}" alt="{{ candidate.title }}">{% else %}<div class="ta-empty-media">No crop</div>{% endif %}
+                        {% if candidate.enhanced_crop_image %}<img src="{{ candidate.enhanced_crop_image.url }}" alt="Enhanced {{ candidate.title }}" class="ta-enhanced-object">{% endif %}
+                        {% if candidate.is_navigation_anchor %}<span class="ta-anchor-badge">Navigation anchor</span>{% endif %}
+                    </div>
+                    <div class="ta-object-body">
+                        <div class="ta-object-heading"><div><small>{{ candidate.get_kind_display }}</small><h4>{{ candidate.title }}</h4></div><b>{{ candidate.confidence|floatformat:2 }}</b></div>
+                        <p>{{ candidate.description|default:"Visual candidate detected in this scene." }}</p>
+                        <div class="ta-object-metrics"><span>Clarity {{ candidate.clarity_score|floatformat:2 }}</span><span>Quality {{ candidate.quality_score|floatformat:2 }}</span></div>
+                        {% if candidate.recommendations %}<div class="ta-object-tip">{{ candidate.recommendations.0 }}</div>{% endif %}
+                        <div class="ta-object-actions">
+                            <button type="button" data-object-action="approve" data-url="{% url 'dashboard-scene-object-review-ajax' current_organization.slug candidate.id %}">Approve</button>
+                            <button type="button" data-object-action="reject" data-url="{% url 'dashboard-scene-object-review-ajax' current_organization.slug candidate.id %}" class="danger">Reject</button>
+                        </div>
+                    </div>
+                </article>
+                {% empty %}<p class="ta-muted">No candidates yet. Re-run scene intelligence after the panorama assets are ready.</p>{% endfor %}
+            </div>
+        </article>
+        {% empty %}<div class="ta-empty-state">No scene objects are available.</div>{% endfor %}
+    </section>
+
+    <section class="ta-panel" data-ta-panel="navigation">
+        <div class="ta-section-heading"><div><span class="ta-kicker">SCENE TOPOLOGY</span><h2>Review Gemini navigation proposals</h2></div><p>Coordinates are Marzipano radians. Applied links create forward and optional return hotspots.</p></div>
+        <div class="ta-links-list">
+            {% for proposal in proposals %}
+            <article class="ta-link-card is-{{ proposal.status }}" data-proposal-id="{{ proposal.id }}" data-url="{% url 'dashboard-scene-link-review-ajax' current_organization.slug proposal.id %}">
+                <div class="ta-link-route">
+                    <div class="ta-route-scene">{% if proposal.from_scene.thumbnail_image %}<img src="{{ proposal.from_scene.thumbnail_image.url }}" alt="">{% endif %}<span><small>FROM</small><strong>{{ proposal.from_scene.title }}</strong></span></div>
+                    <div class="ta-route-arrow"><b>{{ proposal.confidence|floatformat:2 }}</b><span>→</span><small>{{ proposal.get_source_display }}</small></div>
+                    <div class="ta-route-scene">{% if proposal.to_scene.thumbnail_image %}<img src="{{ proposal.to_scene.thumbnail_image.url }}" alt="">{% endif %}<span><small>TO</small><strong>{{ proposal.to_scene.title }}</strong></span></div>
+                </div>
+                <div class="ta-link-detail">
+                    <p>{{ proposal.rationale }}</p>
+                    {% if proposal.evidence.visual_evidence %}<div class="ta-evidence">{% for item in proposal.evidence.visual_evidence %}<span>{{ item }}</span>{% endfor %}</div>{% endif %}
+                    <div class="ta-coordinate-grid">
+                        <label>From yaw<input type="number" step="0.001" data-field="from_yaw" value="{{ proposal.from_yaw }}"></label>
+                        <label>From pitch<input type="number" step="0.001" data-field="from_pitch" value="{{ proposal.from_pitch }}"></label>
+                        <label>Return yaw<input type="number" step="0.001" data-field="to_yaw" value="{{ proposal.to_yaw }}"></label>
+                        <label>Return pitch<input type="number" step="0.001" data-field="to_pitch" value="{{ proposal.to_pitch }}"></label>
+                        <label class="ta-switch-label"><input type="checkbox" data-field="bidirectional" {% if proposal.is_bidirectional %}checked{% endif %}> Create return link</label>
+                    </div>
+                    <div class="ta-link-actions">
+                        <span class="ta-status-pill">{{ proposal.get_status_display }}</span>
+                        <button type="button"
+                                data-visual-editor
+                                data-from-image="{{ proposal.from_scene.image_360_preview_url|default:proposal.from_scene.image_360_url }}"
+                                data-to-image="{{ proposal.to_scene.image_360_preview_url|default:proposal.to_scene.image_360_url }}">
+                            Visual placement
+                        </button>
+                        <button type="button" data-link-action="reject" class="danger">Reject</button>
+                        <button type="button" data-link-action="approve">Save adjustment</button>
+                        <button type="button" data-link-action="apply" class="primary" {% if proposal.status == 'applied' %}disabled{% endif %}>Apply to tour</button>
+                    </div>
+                </div>
+            </article>
+            {% empty %}<div class="ta-empty-state"><strong>No navigation proposals yet.</strong><p>Complete scene vision, then run Gemini Tour Architect.</p></div>{% endfor %}
+        </div>
+    </section>
+</div>
+
+{{ architect_graph|json_script:"tour-architect-graph-data" }}
+<div class="ta-toast" id="architectToast" role="status"></div>
+<div class="ta-image-modal" id="architectImageModal" hidden><button type="button" aria-label="Close">×</button><img alt="Enhanced preview"></div>
+<div class="ta-placement-modal" id="architectPlacementModal" hidden role="dialog" aria-modal="true" aria-labelledby="architectPlacementTitle">
+    <div class="ta-placement-dialog">
+        <header>
+            <div><span class="ta-kicker">VISUAL HOTSPOT EDITOR</span><h2 id="architectPlacementTitle">Fine-tune the navigation position</h2></div>
+            <button type="button" data-placement-close aria-label="Close">×</button>
+        </header>
+        <div class="ta-placement-mode" role="tablist">
+            <button type="button" class="is-active" data-placement-mode="from">Forward hotspot</button>
+            <button type="button" data-placement-mode="to">Return hotspot</button>
+        </div>
+        <div class="ta-placement-stage" id="architectPlacementStage">
+            <img id="architectPlacementImage" alt="Equirectangular scene preview">
+            <span class="ta-placement-pin" id="architectPlacementPin" aria-hidden="true"><i></i></span>
+            <div class="ta-placement-grid" aria-hidden="true"></div>
+        </div>
+        <div class="ta-placement-readout">
+            <span>Yaw <b id="architectPlacementYaw">0.000</b></span>
+            <span>Pitch <b id="architectPlacementPitch">0.000</b></span>
+            <p>Click or drag the marker on the panorama. The proposal remains private until you apply it.</p>
+        </div>
+        <footer>
+            <button type="button" class="ta-btn ta-btn-secondary" data-placement-close>Cancel</button>
+            <button type="button" class="ta-btn ta-btn-primary" id="architectPlacementSave">Use this position</button>
+        </footer>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/tour_architect_ai.js' %}?v=architect-23"></script>
+{% endblock %}

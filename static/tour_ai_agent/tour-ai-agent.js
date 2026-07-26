@@ -28,6 +28,16 @@
     rescan: root.querySelector("[data-vision-rescan]"),
     ask: root.querySelector("[data-vision-ask]"),
   };
+  const resource = {
+    backdrop: root.querySelector("[data-resource-backdrop]"),
+    modal: root.querySelector("[data-resource-modal]"),
+    icon: root.querySelector("[data-resource-icon]"),
+    eyebrow: root.querySelector("[data-resource-eyebrow]"),
+    title: root.querySelector("[data-resource-title]"),
+    body: root.querySelector("[data-resource-body]"),
+    copy: root.querySelector("[data-resource-copy]"),
+    closeButtons: root.querySelectorAll("[data-resource-close]"),
+  };
 
   let visitorId = localStorage.getItem("tw_visitor_id") || "";
   let conversationId = null;
@@ -39,6 +49,8 @@
   let insightRequest = null;
   let activeInsight = null;
   let lastInspectionPoint = null;
+  let activeResource = null;
+  let resourcePreviousFocus = null;
   let longPressMs = Number(cfg.longPressMs || 650);
 
   const csrfToken = (() => {
@@ -107,16 +119,309 @@
     return node;
   }
 
+  function sourceMap(meta = {}) {
+    return new Map((meta.sources || []).filter((item) => item?.citation).map((item) => [String(item.citation), item]));
+  }
+
+  function safeResourceUrl(value) {
+    const raw = text(value).trim();
+    if (!raw) return "";
+    if (/^(mailto:|tel:)/i.test(raw)) return raw;
+    try {
+      const parsed = new URL(raw, window.location.origin);
+      return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function resourceKindFromUrl(url) {
+    if (/^mailto:/i.test(url)) return "email";
+    if (/^tel:/i.test(url)) return "phone";
+    return "url";
+  }
+
+  function createInlineResource(label, info, className = "tour-ai-inline-link") {
+    const button = element("button", className, label);
+    button.type = "button";
+    button.addEventListener("click", () => openResourceModal(info));
+    return button;
+  }
+
+  function appendPlainWithResources(parent, value, meta = {}) {
+    const map = sourceMap(meta);
+    const pattern = /(\*\*[^*\n]+\*\*|`[^`\n]+`|\[[^\]\n]+\]\((?:https?:\/\/|mailto:|tel:)[^)\s]+\)|\[K\d+\]|https?:\/\/[^\s<]+|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|\+?\d[\d\s().-]{7,}\d|\*[^*\n]+\*)/gi;
+    let cursor = 0;
+    let match;
+    while ((match = pattern.exec(value)) !== null) {
+      if (match.index > cursor) parent.appendChild(document.createTextNode(value.slice(cursor, match.index).replace(/\*+/g, "")));
+      const token = match[0];
+      if (token.startsWith("**") && token.endsWith("**")) {
+        const strong = element("strong");
+        appendPlainWithResources(strong, token.slice(2, -2), meta);
+        parent.appendChild(strong);
+      } else if (token.startsWith("`") && token.endsWith("`")) {
+        parent.appendChild(element("code", "", token.slice(1, -1)));
+      } else if (/^\[K\d+\]$/.test(token)) {
+        const citation = token.slice(1, -1);
+        const item = map.get(citation);
+        if (item) {
+          parent.appendChild(createInlineResource(citation.replace("K", ""), {
+            kind: "source",
+            eyebrow: "Verified source",
+            title: item.title || `Source ${citation}`,
+            source: item.source || "Official organization source",
+            summary: item.summary || "",
+            url: item.url || "",
+            citation,
+            copyValue: item.url || item.title || "",
+          }, "tour-ai-citation"));
+        }
+      } else if (token.startsWith("[") && token.includes("](")) {
+        const parsed = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        const url = safeResourceUrl(parsed?.[2]);
+        const label = parsed?.[1] || "View information";
+        if (url) parent.appendChild(createInlineResource(label, {
+          kind: resourceKindFromUrl(url), title: label, url,
+          value: url.replace(/^(mailto:|tel:)/i, ""), copyValue: url.replace(/^(mailto:|tel:)/i, ""),
+        }));
+        else parent.appendChild(document.createTextNode(label));
+      } else if (/^https?:\/\//i.test(token)) {
+        let clean = token;
+        let suffix = "";
+        while (/[.,;:!?)]$/.test(clean)) { suffix = clean.slice(-1) + suffix; clean = clean.slice(0, -1); }
+        const url = safeResourceUrl(clean);
+        if (url) parent.appendChild(createInlineResource(new URL(url).hostname.replace(/^www\./, ""), {
+          kind: "url", title: "Official web address", url, value: url, copyValue: url,
+        }));
+        if (suffix) parent.appendChild(document.createTextNode(suffix));
+      } else if (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(token)) {
+        parent.appendChild(createInlineResource(token, {kind: "email", title: "Public email", value: token, copyValue: token}));
+      } else if ((token.match(/\d/g) || []).length >= 8) {
+        parent.appendChild(createInlineResource(token.trim(), {kind: "phone", title: "Public phone", value: token.trim(), copyValue: token.trim()}));
+      } else if (token.startsWith("*") && token.endsWith("*")) {
+        const em = element("em");
+        appendPlainWithResources(em, token.slice(1, -1), meta);
+        parent.appendChild(em);
+      } else {
+        parent.appendChild(document.createTextNode(token.replace(/\*+/g, "")));
+      }
+      cursor = pattern.lastIndex;
+    }
+    if (cursor < value.length) parent.appendChild(document.createTextNode(value.slice(cursor).replace(/\*+/g, "")));
+  }
+
+  function renderMarkdown(container, value, meta = {}) {
+    clear(container);
+    const lines = text(value).replace(/```(?:markdown|md|text)?/gi, "").replace(/```/g, "").replace(/\r\n?/g, "\n").split("\n");
+    let paragraph = [];
+    let list = null;
+    let listType = "";
+
+    const flushParagraph = () => {
+      const content = paragraph.join(" ").trim();
+      paragraph = [];
+      if (!content) return;
+      const p = element("p");
+      appendPlainWithResources(p, content, meta);
+      container.appendChild(p);
+    };
+    const closeList = () => { list = null; listType = ""; };
+
+    lines.forEach((rawLine) => {
+      const line = rawLine.trim();
+      if (!line) { flushParagraph(); closeList(); return; }
+      const heading = line.match(/^(#{1,3})\s+(.+)$/);
+      if (heading) {
+        flushParagraph(); closeList();
+        const h = element(`h${Math.min(heading[1].length + 2, 5)}`);
+        appendPlainWithResources(h, heading[2], meta);
+        container.appendChild(h);
+        return;
+      }
+      const bullet = line.match(/^[-*•]\s+(.+)$/);
+      const numbered = line.match(/^\d+[.)]\s+(.+)$/);
+      if (bullet || numbered) {
+        flushParagraph();
+        const type = numbered ? "ol" : "ul";
+        if (!list || listType !== type) { closeList(); list = element(type); listType = type; container.appendChild(list); }
+        const li = element("li"); appendPlainWithResources(li, (bullet || numbered)[1], meta); list.appendChild(li);
+        return;
+      }
+      const quote = line.match(/^>\s*(.+)$/);
+      if (quote) {
+        flushParagraph(); closeList();
+        const blockquote = element("blockquote"); appendPlainWithResources(blockquote, quote[1], meta); container.appendChild(blockquote);
+        return;
+      }
+      closeList(); paragraph.push(line);
+    });
+    flushParagraph();
+    if (!container.children.length) container.textContent = text(value).replace(/\*+/g, "");
+  }
+
+  function citedSources(value, meta = {}) {
+    const cited = new Set(text(value).match(/K\d+/g) || []);
+    return (meta.sources || []).filter((item) => cited.has(String(item.citation))).slice(0, 5);
+  }
+
+  function appendSourceStrip(wrap, value, meta = {}) {
+    const sources = citedSources(value, meta);
+    if (!sources.length) return;
+    const strip = element("div", "tour-ai-message-sources");
+    strip.appendChild(element("small", "", "Sources"));
+    sources.forEach((item) => strip.appendChild(createInlineResource(item.citation, {
+      kind: "source", eyebrow: "Verified source", title: item.title || item.citation,
+      source: item.source || "Official organization source", summary: item.summary || "",
+      url: item.url || "", citation: item.citation, copyValue: item.url || item.title || "",
+    }, "tour-ai-source-chip")));
+    wrap.appendChild(strip);
+  }
+
+  function contactItems(contact = {}) {
+    const rows = [];
+    if (contact.phone) rows.push({label: "Phone", kind: "phone", value: contact.phone});
+    if (contact.email) rows.push({label: "Email", kind: "email", value: contact.email});
+    if (contact.website) rows.push({label: "Official website", kind: "url", value: contact.website, url: contact.website});
+    if (contact.booking_url) rows.push({label: "Appointments", kind: "url", value: contact.booking_url, url: contact.booking_url});
+    Object.entries(contact.social_links || {}).forEach(([network, url]) => rows.push({label: network.charAt(0).toUpperCase() + network.slice(1), kind: "url", value: url, url}));
+    return rows;
+  }
+
+  function appendContactCard(wrap, contact = {}, force = false) {
+    const rows = contactItems(contact);
+    if (!rows.length || !force) return;
+    const card = element("div", "tour-ai-contact-card");
+    const heading = element("div", "tour-ai-contact-card-heading");
+    heading.append(element("strong", "", contact.organization_name || "Public contact information"), element("small", "", "Verified organization details"));
+    card.appendChild(heading);
+    rows.slice(0, 5).forEach((item) => {
+      const button = element("button", "tour-ai-contact-row"); button.type = "button";
+      const copy = element("span", "tour-ai-contact-copy"); copy.append(element("small", "", item.label), element("strong", "", item.value));
+      button.append(copy, element("span", "tour-ai-contact-chevron", "›"));
+      button.addEventListener("click", () => openResourceModal({...item, title: item.label, copyValue: item.value}));
+      card.appendChild(button);
+    });
+    wrap.appendChild(card);
+  }
+
   function addMessage(value, role = "assistant", meta = {}) {
     if (!value) return null;
     const wrap = element("div", `tour-ai-message-wrap ${role}`);
-    wrap.appendChild(element("div", `tour-ai-msg ${role}`, value));
+    const bubble = element("div", `tour-ai-msg ${role}`);
+    if (role === "assistant") renderMarkdown(bubble, value, meta);
+    else bubble.textContent = text(value);
+    wrap.appendChild(bubble);
+    if (role === "assistant") {
+      appendSourceStrip(wrap, value, meta);
+      appendContactCard(wrap, meta.contact || {}, meta.intent === "contact" || meta.showContact === true);
+    }
     if (role === "assistant" && meta.provider) {
       wrap.appendChild(element("small", "tour-ai-source", meta.degraded ? "Twinscopes AI · Local mode" : "Twinscopes AI"));
     }
     messages.appendChild(wrap);
     messages.scrollTop = messages.scrollHeight;
     return wrap;
+  }
+
+  function iconForResource(kind) {
+    return ({phone: "☎", email: "@", source: "✓", contact_collection: "i", url: "↗"})[kind] || "i";
+  }
+
+  function resourceRow(label, value, info) {
+    const button = element("button", "tour-ai-resource-row"); button.type = "button";
+    const copy = element("span", "tour-ai-resource-row-copy"); copy.append(element("small", "", label), element("strong", "", value));
+    button.append(copy, element("span", "tour-ai-resource-row-arrow", "›"));
+    button.addEventListener("click", () => openResourceModal(info));
+    return button;
+  }
+
+  function renderResourceBody(info) {
+    clear(resource.body);
+    if (info.kind === "contact_collection") {
+      const intro = element("p", "tour-ai-resource-intro", "Select a verified contact detail to view it inside Twinscopes.");
+      resource.body.appendChild(intro);
+      const rows = element("div", "tour-ai-resource-list");
+      contactItems(info.contact || {}).forEach((item) => rows.appendChild(resourceRow(item.label, item.value, {...item, title: item.label, copyValue: item.value})));
+      resource.body.appendChild(rows);
+      if (!rows.children.length) resource.body.appendChild(element("div", "tour-ai-resource-empty", "No public contact details are currently available."));
+      return;
+    }
+
+    if (info.kind === "source") {
+      const trust = element("div", "tour-ai-resource-trust"); trust.append(element("span", "", "✓"), element("strong", "", info.citation ? `${info.citation} · Verified source` : "Verified source"));
+      resource.body.appendChild(trust);
+      if (info.summary) { const summary = element("p", "tour-ai-resource-summary"); summary.textContent = info.summary; resource.body.appendChild(summary); }
+      if (info.source) resource.body.appendChild(resourceRow("Source", info.source, {kind: "text", title: "Source", value: info.source, copyValue: info.source}));
+      if (info.url) resource.body.appendChild(resourceRow("Web address", info.url, {kind: "url", title: info.title || "Web address", url: info.url, value: info.url, copyValue: info.url}));
+      return;
+    }
+
+    const value = info.value || info.url || "";
+    const panel = element("div", "tour-ai-resource-value-card");
+    panel.append(element("small", "", info.kind === "phone" ? "PUBLIC PHONE" : info.kind === "email" ? "PUBLIC EMAIL" : info.kind === "url" ? "CONNECTED WEB ADDRESS" : "INFORMATION"), element("strong", "", value));
+    resource.body.appendChild(panel);
+    if (info.kind === "url") {
+      let host = "Official connected source";
+      try { host = new URL(info.url).hostname.replace(/^www\./, ""); } catch (_) {}
+      resource.body.appendChild(element("p", "tour-ai-resource-note", `This address belongs to ${host}. Twinscopes displays it here without sending you away from the virtual tour.`));
+    } else if (info.kind === "phone" || info.kind === "email") {
+      resource.body.appendChild(element("p", "tour-ai-resource-note", "This public contact detail is displayed inside Twinscopes. Use Copy information to save it."));
+    }
+  }
+
+  function portalizeResourceModal() {
+    if (resource.modal?.dataset.portalized === "1") return;
+    document.body.append(resource.backdrop, resource.modal);
+    resource.modal.dataset.portalized = "1";
+  }
+
+  function openResourceModal(info = {}) {
+    if (!resource.modal || !resource.backdrop) return;
+    portalizeResourceModal();
+    activeResource = info;
+    resourcePreviousFocus = document.activeElement;
+    resource.icon.textContent = iconForResource(info.kind);
+    resource.eyebrow.textContent = info.eyebrow || (info.kind === "source" ? "Verified source" : info.kind === "contact_collection" ? "Organization contact" : "Verified information");
+    resource.title.textContent = info.title || "Information";
+    renderResourceBody(info);
+    resource.copy.hidden = !info.copyValue;
+    resource.copy.textContent = "Copy information";
+    resource.backdrop.hidden = false; resource.modal.hidden = false;
+    document.documentElement.classList.add("tour-ai-resource-open");
+    requestAnimationFrame(() => { resource.backdrop.classList.add("is-open"); resource.modal.classList.add("is-open"); resource.modal.querySelector("[data-resource-close]")?.focus(); });
+    sendSignal("ai_resource_opened", {kind: info.kind || "information", citation: info.citation || ""});
+  }
+
+  function closeResourceModal() {
+    if (!resource.modal || resource.modal.hidden) return;
+    resource.backdrop.classList.remove("is-open"); resource.modal.classList.remove("is-open");
+    document.documentElement.classList.remove("tour-ai-resource-open");
+    window.setTimeout(() => { resource.backdrop.hidden = true; resource.modal.hidden = true; }, 170);
+    const focusTarget = resourcePreviousFocus; activeResource = null; resourcePreviousFocus = null;
+    if (focusTarget?.focus) window.setTimeout(() => focusTarget.focus(), 180);
+  }
+
+  async function copyActiveResource() {
+    const value = text(activeResource?.copyValue).trim(); if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      resource.copy.textContent = "Copied";
+    } catch (_) {
+      const area = document.createElement("textarea"); area.value = value; area.style.position = "fixed"; area.style.opacity = "0"; document.body.appendChild(area); area.select(); document.execCommand("copy"); area.remove(); resource.copy.textContent = "Copied";
+    }
+    window.setTimeout(() => { if (!resource.copy.hidden) resource.copy.textContent = "Copy information"; }, 1600);
+  }
+
+  async function showContactInformation() {
+    try {
+      await bootstrap();
+      const data = await post(cfg.actionUrl, payload({action_type: "contact_business", payload: {}}));
+      openResourceModal({kind: "contact_collection", title: data.contact?.organization_name || "Contact information", contact: data.contact || {}});
+    } catch (error) {
+      reportTechnicalError("AI-CONTACT", error, {tourId: cfg.tourId});
+      addMessage(friendlyRequestFailure(), "assistant", {degraded: true, provider: "local"});
+    }
   }
 
   function addProductCards(products = []) {
@@ -361,6 +666,10 @@
   root.querySelector("[data-ai-close]")?.addEventListener("click", closePanel);
   form.addEventListener("submit", (event) => { event.preventDefault(); sendMessage(input.value); });
   root.querySelectorAll("[data-ai-prompt]").forEach((button) => button.addEventListener("click", () => sendMessage(button.dataset.aiPrompt)));
+  root.querySelector("[data-ai-contact]")?.addEventListener("click", showContactInformation);
+  resource.closeButtons?.forEach((button) => button.addEventListener("click", closeResourceModal));
+  resource.backdrop?.addEventListener("click", closeResourceModal);
+  resource.copy?.addEventListener("click", copyActiveResource);
   root.querySelectorAll("[data-vision-close],[data-vision-dismiss]").forEach((button) => button.addEventListener("click", closeVision));
   vision.backdrop?.addEventListener("click", closeVision);
   vision.rescan?.addEventListener("click", () => {
@@ -394,7 +703,11 @@
   window.addEventListener("twinscopes:vision-long-press", (event) => inspectPoint(event.detail));
   window.addEventListener("resize", updateMobileOffset, {passive: true});
   window.addEventListener("orientationchange", () => setTimeout(updateMobileOffset, 250), {passive: true});
-  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !vision.sheet.hidden) closeVision(); });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (resource.modal && !resource.modal.hidden) closeResourceModal();
+    else if (!vision.sheet.hidden) closeVision();
+  });
 
   window.TwinscopesAgent = {
     open: openPanel, close: closePanel,

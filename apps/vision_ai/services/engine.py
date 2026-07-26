@@ -485,6 +485,22 @@ def execute_analysis(analysis: VisionAnalysis) -> VisionAnalysis:
                 "ai_analysis_status", "ai_analysis", "ai_analysis_error",
                 "ai_analyzed_at", "updated_at",
             ))
+        if analysis.status in {VisionAnalysis.Status.SUCCEEDED, VisionAnalysis.Status.PARTIAL}:
+            try:
+                from apps.tours.intelligence.pipeline import postprocess_completed_analysis
+
+                analysis.raw_results = {
+                    **(analysis.raw_results or {}),
+                    "tour_architect_postprocess": postprocess_completed_analysis(analysis),
+                }
+                analysis.save(update_fields=("raw_results", "updated_at"))
+            except Exception:
+                # Object catalogue and topology preparation must never turn a
+                # successful vision analysis into a failed public scan.
+                logger.exception(
+                    "Tour Architect post-processing failed for analysis %s",
+                    analysis.pk,
+                )
         return analysis
 
     except Exception as exc:

@@ -25,7 +25,10 @@ from apps.vendors.models import AppointmentType, Product
 from apps.tours.forms import TourForm
 from django.core.cache import cache
 
-from .models import Tour, Scene360, Hotspot
+from .models import (
+    Tour, Scene360, Hotspot, SceneVisualQuality, SceneObjectCandidate,
+    TourArchitectureRun, SceneLinkProposal,
+)
 from .seo import build_tour_preview_seo
 from .services import (
     generate_unique_tour_slug,
@@ -959,6 +962,18 @@ def tour_builder_view(request, organization_slug, tour_id):
 
     scenes = list(tour.scenes.all().order_by("order", "id"))
     prefetch_map = _build_prefetch_map(request, scenes)
+    latest_architect_run = TourArchitectureRun.objects.filter(tour=tour).order_by("-created_at").first()
+    architect_stats = {
+        "vision_ready": sum(1 for scene in scenes if scene.ai_analysis_status == "ready"),
+        "objects": SceneObjectCandidate.objects.filter(scene__tour=tour).exclude(
+            review_status=SceneObjectCandidate.ReviewStatus.HIDDEN
+        ).count(),
+        "anchors": SceneObjectCandidate.objects.filter(
+            scene__tour=tour, is_navigation_anchor=True
+        ).exclude(review_status=SceneObjectCandidate.ReviewStatus.HIDDEN).count(),
+        "proposals": latest_architect_run.proposal_count if latest_architect_run else 0,
+        "applied": latest_architect_run.applied_count if latest_architect_run else 0,
+    }
 
     scenes_payload = [
         _serialize_scene_payload(
@@ -971,33 +986,42 @@ def tour_builder_view(request, organization_slug, tour_id):
     ]
 
     context = {
-    "tour": tour,
-    "scenes": scenes,
-    "scenes_json": scenes_payload,
-    "current_organization": organization,
-    "current_place": tour.place,
-    "google_maps_api_key": getattr(settings, "GOOGLE_MAPS_API_KEY", ""),
+        "tour": tour,
+        "scenes": scenes,
+        "scenes_json": scenes_payload,
+        "current_organization": organization,
+        "current_place": tour.place,
+        "google_maps_api_key": getattr(settings, "GOOGLE_MAPS_API_KEY", ""),
 
-    # Utilisé dans builder.html :
-    # pipelineStatusUrl: "{{ pipeline_status_url|default:'' }}"
-    "pipeline_status_url": reverse(
-        "dashboard-tour-scenes-pipeline-status-ajax",
-        kwargs={
-            "organization_slug": organization.slug,
-            "tour_id": tour.id,
-        },
-    ),
+        # Utilisé dans builder.html :
+        # pipelineStatusUrl: "{{ pipeline_status_url|default:'' }}"
+        "pipeline_status_url": reverse(
+            "dashboard-tour-scenes-pipeline-status-ajax",
+            kwargs={
+                "organization_slug": organization.slug,
+                "tour_id": tour.id,
+            },
+        ),
 
-    # Utilisé dans builder.html :
-    # queueTourPrefetchUrl: "{{ queue_tour_prefetch_url|default:'' }}"
-    "queue_tour_prefetch_url": reverse(
-        "dashboard-queue-tour-prefetch-ajax",
-        kwargs={
-            "organization_slug": organization.slug,
-            "tour_id": tour.id,
-        },
-    ),
-}
+        # Utilisé dans builder.html :
+        # queueTourPrefetchUrl: "{{ queue_tour_prefetch_url|default:'' }}"
+        "queue_tour_prefetch_url": reverse(
+            "dashboard-queue-tour-prefetch-ajax",
+            kwargs={
+                "organization_slug": organization.slug,
+                "tour_id": tour.id,
+            },
+        ),
+        "latest_architect_run": latest_architect_run,
+        "architect_stats": architect_stats,
+        "architect_url": reverse(
+            "dashboard-tour-architect",
+            kwargs={
+                "organization_slug": organization.slug,
+                "tour_id": tour.id,
+            },
+        ),
+    }
 
     return render(request, "dashboard/tours/builder.html", context)
 
@@ -1823,3 +1847,342 @@ def delete_hotspot_ajax_view(request, organization_slug, hotspot_id):
         "success": True,
         "deleted_hotspot_id": hotspot_id,
     })
+
+# =============================================================================
+# AI TOUR ARCHITECT DASHBOARD
+# =============================================================================
+
+@login_required
+def tour_architect_view(request, organization_slug, tour_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return render(request, "403.html", status=403)
+
+    active_candidates = Prefetch(
+        "object_candidates",
+        queryset=SceneObjectCandidate.objects.exclude(
+            review_status=SceneObjectCandidate.ReviewStatus.HIDDEN
+        ).order_by("-is_navigation_anchor", "-confidence", "id"),
+        to_attr="architect_candidates",
+    )
+    tour = get_object_or_404(
+        Tour.objects.select_related("organization", "place").prefetch_related(
+            Prefetch(
+                "scenes",
+                queryset=Scene360.objects.select_related("visual_quality").prefetch_related(active_candidates).order_by("order", "id"),
+                to_attr="architect_scenes",
+            )
+        ),
+        pk=tour_id,
+        organization=organization,
+    )
+    latest_run = (
+        TourArchitectureRun.objects.filter(tour=tour)
+        .prefetch_related(
+            Prefetch(
+                "proposals",
+                queryset=SceneLinkProposal.objects.select_related(
+                    "from_scene", "to_scene", "from_anchor", "to_anchor",
+                    "applied_from_hotspot", "applied_reverse_hotspot",
+                ).order_by("from_scene__order", "-confidence"),
+                to_attr="architect_proposals",
+            )
+        )
+        .order_by("-created_at")
+        .first()
+    )
+    scenes = list(getattr(tour, "architect_scenes", []))
+    for scene in scenes:
+        scene.architect_quality = getattr(scene, "visual_quality", None)
+    proposals = list(getattr(latest_run, "architect_proposals", [])) if latest_run else []
+    existing_navigation_hotspots = list(
+        Hotspot.objects.filter(
+            scene__tour=tour,
+            target_scene__isnull=False,
+            type__in=[Hotspot.Type.NAVIGATE, Hotspot.Type.FLOOR, Hotspot.Type.DOOR],
+        ).select_related("scene", "target_scene").order_by("scene__order", "id")
+    )
+    object_count = sum(len(getattr(scene, "architect_candidates", [])) for scene in scenes)
+    client_ready_count = sum(
+        1 for scene in scenes for candidate in getattr(scene, "architect_candidates", []) if candidate.client_ready
+    )
+    portal_count = sum(
+        1 for scene in scenes for candidate in getattr(scene, "architect_candidates", []) if candidate.is_navigation_anchor
+    )
+    quality_ready = sum(
+        1 for scene in scenes if getattr(scene.architect_quality, "status", "") == SceneVisualQuality.Status.READY
+    )
+    vision_ready = sum(1 for scene in scenes if scene.ai_analysis_status == "ready")
+    context = {
+        "current_organization": organization,
+        "tour": tour,
+        "scenes": scenes,
+        "latest_run": latest_run,
+        "proposals": proposals,
+        "stats": {
+            "scene_count": len(scenes),
+            "vision_ready": vision_ready,
+            "quality_ready": quality_ready,
+            "object_count": object_count,
+            "client_ready_count": client_ready_count,
+            "portal_count": portal_count,
+            "proposal_count": len(proposals),
+            "applied_count": sum(1 for item in proposals if item.status == SceneLinkProposal.Status.APPLIED),
+            "existing_link_count": len(existing_navigation_hotspots),
+        },
+        "architect_graph": {
+            "nodes": [
+                {
+                    "id": scene.pk,
+                    "title": scene.title,
+                    "order": scene.order,
+                    "quality": round(float(getattr(scene.architect_quality, "overall_score", 0) or 0), 4),
+                    "image": scene.thumbnail_url or scene.image_360_preview_url or "",
+                }
+                for scene in scenes
+            ],
+            "edges": [
+                {
+                    "id": f"hotspot-{hotspot.pk}",
+                    "from": hotspot.scene_id,
+                    "to": hotspot.target_scene_id,
+                    "confidence": float((hotspot.payload or {}).get("confidence") or (0.96 if hotspot.is_ai_generated else 1.0)),
+                    "status": "applied",
+                    "bidirectional": False,
+                    "existing": True,
+                    "manual": not hotspot.is_ai_generated,
+                }
+                for hotspot in existing_navigation_hotspots
+            ] + [
+                {
+                    "id": proposal.pk,
+                    "from": proposal.from_scene_id,
+                    "to": proposal.to_scene_id,
+                    "confidence": proposal.confidence,
+                    "status": proposal.status,
+                    "bidirectional": proposal.is_bidirectional,
+                    "existing": False,
+                }
+                for proposal in proposals
+            ],
+        },
+    }
+    return render(request, "dashboard/tours/architect.html", context)
+
+
+@login_required
+@require_POST
+def queue_tour_architect_ajax_view(request, organization_slug, tour_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+    tour = get_object_or_404(Tour, pk=tour_id, organization=organization)
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        payload = {}
+    from apps.tours.intelligence.dispatch import dispatch_tour_architecture
+
+    dispatch = dispatch_tour_architecture(
+        tour,
+        force=_payload_bool(payload.get("force"), default=False),
+        mode=str(payload.get("mode") or "auto"),
+        user=request.user,
+    )
+    return JsonResponse({
+        "success": True,
+        "run_id": str(dispatch.run.pk),
+        "created": dispatch.created,
+        "mode": dispatch.mode,
+        "task_id": dispatch.task_id,
+        "status_url": reverse(
+            "dashboard-tour-architect-status-ajax",
+            kwargs={
+                "organization_slug": organization.slug,
+                "tour_id": tour.pk,
+                "run_id": dispatch.run.pk,
+            },
+        ),
+    })
+
+
+@login_required
+@require_GET
+def tour_architect_status_ajax_view(request, organization_slug, tour_id, run_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+    run = get_object_or_404(
+        TourArchitectureRun.objects.select_related("tour"),
+        pk=run_id,
+        tour_id=tour_id,
+        organization=organization,
+    )
+    return JsonResponse({
+        "success": True,
+        "run": {
+            "id": str(run.pk),
+            "status": run.status,
+            "stage": run.stage,
+            "scene_count": run.scene_count,
+            "object_count": run.object_count,
+            "proposal_count": run.proposal_count,
+            "applied_count": run.applied_count,
+            "summary": run.summary,
+            "error_code": run.error_code,
+            "started_at": run.started_at.isoformat() if run.started_at else None,
+            "finished_at": run.finished_at.isoformat() if run.finished_at else None,
+        },
+    })
+
+
+@login_required
+@require_POST
+def review_scene_object_ajax_view(request, organization_slug, candidate_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+    candidate = get_object_or_404(
+        SceneObjectCandidate.objects.select_related("scene", "scene__tour"),
+        pk=candidate_id,
+        scene__organization=organization,
+    )
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "Invalid JSON"}, status=400)
+    action = str(payload.get("action") or "").lower()
+    mapping = {
+        "approve": SceneObjectCandidate.ReviewStatus.APPROVED,
+        "reject": SceneObjectCandidate.ReviewStatus.REJECTED,
+        "hide": SceneObjectCandidate.ReviewStatus.HIDDEN,
+        "restore": SceneObjectCandidate.ReviewStatus.SUGGESTED,
+    }
+    if action not in mapping:
+        return JsonResponse({"detail": "Unsupported action"}, status=400)
+    candidate.review_status = mapping[action]
+    if action == "approve":
+        candidate.client_ready = True
+    elif action in {"reject", "hide"}:
+        candidate.client_ready = False
+    candidate.save(update_fields=("review_status", "client_ready", "updated_at"))
+    return JsonResponse({
+        "success": True,
+        "candidate": {
+            "id": candidate.pk,
+            "review_status": candidate.review_status,
+            "client_ready": candidate.client_ready,
+        },
+    })
+
+
+@login_required
+@require_POST
+def rerun_scene_intelligence_ajax_view(request, organization_slug, scene_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+    scene = get_object_or_404(Scene360.objects.select_related("tour"), pk=scene_id, organization=organization)
+    from apps.vision_ai.services.queueing import dispatch_scene_analysis
+
+    dispatch = dispatch_scene_analysis(
+        scene,
+        force=True,
+        requested_providers=["yolo", "paddleocr", "gemini", "openai"],
+        mode="auto",
+    )
+    return JsonResponse({
+        "success": True,
+        "analysis_id": str(dispatch.analysis.pk),
+        "mode": dispatch.mode,
+        "task_id": dispatch.task_id,
+    })
+
+
+@login_required
+@require_POST
+def review_scene_link_ajax_view(request, organization_slug, proposal_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+    proposal = get_object_or_404(
+        SceneLinkProposal.objects.select_related("tour", "from_scene", "to_scene", "run"),
+        pk=proposal_id,
+        tour__organization=organization,
+    )
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "Invalid JSON"}, status=400)
+    action = str(payload.get("action") or "").lower()
+    editable_fields = ("from_yaw", "from_pitch", "to_yaw", "to_pitch")
+    changed = []
+    for field in editable_fields:
+        if field in payload:
+            try:
+                value = float(payload[field])
+            except (TypeError, ValueError):
+                continue
+            if field.endswith("yaw"):
+                value = max(-3.14159, min(3.14159, value))
+            else:
+                value = max(-1.2, min(1.2, value))
+            setattr(proposal, field, value)
+            changed.append(field)
+    if "bidirectional" in payload:
+        proposal.is_bidirectional = _payload_bool(payload.get("bidirectional"), default=True)
+        changed.append("is_bidirectional")
+    if changed:
+        proposal.manual_adjusted = True
+        changed.append("manual_adjusted")
+
+    if action == "reject":
+        proposal.status = SceneLinkProposal.Status.REJECTED
+    elif action in {"approve", "update"}:
+        proposal.status = SceneLinkProposal.Status.APPROVED
+    elif action == "apply":
+        if changed:
+            proposal.status = SceneLinkProposal.Status.APPROVED
+            proposal.save(update_fields=tuple(dict.fromkeys(changed + ["status", "updated_at"])))
+        from apps.tours.intelligence.scene_architect import apply_link_proposal
+
+        proposal = apply_link_proposal(proposal, user=request.user)
+        return JsonResponse({"success": True, "status": proposal.status, "proposal_id": proposal.pk})
+    else:
+        return JsonResponse({"detail": "Unsupported action"}, status=400)
+    proposal.reviewed_by = request.user
+    proposal.reviewed_at = timezone.now()
+    proposal.save(update_fields=tuple(dict.fromkeys(changed + ["status", "reviewed_by", "reviewed_at", "updated_at"])))
+    return JsonResponse({"success": True, "status": proposal.status, "proposal_id": proposal.pk})
+
+
+@login_required
+@require_POST
+def bulk_apply_scene_links_ajax_view(request, organization_slug, tour_id):
+    organization = _get_org_or_403(request, organization_slug)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+    tour = get_object_or_404(Tour, pk=tour_id, organization=organization)
+    latest_run = TourArchitectureRun.objects.filter(tour=tour).order_by("-created_at").first()
+    if not latest_run:
+        return JsonResponse({"detail": "No architecture run"}, status=404)
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        payload = {}
+    threshold = max(0.0, min(1.0, float(payload.get("min_confidence") or 0.84)))
+    from apps.tours.intelligence.scene_architect import apply_link_proposal
+
+    applied = 0
+    conflicts = 0
+    queryset = latest_run.proposals.filter(
+        status__in=[SceneLinkProposal.Status.SUGGESTED, SceneLinkProposal.Status.APPROVED],
+        confidence__gte=threshold,
+    ).order_by("-confidence")
+    for proposal in queryset:
+        result = apply_link_proposal(proposal, user=request.user)
+        if result.status == SceneLinkProposal.Status.APPLIED:
+            applied += 1
+        elif result.status == SceneLinkProposal.Status.CONFLICT:
+            conflicts += 1
+    return JsonResponse({"success": True, "applied": applied, "conflicts": conflicts})

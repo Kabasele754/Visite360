@@ -117,6 +117,13 @@ def tour_photo_upload_to(instance, filename):
     return f"tours/photos/{_safe_webp_name(filename, 'tour-photo')}"
 
 
+def tour_intelligence_upload_to(instance, filename):
+    scene_id = getattr(instance, "scene_id", None) or "scene"
+    stem = slugify(Path(filename).stem) or "visual"
+    suffix = Path(filename).suffix.lower() or ".jpg"
+    return f"tour-intelligence/{scene_id}/{stem}-{uuid.uuid4().hex[:10]}{suffix}"
+
+
 # -----------------------------------------------------------------------------
 # Tour
 # -----------------------------------------------------------------------------
@@ -766,6 +773,252 @@ class Hotspot(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
+
+
+# -----------------------------------------------------------------------------
+# AI Tour Architect — staged object catalogue, quality review and scene topology
+# -----------------------------------------------------------------------------
+class SceneVisualQuality(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        READY = "ready", "Ready"
+        FAILED = "failed", "Failed"
+
+    scene = models.OneToOneField(
+        Scene360,
+        on_delete=models.CASCADE,
+        related_name="visual_quality",
+    )
+    analysis = models.ForeignKey(
+        "vision_ai.VisionAnalysis",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="scene_quality_assessments",
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    overall_score = models.FloatField(default=0)
+    sharpness_score = models.FloatField(default=0)
+    exposure_score = models.FloatField(default=0)
+    contrast_score = models.FloatField(default=0)
+    resolution_score = models.FloatField(default=0)
+    seam_score = models.FloatField(default=0)
+    horizon_score = models.FloatField(default=0)
+    source_width = models.PositiveIntegerField(default=0)
+    source_height = models.PositiveIntegerField(default=0)
+    requires_reupload = models.BooleanField(default=False)
+    enhanced_preview = models.ImageField(upload_to=tour_intelligence_upload_to, null=True, blank=True)
+    issues = models.JSONField(default=list, blank=True)
+    recommendations = models.JSONField(default=list, blank=True)
+    metrics = models.JSONField(default=dict, blank=True)
+    error_code = models.CharField(max_length=80, blank=True, default="")
+    analyzed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("scene__order", "scene_id")
+        indexes = [
+            models.Index(fields=("status", "overall_score")),
+            models.Index(fields=("requires_reupload", "overall_score")),
+        ]
+
+    def __str__(self):
+        return f"Quality {self.scene_id}: {self.overall_score:.0%}"
+
+
+class SceneObjectCandidate(TimeStampedModel):
+    class Kind(models.TextChoices):
+        OBJECT = "object", "Object"
+        TEXT = "text", "Text"
+        PORTAL = "portal", "Navigation anchor"
+
+    class ReviewStatus(models.TextChoices):
+        SUGGESTED = "suggested", "Suggested"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        HIDDEN = "hidden", "Hidden"
+
+    scene = models.ForeignKey(Scene360, on_delete=models.CASCADE, related_name="object_candidates")
+    analysis = models.ForeignKey(
+        "vision_ai.VisionAnalysis",
+        on_delete=models.CASCADE,
+        related_name="tour_object_candidates",
+    )
+    detection = models.ForeignKey(
+        "vision_ai.VisionDetection",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="tour_object_candidates",
+    )
+    frame = models.ForeignKey(
+        "vision_ai.VisionFrame",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="tour_object_candidates",
+    )
+    fingerprint = models.CharField(max_length=64, db_index=True)
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.OBJECT, db_index=True)
+    label = models.CharField(max_length=180, db_index=True)
+    title = models.CharField(max_length=240)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=120, blank=True)
+    confidence = models.FloatField(default=0)
+    bbox = models.JSONField(default=list, blank=True)
+    yaw = models.FloatField(default=0, help_text="Panorama yaw in radians.")
+    pitch = models.FloatField(default=0, help_text="Panorama pitch in radians.")
+    crop_image = models.ImageField(upload_to=tour_intelligence_upload_to, null=True, blank=True)
+    enhanced_crop_image = models.ImageField(upload_to=tour_intelligence_upload_to, null=True, blank=True)
+    clarity_score = models.FloatField(default=0)
+    quality_score = models.FloatField(default=0)
+    is_navigation_anchor = models.BooleanField(default=False, db_index=True)
+    client_ready = models.BooleanField(default=False, db_index=True)
+    review_status = models.CharField(
+        max_length=20,
+        choices=ReviewStatus.choices,
+        default=ReviewStatus.SUGGESTED,
+        db_index=True,
+    )
+    issues = models.JSONField(default=list, blank=True)
+    recommendations = models.JSONField(default=list, blank=True)
+    source_providers = models.JSONField(default=list, blank=True)
+    payload = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("scene__order", "-confidence", "id")
+        constraints = [
+            models.UniqueConstraint(fields=("analysis", "fingerprint"), name="unique_scene_object_candidate"),
+        ]
+        indexes = [
+            models.Index(fields=("scene", "review_status", "client_ready")),
+            models.Index(fields=("scene", "is_navigation_anchor", "confidence")),
+            models.Index(fields=("kind", "confidence")),
+        ]
+
+    def __str__(self):
+        return f"{self.scene.title}: {self.title}"
+
+
+class TourArchitectureRun(TimeStampedModel):
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        RUNNING = "running", "Running"
+        REVIEW = "review", "Ready for review"
+        APPLIED = "applied", "Applied"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="tour_architecture_runs")
+    tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="architecture_runs")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED, db_index=True)
+    stage = models.CharField(max_length=80, blank=True, default="queued")
+    provider = models.CharField(max_length=32, blank=True, default="gemini")
+    model_name = models.CharField(max_length=120, blank=True, default="")
+    scene_count = models.PositiveIntegerField(default=0)
+    object_count = models.PositiveIntegerField(default=0)
+    proposal_count = models.PositiveIntegerField(default=0)
+    applied_count = models.PositiveIntegerField(default=0)
+    summary = models.JSONField(default=dict, blank=True)
+    error_code = models.CharField(max_length=120, blank=True, default="")
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="tour_architecture_runs",
+    )
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=("tour", "status", "created_at")),
+            models.Index(fields=("organization", "status", "created_at")),
+        ]
+
+    def __str__(self):
+        return f"Architect {self.tour_id} — {self.status}"
+
+
+class SceneLinkProposal(TimeStampedModel):
+    class Status(models.TextChoices):
+        SUGGESTED = "suggested", "Suggested"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        APPLIED = "applied", "Applied"
+        CONFLICT = "conflict", "Conflict"
+
+    class Source(models.TextChoices):
+        GEMINI = "gemini", "Gemini"
+        DETERMINISTIC = "deterministic", "Deterministic fallback"
+        MANUAL = "manual", "Manual"
+
+    run = models.ForeignKey(TourArchitectureRun, on_delete=models.CASCADE, related_name="proposals")
+    tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="scene_link_proposals")
+    from_scene = models.ForeignKey(Scene360, on_delete=models.CASCADE, related_name="outgoing_link_proposals")
+    to_scene = models.ForeignKey(Scene360, on_delete=models.CASCADE, related_name="incoming_link_proposals")
+    from_anchor = models.ForeignKey(
+        SceneObjectCandidate,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="outgoing_link_proposals",
+    )
+    to_anchor = models.ForeignKey(
+        SceneObjectCandidate,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="incoming_link_proposals",
+    )
+    from_yaw = models.FloatField(default=0)
+    from_pitch = models.FloatField(default=0)
+    to_yaw = models.FloatField(default=0)
+    to_pitch = models.FloatField(default=0)
+    confidence = models.FloatField(default=0)
+    rationale = models.TextField(blank=True)
+    evidence = models.JSONField(default=dict, blank=True)
+    source = models.CharField(max_length=24, choices=Source.choices, default=Source.GEMINI)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUGGESTED, db_index=True)
+    is_bidirectional = models.BooleanField(default=True)
+    manual_adjusted = models.BooleanField(default=False)
+    applied_from_hotspot = models.ForeignKey(
+        Hotspot,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="architect_primary_proposals",
+    )
+    applied_reverse_hotspot = models.ForeignKey(
+        Hotspot,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="architect_reverse_proposals",
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reviewed_scene_link_proposals",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("from_scene__order", "-confidence", "id")
+        constraints = [
+            models.UniqueConstraint(fields=("run", "from_scene", "to_scene"), name="unique_architect_link_per_run"),
+        ]
+        indexes = [
+            models.Index(fields=("tour", "status", "confidence")),
+            models.Index(fields=("from_scene", "to_scene", "status")),
+        ]
+
+    def __str__(self):
+        return f"{self.from_scene.title} → {self.to_scene.title} ({self.status})"
 
 # -----------------------------------------------------------------------------
 # TourPhoto

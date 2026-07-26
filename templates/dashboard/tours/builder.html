@@ -1776,6 +1776,17 @@
         }
     }
 
+
+    .ai-architect-launch{background:linear-gradient(135deg,#0891b2,#22d3ee)!important;color:#00131b!important;border-color:transparent!important;font-weight:900!important;box-shadow:0 12px 28px rgba(6,182,212,.22)!important}
+    .architect-builder-card{background:linear-gradient(145deg,rgba(8,145,178,.10),transparent 58%),var(--sb-card)!important}
+    body.builder-dark .architect-builder-card{background:linear-gradient(145deg,rgba(34,211,238,.11),transparent 58%),var(--sb-card-dark)!important}
+    .architect-builder-kicker{display:block;color:#0891b2;font-size:10px;font-weight:950;letter-spacing:.15em}
+    body.builder-dark .architect-builder-kicker{color:#67e8f9}
+    .architect-builder-state{padding:6px 9px;border-radius:10px;background:rgba(6,182,212,.10);color:#0e7490;font-size:10px;font-weight:900}
+    body.builder-dark .architect-builder-state{color:#67e8f9}
+    .architect-builder-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.architect-builder-metrics span{padding:9px;border:1px solid var(--sb-border);border-radius:12px;color:var(--sb-muted);font-size:10px}.architect-builder-metrics b{display:block;color:var(--sb-text);font-size:16px}body.builder-dark .architect-builder-metrics span{border-color:var(--sb-border-dark);color:var(--sb-muted-dark)}body.builder-dark .architect-builder-metrics b{color:var(--sb-text-dark)}
+    .architect-builder-open{display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:13px;background:#0e7490;color:white!important;font-size:12px;font-weight:900;text-decoration:none}
+
 </style>
 {% endblock %}
 
@@ -1974,6 +1985,7 @@
         <button class="pill-btn" type="button" onclick="window.location.href='{{ request.path|cut:'/builder/' }}/preview/'">Preview</button>
         <button class="pill-btn" type="button" id="setCurrentViewBtn">Set current view</button>
         <button class="pill-btn" type="button" id="createCenterHotspotBtn">Hotspot at center</button>
+        <button class="pill-btn ai-architect-launch" type="button" onclick="window.location.href='{{ architect_url }}'">✦ AI Architect</button>
         <button class="pill-btn" type="button" id="fullscreenBtn">Fullscreen</button>
         <button class="pill-btn builder-mobile-actions" type="button" id="openLeftPanelBtnBottom">Scenes</button>
         <button class="pill-btn" type="button" id="openRightPanelBtn">Properties</button>
@@ -2380,6 +2392,24 @@
                 <button type="button" class="save-btn" id="saveSceneBtn">Save Scene</button>
             </div>
         </form>
+    </div>
+
+    <div class="rightpanel-card architect-builder-card">
+        <div class="section-title-row">
+            <div>
+                <span class="architect-builder-kicker">AI TOUR ARCHITECT</span>
+                <h3>Scene intelligence</h3>
+            </div>
+            <span class="architect-builder-state">{% if latest_architect_run %}{{ latest_architect_run.get_status_display }}{% else %}Not started{% endif %}</span>
+        </div>
+        <p>Computer vision prepares object crops and quality guidance. Gemini proposes scene-to-scene navigation for your review.</p>
+        <div class="architect-builder-metrics">
+            <span><b>{{ architect_stats.vision_ready }}</b> vision ready</span>
+            <span><b>{{ architect_stats.objects }}</b> objects</span>
+            <span><b>{{ architect_stats.anchors }}</b> anchors</span>
+            <span><b>{{ architect_stats.applied }}</b> links applied</span>
+        </div>
+        <a href="{{ architect_url }}" class="architect-builder-open">Open AI Tour Architect</a>
     </div>
 
     <div class="rightpanel-card">

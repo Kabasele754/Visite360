@@ -39,6 +39,49 @@ def _sanitize_citations(text: str, context: dict) -> str:
     return re.sub(r"[ \t]+(?=[.,;:!?])", "", cleaned).strip()
 
 
+
+
+def _trusted_urls(context: dict) -> set[str]:
+    trusted: set[str] = set()
+
+    def visit(value):
+        if isinstance(value, dict):
+            for item in value.values():
+                visit(item)
+        elif isinstance(value, (list, tuple, set)):
+            for item in value:
+                visit(item)
+        elif isinstance(value, str):
+            candidate = value.strip().rstrip(".,;:!?)\"'")
+            if candidate.startswith(("https://", "http://")):
+                trusted.add(candidate)
+
+    for key in ("business", "contact", "services", "knowledge_sources", "domain_intelligence"):
+        visit(context.get(key))
+    return trusted
+
+
+def _sanitize_links(text: str, context: dict) -> str:
+    trusted = _trusted_urls(context)
+    value = str(text or "")
+
+    def markdown_link(match):
+        label, url = match.group(1).strip(), match.group(2).strip()
+        return match.group(0) if url in trusted else label
+
+    value = re.sub(r"\[([^\]]+)\]\((https?://[^\s)]+)\)", markdown_link, value)
+
+    def bare_link(match):
+        raw = match.group(0)
+        suffix = ""
+        while raw and raw[-1] in ".,;:!?)":
+            suffix = raw[-1] + suffix
+            raw = raw[:-1]
+        return (raw if raw in trusted else "") + suffix
+
+    value = re.sub(r"https?://[^\s<]+", bare_link, value)
+    return re.sub(r"[ \t]+(?=[.,;:!?])", "", value).strip()
+
 def run_agent(*, text: str, context: dict) -> dict:
     intent = detect_intent(text)
     public_steps = _public_reasoning_steps(context)
@@ -48,7 +91,7 @@ def run_agent(*, text: str, context: dict) -> dict:
             input_text=build_input(text, context),
         )
         return {
-            "text": _sanitize_citations(result.text, context),
+            "text": _sanitize_links(_sanitize_citations(result.text, context), context),
             "intent": intent,
             "quick_actions": ["book_appointment", "view_products", "contact_business"],
             "provider": result.provider,

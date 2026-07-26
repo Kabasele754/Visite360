@@ -13,7 +13,7 @@
       <button type="button" data-ai-prompt="Show me verified products related to this scene">Related products</button>
       <button type="button" data-ai-prompt="Tell me about this business, its verified services, specialists and public contacts">Verified services</button>
       <button type="button" data-ai-prompt="I want to book an appointment">Book appointment</button>
-      <button type="button" data-ai-prompt="I want to contact the business">Contact</button>
+      <button type="button" data-ai-contact>Contact</button>
     </div>
     <div class="tour-ai-powered"><span>Twinscopes AI</span><small>Vision &amp; knowledge verified</small></div>
     <form data-ai-form><input data-ai-input maxlength="1000" placeholder="Ask about this scene, products or business…" autocomplete="off"><button type="submit" data-ai-send>Send</button></form>
@@ -42,7 +42,26 @@
       </div>
     </div>
   </aside>
+
+  <div class="tour-ai-resource-backdrop" data-resource-backdrop hidden></div>
+  <section class="tour-ai-resource-modal" data-resource-modal hidden role="dialog" aria-modal="true" aria-labelledby="tourAiResourceTitle">
+    <header class="tour-ai-resource-header">
+      <div class="tour-ai-resource-heading">
+        <span class="tour-ai-resource-icon" data-resource-icon aria-hidden="true">i</span>
+        <div>
+          <small data-resource-eyebrow>Verified information</small>
+          <h3 id="tourAiResourceTitle" data-resource-title>Information</h3>
+        </div>
+      </div>
+      <button type="button" class="tour-ai-resource-close" data-resource-close aria-label="Close information">×</button>
+    </header>
+    <div class="tour-ai-resource-body" data-resource-body></div>
+    <footer class="tour-ai-resource-footer">
+      <button type="button" class="tour-ai-resource-copy" data-resource-copy hidden>Copy information</button>
+      <button type="button" class="tour-ai-resource-done" data-resource-close>Close</button>
+    </footer>
+  </section>
 </div>
-<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=preview-mobile-modal-ai-17">
+<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=preview-formatted-chat-resources-22">
 <script>window.TOUR_AI_CONFIG={tourId:{{ tour.id }},selectionRequired:true,bootstrapUrl:"{% url 'tour_ai_agent:bootstrap' %}",messageUrl:"{% url 'tour_ai_agent:message' %}",signalUrl:"{% url 'tour_ai_agent:signal' %}",actionUrl:"{% url 'tour_ai_agent:action' %}",inspectUrl:"{% url 'tour_ai_agent:inspect-point' %}",locale:"{{ request.LANGUAGE_CODE|default:'en' }}",longPressMs:650};</script>
-<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=preview-mobile-modal-ai-17"></script>
+<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=preview-formatted-chat-resources-22"></script>
