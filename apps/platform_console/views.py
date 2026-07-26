@@ -58,6 +58,31 @@ def _intelligence_execution_mode(request) -> str:
     return "auto"
 
 
+def _friendly_intelligence_error(run: OrganizationIntelligenceRun) -> tuple[str, str]:
+    code = str(run.error_code or "").casefold()
+    message = str(run.error_message or "").strip()
+    lowered = message.casefold()
+
+    if "404" in message or code in {"httperror", "clienterror"} and "not found" in lowered:
+        return (
+            "Configured page was unavailable",
+            "The saved website page could not be opened. A new collection will automatically try the official home page, About, Services, Contact and sitemap pages instead.",
+        )
+    if "403" in message or "forbidden" in lowered:
+        return (
+            "Website access was restricted",
+            "The website blocked this page. Twinscopes will continue with other public pages that the organization allows visitors to access.",
+        )
+    if "timeout" in code or "timed out" in lowered:
+        return (
+            "Website response timed out",
+            "The website did not respond in time. Retry the collection; unavailable pages will be skipped while other official pages are processed.",
+        )
+    if message:
+        return ("Collection needs attention", "The organization website could not be completed. Retry the collection or review the saved official website URL.")
+    return ("Collection needs attention", "Retry the collection to continue preparing the organization information.")
+
+
 def _resource_or_404(resource_key: str) -> ResourceDefinition:
     resource = get_resource(resource_key)
     if resource is None:
@@ -529,10 +554,13 @@ def intelligence_bulk_collect(request):
 @staff_required
 def intelligence_run(request, run_id):
     run = get_object_or_404(OrganizationIntelligenceRun.objects.select_related("organization", "requested_by"), pk=run_id)
+    friendly_error_title, friendly_error_message = _friendly_intelligence_error(run)
     return render(request, "dashboard/platform_console/intelligence_run.html", {
         "current_organization": None,
         "run": run,
         "review_items": run.review_items.select_related("place", "reviewed_by").order_by("status", "-created_at"),
+        "friendly_error_title": friendly_error_title,
+        "friendly_error_message": friendly_error_message,
     })
 
 

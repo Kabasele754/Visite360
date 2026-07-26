@@ -556,9 +556,39 @@ def collect_organization_intelligence(run: OrganizationIntelligenceRun) -> dict[
             raise ValueError("Website intelligence is disabled for this organization.")
         page_limit = max(1, min(int(run.max_pages or profile.website_sync_max_pages or 25), int(getattr(settings, "KNOWLEDGE_CRAWLER_MAX_PAGES", 100))))
         _save_run_progress(run, "crawling")
-        pages = crawl_website(website_url, max_pages=page_limit, same_domain_only=True)
+        crawl_diagnostics: dict[str, Any] = {}
+        pages = crawl_website(
+            website_url,
+            max_pages=page_limit,
+            same_domain_only=True,
+            diagnostics=crawl_diagnostics,
+        )
         if not pages:
-            raise ValueError("No public pages could be collected from the official website.")
+            attempted = int(crawl_diagnostics.get("attempted_count", 0))
+            raise ValueError(
+                "No readable public page was found on the official website. "
+                "Twinscopes tried the configured URL, the site home page, About, "
+                f"Services, Contact and sitemap pages ({attempted} URL(s) checked)."
+            )
+
+        effective_website_url = str(crawl_diagnostics.get("effective_start_url") or pages[0].url or website_url)
+        if crawl_diagnostics.get("fallback_used"):
+            warnings.append({
+                "code": "website_url_recovered",
+                "message": (
+                    "The configured website page was unavailable. Twinscopes continued "
+                    f"from another official page: {effective_website_url}"
+                ),
+            })
+        failed_page_count = int(crawl_diagnostics.get("failed_count", 0))
+        if failed_page_count:
+            warnings.append({
+                "code": "unavailable_pages_skipped",
+                "message": (
+                    f"{failed_page_count} unavailable or unsupported page(s) were skipped. "
+                    "The collection continued with the remaining official pages."
+                ),
+            })
 
         _save_run_progress(run, "indexing", pages_crawled=len(pages))
         source, _ = KnowledgeSource.objects.update_or_create(
@@ -566,13 +596,22 @@ def collect_organization_intelligence(run: OrganizationIntelligenceRun) -> dict[
             name="Official organization website",
             defaults={
                 "source_type": KnowledgeSource.SourceType.WEBSITE,
-                "url": website_url,
+                "url": effective_website_url,
                 "status": KnowledgeSource.Status.CRAWLING,
                 "crawl_same_domain_only": True,
                 "max_pages": page_limit,
                 "is_active": True,
                 "last_error": "",
-                "metadata": {"managed_by": "organization_intelligence", "last_run_id": str(run.id)},
+                "metadata": {
+                    "managed_by": "organization_intelligence",
+                    "last_run_id": str(run.id),
+                    "requested_url": website_url,
+                    "effective_start_url": effective_website_url,
+                    "fallback_used": bool(crawl_diagnostics.get("fallback_used")),
+                    "attempted_count": int(crawl_diagnostics.get("attempted_count", 0)),
+                    "failed_count": failed_page_count,
+                    "sitemap_urls_found": int(crawl_diagnostics.get("sitemap_urls_found", 0)),
+                },
             },
         )
 
@@ -610,6 +649,27 @@ def collect_organization_intelligence(run: OrganizationIntelligenceRun) -> dict[
             chunks_indexed=chunks_indexed,
         )
         place = organization.places.order_by("id").first()
+        if crawl_diagnostics.get("fallback_used") and effective_website_url.rstrip("/") != website_url.rstrip("/"):
+            _create_review_item(
+                run=run,
+                organization=organization,
+                place=place,
+                item_type=IntelligenceReviewItem.ItemType.PROFILE,
+                target_model="organization",
+                target_field="website_url",
+                entity_key=str(organization.pk),
+                label="Update official website URL",
+                current_value=website_url,
+                proposed_value=effective_website_url,
+                source_url=effective_website_url,
+                confidence=0.99,
+                reason=(
+                    "The configured URL was unavailable, but another page on the same official "
+                    "website responded successfully. Approve this suggestion to prevent future "
+                    "collection runs from starting from a broken page."
+                ),
+            )
+
         descriptions = _extract_descriptions(pages)
         if descriptions:
             value, source_url, confidence = descriptions[0]
@@ -780,6 +840,14 @@ def collect_organization_intelligence(run: OrganizationIntelligenceRun) -> dict[
             "domain_profiles_created": profile_counts,
             "healthcare": healthcare_result,
             "readiness_status": readiness_after_result.status,
+            "crawl": {
+                "requested_url": website_url,
+                "effective_start_url": effective_website_url,
+                "fallback_used": bool(crawl_diagnostics.get("fallback_used")),
+                "attempted_count": int(crawl_diagnostics.get("attempted_count", 0)),
+                "failed_count": failed_page_count,
+                "sitemap_urls_found": int(crawl_diagnostics.get("sitemap_urls_found", 0)),
+            },
         }
         run.warnings = warnings
         run.finished_at = timezone.now()
@@ -822,7 +890,7 @@ def collect_organization_intelligence(run: OrganizationIntelligenceRun) -> dict[
 
 
 _ORGANIZATION_FIELDS = {
-    "description", "public_phone", "public_email", "booking_url",
+    "website_url", "description", "public_phone", "public_email", "booking_url",
     "facebook_url", "instagram_url", "tiktok_url", "linkedin_url", "youtube_url",
 }
 _PLACE_FIELDS = {"description", "address_line", "city", "country", "cover_image"}

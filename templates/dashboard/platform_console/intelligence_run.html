@@ -3,7 +3,7 @@
 
 {% block title %}Intelligence Run · {{ run.organization.name }}{% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=5">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'platform_console/css/control-center.css' %}?v=6">{% endblock %}
 
 {% block content %}
 <div class="ts-control-center ts-intelligence-workspace" data-intelligence-run data-status-url="{% url 'platform-console-intelligence-run-status' run.id %}">
@@ -34,7 +34,28 @@
         </section>
         <section class="ts-control-card ts-intel-data-section">
             <header><div><span>Attention</span><h3>Warnings and review</h3></div></header>
-            {% if run.warnings %}<div class="ts-intel-warning-list">{% for warning in run.warnings %}<article><strong>{{ warning.code }}</strong><p>{{ warning.message }}</p></article>{% endfor %}</div>{% elif run.error_message %}<div class="ts-intel-error"><strong>{{ run.error_code|default:"Collection failed" }}</strong><p>{{ run.error_message }}</p></div>{% else %}<div class="ts-intel-empty ts-intel-empty--compact"><strong>No warning reported.</strong><span>The pipeline has not detected an operational issue.</span></div>{% endif %}
+            {% if run.warnings %}
+            <div class="ts-intel-warning-list">
+                {% for warning in run.warnings %}
+                <article>
+                    <strong>
+                        {% if warning.code == "website_url_recovered" %}Website URL recovered
+                        {% elif warning.code == "unavailable_pages_skipped" %}Unavailable pages skipped
+                        {% elif warning.code == "document_index_failed" %}Knowledge indexing needs attention
+                        {% elif warning.code == "ai_extraction_unavailable" %}AI enrichment was unavailable
+                        {% elif warning.code == "healthcare_enrichment_failed" %}Healthcare enrichment needs attention
+                        {% else %}Collection notice{% endif %}
+                    </strong>
+                    <p>{{ warning.message }}</p>
+                </article>
+                {% endfor %}
+            </div>
+            {% elif run.error_message %}
+            <div class="ts-intel-error">
+                <strong>{{ friendly_error_title }}</strong>
+                <p>{{ friendly_error_message }}</p>
+            </div>
+            {% else %}<div class="ts-intel-empty ts-intel-empty--compact"><strong>No warning reported.</strong><span>The pipeline has not detected an operational issue.</span></div>{% endif %}
         </section>
     </div>
 
@@ -42,4 +63,4 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}<script src="{% static 'platform_console/js/intelligence-console.js' %}?v=2" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'platform_console/js/intelligence-console.js' %}?v=3" defer></script>{% endblock %}
