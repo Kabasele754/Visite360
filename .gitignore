@@ -7,8 +7,8 @@
 .env
 .env.*
 !.env.example
-secrets/
-**/secrets/
+# secrets/
+# **/secrets/
 google_adc.json
 **/google_adc.json
 *.pem
