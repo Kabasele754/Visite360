@@ -266,17 +266,38 @@ document.addEventListener("DOMContentLoaded", () => {
         return value;
     }
 
+    function getSceneCameraLimits(sceneData) {
+        const raw = sceneData?.camera_limits || {};
+        let pitchMin = clamp(Number(raw.pitch_min ?? -82), -89.5, 89.5);
+        let pitchMax = clamp(Number(raw.pitch_max ?? 62), -89.5, 89.5);
+        if (!Number.isFinite(pitchMin)) pitchMin = -82;
+        if (!Number.isFinite(pitchMax)) pitchMax = 62;
+        if (pitchMin > pitchMax - 5) {
+            pitchMin = -82;
+            pitchMax = 62;
+        }
+        return {
+            enabled: raw.enabled !== false,
+            pitchMin,
+            pitchMax,
+        };
+    }
+
     function createFloorAnchoredLimiter(resolution, maxFov, sceneData) {
-        // Match the stable builder camera exactly. Marzipano's traditional
-        // limiter keeps the viewport inside the equirectangular sphere while
-        // preserving the hotspot's saved yaw/pitch. The previous dynamic
-        // pitch clamp changed with every FOV update and made a near-nadir
-        // perspective hotspot appear to slide around on mobile.
-        void sceneData;
-        return Marzipano.RectilinearView.limit.traditional(
+        // Mathematical camera limiter shared with the builder. First apply
+        // Marzipano's traditional resolution/FOV constraints, then clamp the
+        // camera centre to the scene-specific backend pitch interval.
+        const traditional = Marzipano.RectilinearView.limit.traditional(
             Math.max(Number(resolution || 0), 4096),
             Math.min(Number(maxFov || MAX_FOV), degToRad(100))
         );
+        const limits = getSceneCameraLimits(sceneData);
+        if (!limits.enabled) return traditional;
+        const pitchLimiter = Marzipano.RectilinearView.limit.pitch(
+            degToRad(limits.pitchMin),
+            degToRad(limits.pitchMax)
+        );
+        return params => pitchLimiter(traditional(params));
     }
 
     function isMobileViewport() {
@@ -2807,6 +2828,12 @@ document.addEventListener("DOMContentLoaded", () => {
             tiltX: clamp(Number(settings.tilt_x || 0), -70, 70),
             tiltY: clamp(Number(settings.tilt_y || 0), -70, 70),
             radius: clamp(Number(settings.radius || 900), 350, 2400),
+            backgroundEnabled: Boolean(settings.background_enabled),
+            backgroundColor: String(settings.background_color || "#FFFFFF"),
+            backgroundOpacity: clamp(Number(settings.background_opacity ?? 0.94), 0, 1),
+            backgroundWidth: clamp(Number(settings.background_width || 160), 72, 520),
+            backgroundHeight: clamp(Number(settings.background_height || 160), 72, 520),
+            backgroundRadius: clamp(Number(settings.background_radius ?? 50), 0, 50),
         };
     }
 
@@ -2820,6 +2847,65 @@ document.addEventListener("DOMContentLoaded", () => {
         ].join(" ");
     }
 
+    const previewTripodLogoCropCache = new Map();
+
+    function getPreviewOpticallyCenteredLogoUrl(url) {
+        const sourceUrl = String(url || "").trim();
+        if (!sourceUrl) return Promise.resolve(sourceUrl);
+        if (previewTripodLogoCropCache.has(sourceUrl)) return previewTripodLogoCropCache.get(sourceUrl);
+
+        const promise = new Promise((resolve) => {
+            const image = new Image();
+            image.decoding = "async";
+            image.crossOrigin = "anonymous";
+            image.onload = () => {
+                try {
+                    const width = Math.max(1, image.naturalWidth || image.width || 1);
+                    const height = Math.max(1, image.naturalHeight || image.height || 1);
+                    const canvas = document.createElement("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+                    if (!ctx) return resolve(sourceUrl);
+                    ctx.drawImage(image, 0, 0, width, height);
+                    const pixels = ctx.getImageData(0, 0, width, height).data;
+                    let minX = width, minY = height, maxX = -1, maxY = -1;
+                    for (let y = 0; y < height; y += 1) {
+                        for (let x = 0; x < width; x += 1) {
+                            if (pixels[(y * width + x) * 4 + 3] <= 8) continue;
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                        }
+                    }
+                    if (maxX < minX || maxY < minY) return resolve(sourceUrl);
+                    const contentWidth = maxX - minX + 1;
+                    const contentHeight = maxY - minY + 1;
+                    const pad = Math.max(2, Math.round(Math.max(contentWidth, contentHeight) * 0.035));
+                    const sx = Math.max(0, minX - pad);
+                    const sy = Math.max(0, minY - pad);
+                    const sw = Math.min(width - sx, contentWidth + pad * 2);
+                    const sh = Math.min(height - sy, contentHeight + pad * 2);
+                    const output = document.createElement("canvas");
+                    output.width = sw;
+                    output.height = sh;
+                    const outCtx = output.getContext("2d");
+                    if (!outCtx) return resolve(sourceUrl);
+                    outCtx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+                    resolve(output.toDataURL("image/png"));
+                } catch (error) {
+                    console.debug("PREVIEW_TRIPOD_LOGO_OPTICAL_CENTER_FALLBACK", error);
+                    resolve(sourceUrl);
+                }
+            };
+            image.onerror = () => resolve(sourceUrl);
+            image.src = sourceUrl;
+        });
+        previewTripodLogoCropCache.set(sourceUrl, promise);
+        return promise;
+    }
+
     function buildTripodLogoNode(sceneData) {
         const settings = getPreviewTripodLogoSettings(sceneData);
         const logoUrl = String(config.organizationLogoUrl || "").trim();
@@ -2828,14 +2914,30 @@ document.addEventListener("DOMContentLoaded", () => {
         const node = document.createElement("div");
         node.className = "preview-tripod-logo";
         node.style.setProperty("--preview-tripod-logo-size", `${settings.size}px`);
+        node.style.setProperty("--preview-tripod-background-width", `${settings.backgroundEnabled ? settings.backgroundWidth : settings.size}px`);
+        node.style.setProperty("--preview-tripod-background-height", `${settings.backgroundEnabled ? settings.backgroundHeight : settings.size}px`);
+        node.style.setProperty("--preview-tripod-background-color", settings.backgroundEnabled ? settings.backgroundColor : "transparent");
+        node.style.setProperty("--preview-tripod-background-opacity", settings.backgroundEnabled ? String(settings.backgroundOpacity) : "0");
+        node.style.setProperty("--preview-tripod-background-radius", `${settings.backgroundRadius}%`);
         node.setAttribute("aria-hidden", "true");
+
+        const background = document.createElement("div");
+        background.className = "preview-tripod-logo-background";
+        node.appendChild(background);
+
+        const media = document.createElement("div");
+        media.className = "preview-tripod-logo-media";
+        node.appendChild(media);
 
         const image = document.createElement("img");
         image.src = logoUrl;
         image.alt = "";
         image.decoding = "async";
         image.draggable = false;
-        node.appendChild(image);
+        media.appendChild(image);
+        getPreviewOpticallyCenteredLogoUrl(logoUrl).then((centeredUrl) => {
+            if (centeredUrl && image.isConnected) image.src = centeredUrl;
+        });
         return { node, settings };
     }
 

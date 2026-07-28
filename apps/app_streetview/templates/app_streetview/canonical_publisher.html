@@ -5,20 +5,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Street View Publisher — GPS & Camera Editor</title>
-  <link rel="stylesheet" href="{% static 'app_streetview/css/canonical_publisher.css' %}">
+  <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme')||localStorage.getItem('twinscopes-dashboard-theme')||'dark';document.documentElement.dataset.marketTheme=t==='light'?'light':'dark';document.documentElement.dataset.dashboardTheme=t==='light'?'light':'dark';document.documentElement.style.colorScheme=t==='light'?'light':'dark';}catch(e){}})();</script>
+  <link rel="stylesheet" href="{% static 'public/css/twinscopes-unified-theme-v47.css' %}?v=47">
+  <link rel="stylesheet" href="{% static 'app_streetview/css/canonical_publisher.css' %}?v=unified-streetview-47">
   <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
 </head>
-<body>
+<body class="sv-canonical-body">
   <div class="app-shell">
     <header class="topbar">
       <div class="brand">
-        <div class="brand-mark">360</div>
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="9" fill="none" stroke="currentColor" stroke-width="3"/><path d="M8 18h7l3-5h12l3 5h7v18H8Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="10" cy="10" r="3"/><circle cx="38" cy="10" r="3"/><path d="M13 11l8 7M35 11l-8 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></div>
         <div>
           <h1>Street View Publisher</h1>
           <p>Organization → Place → Tour → GPS, camera, Google connections</p>
         </div>
       </div>
       <div class="top-actions">
+        <button type="button" class="btn btn-soft small" data-global-theme-toggle title="Switch theme" aria-label="Switch theme">◐</button>
         <a class="btn btn-soft small" href="{% url 'apps.app_streetview:direct_projects' %}">☁️ Direct Google projects</a>
         <button id="openLibraryTopBtn" class="btn btn-soft small">🖼️ Google account library</button>
         <button id="runQualityTopBtn" class="btn btn-soft small">✅ Quality</button>
@@ -161,7 +164,7 @@
                       <button id="placeSearchBtn" class="map-chip">Search</button>
                     </div>
                     <div id="mapSearchBox" class="map-search hidden">
-                      <input id="mapSearchInput" type="text" placeholder="Search une adresse ou un lieu...">
+                      <input id="mapSearchInput" type="text" placeholder="Search an address or place...">
                       <button id="closeMapSearchBtn">×</button>
                     </div>
                   </div>
@@ -188,7 +191,7 @@
 
                 <div id="autoModePanel" class="mode-panel">
                   <p class="help">Create a natural walk: scene 1 ↔ scene 2 ↔ scene 3.</p>
-                  <button id="autoLinkBtnSide" class="btn btn-soft btn-full">🔗 Auto-link aller/retour</button>
+                  <button id="autoLinkBtnSide" class="btn btn-soft btn-full">🔗 Auto-link both ways</button>
                 </div>
 
                 <div id="manualModePanel" class="mode-panel hidden">
@@ -264,8 +267,14 @@
       apiKey: "{{ google_maps_api_key|default:''|escapejs }}",
       mapId: "{{ google_maps_map_id|default:'DEMO_MAP_ID'|escapejs }}"
     };
+    window.STREETVIEW_INITIAL_SELECTION = {
+      organizationId: "{{ initial_organization_id|default:''|escapejs }}",
+      placeId: "{{ initial_place_id|default:''|escapejs }}",
+      tourId: "{{ initial_tour_id|default:''|escapejs }}"
+    };
   </script>
-  <script src="{% static 'app_streetview/js/canonical_publisher.js' %}"></script>
+  <script src="{% static 'public/js/twinscopes-unified-theme-v47.js' %}?v=47"></script>
+  <script src="{% static 'app_streetview/js/canonical_publisher.js' %}?v=unified-streetview-47"></script>
   {% if google_maps_api_key %}
     <script async src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&loading=async&v=weekly&libraries=places,geometry,marker&callback=initCanonicalPublisherPage"></script>
   {% else %}

@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr" class="h-full">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +8,8 @@
 
     <!-- Tailwind CDN -->
     <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}"> 
+    <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme')||localStorage.getItem('studio-builder-theme')||'dark';document.documentElement.dataset.marketTheme=t==='light'?'light':'dark';document.documentElement.dataset.dashboardTheme=t==='light'?'light':'dark';document.documentElement.style.colorScheme=t==='light'?'light':'dark';}catch(e){}})();</script>
+    <link rel="stylesheet" href="{% static 'public/css/twinscopes-unified-theme-v47.css' %}?v=47">
 
     <script>
         tailwind.config = {
@@ -33,7 +35,7 @@
     </script>
 
     <!-- Ancien CSS builder conservé pour ne pas casser les classes/JS existants -->
-    <link rel="stylesheet" href="{% static 'dashboard/css/studio_builder.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/css/studio_builder.css' %}?v=tripod-background-unified-47">
 
     <style>
         html,
@@ -422,6 +424,9 @@
                     <a class="top-action ghost" href="{% url 'dashboard-tours-list' current_organization.slug %}">
                         Tours
                     </a>
+                    <a class="top-action ghost" href="{% url 'apps.app_streetview:publisher' %}?organization={{ current_organization.id }}">
+                        Street View
+                    </a>
                 {% endif %}
 
                 {% if current_organization and tour %}
@@ -499,6 +504,7 @@
         });
     </script>
 
+    <script src="{% static 'public/js/twinscopes-unified-theme-v47.js' %}?v=47"></script>
     {% block page_scripts %}{% endblock %}
 </body>
 </html>

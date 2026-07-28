@@ -64,6 +64,20 @@ class StreetViewTour(models.Model):
 
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="streetview_tours")
+    source_organization = models.ForeignKey(
+        "organizations.Organization",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="streetview_direct_projects",
+    )
+    source_tour = models.ForeignKey(
+        "tours.Tour",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="streetview_direct_projects",
+    )
     title = models.CharField(max_length=180)
     description = models.TextField(blank=True)
     project_mode = models.CharField(max_length=20, choices=ProjectMode.choices, default=ProjectMode.DIRECT)

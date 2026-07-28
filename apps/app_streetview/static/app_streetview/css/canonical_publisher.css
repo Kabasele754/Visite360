@@ -107,3 +107,8 @@ button:disabled{opacity:.45;cursor:not-allowed}.hidden{display:none!important}.a
 .scene-google-detail small.rejected { color:#fecaca; border-color:rgba(248,113,113,.42); background:rgba(127,29,29,.25); }
 .scene-google-detail small.synced { color:#a7f3d0; border-color:rgba(52,211,153,.38); background:rgba(6,78,59,.22); }
 @media (max-width:760px){ .google-verification-summary .verify-grid{grid-template-columns:1fr 1fr;} }
+.brand-mark svg{width:28px;height:28px;color:currentColor}
+html[data-market-theme="dark"] body{background:#030303;color:#f8fafc}
+html[data-market-theme="dark"] .app-shell{background:#030303}
+html[data-market-theme="dark"] .topbar,html[data-market-theme="dark"] .panel,html[data-market-theme="dark"] .left-panel{background:#090909!important;border-color:rgba(255,255,255,.12)!important}
+html[data-market-theme="dark"] input,html[data-market-theme="dark"] select,html[data-market-theme="dark"] textarea{background:#111!important;color:#f8fafc!important;border-color:rgba(255,255,255,.12)!important}

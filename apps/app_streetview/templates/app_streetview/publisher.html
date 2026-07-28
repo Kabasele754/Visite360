@@ -1,29 +1,32 @@
 {% load static %}
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Twinscopes Street View Publisher</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
-  <link rel="stylesheet" href="{% static 'app_streetview/css/publisher.css' %}">
+  <script>(function(){try{var t=localStorage.getItem('twinscopes-market-theme')||localStorage.getItem('twinscopes-dashboard-theme')||'dark';document.documentElement.dataset.marketTheme=t==='light'?'light':'dark';document.documentElement.dataset.dashboardTheme=t==='light'?'light':'dark';document.documentElement.style.colorScheme=t==='light'?'light':'dark';}catch(e){}})();</script>
+  <link rel="stylesheet" href="{% static 'public/css/twinscopes-unified-theme-v47.css' %}?v=48">
+  <link rel="stylesheet" href="{% static 'app_streetview/css/publisher.css' %}?v=street-projects-visual-studio-48">
 </head>
 <body class="sv-body">
   <div id="streetviewApp" data-api-base="/apis/streetview/" class="sv-app">
     <header class="sv-topbar">
       <div class="sv-brand">
-        <div class="sv-logo">360</div>
+        <div class="sv-logo" aria-hidden="true"><svg viewBox="0 0 48 48" role="img"><circle cx="24" cy="24" r="9" fill="none" stroke="currentColor" stroke-width="3"/><path d="M8 18h7l3-5h12l3 5h7v18H8Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="10" cy="10" r="3"/><circle cx="38" cy="10" r="3"/><path d="M13 11l8 7M35 11l-8 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></div>
         <div class="min-w-0">
           <h1>Twinscopes Street View</h1>
-          <p>Publication guidée · Images · GPS · Navigation · Partage</p>
+          <p>Guided publishing · Images · GPS · Navigation · Sharing</p>
         </div>
       </div>
 
       <div class="sv-top-actions">
         <a href="{% url 'apps.app_streetview:publisher' %}" class="sv-btn sv-btn-soft">Existing Twinscopes tours</a>
+        <button type="button" class="sv-icon-btn" data-global-theme-toggle title="Switch theme" aria-label="Switch theme">◐</button>
         <div id="googlePill" class="sv-pill muted">Google...</div>
-        <a id="connectGoogle" href="/apis/streetview/oauth/start/" class="sv-btn sv-btn-primary">Connecter Google</a>
+        <a id="connectGoogle" href="/apis/streetview/oauth/start/" class="sv-btn sv-btn-primary">Connect Google</a>
       </div>
     </header>
 
@@ -33,11 +36,23 @@
         <div class="sv-panel">
           <div class="sv-panel-head">
             <div>
-              <span class="sv-kicker">Projets</span>
-              <h2>Mes visites</h2>
+              <span class="sv-kicker">Projects</span>
+              <h2>My projects</h2>
             </div>
-            <button id="refreshToursBtn" class="sv-icon-btn" title="Rafraîchir">↻</button>
+            <button id="refreshToursBtn" class="sv-icon-btn" title="Refresh">↻</button>
           </div>
+
+          <section class="sv-source-import">
+            <div class="sv-source-title">
+              <span class="sv-source-icon" aria-hidden="true">◉</span>
+              <div><strong>Create from an existing organization tour</strong><small>Organization → Place → Tour → camera, map and connections</small></div>
+            </div>
+            <select id="sourceOrganizationSelect" class="sv-input"><option value="">Select an organization</option></select>
+            <select id="sourcePlaceSelect" class="sv-input" disabled><option value="">Select a place</option></select>
+            <select id="sourceTourSelect" class="sv-input" disabled><option value="">Select a tour</option></select>
+            <div id="sourceTourPreview" class="sv-source-preview muted">Choose a tour to preview its scenes and existing navigation. Imported panoramas remain safely stored in the organization library.</div>
+            <button id="importSourceTourBtn" class="sv-btn sv-btn-primary w-full" disabled>Open as a Street View project</button>
+          </section>
 
           <div class="sv-create-box">
             <input id="newTourTitle" class="sv-input" placeholder="Project name, e.g. Boutique Gombe">
@@ -49,7 +64,7 @@
           </div>
 
           <div id="tourList" class="sv-tour-list"></div>
-          <div id="tourEmpty" class="sv-empty compact">Aucun projet. Crée une visite pour commencer.</div>
+          <div id="tourEmpty" class="sv-empty compact">No project yet. Create or import a tour to begin.</div>
         </div>
       </aside>
 
@@ -57,23 +72,23 @@
       <section class="sv-workspace">
         <div class="sv-project-banner">
           <div>
-            <span class="sv-kicker">Projet actif</span>
-            <h2 id="activeTourTitle">Aucune visite sélectionnée</h2>
-            <p id="activeTourSubtitle">Crée ou ouvre un projet à gauche.</p>
+            <span class="sv-kicker">Active project</span>
+            <h2 id="activeTourTitle">No project selected</h2>
+            <p id="activeTourSubtitle">Create or open a project from the left panel.</p>
           </div>
           <div class="sv-banner-stats">
             <div><b id="statScenes">0</b><span>Images</span></div>
             <div><b id="statGps">0</b><span>GPS</span></div>
-            <div><b id="statPublished">0</b><span>Publiées</span></div>
-            <div><b id="statLinks">0</b><span>Liens</span></div>
+            <div><b id="statPublished">0</b><span>Published</span></div>
+            <div><b id="statLinks">0</b><span>Links</span></div>
           </div>
         </div>
 
         <nav class="sv-steps-nav">
           <button data-step="images" class="sv-step-tab active"><span>1</span> Images</button>
-          <button data-step="prepare" class="sv-step-tab"><span>2</span> Préparer</button>
+          <button data-step="prepare" class="sv-step-tab"><span>2</span> Prepare</button>
           <button data-step="navigation" class="sv-step-tab"><span>3</span> Navigation</button>
-          <button data-step="publish" class="sv-step-tab"><span>4</span> Publier</button>
+          <button data-step="publish" class="sv-step-tab"><span>4</span> Publish</button>
         </nav>
 
         <!-- STEP IMAGES -->
@@ -82,11 +97,11 @@
             <div class="sv-panel">
               <div class="sv-panel-head">
                 <div>
-                  <span class="sv-kicker">Étape 1</span>
-                  <h2>Importer les images 360</h2>
-                  <p>Une seule action : dépose toutes les images du lieu.</p>
+                  <span class="sv-kicker">Step 1</span>
+                  <h2>Import 360 images</h2>
+                  <p>Drop every panorama from the location in one action.</p>
                 </div>
-                <button id="saveProjectQuickBtn" class="sv-btn sv-btn-soft">Sauvegarder</button>
+                <button id="saveProjectQuickBtn" class="sv-btn sv-btn-soft">Save</button>
               </div>
 
               <section class="sv-direct-panel">
@@ -116,57 +131,103 @@
               <div id="dropZone" class="sv-dropzone">
                 <input id="fileInput" type="file" multiple accept="image/*" hidden>
                 <div class="sv-drop-icon">🌐</div>
-                <h3>Glisse-dépose tes panoramas ici</h3>
-                <p>JPEG 360 conseillé. Les données GPS/EXIF sont récupérées côté backend.</p>
-                <button id="browseBtn" type="button" class="sv-btn sv-btn-primary">Choisir les images</button>
+                <h3>Drag and drop your panoramas here</h3>
+                <p>360 JPEG recommended. GPS and EXIF metadata are read by the backend.</p>
+                <button id="browseBtn" type="button" class="sv-btn sv-btn-primary">Choose images</button>
               </div>
 
               <div class="sv-scene-toolbar">
-                <div><b id="sceneCountText">0 image</b><span> dans cette visite</span></div>
-                <button id="openMapBulkBtn" class="sv-btn sv-btn-soft">Corriger GPS sur carte</button>
+                <div><b id="sceneCountText">0 image</b><span> in this project</span></div>
+                <button id="openMapBulkBtn" class="sv-btn sv-btn-soft">Edit GPS on map</button>
               </div>
 
               <div id="sceneGrid" class="sv-scene-grid"></div>
-              <div id="sceneEmpty" class="sv-empty">Aucune image. Importe les panoramas pour continuer.</div>
+              <div id="sceneEmpty" class="sv-empty">No images yet. Import panoramas to continue.</div>
             </div>
 
             <aside class="sv-panel sv-help-panel">
-              <span class="sv-kicker">Logique simple</span>
-              <h3>Tu n’as pas besoin de tout configurer au début.</h3>
-              <p>Importe les images, corrige les GPS manquants, puis l’application peut créer automatiquement les liens Street View dans l’ordre des images.</p>
+              <span class="sv-kicker">Simple workflow</span>
+              <h3>You do not need to configure everything at the beginning.</h3>
+              <p>Import images, fix missing GPS points, then let the application build Street View links from the scene order.</p>
               <div class="sv-mini-checks">
-                <div>✅ Projet sélectionné</div>
-                <div>✅ Images visibles</div>
-                <div>✅ GPS contrôlable</div>
-                <div>✅ Publication continuable</div>
+                <div>✅ Project selected</div>
+                <div>✅ Scenes visible</div>
+                <div>✅ GPS editable</div>
+                <div>✅ Publishing can resume</div>
               </div>
             </aside>
           </div>
         </section>
 
-        <!-- STEP PREPARE -->
+        <!-- VISUAL PROJECT STUDIO -->
         <section id="step-prepare" class="sv-step">
-          <div class="sv-grid-main">
-            <div class="sv-panel">
-              <div class="sv-panel-head">
+          <div class="sv-project-studio">
+            <aside class="sv-panel sv-visual-scenes-panel">
+              <div class="sv-panel-head sv-compact-head">
                 <div>
-                  <span class="sv-kicker">Étape 2</span>
-                  <h2>Préparer la scène sélectionnée</h2>
-                  <p>Nom, GPS, vue principale et statut Google.</p>
+                  <span class="sv-kicker">Images</span>
+                  <h2>Project panoramas</h2>
+                  <p>Select a scene to edit its camera and position.</p>
                 </div>
-                <button id="viewScene360Btn" class="sv-btn sv-btn-primary" disabled>Voir en 360</button>
+                <span class="sv-badge blue" id="visualSceneCount">0</span>
+              </div>
+              <div id="visualSceneList" class="sv-visual-scene-list"></div>
+              <div id="visualSceneEmpty" class="sv-empty compact">Import a panorama to open the visual editor.</div>
+              <button id="viewScene360SideBtn" class="sv-btn sv-btn-soft w-full" disabled>Reload selected panorama</button>
+            </aside>
+
+            <section class="sv-panel sv-visual-editor-panel">
+              <div class="sv-panel-head sv-editor-head">
+                <div class="min-w-0">
+                  <span class="sv-kicker">Map + 360 editor</span>
+                  <h2 id="viewerTitle">No scene selected</h2>
+                  <p>Rotate the panorama to define the initial camera. Move the point on the map to set GPS.</p>
+                </div>
+                <div class="sv-inline-icon-actions">
+                  <button id="viewScene360Btn" class="sv-icon-btn" title="Reload 360 viewer" aria-label="Reload 360 viewer" disabled>↻</button>
+                  <button id="openMapBtn" class="sv-icon-btn" title="Center selected scene on the map" aria-label="Center selected scene on the map">⌖</button>
+                  <button id="saveSceneBtn" class="sv-icon-btn is-primary" title="Save camera and GPS" aria-label="Save camera and GPS">✓</button>
+                </div>
               </div>
 
-              <div id="noSceneSelected" class="sv-empty">Sélectionne une image dans la grille pour la préparer.</div>
+              <div id="noSceneSelected" class="sv-empty">Select a panorama from the left column.</div>
 
               <div id="sceneEditor" class="sv-editor hidden">
-                <div class="sv-editor-preview">
-                  <img id="editorImage" alt="Scène sélectionnée">
-                  <div id="editorStatus" class="sv-editor-status"></div>
+                <img id="editorImage" class="hidden" alt="Selected scene">
+                <div id="editorStatus" class="sv-editor-status sv-editor-status-inline"></div>
+
+                <div class="sv-live-editor-grid">
+                  <article class="sv-live-card sv-live-viewer-card">
+                    <div class="sv-live-card-head">
+                      <div><strong>360 camera</strong><small>Drag to rotate · scroll or pinch to zoom</small></div>
+                      <div class="sv-camera-actions">
+                        <button id="captureCameraBtn" class="sv-icon-btn is-primary" title="Use the current view as the initial camera" aria-label="Capture current camera">◎</button>
+                        <button id="updateGoogleCameraBtn" class="sv-icon-btn" title="Update the camera on Google" aria-label="Update Google camera">G</button>
+                      </div>
+                    </div>
+                    <div id="viewer" class="sv-viewer sv-viewer-inline"></div>
+                    <div class="sv-camera-readout">
+                      <span>Heading <b id="visualHeadingReadout">0°</b></span>
+                      <span>Pitch <b id="visualPitchReadout">0°</b></span>
+                      <span>FOV <b id="visualFovReadout">90°</b></span>
+                    </div>
+                  </article>
+
+                  <article class="sv-live-card sv-live-map-card">
+                    <div class="sv-live-card-head">
+                      <div><strong>Scene positions</strong><small>All GPS points and navigation links</small></div>
+                      <button id="assignMapCenterBtn" class="sv-icon-btn is-primary" title="Assign map center to selected scene" aria-label="Assign map center">✓</button>
+                    </div>
+                    <div class="sv-map-search sv-map-search-inline">
+                      <input id="addressSearch" class="sv-input" placeholder="Search an address or place">
+                    </div>
+                    <div id="map" class="sv-map sv-map-inline"></div>
+                    <p id="mapHelp" class="sv-muted">Drag a marker, click the map, or search for a place. Lines represent saved navigation.</p>
+                  </article>
                 </div>
 
-                <div class="sv-form-grid">
-                  <label>Nom de la scène<input id="sceneTitleInput" class="sv-input"></label>
+                <div class="sv-form-grid sv-scene-form-grid">
+                  <label>Scene name<input id="sceneTitleInput" class="sv-input"></label>
                   <label>Description<input id="sceneDescriptionInput" class="sv-input"></label>
                   <label>Latitude<input id="sceneLatInput" class="sv-input" type="number" step="0.0000001"></label>
                   <label>Longitude<input id="sceneLngInput" class="sv-input" type="number" step="0.0000001"></label>
@@ -174,21 +235,26 @@
                   <label>Pitch<input id="scenePitchInput" class="sv-input" type="number" step="0.1"></label>
                 </div>
 
-                <div class="sv-action-row">
-                  <button id="saveSceneBtn" class="sv-btn sv-btn-primary">Sauvegarder scène</button>
-                  <button id="openMapBtn" class="sv-btn sv-btn-soft">Positionner sur carte</button>
-                  <button id="markPublishedBtn" class="sv-btn sv-btn-soft">Marquer déjà publiée</button>
-                  <button id="checkGoogleBtn" class="sv-btn sv-btn-soft">Vérifier Google</button>
-                  <button id="deleteSceneBtn" class="sv-btn sv-btn-danger">Supprimer</button>
+                <div class="sv-action-row sv-editor-secondary-actions">
+                  <button id="markPublishedBtn" class="sv-btn sv-btn-soft">Link an existing Google photo</button>
+                  <button id="checkGoogleBtn" class="sv-btn sv-btn-soft">Check Google status</button>
+                  <button id="deleteSceneBtn" class="sv-btn sv-btn-danger">Delete scene</button>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <aside class="sv-panel">
-              <span class="sv-kicker">Vue principale</span>
-              <h3>Réglage caméra simple</h3>
-              <p class="sv-muted">Ouvre l’image en 360, tourne vers l’entrée ou la direction principale, puis clique sur “Définir comme vue principale”. Cette orientation est sauvegardée et utilisée pour préparer Google Street View.</p>
-              <button id="viewScene360SideBtn" class="sv-btn sv-btn-primary w-full mt-4" disabled>Ouvrir le viewer 360</button>
+            <aside class="sv-studio-side">
+              <section class="sv-panel sv-studio-guide">
+                <span class="sv-kicker">Visual workflow</span>
+                <h3>Everything stays visible</h3>
+                <p class="sv-muted">Select a panorama, rotate the camera, place it on the map, then verify the route before publishing.</p>
+                <button type="button" class="sv-btn sv-btn-soft w-full" data-open-step="navigation">Open navigation</button>
+                <button type="button" class="sv-btn sv-btn-primary w-full" data-open-step="publish">Open publishing</button>
+              </section>
+              <section class="sv-panel sv-studio-guide">
+                <span class="sv-kicker">Connection preview</span>
+                <div id="visualConnectionSummary" class="sv-visual-connections">No navigation link yet.</div>
+              </section>
             </aside>
           </div>
         </section>
@@ -199,27 +265,27 @@
             <div class="sv-panel">
               <div class="sv-panel-head">
                 <div>
-                  <span class="sv-kicker">Étape 3</span>
-                  <h2>Créer la navigation Street View</h2>
-                  <p>Le plus simple : lier automatiquement les scènes selon leur ordre.</p>
+                  <span class="sv-kicker">Step 3</span>
+                  <h2>Build Street View navigation</h2>
+                  <p>Automatically connect scenes from their saved order, then refine them manually.</p>
                 </div>
-                <button id="autoConnectBtn" class="sv-btn sv-btn-primary">Auto-lier aller/retour</button>
+                <button id="autoConnectBtn" class="sv-btn sv-btn-primary">Auto-link both directions</button>
               </div>
 
               <div id="routeList" class="sv-route-list"></div>
-              <div id="routeEmpty" class="sv-empty">Il faut au moins deux scènes pour créer une navigation.</div>
+              <div id="routeEmpty" class="sv-empty">At least two scenes are required to create navigation.</div>
             </div>
 
             <aside class="sv-panel">
-              <span class="sv-kicker">Lien manuel</span>
-              <h3>Ajouter un lien spécifique</h3>
+              <span class="sv-kicker">Manual link</span>
+              <h3>Add a specific connection</h3>
               <div class="sv-manual-link">
                 <select id="manualFrom" class="sv-input"></select>
                 <select id="manualTo" class="sv-input"></select>
-                <input id="manualLabel" class="sv-input" placeholder="Nom du lien">
-                <button id="addManualLinkBtn" class="sv-btn sv-btn-soft w-full">Ajouter le lien</button>
+                <input id="manualLabel" class="sv-input" placeholder="Connection label">
+                <button id="addManualLinkBtn" class="sv-btn sv-btn-soft w-full">Add connection</button>
               </div>
-              <div class="sv-note mt-4">Les hotspots Marzipano de type lien peuvent aussi devenir des connexions Google, mais pour simplifier, utilise surtout les liens automatiques.</div>
+              <div class="sv-note mt-4">Existing Twinscopes navigation hotspots are imported automatically. You can also add or correct links here.</div>
             </aside>
           </div>
         </section>
@@ -230,83 +296,53 @@
             <div class="sv-panel">
               <div class="sv-panel-head">
                 <div>
-                  <span class="sv-kicker">Étape 4</span>
-                  <h2>Publier ou continuer la publication</h2>
-                  <p>Les scènes déjà publiées sont ignorées automatiquement.</p>
+                  <span class="sv-kicker">Step 4</span>
+                  <h2>Publish or resume publishing</h2>
+                  <p>Already published scenes are skipped automatically.</p>
                 </div>
-                <button id="publishBtn" class="sv-btn sv-btn-primary sv-big-btn">Publier / continuer</button>
+                <button id="publishBtn" class="sv-btn sv-btn-primary sv-big-btn">Publish / resume</button>
               </div>
 
               <div id="readinessBox" class="sv-readiness"></div>
 
               <div class="sv-action-row mt-4">
-                <button id="retryConnectionsBtn" class="sv-btn sv-btn-soft">Réessayer les connexions Google</button>
-                <button id="syncProjectGoogleBtn" class="sv-btn sv-btn-soft">Synchroniser acceptation Google</button>
-                <button id="loadShareLinksBtn" class="sv-btn sv-btn-soft">Afficher les liens publiés</button>
-                <button id="copyAllLinksBtn" class="sv-btn sv-btn-soft">Copier tous les liens</button>
+                <button id="retryConnectionsBtn" class="sv-btn sv-btn-soft">Retry Google connections</button>
+                <button id="syncProjectGoogleBtn" class="sv-btn sv-btn-soft">Sync Google acceptance</button>
+                <button id="loadShareLinksBtn" class="sv-btn sv-btn-soft">Show published links</button>
+                <button id="copyAllLinksBtn" class="sv-btn sv-btn-soft">Copy all links</button>
               </div>
 
               <div id="publishLog" class="sv-log hidden"></div>
             </div>
 
             <aside class="sv-panel">
-              <span class="sv-kicker">Liens de partage</span>
-              <h3>Images publiées</h3>
+              <span class="sv-kicker">Share links</span>
+              <h3>Published images</h3>
               <div id="shareLinks" class="sv-share-list"></div>
-              <div id="shareEmpty" class="sv-empty compact">Aucun lien publié pour le moment.</div>
+              <div id="shareEmpty" class="sv-empty compact">No published link yet.</div>
             </aside>
           </div>
         </section>
       </section>
     </main>
 
-    <!-- MAP MODAL -->
-    <div id="mapModal" class="sv-modal hidden">
-      <div class="sv-modal-card sv-map-card">
-        <div class="sv-modal-head">
-          <div><span class="sv-kicker">Carte GPS</span><h2>Positionner les scènes</h2></div>
-          <button data-close-modal="mapModal" class="sv-icon-btn">✕</button>
-        </div>
-        <div class="sv-map-search">
-          <input id="addressSearch" class="sv-input" placeholder="Chercher une adresse ou un lieu">
-          <button id="assignMapCenterBtn" class="sv-btn sv-btn-primary">Assigner le centre</button>
-        </div>
-        <div id="map" class="sv-map"></div>
-        <p id="mapHelp" class="sv-muted mt-3">Sélectionne une scène, puis clique sur la carte ou cherche une adresse.</p>
-      </div>
-    </div>
-
-    <!-- VIEWER MODAL -->
-    <div id="viewerModal" class="sv-modal hidden">
-      <div class="sv-modal-card sv-viewer-card">
-        <div class="sv-modal-head">
-          <div><span class="sv-kicker">Viewer 360</span><h2 id="viewerTitle">Scène</h2></div>
-          <button data-close-modal="viewerModal" class="sv-icon-btn">✕</button>
-        </div>
-        <div id="viewer" class="sv-viewer"></div>
-        <div class="sv-viewer-actions">
-          <button id="captureCameraBtn" class="sv-btn sv-btn-primary">Définir comme vue principale</button>
-          <button id="updateGoogleCameraBtn" class="sv-btn sv-btn-soft">Corriger caméra Google</button>
-        </div>
-      </div>
-    </div>
-
     <!-- MARK PUBLISHED MODAL -->
     <div id="markModal" class="sv-modal hidden">
       <div class="sv-modal-card sv-small-modal">
         <div class="sv-modal-head">
-          <div><span class="sv-kicker">Déjà publié</span><h2>Associer une photo Google</h2></div>
+          <div><span class="sv-kicker">Already published</span><h2>Link a Google photo</h2></div>
           <button data-close-modal="markModal" class="sv-icon-btn">✕</button>
         </div>
         <label>Google Photo ID<input id="markPhotoId" class="sv-input" placeholder="CAoS..."></label>
-        <label>Lien de partage, optionnel<input id="markShareLink" class="sv-input" placeholder="https://www.google.com/maps/..."></label>
-        <button id="confirmMarkPublishedBtn" class="sv-btn sv-btn-primary w-full">Marquer comme publiée</button>
+        <label>Share link, optional<input id="markShareLink" class="sv-input" placeholder="https://www.google.com/maps/..."></label>
+        <button id="confirmMarkPublishedBtn" class="sv-btn sv-btn-primary w-full">Mark as published</button>
       </div>
     </div>
 
     <div id="toastBox" class="sv-toast-box"></div>
   </div>
 
-  <script src="{% static 'app_streetview/js/publisher.js' %}"></script>
+  <script src="{% static 'public/js/twinscopes-unified-theme-v47.js' %}?v=48"></script>
+  <script src="{% static 'app_streetview/js/publisher.js' %}?v=street-projects-visual-studio-48"></script>
 </body>
 </html>

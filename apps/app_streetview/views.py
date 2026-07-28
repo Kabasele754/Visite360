@@ -12,6 +12,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Max, Prefetch
+from apps.organizations.models import Organization
+from apps.tours.models import Hotspot, Scene360, Tour
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -70,7 +72,9 @@ def _as_float(value, default=None):
 
 def _owned_tour(request, tour_id):
     return get_object_or_404(
-        StreetViewTour.objects.filter(owner=request.user).prefetch_related(
+        StreetViewTour.objects.filter(owner=request.user).select_related(
+            "source_organization", "source_tour"
+        ).prefetch_related(
             Prefetch("scenes", queryset=StreetViewScene.objects.prefetch_related("hotspots")),
             "connections",
         ),
@@ -86,6 +90,22 @@ def _absolute(request, url):
     if not url:
         return ""
     return request.build_absolute_uri(url)
+
+
+def _user_source_organizations(user):
+    queryset = Organization.objects.all().order_by("name")
+    if user.is_staff or user.is_superuser:
+        return queryset
+    return queryset.filter(memberships__user=user, memberships__is_active=True).distinct()
+
+
+def _owned_source_tour(request, tour_id):
+    organization_ids = _user_source_organizations(request.user).values_list("id", flat=True)
+    return get_object_or_404(
+        Tour.objects.select_related("organization", "place").prefetch_related("scenes", "scenes__hotspots"),
+        pk=tour_id,
+        organization_id__in=organization_ids,
+    )
 
 
 @login_required
@@ -161,8 +181,8 @@ def google_oauth_callback(request):
         return _json_response(
             {
                 "ok": False,
-                "error": "OAuth state absent dans la session Django.",
-                "solution": "Relance /apis/streetview/oauth/start/ depuis le même navigateur.",
+                "error": "OAuth state is missing from the Django session.",
+                "solution": "Restart /apis/streetview/oauth/start/ from the same browser.",
             },
             status=400,
         )
@@ -171,8 +191,8 @@ def google_oauth_callback(request):
         return _json_response(
             {
                 "ok": False,
-                "error": "PKCE code_verifier absent dans la session Django.",
-                "solution": "Relance /apis/streetview/oauth/start/. Ne recharge pas directement l'URL callback.",
+                "error": "PKCE code_verifier is missing from the Django session.",
+                "solution": "Restart /apis/streetview/oauth/start/. Do not reload the callback URL directly.",
             },
             status=400,
         )
@@ -181,10 +201,10 @@ def google_oauth_callback(request):
         return _json_response(
             {
                 "ok": False,
-                "error": "OAuth state invalide.",
+                "error": "Invalid OAuth state.",
                 "expected_state": expected_state,
                 "received_state": received_state,
-                "solution": "Utilise toujours le même domaine pendant tout le test : localhost OU 127.0.0.1, pas les deux.",
+                "solution": "Use the same domain for the entire OAuth flow: either localhost or 127.0.0.1, not both.",
             },
             status=400,
         )
@@ -209,7 +229,7 @@ def google_oauth_callback(request):
         return _json_response(
             {
                 "ok": False,
-                "error": "Connexion Google impossible.",
+                "error": "Unable to connect the Google account.",
                 "details": str(exc),
                 "callbackUrl": request.build_absolute_uri(),
                 "redirectUriConfigured": getattr(settings, "GOOGLE_STREETVIEW_REDIRECT_URI", ""),
@@ -241,13 +261,180 @@ def google_oauth_callback(request):
 @require_POST
 def google_disconnect(request):
     StreetViewGoogleAccount.objects.filter(user=request.user).delete()
-    return _json_response({"ok": True, "message": "Compte Google Street View déconnecté."})
+    return _json_response({"ok": True, "message": "Google Street View account disconnected."})
+
+
+@login_required
+@require_POST
+def import_source_tour(request):
+    data = _parse_json_body(request)
+    if data is None:
+        return _json_response({"ok": False, "error": "Invalid JSON payload."}, status=400)
+
+    source_tour_id = data.get("source_tour_id")
+    if not source_tour_id:
+        return _json_response({"ok": False, "error": "Select an organization tour first."}, status=400)
+
+    source_tour = _owned_source_tour(request, source_tour_id)
+    # Imported organization tours reuse the original panorama files. They must
+    # remain local so Street Projects never removes assets owned by the source
+    # Twinscopes tour after Google verification.
+    storage_policy = StreetViewTour.StoragePolicy.KEEP_LOCAL
+
+    with transaction.atomic():
+        project, created = StreetViewTour.objects.select_for_update().get_or_create(
+            owner=request.user,
+            source_tour=source_tour,
+            defaults={
+                "source_organization": source_tour.organization,
+                "title": source_tour.title,
+                "description": source_tour.description or "",
+                "project_mode": StreetViewTour.ProjectMode.MANAGED,
+                "storage_policy": storage_policy,
+                "auto_connect": True,
+                "auto_sync_status": True,
+            },
+        )
+        if not created:
+            project.source_organization = source_tour.organization
+            project.title = data.get("title") or project.title or source_tour.title
+            project.description = source_tour.description or project.description
+            project.storage_policy = storage_policy
+            project.save(update_fields=["source_organization", "title", "description", "storage_policy", "updated_at"])
+
+        existing_by_source_id = {}
+        for direct_scene in project.scenes.all():
+            source_scene_id = str((direct_scene.exif_data or {}).get("twinscopes_source_scene_id", ""))
+            if source_scene_id.isdigit():
+                existing_by_source_id[int(source_scene_id)] = direct_scene
+
+        source_to_direct = {}
+        created_scene_count = 0
+        refreshed_scene_count = 0
+
+        latitude = source_tour.lat
+        longitude = source_tour.lng
+        if latitude is None and getattr(source_tour, "place", None):
+            latitude = source_tour.place.latitude
+        if longitude is None and getattr(source_tour, "place", None):
+            longitude = source_tour.place.longitude
+
+        for source_scene in source_tour.scenes.all().order_by("order", "id"):
+            source_image = (
+                source_scene.image_360_original
+                or source_scene.image_360
+                or source_scene.image_360_mobile
+                or source_scene.image_360_preview
+            )
+            if not source_image:
+                continue
+
+            try:
+                image_width = int(source_image.width or 0)
+                image_height = int(source_image.height or 0)
+            except Exception:
+                image_width = image_height = 0
+            try:
+                file_size = int(source_image.size or 0)
+            except Exception:
+                file_size = 0
+
+            defaults = {
+                "title": source_scene.title,
+                "description": "",
+                "image": source_image.name,
+                "image_width": image_width,
+                "image_height": image_height,
+                "file_size": file_size,
+                "latitude": latitude,
+                "longitude": longitude,
+                "heading": float(source_scene.yaw_default or 0) % 360,
+                "pitch": float(source_scene.pitch_default or 0),
+                "roll": 0,
+                "initial_yaw": float(source_scene.yaw_default or 0),
+                "initial_pitch": float(source_scene.pitch_default or 0),
+                "initial_fov": float(source_scene.hfov_default or 90),
+                "xmp_detected": False,
+                "exif_data": {
+                    "twinscopes_source_scene_id": source_scene.id,
+                    "twinscopes_source_tour_id": source_tour.id,
+                    "shared_storage_reference": True,
+                },
+                "order": source_scene.order,
+            }
+
+            direct_scene = existing_by_source_id.get(source_scene.id)
+            if direct_scene:
+                for field, value in defaults.items():
+                    setattr(direct_scene, field, value)
+                if not direct_scene.google_photo_id:
+                    direct_scene.publish_status = (
+                        StreetViewScene.PublishStatus.READY
+                        if latitude is not None and longitude is not None
+                        else StreetViewScene.PublishStatus.LOCAL
+                    )
+                direct_scene.save(update_fields=[
+                    *defaults.keys(), "publish_status", "updated_at"
+                ])
+                refreshed_scene_count += 1
+            else:
+                direct_scene = StreetViewScene.objects.create(
+                    tour=project,
+                    publish_status=(
+                        StreetViewScene.PublishStatus.READY
+                        if latitude is not None and longitude is not None
+                        else StreetViewScene.PublishStatus.LOCAL
+                    ),
+                    **defaults,
+                )
+                created_scene_count += 1
+
+            source_to_direct[source_scene.id] = direct_scene
+
+        # Rebuild local project navigation from the existing Twinscopes scene links.
+        StreetViewConnection.objects.filter(tour=project).delete()
+        connection_rows = []
+        source_hotspots = Hotspot.objects.filter(
+            scene__tour=source_tour,
+            target_scene__isnull=False,
+            type__in=[Hotspot.Type.NAVIGATE, Hotspot.Type.FLOOR, Hotspot.Type.DOOR],
+        ).select_related("scene", "target_scene").order_by("scene__order", "id")
+        for order, source_link in enumerate(source_hotspots):
+            from_scene = source_to_direct.get(source_link.scene_id)
+            to_scene = source_to_direct.get(source_link.target_scene_id)
+            if not from_scene or not to_scene or from_scene.id == to_scene.id:
+                continue
+            connection_rows.append(StreetViewConnection(
+                tour=project,
+                from_scene=from_scene,
+                to_scene=to_scene,
+                yaw=float(source_link.yaw or 0),
+                pitch=float(source_link.pitch or 0),
+                label=source_link.label or "Navigation",
+                order=order,
+            ))
+        if connection_rows:
+            StreetViewConnection.objects.bulk_create(connection_rows, ignore_conflicts=True)
+
+        project.mark_ready_if_valid()
+
+    refreshed = _owned_tour(request, project.id)
+    return _json_response({
+        "ok": True,
+        "created": created,
+        "created_scene_count": created_scene_count,
+        "refreshed_scene_count": refreshed_scene_count,
+        "message": "The organization tour is ready in Street Projects. Original panoramas remain safely stored in the organization library.",
+        "tour": tour_to_dict(refreshed, absolute_url_builder=lambda url: _absolute(request, url)),
+    }, status=201 if created else 200)
 
 
 @login_required
 @require_GET
 def list_tours(request):
-    tours = StreetViewTour.objects.filter(owner=request.user).prefetch_related("scenes", "connections")
+    tours = StreetViewTour.objects.filter(owner=request.user).select_related(
+        "source_organization", "source_tour"
+    ).prefetch_related("scenes", "connections")
     return _json_response({"results": [tour_to_dict(tour, include_children=False) for tour in tours]})
 
 
@@ -256,9 +443,9 @@ def list_tours(request):
 def create_tour(request):
     data = _parse_json_body(request)
     if data is None:
-        return _json_response({"ok": False, "error": "JSON invalide."}, status=400)
+        return _json_response({"ok": False, "error": "Invalid JSON payload."}, status=400)
 
-    title = (data.get("title") or request.POST.get("title") or "Nouvelle visite Street View").strip()
+    title = (data.get("title") or request.POST.get("title") or "New Street View project").strip()
     description = (data.get("description") or request.POST.get("description") or "").strip()
 
     storage_policy = data.get("storage_policy") or request.POST.get("storage_policy") or StreetViewTour.StoragePolicy.KEEP_LOCAL
@@ -290,7 +477,7 @@ def update_tour(request, tour_id):
     tour = _owned_tour(request, tour_id)
     data = _parse_json_body(request)
     if data is None:
-        return _json_response({"ok": False, "error": "JSON invalide."}, status=400)
+        return _json_response({"ok": False, "error": "Invalid JSON payload."}, status=400)
 
     if "title" in data:
         tour.title = (data.get("title") or tour.title).strip()
@@ -322,13 +509,13 @@ def upload_scenes(request, tour_id):
     tour = _owned_tour(request, tour_id)
     files = request.FILES.getlist("images") or request.FILES.getlist("files")
     if not files:
-        return _json_response({"ok": False, "error": "Aucune image reçue. Utilise le champ multipart images[]."}, status=400)
+        return _json_response({"ok": False, "error": "No image received. Use the multipart images[] field."}, status=400)
 
     max_order = tour.scenes.aggregate(value=Max("order"))["value"] or 0
     created_scenes = []
 
     for index, image_file in enumerate(files, start=1):
-        title = Path(image_file.name).stem.replace("_", " ").replace("-", " ").strip() or f"Scène {index}"
+        title = Path(image_file.name).stem.replace("_", " ").replace("-", " ").strip() or f"Scene {index}"
         scene = StreetViewScene.objects.create(
             tour=tour,
             title=title,
@@ -373,7 +560,7 @@ def update_scene(request, scene_id):
     scene = _scene_in_owned_tour(request, scene_id)
     data = _parse_json_body(request)
     if data is None:
-        return _json_response({"ok": False, "error": "JSON invalide."}, status=400)
+        return _json_response({"ok": False, "error": "Invalid JSON payload."}, status=400)
 
     simple_fields = ["title", "description"]
     for field in simple_fields:
@@ -429,7 +616,7 @@ def save_connections(request, tour_id):
     tour = _owned_tour(request, tour_id)
     data = _parse_json_body(request)
     if data is None:
-        return _json_response({"ok": False, "error": "JSON invalide."}, status=400)
+        return _json_response({"ok": False, "error": "Invalid JSON payload."}, status=400)
 
     connections = data.get("connections", [])
     scene_ids = set(tour.scenes.values_list("id", flat=True))
@@ -464,7 +651,7 @@ def save_hotspots(request, tour_id):
     tour = _owned_tour(request, tour_id)
     data = _parse_json_body(request)
     if data is None:
-        return _json_response({"ok": False, "error": "JSON invalide."}, status=400)
+        return _json_response({"ok": False, "error": "Invalid JSON payload."}, status=400)
 
     hotspots = data.get("hotspots", [])
     scene_ids = set(tour.scenes.values_list("id", flat=True))
@@ -507,7 +694,7 @@ def save_project_payload(request, tour_id):
     tour = _owned_tour(request, tour_id)
     data = _parse_json_body(request)
     if data is None:
-        return _json_response({"ok": False, "error": "JSON invalide."}, status=400)
+        return _json_response({"ok": False, "error": "Invalid JSON payload."}, status=400)
 
     with transaction.atomic():
         for item in data.get("scenes", []):
@@ -615,7 +802,7 @@ def _scene_is_already_published(scene) -> bool:
 def _get_streetview_client_for_user(request):
     account = StreetViewGoogleAccount.objects.filter(user=request.user).first()
     if not account or not account.is_connected:
-        raise GoogleStreetViewAuthError("Compte Google Street View non connecté.")
+        raise GoogleStreetViewAuthError("Google Street View account is not connected.")
     access_token = get_valid_access_token(account)
     return StreetViewPublishClient(access_token=access_token)
 
@@ -669,7 +856,7 @@ def _send_google_connections(client, tour, *, only_scene_ids=None):
                 "scene_id": scene.id,
                 "title": scene.title,
                 "ok": False,
-                "message": "Scène non publiée: aucun Google Photo ID.",
+                "message": "Scene not published: no Google Photo ID.",
                 "targets": [],
             })
             warnings += 1
@@ -694,7 +881,7 @@ def _send_google_connections(client, tour, *, only_scene_ids=None):
                 "scene_id": scene.id,
                 "title": scene.title,
                 "ok": True,
-                "message": "Aucune connexion sortante.",
+                "message": "No outgoing connection.",
                 "targets": [],
             })
             continue
@@ -720,7 +907,7 @@ def _send_google_connections(client, tour, *, only_scene_ids=None):
                 "scene_id": scene.id,
                 "title": scene.title,
                 "ok": True,
-                "message": "Connexions Google mises à jour.",
+                "message": "Google connections updated.",
                 "targets": target_ids,
             })
         except StreetViewPublishError as exc:
@@ -792,7 +979,7 @@ def mark_scene_published(request, scene_id):
     scene = _scene_in_owned_tour(request, scene_id)
     data = _parse_json_body(request)
     if data is None:
-        return _json_response({"ok": False, "error": "JSON invalide."}, status=400)
+        return _json_response({"ok": False, "error": "Invalid JSON payload."}, status=400)
 
     photo_id = (data.get("photo_id") or data.get("google_photo_id") or "").strip()
     share_link = (data.get("share_link") or data.get("google_share_link") or "").strip()
@@ -800,7 +987,7 @@ def mark_scene_published(request, scene_id):
     status = data.get("publish_status") or StreetViewScene.PublishStatus.CREATED
 
     if not photo_id:
-        return _json_response({"ok": False, "error": "Google Photo ID obligatoire."}, status=400)
+        return _json_response({"ok": False, "error": "Google Photo ID is required."}, status=400)
 
     scene.google_photo_id = photo_id
     scene.google_share_link = share_link or _google_share_link_from_photo_id(photo_id)
@@ -915,7 +1102,7 @@ def publish_tour(request, tour_id):
     tour = _owned_tour(request, tour_id)
     data = _parse_json_body(request) if request.body else {}
     if data is None:
-        return _json_response({"ok": False, "error": "JSON invalide."}, status=400)
+        return _json_response({"ok": False, "error": "Invalid JSON payload."}, status=400)
 
     skip_published = bool(data.get("skip_published", True))
     force_reupload = bool(data.get("force_reupload", False))
@@ -946,7 +1133,7 @@ def publish_tour(request, tour_id):
 
     scenes = _publishable_scenes_for_tour(tour)
     if not scenes:
-        return _json_response({"ok": False, "error": "Aucune scène dans cette visite."}, status=400)
+        return _json_response({"ok": False, "error": "This project has no scene."}, status=400)
 
     missing_gps = [scene.title for scene in scenes if not scene.has_gps]
     if missing_gps:
@@ -971,7 +1158,7 @@ def publish_tour(request, tour_id):
                     scene.save(update_fields=["google_share_link", "updated_at"])
                 job.published_scenes += 1
                 job.save(update_fields=["published_scenes", "updated_at"])
-                job.append_log("info", f"Scène déjà publiée, upload ignoré: {scene.title}", scene_id=scene.id, google_photo_id=scene.google_photo_id)
+                job.append_log("info", f"Scene already published, upload skipped: {scene.title}", scene_id=scene.id, google_photo_id=scene.google_photo_id)
                 continue
 
             job.append_log("info", f"Upload de la scène {scene.title}", scene_id=scene.id)
@@ -1014,12 +1201,12 @@ def publish_tour(request, tour_id):
             ])
             job.published_scenes += 1
             job.save(update_fields=["published_scenes", "updated_at"])
-            job.append_log("success", f"Photo créée sur Google Street View: {scene.google_photo_id}", scene_id=scene.id, share_link=scene.google_share_link)
+            job.append_log("success", f"Photo created on Google Street View: {scene.google_photo_id}", scene_id=scene.id, share_link=scene.google_share_link)
 
         initial_connections = _send_google_connections(client, tour)
         for item in initial_connections["results"]:
             level = "success" if item.get("ok") else "warning"
-            job.append_log(level, item.get("message") or "Connexion traitée", scene_id=item.get("scene_id"), targets=item.get("targets", []))
+            job.append_log(level, item.get("message") or "Connection processed", scene_id=item.get("scene_id"), targets=item.get("targets", []))
 
         status_before = sync_direct_project(client, tour)
         repaired = repair_direct_connections(
@@ -1088,7 +1275,7 @@ def update_google_camera(request, scene_id):
         scene.save(update_fields=["publish_status", "last_error", "updated_at"])
         return _json_response({
             "ok": True,
-            "message": "Caméra Google Street View mise à jour.",
+            "message": "Google Street View camera updated.",
             "google": payload,
             "scene": scene_to_dict(scene, absolute_url_builder=lambda url: _absolute(request, url)),
         })

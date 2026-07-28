@@ -7,8 +7,9 @@
     <script>
         (function () {
             try {
-                const saved = localStorage.getItem("twinscopes-dashboard-theme")
-                    || localStorage.getItem("twinscopes-market-theme")
+                const saved = localStorage.getItem("twinscopes-market-theme")
+                    || localStorage.getItem("twinscopes-dashboard-theme")
+                    || localStorage.getItem("studio-builder-theme")
                     || "light";
                 document.documentElement.dataset.dashboardTheme = saved === "dark" ? "dark" : "light";
                 document.documentElement.style.colorScheme = saved === "dark" ? "dark" : "light";
@@ -19,6 +20,7 @@
 
     <!-- Tailwind CDN -->
     <link rel="stylesheet" href="{% static 'public/dist/tailwind.css' %}"> 
+    <link rel="stylesheet" href="{% static 'public/css/twinscopes-unified-theme-v47.css' %}?v=47">
 
     <script>
         tailwind.config = {
@@ -127,6 +129,12 @@
                         <span class="font-bold">Organizations</span>
                     </a>
                     {% endif %}
+
+                    <a href="{% url 'apps.app_streetview:publisher' %}{% if current_organization %}?organization={{ current_organization.id }}{% endif %}"
+                       class="group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition {% if current_url == 'publisher' %}bg-blue-600 text-white shadow-lg shadow-blue-500/20{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-950{% endif %}">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-xl {% if current_url == 'publisher' %}bg-white/15{% else %}bg-slate-100 group-hover:bg-white{% endif %}">🗺️</span>
+                        <span class="font-bold">Google Street View</span>
+                    </a>
 
                     {% if current_organization %}
                         {% url 'dashboard-places-list' current_organization.slug as places_url %}
@@ -301,6 +309,12 @@
             </a>
             {% endif %}
 
+            <a href="{% url 'apps.app_streetview:publisher' %}{% if current_organization %}?organization={{ current_organization.id }}{% endif %}"
+               class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold {% if current_url == 'publisher' %}bg-blue-600 text-white{% else %}bg-slate-50 text-slate-700{% endif %}">
+                <span>🗺️</span>
+                Google Street View
+            </a>
+
             {% if current_organization %}
                 {% url 'dashboard-places-list' current_organization.slug as places_url %}
                 {% if places_url %}
@@ -396,9 +410,9 @@
     --dash-accent:#0891b2;
 }
 html[data-dashboard-theme="dark"] {
-    --dash-bg:#070d18;
-    --dash-surface:#0f172a;
-    --dash-surface-soft:#111c2e;
+    --dash-bg:#030303;
+    --dash-surface:#090909;
+    --dash-surface-soft:#111111;
     --dash-border:rgba(148,163,184,.17);
     --dash-text:#f8fafc;
     --dash-muted:#94a3b8;
@@ -420,7 +434,7 @@ html[data-dashboard-theme="dark"] [class*="border-slate-200/"] { border-color:va
 html[data-dashboard-theme="dark"] input,
 html[data-dashboard-theme="dark"] select,
 html[data-dashboard-theme="dark"] textarea {
-    background:#0b1220!important; color:#f8fafc!important; border-color:var(--dash-border)!important;
+    background:#111111!important; color:#f8fafc!important; border-color:var(--dash-border)!important;
 }
 .ts-dashboard-theme-toggle {
     position:fixed; right:18px; bottom:18px; z-index:80;
@@ -455,6 +469,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.documentElement.style.colorScheme = value;
         localStorage.setItem("twinscopes-dashboard-theme", value);
         localStorage.setItem("twinscopes-market-theme", value);
+        localStorage.setItem("studio-builder-theme", value);
         if (button) button.textContent = value === "dark" ? "☀" : "◐";
     };
     if (button) {
@@ -469,11 +484,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <style>
 html[data-dashboard-theme="dark"] .shadow-sm,html[data-dashboard-theme="dark"] .shadow-soft,html[data-dashboard-theme="dark"] .shadow-card{box-shadow:0 16px 42px rgba(0,0,0,.26)!important}
-html[data-dashboard-theme="dark"] table thead{background:#111c2e!important;color:#94a3b8!important}
+html[data-dashboard-theme="dark"] table thead{background:#111111!important;color:#94a3b8!important}
 html[data-dashboard-theme="dark"] table tbody tr{border-color:rgba(148,163,184,.14)!important}
 html[data-dashboard-theme="dark"] a[class*="bg-slate-950"]{background:#e2e8f0!important;color:#0f172a!important}
-html[data-dashboard-theme="dark"] .ts-role-banner{background:linear-gradient(145deg,#0f172a,#111c2e)}
-html[data-dashboard-theme="dark"] .ts-product-thumb{background:#111c2e}
+html[data-dashboard-theme="dark"] .ts-role-banner{background:linear-gradient(145deg,#090909,#111111)}
+html[data-dashboard-theme="dark"] .ts-product-thumb{background:#111111}
 </style>
 
 
@@ -489,13 +504,13 @@ html[data-dashboard-theme="dark"] body > .min-h-screen {
     background:
         radial-gradient(circle at 12% -5%, rgba(6,182,212,.16), transparent 34rem),
         radial-gradient(circle at 95% 8%, rgba(37,99,235,.11), transparent 30rem),
-        linear-gradient(180deg, #050a13 0%, #07101d 100%) !important;
+        linear-gradient(180deg, #030303 0%, #070707 100%) !important;
 }
 html[data-dashboard-theme="dark"] aside.fixed,
 html[data-dashboard-theme="dark"] #mobileDrawer,
 html[data-dashboard-theme="dark"] header.hidden,
 html[data-dashboard-theme="dark"] .sticky.top-0 {
-    background:rgba(7,13,24,.91)!important;
+    background:rgba(3,3,3,.94)!important;
     border-color:rgba(148,163,184,.15)!important;
     color:var(--dash-text)!important;
     box-shadow:0 22px 70px rgba(0,0,0,.24)!important;
@@ -515,7 +530,7 @@ html[data-dashboard-theme="dark"] aside a:not([class*="bg-blue-600"]):not([class
 html[data-dashboard-theme="dark"] nav a span[class*="bg-slate-100"],
 html[data-dashboard-theme="dark"] aside a span[class*="bg-slate-100"],
 html[data-dashboard-theme="dark"] #closeMobileDrawer {
-    background:#172235!important;
+    background:#151515!important;
     color:#dbeafe!important;
 }
 html[data-dashboard-theme="dark"] main .bg-white,
@@ -523,13 +538,13 @@ html[data-dashboard-theme="dark"] main [class*="bg-white/"],
 html[data-dashboard-theme="dark"] main section[class*="bg-white"],
 html[data-dashboard-theme="dark"] main article[class*="bg-white"],
 html[data-dashboard-theme="dark"] main div[class*="bg-white"] {
-    background-color:#0d1727!important;
+    background-color:#090909!important;
 }
 html[data-dashboard-theme="dark"] main .bg-slate-50,
 html[data-dashboard-theme="dark"] main .bg-slate-100,
 html[data-dashboard-theme="dark"] main [class*="bg-slate-50/"],
 html[data-dashboard-theme="dark"] main [class*="bg-slate-100/"] {
-    background-color:#111d2f!important;
+    background-color:#111111!important;
 }
 html[data-dashboard-theme="dark"] .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
 html[data-dashboard-theme="dark"] .border-slate-100,
@@ -539,13 +554,13 @@ html[data-dashboard-theme="dark"] [class*="border-slate-200/"] {
 }
 html[data-dashboard-theme="dark"] table { color:#dbe5f3!important; }
 html[data-dashboard-theme="dark"] table thead,
-html[data-dashboard-theme="dark"] table th { background:#101c2d!important; color:#9fb0c4!important; }
+html[data-dashboard-theme="dark"] table th { background:#111111!important; color:#9fb0c4!important; }
 html[data-dashboard-theme="dark"] table tbody tr:hover { background:rgba(30,41,59,.55)!important; }
 html[data-dashboard-theme="dark"] input::placeholder,
 html[data-dashboard-theme="dark"] textarea::placeholder { color:#64748b!important; opacity:1; }
-html[data-dashboard-theme="dark"] option { background:#0b1220; color:#f8fafc; }
+html[data-dashboard-theme="dark"] option { background:#111111; color:#f8fafc; }
 html[data-dashboard-theme="dark"] .ts-dashboard-theme-toggle {
-    background:rgba(15,23,42,.92);
+    background:rgba(9,9,9,.96);
     border-color:rgba(34,211,238,.32);
     color:#ecfeff;
     box-shadow:0 18px 50px rgba(0,0,0,.42), 0 0 0 1px rgba(34,211,238,.08) inset;
@@ -557,5 +572,6 @@ html[data-dashboard-theme="dark"] .ts-dashboard-theme-toggle {
 }
 </style>
 
+<script src="{% static 'public/js/twinscopes-unified-theme-v47.js' %}?v=47"></script>
 </body>
 </html>

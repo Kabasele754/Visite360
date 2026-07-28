@@ -65,6 +65,7 @@ const API = '/apis/streetview/';
 
 const state = {
   booted: false,
+  initialSelectionApplied: false,
   uiBound: false,
   activeTab: 'prepare',
   orgs: [],
@@ -126,7 +127,7 @@ async function requestJSON(url, opts = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw Object.assign(new Error(data.error || `Erreur HTTP ${res.status}`), { data, status: res.status });
+    throw Object.assign(new Error(data.error || `HTTP error ${res.status}`), { data, status: res.status });
   }
   return data;
 }
@@ -246,7 +247,7 @@ function updateTourStats() {
     ['GPS', `${gps}/${all.length}`],
     ['Publishedes', `${published}/${all.length}`],
     ['Connected', `${connected}/${all.length}`],
-    ['Liaisons', nav],
+    ['Connections', nav],
   ].map(([k, v]) => `<span class="stat-chip">${k}: ${v}</span>`).join('');
 }
 
@@ -255,7 +256,7 @@ async function boot() {
   state.booted = true;
   state.mapsReady = Boolean(window.google && google.maps);
 
-  // Important: l'interface doit rester cliquable même si une requête API échoue.
+  // Keep the interface interactive even when an API request fails.
   bindActions();
   bindMainTabsFallback();
   setMode('auto');
@@ -272,13 +273,13 @@ async function boot() {
     await loadOrganizations();
   } catch (e) {
     console.error(e);
-    setHtml('organizationsList', `<div class="muted-box">Impossible de charger les organisations.<br>${esc(e.message || e)}</div>`);
-    toast(e.message || 'Erreur chargement organisations');
+    setHtml('organizationsList', `<div class="muted-box">Unable to load organizations.<br>${esc(e.message || e)}</div>`);
+    toast(e.message || 'Unable to load organizations');
   }
 }
 
-// La fonction est déclarée en haut du fichier pour éviter l'erreur Google callback
-// `initCanonicalPublisherPage is not a function` lorsque Maps charge très vite.
+// Declare the function near the top to avoid the Google callback race condition
+// when Maps loads before the rest of the page.
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
@@ -307,6 +308,19 @@ async function loadOrganizations() {
   const data = await requestJSON(API + 'source/organizations/');
   state.orgs = data.results || [];
   renderOrganizations();
+
+  if (!state.initialSelectionApplied) {
+    state.initialSelectionApplied = true;
+    const params = new URLSearchParams(window.location.search);
+    const requestedOrg = Number(
+      window.STREETVIEW_INITIAL_SELECTION?.organizationId ||
+      params.get('organization') ||
+      0
+    );
+    if (requestedOrg && state.orgs.some(org => Number(org.id) === requestedOrg)) {
+      await selectOrg(requestedOrg);
+    }
+  }
 }
 
 function renderOrganizations() {
@@ -315,19 +329,24 @@ function renderOrganizations() {
     <button class="item ${state.selectedOrg === o.id ? 'active' : ''}" data-org="${o.id}">
       <b>${esc(o.name)}</b><span>${esc(o.slug)} · ${esc(o.status)}</span>
     </button>
-  `).join('') || '<div class="muted-box">Aucune organisation.</div>';
+  `).join('') || '<div class="muted-box">No organizations found.</div>';
   box.querySelectorAll('[data-org]').forEach(b => b.onclick = () => selectOrg(Number(b.dataset.org)));
 }
 
 async function selectOrg(id) {
   state.selectedOrg = id;
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('organization', String(id));
+    history.replaceState({}, '', url);
+  } catch (_) {}
   state.selectedPlace = null;
   state.selectedTour = null;
   state.project = null;
   state.selectedScene = null;
   stopViewerSync();
   renderOrganizations();
-  $('placesList').innerHTML = 'Chargement...';
+  $('placesList').innerHTML = 'Loading...';
   $('toursList').innerHTML = '<div class="muted-box">Choisis un place.</div>';
   hideWorkspace();
   const data = await requestJSON(`${API}source/organizations/${id}/places/`);
@@ -341,7 +360,7 @@ function renderPlaces() {
     <button class="item ${state.selectedPlace === p.id ? 'active' : ''}" data-place="${p.id}">
       <b>${esc(p.name)}</b><span>${esc(p.city || 'Ville ?')} · ${esc(p.category)} · ${p.latitude && p.longitude ? 'GPS OK' : 'GPS manquant'}</span>
     </button>
-  `).join('') || '<div class="muted-box">Aucun place dans cette organisation.</div>';
+  `).join('') || '<div class="muted-box">No places found in this organization.</div>';
   box.querySelectorAll('[data-place]').forEach(b => b.onclick = () => selectPlace(Number(b.dataset.place)));
 }
 
@@ -352,7 +371,7 @@ async function selectPlace(id) {
   state.selectedScene = null;
   stopViewerSync();
   renderPlaces();
-  $('toursList').innerHTML = 'Chargement...';
+  $('toursList').innerHTML = 'Loading...';
   hideWorkspace();
   const data = await requestJSON(`${API}source/places/${id}/tours/`);
   state.tours = data.results || [];
@@ -369,7 +388,7 @@ function renderTours() {
         <span>${t.scenes_count || 0} scene(s) · ${sv ? `${sv.published_scenes_count}/${sv.scenes_count} published` : 'not prepared yet'}</span>
       </button>
     `;
-  }).join('') || '<div class="muted-box">Aucun tour pour ce place.</div>';
+  }).join('') || '<div class="muted-box">No tours found for this place.</div>';
   box.querySelectorAll('[data-tour]').forEach(b => b.onclick = () => selectTour(Number(b.dataset.tour)));
 }
 
@@ -380,7 +399,7 @@ async function selectTour(id) {
   stopViewerSync();
   $('workspace').classList.remove('hidden');
   $('emptyState').classList.add('hidden');
-  $('publishLogs').textContent = 'Chargement du tour...';
+  $('publishLogs').textContent = 'Loading tour...';
   const data = await requestJSON(`${API}source/tours/${id}/`);
   state.project = data;
   state.selectedScene = data.scenes?.[0]?.id || null;
@@ -399,7 +418,7 @@ function renderWorkspace() {
   const p = state.project;
   if (!p) return;
   const t = p.tour || {}, place = p.place || {}, org = p.organization || {};
-  setText('breadcrumb', `${org.name || 'Organisation'} / ${place.name || 'Place'}`);
+  setText('breadcrumb', `${org.name || 'Organization'} / ${place.name || 'Place'}`);
   setText('tourTitle', t.title || 'Tour');
   setText('tourMeta', `${place.address_line || t.location || ''} ${place.city || ''} ${place.country || ''}`.trim() || 'No address set');
   setText('sceneCounter', `${(p.scenes || []).length}`);
@@ -851,7 +870,7 @@ function renderManualConnections() {
   if (selected) to.value = String(selected.id);
   if (!nav.length) {
     list.classList.add('muted-box');
-    list.innerHTML = 'Aucune liaison pour ce tour.';
+    list.innerHTML = 'No connections for this tour.';
     return;
   }
   list.classList.remove('muted-box');

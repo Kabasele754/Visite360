@@ -511,6 +511,11 @@ def _serialize_scene_index_payload(request, scene):
         "yaw_default": scene.yaw_default if scene.yaw_default is not None else 0,
         "pitch_default": scene.pitch_default if scene.pitch_default is not None else 0,
         "hfov_default": scene.hfov_default if scene.hfov_default is not None else 100,
+        "camera_limits": {
+            "enabled": bool(getattr(scene, "camera_limits_enabled", True)),
+            "pitch_min": float(getattr(scene, "camera_pitch_min", -82.0)),
+            "pitch_max": float(getattr(scene, "camera_pitch_max", 62.0)),
+        },
         "spatial": _scene_spatial_payload(request, scene),
         "hotspots": navigation_hotspots,
         "details_loaded": False,
@@ -554,6 +559,11 @@ def _serialize_scene_payload(request, scene, include_hotspots=True, prefetch=Non
         "yaw_default": scene.yaw_default if scene.yaw_default is not None else 0,
         "pitch_default": scene.pitch_default if scene.pitch_default is not None else 0,
         "hfov_default": scene.hfov_default if scene.hfov_default is not None else 100,
+        "camera_limits": {
+            "enabled": bool(getattr(scene, "camera_limits_enabled", True)),
+            "pitch_min": float(getattr(scene, "camera_pitch_min", -82.0)),
+            "pitch_max": float(getattr(scene, "camera_pitch_max", 62.0)),
+        },
         "tripod_logo": {
             "enabled": bool(getattr(scene, "tripod_logo_enabled", False)),
             "size": int(getattr(scene, "tripod_logo_size", 132) or 132),
@@ -561,10 +571,16 @@ def _serialize_scene_payload(request, scene, include_hotspots=True, prefetch=Non
             "pitch": float(88.5 if getattr(scene, "tripod_logo_pitch", None) is None else scene.tripod_logo_pitch),
             "offset_x": int(getattr(scene, "tripod_logo_offset_x", 0) or 0),
             "offset_y": int(getattr(scene, "tripod_logo_offset_y", 0) or 0),
-                "rotation": float(getattr(scene, "tripod_logo_rotation", 0.0) or 0.0),
-                "tilt_x": float(getattr(scene, "tripod_logo_tilt_x", 0.0) or 0.0),
-                "tilt_y": float(getattr(scene, "tripod_logo_tilt_y", 0.0) or 0.0),
-                "radius": int(getattr(scene, "tripod_logo_radius", 900) or 900),
+            "rotation": float(getattr(scene, "tripod_logo_rotation", 0.0) or 0.0),
+            "tilt_x": float(getattr(scene, "tripod_logo_tilt_x", 0.0) or 0.0),
+            "tilt_y": float(getattr(scene, "tripod_logo_tilt_y", 0.0) or 0.0),
+            "radius": int(getattr(scene, "tripod_logo_radius", 900) or 900),
+            "background_enabled": bool(getattr(scene, "tripod_logo_background_enabled", False)),
+            "background_color": str(getattr(scene, "tripod_logo_background_color", "#FFFFFF") or "#FFFFFF"),
+            "background_opacity": float(getattr(scene, "tripod_logo_background_opacity", 0.94)),
+            "background_width": int(getattr(scene, "tripod_logo_background_width", 160) or 160),
+            "background_height": int(getattr(scene, "tripod_logo_background_height", 160) or 160),
+            "background_radius": int(getattr(scene, "tripod_logo_background_radius", 50)),
         },
 
         **({
@@ -1204,6 +1220,9 @@ def _build_preview_payload_version(tour, scenes):
             "image_360_original": _safe_file_name(getattr(scene, "image_360_original", None)),
             "thumbnail_image": _safe_file_name(getattr(scene, "thumbnail_image", None)),
             "tiles_manifest": getattr(scene, "tiles_manifest", {}) or {},
+            "camera_limits_enabled": bool(getattr(scene, "camera_limits_enabled", True)),
+            "camera_pitch_min": float(getattr(scene, "camera_pitch_min", -82.0)),
+            "camera_pitch_max": float(getattr(scene, "camera_pitch_max", 62.0)),
             "tripod_logo_enabled": bool(getattr(scene, "tripod_logo_enabled", False)),
             "tripod_logo_size": int(getattr(scene, "tripod_logo_size", 132) or 132),
             "tripod_logo_yaw": float(getattr(scene, "tripod_logo_yaw", 0.0) or 0.0),
@@ -1214,6 +1233,12 @@ def _build_preview_payload_version(tour, scenes):
             "tripod_logo_tilt_x": float(getattr(scene, "tripod_logo_tilt_x", 0.0) or 0.0),
             "tripod_logo_tilt_y": float(getattr(scene, "tripod_logo_tilt_y", 0.0) or 0.0),
             "tripod_logo_radius": int(getattr(scene, "tripod_logo_radius", 900) or 900),
+            "tripod_logo_background_enabled": bool(getattr(scene, "tripod_logo_background_enabled", False)),
+            "tripod_logo_background_color": str(getattr(scene, "tripod_logo_background_color", "#FFFFFF") or "#FFFFFF"),
+            "tripod_logo_background_opacity": float(getattr(scene, "tripod_logo_background_opacity", 0.94)),
+            "tripod_logo_background_width": int(getattr(scene, "tripod_logo_background_width", 160) or 160),
+            "tripod_logo_background_height": int(getattr(scene, "tripod_logo_background_height", 160) or 160),
+            "tripod_logo_background_radius": int(getattr(scene, "tripod_logo_background_radius", 50)),
         }
 
         parts.append(json.dumps(scene_part, sort_keys=True, default=str))
@@ -1696,6 +1721,64 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
     if changed_fields:
         scene.save(update_fields=[*dict.fromkeys(changed_fields), "updated_at"])
 
+    camera_keys = {"camera_limits_enabled", "camera_pitch_min", "camera_pitch_max"}
+    camera_requested = any(key in payload for key in camera_keys)
+    camera_apply_all_scenes = _payload_bool(
+        payload.get("camera_limits_apply_all_scenes"),
+        default=False,
+    )
+    camera_applied_scene_ids = [scene.pk]
+    camera_updates = {}
+
+    if camera_requested:
+        camera_enabled = _payload_bool(
+            payload.get("camera_limits_enabled"),
+            default=bool(scene.camera_limits_enabled),
+        )
+        camera_pitch_min = _safe_float(
+            "camera_pitch_min", scene.camera_pitch_min, -89.5, 89.5
+        )
+        camera_pitch_max = _safe_float(
+            "camera_pitch_max", scene.camera_pitch_max, -89.5, 89.5
+        )
+        if camera_pitch_min > camera_pitch_max - 5.0:
+            return JsonResponse(
+                {"detail": "The upper camera limit must remain at least 5 degrees above the lower limit."},
+                status=400,
+            )
+
+        camera_updates = {
+            "camera_limits_enabled": camera_enabled,
+            "camera_pitch_min": camera_pitch_min,
+            "camera_pitch_max": camera_pitch_max,
+            "updated_at": timezone.now(),
+        }
+        updated_camera_rows = Scene360.objects.filter(
+            pk=scene.pk, organization=organization
+        ).update(**camera_updates)
+        if updated_camera_rows != 1:
+            transaction.set_rollback(True)
+            return JsonResponse({"detail": "Camera limits could not be persisted."}, status=409)
+
+        if camera_apply_all_scenes:
+            sibling_camera_ids = list(
+                Scene360.objects.select_for_update()
+                .filter(tour_id=scene.tour_id, organization=organization)
+                .exclude(pk=scene.pk)
+                .values_list("pk", flat=True)
+            )
+            if sibling_camera_ids:
+                updated_camera_siblings = Scene360.objects.filter(
+                    pk__in=sibling_camera_ids
+                ).update(**camera_updates)
+                if updated_camera_siblings != len(sibling_camera_ids):
+                    transaction.set_rollback(True)
+                    return JsonResponse(
+                        {"detail": "Camera limits could not be applied to every scene."},
+                        status=409,
+                    )
+                camera_applied_scene_ids.extend(sibling_camera_ids)
+
     tripod_keys = {
         "tripod_logo_enabled",
         "tripod_logo_size",
@@ -1707,6 +1790,12 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
         "tripod_logo_tilt_x",
         "tripod_logo_tilt_y",
         "tripod_logo_radius",
+        "tripod_logo_background_enabled",
+        "tripod_logo_background_color",
+        "tripod_logo_background_opacity",
+        "tripod_logo_background_width",
+        "tripod_logo_background_height",
+        "tripod_logo_background_radius",
     }
     tripod_requested = any(key in payload for key in tripod_keys)
     tripod_apply_all_scenes = _payload_bool(
@@ -1758,6 +1847,25 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
             "tripod_logo_radius": _bounded_number(
                 "tripod_logo_radius", scene.tripod_logo_radius, 350, 2400, int
             ),
+            "tripod_logo_background_enabled": _payload_bool(
+                payload.get("tripod_logo_background_enabled"),
+                default=bool(scene.tripod_logo_background_enabled),
+            ),
+            "tripod_logo_background_color": str(
+                payload.get("tripod_logo_background_color", scene.tripod_logo_background_color) or "#FFFFFF"
+            )[:9],
+            "tripod_logo_background_opacity": _bounded_number(
+                "tripod_logo_background_opacity", scene.tripod_logo_background_opacity, 0.0, 1.0, float
+            ),
+            "tripod_logo_background_width": _bounded_number(
+                "tripod_logo_background_width", scene.tripod_logo_background_width, 72, 520, int
+            ),
+            "tripod_logo_background_height": _bounded_number(
+                "tripod_logo_background_height", scene.tripod_logo_background_height, 72, 520, int
+            ),
+            "tripod_logo_background_radius": _bounded_number(
+                "tripod_logo_background_radius", scene.tripod_logo_background_radius, 0, 50, int
+            ),
             "updated_at": timezone.now(),
         }
 
@@ -1793,6 +1901,12 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
 
     scene.refresh_from_db()
 
+    persisted_camera_limits = {
+        "enabled": bool(scene.camera_limits_enabled),
+        "pitch_min": float(scene.camera_pitch_min),
+        "pitch_max": float(scene.camera_pitch_max),
+    }
+
     persisted_tripod = {
         "enabled": bool(scene.tripod_logo_enabled),
         "size": int(scene.tripod_logo_size),
@@ -1804,7 +1918,55 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
         "tilt_x": float(scene.tripod_logo_tilt_x),
         "tilt_y": float(scene.tripod_logo_tilt_y),
         "radius": int(scene.tripod_logo_radius),
+        "background_enabled": bool(scene.tripod_logo_background_enabled),
+        "background_color": str(scene.tripod_logo_background_color or "#FFFFFF"),
+        "background_opacity": float(scene.tripod_logo_background_opacity),
+        "background_width": int(scene.tripod_logo_background_width),
+        "background_height": int(scene.tripod_logo_background_height),
+        "background_radius": int(scene.tripod_logo_background_radius),
     }
+
+    if camera_requested:
+        expected_camera_limits = {
+            "enabled": bool(camera_updates["camera_limits_enabled"]),
+            "pitch_min": float(camera_updates["camera_pitch_min"]),
+            "pitch_max": float(camera_updates["camera_pitch_max"]),
+        }
+        camera_verified = (
+            persisted_camera_limits["enabled"] == expected_camera_limits["enabled"]
+            and abs(persisted_camera_limits["pitch_min"] - expected_camera_limits["pitch_min"]) < 0.0001
+            and abs(persisted_camera_limits["pitch_max"] - expected_camera_limits["pitch_max"]) < 0.0001
+        )
+        if not camera_verified:
+            transaction.set_rollback(True)
+            return JsonResponse(
+                {
+                    "detail": "Camera limits were not confirmed by the database.",
+                    "expected": expected_camera_limits,
+                    "persisted": persisted_camera_limits,
+                },
+                status=409,
+            )
+
+        if camera_apply_all_scenes:
+            camera_verification_rows = Scene360.objects.filter(
+                pk__in=camera_applied_scene_ids,
+                tour_id=scene.tour_id,
+                organization=organization,
+                camera_limits_enabled=expected_camera_limits["enabled"],
+                camera_pitch_min=expected_camera_limits["pitch_min"],
+                camera_pitch_max=expected_camera_limits["pitch_max"],
+            ).count()
+            if camera_verification_rows != len(camera_applied_scene_ids):
+                transaction.set_rollback(True)
+                return JsonResponse(
+                    {
+                        "detail": "Camera limits were not confirmed on every scene.",
+                        "expected_scene_count": len(camera_applied_scene_ids),
+                        "persisted_scene_count": camera_verification_rows,
+                    },
+                    status=409,
+                )
 
     if tripod_requested:
         expected_tripod = {
@@ -1818,10 +1980,16 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
             "tilt_x": float(tripod_updates["tripod_logo_tilt_x"]),
             "tilt_y": float(tripod_updates["tripod_logo_tilt_y"]),
             "radius": int(tripod_updates["tripod_logo_radius"]),
+            "background_enabled": bool(tripod_updates["tripod_logo_background_enabled"]),
+            "background_color": str(tripod_updates["tripod_logo_background_color"]),
+            "background_opacity": float(tripod_updates["tripod_logo_background_opacity"]),
+            "background_width": int(tripod_updates["tripod_logo_background_width"]),
+            "background_height": int(tripod_updates["tripod_logo_background_height"]),
+            "background_radius": int(tripod_updates["tripod_logo_background_radius"]),
         }
 
         numeric_keys = {
-            "yaw", "pitch", "rotation", "tilt_x", "tilt_y"
+            "yaw", "pitch", "rotation", "tilt_x", "tilt_y", "background_opacity"
         }
         verified = all(
             abs(persisted_tripod[key] - expected_tripod[key]) < 0.0001
@@ -1855,6 +2023,12 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
                 tripod_logo_tilt_x=expected_tripod["tilt_x"],
                 tripod_logo_tilt_y=expected_tripod["tilt_y"],
                 tripod_logo_radius=expected_tripod["radius"],
+                tripod_logo_background_enabled=expected_tripod["background_enabled"],
+                tripod_logo_background_color=expected_tripod["background_color"],
+                tripod_logo_background_opacity=expected_tripod["background_opacity"],
+                tripod_logo_background_width=expected_tripod["background_width"],
+                tripod_logo_background_height=expected_tripod["background_height"],
+                tripod_logo_background_radius=expected_tripod["background_radius"],
             ).count()
             if verification_rows != len(tripod_applied_scene_ids):
                 transaction.set_rollback(True)
@@ -1873,6 +2047,11 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
         "success": True,
         "persistence": {
             "database_verified": True,
+            "camera_limits_verified": bool(camera_requested),
+            "camera_limits": persisted_camera_limits,
+            "camera_limits_applied_to_all_scenes": bool(camera_requested and camera_apply_all_scenes),
+            "camera_limits_applied_scene_ids": camera_applied_scene_ids if camera_requested else [],
+            "camera_limits_applied_scene_count": len(camera_applied_scene_ids) if camera_requested else 0,
             "tripod_logo_verified": bool(tripod_requested),
             "tripod_logo_applied_to_all_scenes": bool(tripod_requested and tripod_apply_all_scenes),
             "tripod_logo_applied_scene_ids": tripod_applied_scene_ids if tripod_requested else [],

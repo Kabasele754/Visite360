@@ -1,0 +1,93 @@
+:root {
+  --ts-page-bg: #f6f7f9;
+  --ts-surface: #ffffff;
+  --ts-surface-soft: #f1f3f6;
+  --ts-surface-raised: #ffffff;
+  --ts-border: rgba(15,23,42,.10);
+  --ts-text: #111827;
+  --ts-muted: #64748b;
+  --ts-shadow: 0 18px 50px rgba(15,23,42,.10);
+}
+html[data-market-theme="dark"],
+html[data-dashboard-theme="dark"] {
+  --ts-page-bg: #030303;
+  --ts-surface: #090909;
+  --ts-surface-soft: #101010;
+  --ts-surface-raised: #151515;
+  --ts-border: rgba(255,255,255,.12);
+  --ts-text: #f8fafc;
+  --ts-muted: #9ca3af;
+  --ts-shadow: 0 24px 70px rgba(0,0,0,.52);
+  color-scheme: dark;
+}
+html[data-market-theme="dark"] body,
+html[data-dashboard-theme="dark"] body,
+body.builder-dark {
+  background: var(--ts-page-bg) !important;
+  color: var(--ts-text) !important;
+}
+html[data-dashboard-theme="dark"] body > .min-h-screen,
+html[data-dashboard-theme="dark"] .min-h-screen,
+body.builder-dark .studio-shell,
+html[data-market-theme="dark"] .sv-app,
+html[data-market-theme="dark"] .app-shell {
+  background: #030303 !important;
+}
+html[data-dashboard-theme="dark"] aside.fixed,
+html[data-dashboard-theme="dark"] #mobileDrawer,
+html[data-dashboard-theme="dark"] header,
+html[data-dashboard-theme="dark"] main .bg-white,
+html[data-dashboard-theme="dark"] main [class*="bg-white/"],
+body.builder-dark .studio-topbar,
+body.builder-dark .studio-leftbar,
+body.builder-dark .studio-rightpanel,
+body.builder-dark .rightpanel-card,
+html[data-market-theme="dark"] .sv-topbar,
+html[data-market-theme="dark"] .sv-projects,
+html[data-market-theme="dark"] .sv-panel,
+html[data-market-theme="dark"] .sv-project-banner,
+html[data-market-theme="dark"] .sv-modal-card,
+html[data-market-theme="dark"] .panel,
+html[data-market-theme="dark"] .topbar,
+html[data-market-theme="dark"] .left-panel,
+html[data-market-theme="dark"] .main-panel {
+  background: var(--ts-surface) !important;
+  border-color: var(--ts-border) !important;
+  color: var(--ts-text) !important;
+}
+html[data-dashboard-theme="dark"] main .bg-slate-50,
+html[data-dashboard-theme="dark"] main .bg-slate-100,
+html[data-dashboard-theme="dark"] main [class*="bg-slate-50/"],
+html[data-dashboard-theme="dark"] main [class*="bg-slate-100/"],
+body.builder-dark .form-group input,
+body.builder-dark .form-group select,
+html[data-market-theme="dark"] .sv-input,
+html[data-market-theme="dark"] .sv-tour-card,
+html[data-market-theme="dark"] .sv-scene-card,
+html[data-market-theme="dark"] .sv-source-import,
+html[data-market-theme="dark"] .muted-box,
+html[data-market-theme="dark"] input,
+html[data-market-theme="dark"] select,
+html[data-market-theme="dark"] textarea {
+  background: var(--ts-surface-soft) !important;
+  border-color: var(--ts-border) !important;
+  color: var(--ts-text) !important;
+}
+html[data-dashboard-theme="dark"] .text-slate-950,
+html[data-dashboard-theme="dark"] .text-slate-900,
+html[data-dashboard-theme="dark"] .text-slate-800,
+html[data-market-theme="dark"] h1,
+html[data-market-theme="dark"] h2,
+html[data-market-theme="dark"] h3,
+body.builder-dark h1,
+body.builder-dark h2,
+body.builder-dark h3 { color: var(--ts-text) !important; }
+html[data-dashboard-theme="dark"] .text-slate-700,
+html[data-dashboard-theme="dark"] .text-slate-600,
+html[data-dashboard-theme="dark"] .text-slate-500,
+html[data-market-theme="dark"] .sv-muted,
+html[data-market-theme="dark"] .help,
+html[data-market-theme="dark"] small,
+body.builder-dark .helper-text { color: var(--ts-muted) !important; }
+[data-global-theme-toggle] { transition: transform .18s ease, background .18s ease; }
+[data-global-theme-toggle]:hover { transform: translateY(-1px); }

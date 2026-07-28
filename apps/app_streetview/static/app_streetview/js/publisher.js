@@ -15,11 +15,16 @@
     activeStep: 'images',
     map: null,
     mapMarkers: new Map(),
+    mapLines: [],
     mapAutocomplete: null,
     viewer: null,
+    viewerSceneId: null,
     marziScene: null,
     currentView: null,
     shareText: '',
+    sourceOrganizations: [],
+    sourcePlaces: [],
+    sourceTours: [],
   };
 
   function csrfToken() {
@@ -45,7 +50,7 @@
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch (_) { data = { raw: text }; }
     if (!res.ok) {
-      const error = new Error(data.error || data.detail || `Erreur HTTP ${res.status}`);
+      const error = new Error(data.error || data.detail || `HTTP error ${res.status}`);
       error.data = data;
       error.status = res.status;
       throw error;
@@ -69,11 +74,107 @@
     }[ch]));
   }
 
+  function fillSelect(select, items, placeholder, labelKey = 'name') {
+    if (!select) return;
+    select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>` + items.map(item =>
+      `<option value="${escapeHtml(item.id)}">${escapeHtml(item[labelKey] || item.title || item.name || `#${item.id}`)}</option>`
+    ).join('');
+    select.disabled = items.length === 0;
+  }
+
+  function renderSourceTourPreview() {
+    const box = $('sourceTourPreview');
+    const selected = app.sourceTours.find(item => String(item.id) === String($('sourceTourSelect')?.value || ''));
+    const button = $('importSourceTourBtn');
+    if (!box) return;
+    if (!selected) {
+      box.className = 'sv-source-preview muted';
+      box.textContent = 'Choose a tour to preview its scenes and existing navigation. Imported panoramas remain safely stored in the organization library.';
+      if (button) button.disabled = true;
+      return;
+    }
+    box.className = 'sv-source-preview';
+    box.innerHTML = `${selected.thumbnail_url ? `<img src="${escapeHtml(selected.thumbnail_url)}" alt="">` : '<span class="sv-source-preview-icon">360°</span>'}<div><strong>${escapeHtml(selected.title)}</strong><small>${escapeHtml(selected.organization_name || '')}${selected.place_name ? ` · ${escapeHtml(selected.place_name)}` : ''}</small><span>${Number(selected.scenes_count || 0)} scene(s) · ${escapeHtml(selected.location || 'Location not set')}</span></div>`;
+    if (button) button.disabled = false;
+  }
+
+  async function loadSourceOrganizations() {
+    try {
+      const data = await api('source/organizations/');
+      app.sourceOrganizations = data.results || [];
+      fillSelect($('sourceOrganizationSelect'), app.sourceOrganizations, 'Select an organization');
+      const initialOrganization = new URLSearchParams(window.location.search).get('organization');
+      if (initialOrganization && app.sourceOrganizations.some(item => String(item.id) === String(initialOrganization))) {
+        $('sourceOrganizationSelect').value = String(initialOrganization);
+        await loadSourcePlaces(initialOrganization);
+      }
+    } catch (error) {
+      console.error(error);
+      toast(error.message || 'Unable to load organizations.', 'bad');
+    }
+  }
+
+  async function loadSourcePlaces(organizationId) {
+    app.sourcePlaces = [];
+    app.sourceTours = [];
+    fillSelect($('sourcePlaceSelect'), [], 'Select a place');
+    fillSelect($('sourceTourSelect'), [], 'Select a tour', 'title');
+    renderSourceTourPreview();
+    if (!organizationId) return;
+    try {
+      const data = await api(`source/organizations/${organizationId}/places/`);
+      app.sourcePlaces = data.results || [];
+      fillSelect($('sourcePlaceSelect'), app.sourcePlaces, 'Select a place');
+    } catch (error) {
+      console.error(error);
+      toast(error.message || 'Unable to load places.', 'bad');
+    }
+  }
+
+  async function loadSourceTours(placeId) {
+    app.sourceTours = [];
+    fillSelect($('sourceTourSelect'), [], 'Select a tour', 'title');
+    renderSourceTourPreview();
+    if (!placeId) return;
+    try {
+      const data = await api(`source/places/${placeId}/tours/`);
+      app.sourceTours = data.results || [];
+      fillSelect($('sourceTourSelect'), app.sourceTours, 'Select a tour', 'title');
+    } catch (error) {
+      console.error(error);
+      toast(error.message || 'Unable to load tours.', 'bad');
+    }
+  }
+
+  async function importSourceTour() {
+    const sourceTourId = $('sourceTourSelect')?.value;
+    if (!sourceTourId) return toast('Select an organization tour first.', 'bad');
+    const button = $('importSourceTourBtn');
+    setLoading(button, true, 'Preparing project...');
+    try {
+      const data = await api('projects/import-source-tour/', {
+        method: 'POST',
+        body: JSON.stringify({
+          source_tour_id: Number(sourceTourId),
+        }),
+      });
+      await loadTours({ silent: true });
+      if (data.tour?.id) await selectTour(data.tour.id, { silent: true });
+      switchStep('prepare');
+      toast(data.message || 'The organization tour is ready in Street Projects.');
+    } catch (error) {
+      console.error(error);
+      toast(error.message || 'Unable to create the Street View project.', 'bad');
+    } finally {
+      setLoading(button, false);
+    }
+  }
+
   function setLoading(button, loading, text) {
     if (!button) return;
     if (loading) {
       button.dataset.oldText = button.textContent;
-      button.textContent = text || 'Chargement...';
+      button.textContent = text || 'Loading...';
       button.disabled = true;
     } else {
       button.textContent = button.dataset.oldText || button.textContent;
@@ -87,7 +188,7 @@
     return {
       id: String(item.id),
       backendId: item.id,
-      title: item.title || `Scène ${item.id}`,
+      title: item.title || `Scene ${item.id}`,
       description: item.description || '',
       imageUrl: item.image_url || item.google?.thumbnail_url || '',
       width: item.image_width || 0,
@@ -124,6 +225,7 @@
 
   function hydrateTour(tour) {
     app.tour = tour;
+    if (app.map) app.map.__svDidFit = false;
     app.scenes = (tour.scenes || []).map(normalizeScene);
     app.links = (tour.connections || []).map((link) => ({
       id: String(link.id),
@@ -139,6 +241,9 @@
     }
     renderAll();
     refreshMapMarkers();
+    if (app.activeStep === 'prepare' && app.selectedId) {
+      requestAnimationFrame(() => refreshVisualStudio());
+    }
   }
 
   function selectedScene() {
@@ -165,11 +270,11 @@
   function badgesForScene(scene) {
     const out = [];
     out.push(scene.ratioOk ? '<span class="sv-badge ok">360</span>' : '<span class="sv-badge warn">Ratio ?</span>');
-    out.push(hasGps(scene) ? '<span class="sv-badge ok">GPS</span>' : '<span class="sv-badge bad">GPS manquant</span>');
+    out.push(hasGps(scene) ? '<span class="sv-badge ok">GPS</span>' : '<span class="sv-badge bad">Missing GPS</span>');
     if (String(scene.google.mapsPublishStatus || '').includes('REJECT')) out.push('<span class="sv-badge bad">Google rejected</span>');
     else if (scene.google.mapsPublishStatus === 'PUBLISHED') out.push('<span class="sv-badge ok">Google accepted</span>');
     else if (isPublished(scene)) out.push('<span class="sv-badge blue">Google processing</span>');
-    else out.push('<span class="sv-badge">Locale</span>');
+    else out.push('<span class="sv-badge">Local</span>');
     if (isPublished(scene)) out.push(`<span class="sv-badge ${['synced','not_required'].includes(scene.google.connectionStatus) ? 'ok' : 'warn'}">Links ${escapeHtml(scene.google.connectionStatus || 'pending')}</span>`);
     return out.join('');
   }
@@ -182,7 +287,7 @@
       renderGoogleStatus();
     } catch (err) {
       console.error(err);
-      toast('Configuration Street View impossible à charger.', 'bad');
+      toast('Unable to load Street View configuration.', 'bad');
     }
   }
 
@@ -192,9 +297,9 @@
     const ok = !!app.config.googleConnected;
     if (pill) {
       pill.className = `sv-pill ${ok ? 'ok' : 'bad'}`;
-      pill.textContent = ok ? `Google connecté${app.config.googleEmail ? ' · ' + app.config.googleEmail : ''}` : 'Google non connecté';
+      pill.textContent = ok ? `Google connected${app.config.googleEmail ? ' · ' + app.config.googleEmail : ''}` : 'Google not connected';
     }
-    if (connect) connect.textContent = ok ? 'Reconnecter' : 'Connecter Google';
+    if (connect) connect.textContent = ok ? 'Reconnect' : 'Connect Google';
   }
 
   async function loadTours({ silent = false } = {}) {
@@ -203,10 +308,10 @@
       app.tours = data.results || [];
       renderTours();
       if (!app.tour && app.tours[0]) await selectTour(app.tours[0].id, { silent: true });
-      if (!silent) toast('Projets chargés.');
+      if (!silent) toast('Projects loaded.');
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Impossible de charger les projets.', 'bad');
+      toast(err.message || 'Unable to load projects.', 'bad');
     }
   }
 
@@ -214,16 +319,17 @@
     try {
       const data = await api(`tours/${id}/`);
       hydrateTour(data.tour);
-      if (!silent) toast('Projet ouvert.');
+      if (app.scenes.length) switchStep('prepare');
+      if (!silent) toast('Project opened.');
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Impossible d’ouvrir ce projet.', 'bad');
+      toast(err.message || 'Unable to open this project.', 'bad');
     }
   }
 
   async function createTour() {
     const input = $('newTourTitle');
-    const title = input?.value.trim() || 'Nouvelle visite Street View';
+    const title = input?.value.trim() || 'New Street View project';
     try {
       const data = await api('tours/create/', {
         method: 'POST',
@@ -239,10 +345,10 @@
       await loadTours({ silent: true });
       await selectTour(data.tour.id);
       switchStep('images');
-      toast('Visite créée. Importe les images maintenant.');
+      toast('Project created. Import the panoramas now.');
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Création impossible.', 'bad');
+      toast(err.message || 'Unable to create the project.', 'bad');
     }
   }
 
@@ -253,8 +359,11 @@
     empty?.classList.toggle('hidden', app.tours.length > 0);
     list.innerHTML = app.tours.map(t => `
       <article class="sv-tour-card ${app.tour && String(app.tour.id) === String(t.id) ? 'active' : ''}" data-id="${t.id}">
-        <h3>${escapeHtml(t.title)}</h3>
-        <p>${escapeHtml(t.status || 'draft')} · #${t.id}</p>
+        <div class="sv-tour-card-heading">
+          <h3>${escapeHtml(t.title)}</h3>
+          ${t.source_tour_id ? '<span class="sv-source-badge">Organization tour</span>' : '<span class="sv-source-badge is-manual">Manual</span>'}
+        </div>
+        <p>${escapeHtml(t.source_organization_name || t.status || 'draft')} · #${t.id}</p>
       </article>
     `).join('');
     list.querySelectorAll('.sv-tour-card').forEach(card => {
@@ -267,7 +376,11 @@
     document.querySelectorAll('.sv-step').forEach(el => el.classList.remove('active'));
     $(`step-${step}`)?.classList.add('active');
     document.querySelectorAll('.sv-step-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.step === step));
-    if (step === 'prepare') renderEditor();
+    if (step === 'prepare') {
+      renderEditor();
+      renderVisualSceneList();
+      requestAnimationFrame(() => refreshVisualStudio());
+    }
     if (step === 'navigation') renderNavigation();
     if (step === 'publish') renderPublish();
   }
@@ -276,7 +389,9 @@
     renderTours();
     renderHeaderStats();
     renderScenes();
+    renderVisualSceneList();
     renderEditor();
+    renderVisualConnectionSummary();
     renderNavigation();
     renderPublish();
   }
@@ -288,8 +403,8 @@
     const links = app.links.length;
     const tourTitle = $('activeTourTitle');
     const subtitle = $('activeTourSubtitle');
-    if (tourTitle) tourTitle.textContent = app.tour ? app.tour.title : 'Aucune visite sélectionnée';
-    if (subtitle) subtitle.textContent = app.tour ? `${scenes} image(s), ${gps} avec GPS, ${published} publiée(s).` : 'Crée ou ouvre un projet à gauche.';
+    if (tourTitle) tourTitle.textContent = app.tour ? app.tour.title : 'No project selected';
+    if (subtitle) subtitle.textContent = app.tour ? `${scenes} scene(s), ${gps} with GPS, ${published} published.` : 'Create or open a project from the left panel.';
     $('statScenes') && ($('statScenes').textContent = scenes);
     $('statGps') && ($('statGps').textContent = gps);
     $('statPublished') && ($('statPublished').textContent = published);
@@ -307,18 +422,59 @@
         ${scene.imageUrl ? `<img src="${escapeHtml(scene.imageUrl)}" alt="${escapeHtml(scene.title)}" loading="lazy">` : `<div class="sv-scene-placeholder">GOOGLE 360</div>`}
         <div class="sv-scene-card-body">
           <h3>${escapeHtml(scene.title)}</h3>
-          <p>${hasGps(scene) ? `${scene.gps.lat}, ${scene.gps.lng}` : 'GPS manquant'}</p>
+          <p>${hasGps(scene) ? `${scene.gps.lat}, ${scene.gps.lng}` : 'Missing GPS'}</p>
           <div class="sv-badges">${badgesForScene(scene)}</div>
         </div>
       </article>
     `).join('');
     grid.querySelectorAll('.sv-scene-card').forEach(card => {
-      card.addEventListener('click', () => {
-        app.selectedId = card.dataset.id;
-        renderAll();
-        switchStep('prepare');
-      });
+      card.addEventListener('click', () => selectVisualScene(card.dataset.id));
     });
+  }
+
+  function selectVisualScene(sceneId, { centerMap = true } = {}) {
+    app.selectedId = String(sceneId);
+    app.currentView = null;
+    app.viewerSceneId = null;
+    renderAll();
+    switchStep('prepare');
+    requestAnimationFrame(async () => {
+      await openViewer({ force: true });
+      await openMap();
+      if (centerMap) focusSelectedSceneOnMap();
+    });
+  }
+
+  function renderVisualSceneList() {
+    const list = $('visualSceneList');
+    const empty = $('visualSceneEmpty');
+    const count = $('visualSceneCount');
+    if (count) count.textContent = String(app.scenes.length);
+    if (!list) return;
+    empty?.classList.toggle('hidden', app.scenes.length > 0);
+    list.innerHTML = app.scenes.map((scene, index) => `
+      <button type="button" class="sv-visual-scene-item ${scene.id === app.selectedId ? 'active' : ''}" data-id="${scene.id}">
+        ${scene.imageUrl ? `<img src="${escapeHtml(scene.imageUrl)}" alt="${escapeHtml(scene.title)}" loading="lazy">` : '<span class="sv-visual-placeholder">360°</span>'}
+        <span class="sv-visual-scene-copy"><b>${index + 1}. ${escapeHtml(scene.title)}</b><small>${hasGps(scene) ? `${scene.gps.lat}, ${scene.gps.lng}` : 'Missing GPS'}</small><span>${badgesForScene(scene)}</span></span>
+      </button>
+    `).join('');
+    list.querySelectorAll('.sv-visual-scene-item').forEach(item => {
+      item.addEventListener('click', () => selectVisualScene(item.dataset.id));
+    });
+  }
+
+  function renderVisualConnectionSummary() {
+    const box = $('visualConnectionSummary');
+    if (!box) return;
+    if (!app.links.length) {
+      box.innerHTML = '<span class="sv-muted">No navigation link yet.</span>';
+      return;
+    }
+    box.innerHTML = app.links.slice(0, 8).map(link => {
+      const from = app.scenes.find(scene => String(scene.backendId) === String(link.from));
+      const to = app.scenes.find(scene => String(scene.backendId) === String(link.to));
+      return `<div class="sv-visual-link"><span>${escapeHtml(from?.title || `#${link.from}`)}</span><b>→</b><span>${escapeHtml(to?.title || `#${link.to}`)}</span></div>`;
+    }).join('') + (app.links.length > 8 ? `<small class="sv-muted">+ ${app.links.length - 8} more links</small>` : '');
   }
 
   function renderEditor() {
@@ -327,6 +483,7 @@
     $('sceneEditor')?.classList.toggle('hidden', !scene);
     $('viewScene360Btn') && ($('viewScene360Btn').disabled = !scene);
     $('viewScene360SideBtn') && ($('viewScene360SideBtn').disabled = !scene);
+    if ($('viewerTitle')) $('viewerTitle').textContent = scene ? scene.title : 'No scene selected';
     if (!scene) return;
 
     $('editorImage') && ($('editorImage').src = scene.imageUrl);
@@ -337,6 +494,7 @@
     $('sceneLngInput') && ($('sceneLngInput').value = scene.gps.lng);
     $('sceneHeadingInput') && ($('sceneHeadingInput').value = scene.camera.heading);
     $('scenePitchInput') && ($('scenePitchInput').value = scene.camera.pitch);
+    updateVisualCameraReadout(scene.camera);
   }
 
   async function saveSelectedScene({ silent = false } = {}) {
@@ -364,21 +522,21 @@
       app.selectedId = updated.id;
       renderAll();
       refreshMapMarkers();
-      if (!silent) toast('Scène sauvegardée.');
+      if (!silent) toast('Scene saved.');
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Sauvegarde scène impossible.', 'bad');
+      toast(err.message || 'Unable to save the scene.', 'bad');
     }
   }
 
   async function deleteSelectedScene() {
     const scene = selectedScene();
     if (!scene) return;
-    if (!confirm(`Supprimer ${scene.title} ?`)) return;
+    if (!confirm(`Delete ${scene.title}?`)) return;
     try {
       await api(`scenes/${scene.backendId}/delete/`, { method: 'POST', body: JSON.stringify({}) });
       await reloadActiveTour();
-      toast('Scène supprimée.');
+      toast('Scene deleted.');
     } catch (err) {
       console.error(err);
       toast(err.message || 'Suppression impossible.', 'bad');
@@ -391,16 +549,20 @@
   }
 
   async function handleFiles(files) {
-    if (!app.tour) return toast('Crée ou sélectionne d’abord une visite.', 'bad');
+    if (!app.tour) return toast('Create or select a project first.', 'bad');
     const realFiles = [...files].filter(file => file.type.startsWith('image/'));
-    if (!realFiles.length) return toast('Aucune image valide.', 'bad');
+    if (!realFiles.length) return toast('No valid image file.', 'bad');
     const form = new FormData();
     realFiles.forEach(file => form.append('images', file));
     try {
       toast('Upload en cours...');
       await api(`tours/${app.tour.id}/upload-scenes/`, { method: 'POST', body: form, headers: {} });
       await reloadActiveTour();
-      toast('Images importées.');
+      if (app.scenes.length) {
+        app.selectedId = app.scenes[0].id;
+        switchStep('prepare');
+      }
+      toast('Images imported.');
     } catch (err) {
       console.error(err);
       toast(err.message || 'Upload impossible.', 'bad');
@@ -473,10 +635,10 @@
     try {
       const payload = buildProjectPayload();
       await api(`tours/${app.tour.id}/save-project/`, { method: 'POST', body: JSON.stringify(payload) });
-      toast('Projet sauvegardé.');
+      toast('Project saved.');
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Sauvegarde projet impossible.', 'bad');
+      toast(err.message || 'Unable to save the project.', 'bad');
     }
   }
 
@@ -525,9 +687,9 @@
         return `
           <div class="sv-route-item">
             <img src="${escapeHtml(scene.imageUrl)}" alt="">
-            <div><b>${escapeHtml(scene.title)}</b><p class="sv-muted">${forward ? '✅ aller créé' : '⚪ aller manquant'}</p></div>
+            <div><b>${escapeHtml(scene.title)}</b><p class="sv-muted">${forward ? '✅ forward link' : '⚪ missing forward link'}</p></div>
             <div class="sv-route-arrow">⇄</div>
-            <div><b>${escapeHtml(next.title)}</b><p class="sv-muted">${backward ? '✅ retour créé' : '⚪ retour manquant'}</p></div>
+            <div><b>${escapeHtml(next.title)}</b><p class="sv-muted">${backward ? '✅ backward link' : '⚪ missing backward link'}</p></div>
           </div>`;
       }).join('');
     }
@@ -538,10 +700,10 @@
   }
 
   async function autoConnect() {
-    if (!app.tour) return toast('Aucun projet actif.', 'bad');
-    if (app.scenes.length < 2) return toast('Il faut au moins 2 images.', 'bad');
+    if (!app.tour) return toast('No active project.', 'bad');
+    if (app.scenes.length < 2) return toast('At least two scenes are required.', 'bad');
     const btn = $('autoConnectBtn');
-    setLoading(btn, true, 'Création...');
+    setLoading(btn, true, 'Creating...');
     try {
       const data = await api(`tours/${app.tour.id}/auto-connect/`, {
         method: 'POST',
@@ -549,7 +711,7 @@
       });
       hydrateTour(data.tour);
       switchStep('navigation');
-      toast('Navigation aller/retour créée.');
+      toast('Two-way navigation created.');
     } catch (err) {
       console.error(err);
       toast(err.message || 'Auto-liaison impossible.', 'bad');
@@ -562,7 +724,7 @@
     if (!app.tour) return;
     const from = $('manualFrom')?.value;
     const to = $('manualTo')?.value;
-    if (!from || !to || from === to) return toast('Choisis deux scènes différentes.', 'bad');
+    if (!from || !to || from === to) return toast('Choose two different scenes.', 'bad');
     const links = [...app.links, { from, to, label: $('manualLabel')?.value || 'Navigation', yaw: 0, pitch: 0 }];
     try {
       const data = await api(`tours/${app.tour.id}/save-connections/`, {
@@ -571,22 +733,22 @@
       });
       await reloadActiveTour();
       $('manualLabel') && ($('manualLabel').value = '');
-      toast(`${data.created || 0} lien(s) enregistré(s).`);
+      toast(`${data.created || 0} connection(s) saved.`);
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Ajout du lien impossible.', 'bad');
+      toast(err.message || 'Unable to add the connection.', 'bad');
     }
   }
 
   function readinessItems() {
     const scenes = app.scenes.length;
     return [
-      { ok: !!app.tour, label: 'Projet sélectionné' },
-      { ok: scenes > 0, label: 'Images importées' },
-      { ok: scenes > 0 && app.scenes.every(hasGps), label: 'Toutes les images ont GPS' },
-      { ok: app.config.googleConnected, label: 'Compte Google connecté' },
-      { ok: scenes < 2 || app.links.length > 0, label: 'Navigation Street View créée' },
-      { ok: scenes > 0 && app.scenes.every(s => s.ratioOk || s.xmpDetected), label: 'Images 360 compatibles recommandées' },
+      { ok: !!app.tour, label: 'Project selected' },
+      { ok: scenes > 0, label: 'Images imported' },
+      { ok: scenes > 0 && app.scenes.every(hasGps), label: 'Every scene has GPS' },
+      { ok: app.config.googleConnected, label: 'Google account connected' },
+      { ok: scenes < 2 || app.links.length > 0, label: 'Street View navigation created' },
+      { ok: scenes > 0 && app.scenes.every(s => s.ratioOk || s.xmpDetected), label: 'Recommended 360 image format' },
     ];
   }
 
@@ -600,22 +762,22 @@
   }
 
   async function publishTour() {
-    if (!app.tour) return toast('Aucun projet actif.', 'bad');
-    if (!app.config.googleConnected) return toast('Connecte d’abord ton compte Google.', 'bad');
+    if (!app.tour) return toast('No active project.', 'bad');
+    if (!app.config.googleConnected) return toast('Connect your Google account first.', 'bad');
     const missing = app.scenes.filter(s => !hasGps(s));
-    if (missing.length) return toast('Certaines images n’ont pas de GPS.', 'bad');
+    if (missing.length) return toast('Some scenes are missing GPS.', 'bad');
 
     const btn = $('publishBtn');
-    setLoading(btn, true, 'Publication...');
+    setLoading(btn, true, 'Publishing...');
     $('publishLog')?.classList.remove('hidden');
-    $('publishLog').textContent = 'Sauvegarde projet...\n';
+    $('publishLog').textContent = 'Saving project...\n';
     try {
       await api(`tours/${app.tour.id}/save-project/`, { method: 'POST', body: JSON.stringify(buildProjectPayload()) });
       if (app.scenes.length >= 2 && !app.links.length) {
-        $('publishLog').textContent += 'Auto-liaison des scènes...\n';
+        $('publishLog').textContent += 'Creating scene connections...\n';
         await api(`tours/${app.tour.id}/auto-connect/`, { method: 'POST', body: JSON.stringify({ replace: false, bidirectional: true }) });
       }
-      $('publishLog').textContent += 'Envoi vers Google Street View...\n';
+      $('publishLog').textContent += 'Sending to Google Street View...\n';
       const data = await api(`tours/${app.tour.id}/publish/`, {
         method: 'POST',
         body: JSON.stringify({ skip_published: true, force_reupload: false, auto_connect: false, bidirectional: true }),
@@ -623,11 +785,11 @@
       $('publishLog').textContent += JSON.stringify(data.job || data, null, 2);
       await reloadActiveTour();
       await loadShareLinks({ silent: true });
-      toast('Publication terminée.');
+      toast('Publishing completed.');
     } catch (err) {
       console.error(err);
-      $('publishLog').textContent += '\nERREUR:\n' + JSON.stringify(err.data || { error: err.message }, null, 2);
-      toast(err.message || 'Publication impossible.', 'bad');
+      $('publishLog').textContent += '\nERROR:\n' + JSON.stringify(err.data || { error: err.message }, null, 2);
+      toast(err.message || 'Publishing failed.', 'bad');
     } finally {
       setLoading(btn, false);
     }
@@ -636,13 +798,13 @@
   async function retryConnections() {
     if (!app.tour) return;
     const btn = $('retryConnectionsBtn');
-    setLoading(btn, true, 'Connexion...');
+    setLoading(btn, true, 'Connecting...');
     try {
       const data = await api(`tours/${app.tour.id}/retry-connections/`, { method: 'POST', body: JSON.stringify({}) });
       if (data.tour) hydrateTour(data.tour);
       $('publishLog')?.classList.remove('hidden');
       $('publishLog').textContent = JSON.stringify(data.results || data, null, 2);
-      toast(data.ok ? 'Connexions Google envoyées.' : 'Connexions envoyées avec avertissements.', data.ok ? 'ok' : 'bad');
+      toast(data.ok ? 'Google connections submitted.' : 'Connections submitted with warnings.', data.ok ? 'ok' : 'bad');
     } catch (err) {
       console.error(err);
       toast(err.message || 'Retry connexions impossible.', 'bad');
@@ -657,10 +819,10 @@
       const data = await api(`tours/${app.tour.id}/share-links/`);
       app.shareText = data.share_text || '';
       renderShareLinks(data.links || []);
-      if (!silent) toast('Liens de partage chargés.');
+      if (!silent) toast('Share links loaded.');
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Impossible de charger les liens.', 'bad');
+      toast(err.message || 'Unable to load share links.', 'bad');
     }
   }
 
@@ -681,15 +843,15 @@
     `).join('');
     box.querySelectorAll('.copy-link').forEach(btn => btn.addEventListener('click', async () => {
       await navigator.clipboard.writeText(btn.dataset.link || '');
-      toast('Lien copié.');
+      toast('Link copied.');
     }));
   }
 
   async function copyAllLinks() {
     if (!app.shareText) await loadShareLinks({ silent: true });
-    if (!app.shareText) return toast('Aucun lien publié.', 'bad');
+    if (!app.shareText) return toast('No published link.', 'bad');
     await navigator.clipboard.writeText(app.shareText);
-    toast('Tous les liens copiés.');
+    toast('All links copied.');
   }
 
   async function markPublished() {
@@ -715,16 +877,16 @@
       app.scenes = app.scenes.map(s => s.id === scene.id ? updated : s);
       app.selectedId = updated.id;
       renderAll();
-      toast('Scène marquée publiée.');
+      toast('Scene marked as published.');
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Impossible de marquer publiée.', 'bad');
+      toast(err.message || 'Unable to mark the scene as published.', 'bad');
     }
   }
 
   async function checkGoogleStatus() {
     const scene = selectedScene();
-    if (!scene || !scene.google.photoId) return toast('Cette scène n’a pas de Google Photo ID.', 'bad');
+    if (!scene || !scene.google.photoId) return toast('This scene has no Google Photo ID.', 'bad');
     try {
       const data = await api(`scenes/${scene.backendId}/google-status/`);
       if (data.scene) {
@@ -733,10 +895,10 @@
         app.selectedId = updated.id;
         renderAll();
       }
-      toast(data.ok ? 'Statut Google actualisé.' : 'Google n’a pas encore tout indexé.', data.ok ? 'ok' : 'bad');
+      toast(data.ok ? 'Google status refreshed.' : 'Google has not indexed everything yet.', data.ok ? 'ok' : 'bad');
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Vérification Google impossible.', 'bad');
+      toast(err.message || 'Unable to check Google status.', 'bad');
     }
   }
 
@@ -746,7 +908,7 @@
   function loadGoogleMapsScript() {
     if (window.google?.maps) return Promise.resolve();
     const key = app.config.googleMapsKey || '';
-    if (!key) return Promise.reject(new Error('Clé Google Maps absente dans /config/.'));
+    if (!key) return Promise.reject(new Error('Google Maps key is missing from /config/.'));
     if (window.__svMapLoading) return window.__svMapLoading;
     window.__svMapLoading = new Promise((resolve, reject) => {
       window.initStreetViewPublisherMap = () => resolve();
@@ -754,17 +916,17 @@
       script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&callback=initStreetViewPublisherMap&v=weekly`;
       script.async = true;
       script.defer = true;
-      script.onerror = () => reject(new Error('Google Maps n’a pas pu charger.'));
+      script.onerror = () => reject(new Error('Google Maps could not load.'));
       document.head.appendChild(script);
     });
     return window.__svMapLoading;
   }
 
   async function openMap() {
-    openModal('mapModal');
     try {
       await loadGoogleMapsScript();
       initMap();
+      $('map')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
     } catch (err) {
       console.error(err);
       toast(err.message, 'bad');
@@ -776,12 +938,12 @@
     const centerScene = selectedScene();
     const centerGps = hasGps(centerScene) ? { lat: Number(centerScene.gps.lat), lng: Number(centerScene.gps.lng) } : firstGps() || { lat: -4.325, lng: 15.322 };
     if (!app.map) {
-      app.map = new google.maps.Map($('map'), { center: centerGps, zoom: 16, streetViewControl: true, fullscreenControl: true, mapTypeId: 'roadmap' });
+      app.map = new google.maps.Map($('map'), { center: centerGps, zoom: 17, streetViewControl: true, fullscreenControl: true, mapTypeControl: true, mapTypeId: 'roadmap', gestureHandling: 'greedy' });
       app.map.addListener('click', (e) => assignGpsToSelected(e.latLng.lat(), e.latLng.lng()));
       app.mapAutocomplete = new google.maps.places.Autocomplete($('addressSearch'), { fields: ['formatted_address', 'geometry', 'name'] });
       app.mapAutocomplete.addListener('place_changed', () => {
         const place = app.mapAutocomplete.getPlace();
-        if (!place.geometry?.location) return toast('Adresse non trouvée.', 'bad');
+        if (!place.geometry?.location) return toast('Address not found.', 'bad');
         assignGpsToSelected(place.geometry.location.lat(), place.geometry.location.lng());
         app.map.panTo(place.geometry.location);
       });
@@ -798,45 +960,109 @@
 
   async function assignGpsToSelected(lat, lng) {
     const scene = selectedScene();
-    if (!scene) return toast('Sélectionne d’abord une image.', 'bad');
+    if (!scene) return toast('Select a scene first.', 'bad');
     scene.gps.lat = Number(lat.toFixed(7));
     scene.gps.lng = Number(lng.toFixed(7));
     $('sceneLatInput') && ($('sceneLatInput').value = scene.gps.lat);
     $('sceneLngInput') && ($('sceneLngInput').value = scene.gps.lng);
     await saveSelectedScene({ silent: true });
     refreshMapMarkers();
-    toast('GPS assigné.');
+    toast('GPS assigned.');
   }
 
   function refreshMapMarkers() {
     if (!app.map || !window.google?.maps) return;
     app.mapMarkers.forEach(marker => marker.setMap(null));
     app.mapMarkers.clear();
+    (app.mapLines || []).forEach(line => line.setMap(null));
+    app.mapLines = [];
+
     const bounds = new google.maps.LatLngBounds();
     let hasAny = false;
-    app.scenes.forEach(scene => {
+    app.scenes.forEach((scene, index) => {
       if (!hasGps(scene)) return;
       const position = { lat: Number(scene.gps.lat), lng: Number(scene.gps.lng) };
-      const marker = new google.maps.Marker({ map: app.map, position, title: scene.title, draggable: true, label: scene.id === app.selectedId ? '★' : '' });
-      marker.addListener('click', () => { app.selectedId = scene.id; renderAll(); app.map.panTo(position); });
+      const selected = scene.id === app.selectedId;
+      const marker = new google.maps.Marker({
+        map: app.map,
+        position,
+        title: scene.title,
+        draggable: true,
+        label: { text: String(index + 1), color: '#00131b', fontWeight: '900' },
+        zIndex: selected ? 100 : 20,
+        opacity: selected ? 1 : 0.86,
+      });
+      marker.addListener('click', () => selectVisualScene(scene.id));
       marker.addListener('dragend', (e) => { app.selectedId = scene.id; assignGpsToSelected(e.latLng.lat(), e.latLng.lng()); });
       app.mapMarkers.set(scene.id, marker);
       bounds.extend(position);
       hasAny = true;
     });
-    if (hasAny && app.mapMarkers.size > 1) app.map.fitBounds(bounds);
+
+    const sceneByBackendId = new Map(app.scenes.map(scene => [String(scene.backendId), scene]));
+    app.links.forEach(link => {
+      const from = sceneByBackendId.get(String(link.from));
+      const to = sceneByBackendId.get(String(link.to));
+      if (!hasGps(from) || !hasGps(to)) return;
+      const line = new google.maps.Polyline({
+        map: app.map,
+        path: [
+          { lat: Number(from.gps.lat), lng: Number(from.gps.lng) },
+          { lat: Number(to.gps.lat), lng: Number(to.gps.lng) },
+        ],
+        strokeColor: '#06b6d4',
+        strokeOpacity: 0.78,
+        strokeWeight: 4,
+        geodesic: true,
+        icons: [{ icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3 }, offset: '82%' }],
+      });
+      app.mapLines.push(line);
+    });
+
+    if (hasAny && app.mapMarkers.size > 1 && !app.map.__svDidFit) {
+      app.map.fitBounds(bounds, 46);
+      app.map.__svDidFit = true;
+    }
   }
 
-  async function openViewer() {
+  function focusSelectedSceneOnMap() {
     const scene = selectedScene();
-    if (!scene) return toast('Sélectionne une scène.', 'bad');
-    openModal('viewerModal');
-    $('viewerTitle') && ($('viewerTitle').textContent = scene.title);
+    if (!app.map || !hasGps(scene)) return;
+    const position = { lat: Number(scene.gps.lat), lng: Number(scene.gps.lng) };
+    app.map.panTo(position);
+    if ((app.map.getZoom?.() || 0) < 17) app.map.setZoom(17);
+  }
+
+  function updateVisualCameraReadout(camera = null) {
+    let heading = Number(camera?.heading || 0);
+    let pitch = Number(camera?.pitch || 0);
+    let fov = Number(camera?.fov || 90);
+    if (app.currentView) {
+      const params = app.currentView.parameters();
+      heading = deg(params.yaw);
+      pitch = params.pitch * 180 / Math.PI;
+      fov = params.fov * 180 / Math.PI;
+    }
+    if ($('visualHeadingReadout')) $('visualHeadingReadout').textContent = `${heading.toFixed(1)}°`;
+    if ($('visualPitchReadout')) $('visualPitchReadout').textContent = `${pitch.toFixed(1)}°`;
+    if ($('visualFovReadout')) $('visualFovReadout').textContent = `${fov.toFixed(1)}°`;
+  }
+
+  async function openViewer({ force = false } = {}) {
+    const scene = selectedScene();
+    const mount = $('viewer');
+    if (!scene || !mount) return;
+    if (!force && app.viewer && String(app.viewerSceneId) === String(scene.id)) {
+      app.viewer.updateSize?.();
+      updateVisualCameraReadout();
+      return;
+    }
+    if ($('viewerTitle')) $('viewerTitle').textContent = scene.title;
     try {
-      if (!window.Marzipano) throw new Error('Marzipano n’est pas chargé.');
-      if (!app.viewer) app.viewer = new Marzipano.Viewer($('viewer'), { controls: { mouseViewMode: 'drag' } });
-      $('viewer').innerHTML = '';
-      app.viewer = new Marzipano.Viewer($('viewer'), { controls: { mouseViewMode: 'drag' } });
+      if (!window.Marzipano) throw new Error('Marzipano is not loaded.');
+      try { app.viewer?.destroy?.(); } catch (_) {}
+      mount.replaceChildren();
+      app.viewer = new Marzipano.Viewer(mount, { controls: { mouseViewMode: 'drag' } });
       const source = Marzipano.ImageUrlSource.fromString(scene.imageUrl);
       const width = Math.min(Math.max(scene.width || 4096, 1024), 8192);
       const geometry = new Marzipano.EquirectGeometry([{ width }]);
@@ -844,44 +1070,63 @@
       const view = new Marzipano.RectilinearView({ yaw: rad(scene.camera.heading || 0), pitch: rad(scene.camera.pitch || 0), fov: rad(scene.camera.fov || 90) }, limiter);
       app.marziScene = app.viewer.createScene({ source, geometry, view, pinFirstLevel: true });
       app.currentView = view;
-      app.marziScene.switchTo({ transitionDuration: 250 });
-      setTimeout(() => app.viewer?.updateSize(), 100);
+      app.viewerSceneId = scene.id;
+      app.marziScene.switchTo({ transitionDuration: 180 });
+      view.addEventListener?.('change', () => updateVisualCameraReadout());
+      setTimeout(() => {
+        app.viewer?.updateSize();
+        updateVisualCameraReadout();
+      }, 100);
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Viewer impossible.', 'bad');
+      toast(err.message || 'Unable to open the viewer.', 'bad');
     }
+  }
+
+  async function refreshVisualStudio() {
+    const scene = selectedScene();
+    if (!scene || app.activeStep !== 'prepare') return;
+    await openViewer({ force: String(app.viewerSceneId) !== String(scene.id) });
+    await openMap();
+    refreshMapMarkers();
   }
 
   async function captureCamera() {
     const scene = selectedScene();
-    if (!scene || !app.currentView) return toast('Ouvre d’abord la scène en 360.', 'bad');
+    if (!scene || !app.currentView) return toast('Open the scene in the 360 viewer first.', 'bad');
     const params = app.currentView.parameters();
     scene.camera.heading = Number(deg(params.yaw).toFixed(2));
     scene.camera.pitch = Number((params.pitch * 180 / Math.PI).toFixed(2));
     scene.camera.fov = Number((params.fov * 180 / Math.PI).toFixed(2));
     $('sceneHeadingInput') && ($('sceneHeadingInput').value = scene.camera.heading);
     $('scenePitchInput') && ($('scenePitchInput').value = scene.camera.pitch);
+    updateVisualCameraReadout(scene.camera);
     await saveSelectedScene({ silent: true });
-    toast('Vue principale sauvegardée.');
+    toast('Initial view saved.');
   }
 
   async function updateGoogleCamera() {
     const scene = selectedScene();
-    if (!scene || !scene.google.photoId) return toast('Cette scène n’est pas encore publiée.', 'bad');
+    if (!scene || !scene.google.photoId) return toast('This scene is not published yet.', 'bad');
     try {
       await saveSelectedScene({ silent: true });
       const data = await api(`scenes/${scene.backendId}/update-google-camera/`, { method: 'POST', body: JSON.stringify({}) });
-      toast(data.message || 'Caméra Google mise à jour.');
+      toast(data.message || 'Google camera updated.');
     } catch (err) {
       console.error(err);
-      toast(err.message || 'Correction caméra impossible.', 'bad');
+      toast(err.message || 'Unable to update the Google camera.', 'bad');
     }
   }
 
   function bindEvents() {
     document.querySelectorAll('.sv-step-tab').forEach(btn => btn.addEventListener('click', () => switchStep(btn.dataset.step)));
     document.querySelectorAll('[data-close-modal]').forEach(btn => btn.addEventListener('click', () => closeModal(btn.dataset.closeModal)));
+    document.querySelectorAll('[data-open-step]').forEach(btn => btn.addEventListener('click', () => switchStep(btn.dataset.openStep)));
     $('refreshToursBtn')?.addEventListener('click', () => loadTours());
+    $('sourceOrganizationSelect')?.addEventListener('change', (event) => loadSourcePlaces(event.target.value));
+    $('sourcePlaceSelect')?.addEventListener('change', (event) => loadSourceTours(event.target.value));
+    $('sourceTourSelect')?.addEventListener('change', renderSourceTourPreview);
+    $('importSourceTourBtn')?.addEventListener('click', importSourceTour);
     $('createTourBtn')?.addEventListener('click', createTour);
     $('newTourTitle')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') createTour(); });
     $('browseBtn')?.addEventListener('click', () => $('fileInput')?.click());
@@ -890,12 +1135,12 @@
     $('directPublishBtn')?.addEventListener('click', directPublishScene);
     $('syncDirectStatusBtn')?.addEventListener('click', syncDirectProjectStatus);
     $('syncProjectGoogleBtn')?.addEventListener('click', syncDirectProjectStatus);
-    $('openMapBulkBtn')?.addEventListener('click', openMap);
+    $('openMapBulkBtn')?.addEventListener('click', () => { switchStep('prepare'); requestAnimationFrame(openMap); });
     $('openMapBtn')?.addEventListener('click', openMap);
     $('saveSceneBtn')?.addEventListener('click', () => saveSelectedScene());
     $('deleteSceneBtn')?.addEventListener('click', deleteSelectedScene);
-    $('viewScene360Btn')?.addEventListener('click', openViewer);
-    $('viewScene360SideBtn')?.addEventListener('click', openViewer);
+    $('viewScene360Btn')?.addEventListener('click', () => openViewer({ force: true }));
+    $('viewScene360SideBtn')?.addEventListener('click', () => openViewer({ force: true }));
     $('markPublishedBtn')?.addEventListener('click', markPublished);
     $('confirmMarkPublishedBtn')?.addEventListener('click', confirmMarkPublished);
     $('checkGoogleBtn')?.addEventListener('click', checkGoogleStatus);
@@ -919,12 +1164,16 @@
     dz?.addEventListener('dragleave', () => dz.classList.remove('over'));
     dz?.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('over'); handleFiles(e.dataTransfer.files); });
 
-    window.addEventListener('resize', () => app.viewer?.updateSize());
+    window.addEventListener('resize', () => {
+      app.viewer?.updateSize();
+      if (app.map && window.google?.maps) google.maps.event.trigger(app.map, 'resize');
+    });
   }
 
   async function init() {
     bindEvents();
     await loadConfig();
+    await loadSourceOrganizations();
     await loadTours({ silent: true });
     renderAll();
   }

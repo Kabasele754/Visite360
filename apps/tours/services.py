@@ -131,6 +131,12 @@ def build_tour_manifest(tour: Tour) -> dict:
                 "tilt_x": float(getattr(scene, "tripod_logo_tilt_x", 0.0) or 0.0),
                 "tilt_y": float(getattr(scene, "tripod_logo_tilt_y", 0.0) or 0.0),
                 "radius": int(getattr(scene, "tripod_logo_radius", 900) or 900),
+                "background_enabled": bool(getattr(scene, "tripod_logo_background_enabled", False)),
+                "background_color": str(getattr(scene, "tripod_logo_background_color", "#FFFFFF") or "#FFFFFF"),
+                "background_opacity": float(getattr(scene, "tripod_logo_background_opacity", 0.94)),
+                "background_width": int(getattr(scene, "tripod_logo_background_width", 160) or 160),
+                "background_height": int(getattr(scene, "tripod_logo_background_height", 160) or 160),
+                "background_radius": int(getattr(scene, "tripod_logo_background_radius", 50)),
             },
 
             "hotspots": [

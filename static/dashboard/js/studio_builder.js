@@ -708,6 +708,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const scenePublicStatus = document.getElementById("scenePublicStatus");
     const scenePublicHelp = document.getElementById("scenePublicHelp");
     const sceneVisibilityPreview = document.getElementById("sceneVisibilityPreview");
+    const cameraLimitsEnabled = document.getElementById("cameraLimitsEnabled");
+    const cameraLimitsApplyAllScenes = document.getElementById("cameraLimitsApplyAllScenes");
+    const cameraPitchMin = document.getElementById("cameraPitchMin");
+    const cameraPitchMax = document.getElementById("cameraPitchMax");
+
     const tripodLogoEnabled = document.getElementById("tripodLogoEnabled");
     const tripodLogoApplyAllScenes = document.getElementById("tripodLogoApplyAllScenes");
     const tripodLogoSize = document.getElementById("tripodLogoSize");
@@ -719,6 +724,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const tripodLogoTiltX = document.getElementById("tripodLogoTiltX");
     const tripodLogoTiltY = document.getElementById("tripodLogoTiltY");
     const tripodLogoRadius = document.getElementById("tripodLogoRadius");
+    const tripodLogoBackgroundEnabled = document.getElementById("tripodLogoBackgroundEnabled");
+    const tripodLogoBackgroundColor = document.getElementById("tripodLogoBackgroundColor");
+    const tripodLogoBackgroundOpacity = document.getElementById("tripodLogoBackgroundOpacity");
+    const tripodLogoBackgroundWidth = document.getElementById("tripodLogoBackgroundWidth");
+    const tripodLogoBackgroundHeight = document.getElementById("tripodLogoBackgroundHeight");
+    const tripodLogoBackgroundRadius = document.getElementById("tripodLogoBackgroundRadius");
     const tripodLogoPlaceBtn = document.getElementById("tripodLogoPlaceBtn");
     const tripodLogoNadirBtn = document.getElementById("tripodLogoNadirBtn");
 
@@ -1145,6 +1156,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (pitchInput) pitchInput.value = scene.pitch_default ?? 0;
         if (hfovInput) hfovInput.value = scene.hfov_default ?? 100;
         syncTripodLogoInputs(scene);
+        syncCameraLimitInputs(scene);
 
         syncScenePublicUI(scene);
 
@@ -1650,6 +1662,82 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function getCameraLimitSettings(scene) {
+        const raw = scene?.camera_limits || {};
+        let pitchMin = Math.max(-89.5, Math.min(89.5, Number(raw.pitch_min ?? -82)));
+        let pitchMax = Math.max(-89.5, Math.min(89.5, Number(raw.pitch_max ?? 62)));
+        if (pitchMin > pitchMax - 5) {
+            pitchMin = -82;
+            pitchMax = 62;
+        }
+        return {
+            enabled: raw.enabled !== false,
+            pitchMin,
+            pitchMax,
+        };
+    }
+
+    function writeCameraLimitInputs(settings) {
+        if (cameraLimitsEnabled) cameraLimitsEnabled.checked = Boolean(settings.enabled);
+        if (cameraPitchMin) cameraPitchMin.value = Number(settings.pitchMin).toFixed(1);
+        if (cameraPitchMax) cameraPitchMax.value = Number(settings.pitchMax).toFixed(1);
+    }
+
+    function cameraLimitSettingsFromInputs() {
+        let pitchMin = Math.max(-89.5, Math.min(89.5, Number(cameraPitchMin?.value ?? -82)));
+        let pitchMax = Math.max(-89.5, Math.min(89.5, Number(cameraPitchMax?.value ?? 62)));
+        if (pitchMin > pitchMax - 5) {
+            pitchMin = Math.min(pitchMin, 84.5);
+            pitchMax = Math.max(pitchMax, pitchMin + 5);
+        }
+        return { enabled: Boolean(cameraLimitsEnabled?.checked), pitchMin, pitchMax };
+    }
+
+    function writeCameraLimitsToScene(scene, settings) {
+        if (!scene) return;
+        scene.camera_limits = {
+            enabled: Boolean(settings.enabled),
+            pitch_min: Number(settings.pitchMin),
+            pitch_max: Number(settings.pitchMax),
+        };
+    }
+
+    function createSceneCameraLimiter(scene, resolution = 4096, maxFovDeg = 100) {
+        const traditional = Marzipano.RectilinearView.limit.traditional(
+            Math.max(1024, Number(resolution || 4096)),
+            degreesToRadians(Math.min(100, Number(maxFovDeg || 100)))
+        );
+        const settings = getCameraLimitSettings(scene);
+        if (!settings.enabled) return traditional;
+        const pitchLimiter = Marzipano.RectilinearView.limit.pitch(
+            degreesToRadians(settings.pitchMin),
+            degreesToRadians(settings.pitchMax)
+        );
+        return params => pitchLimiter(traditional(params));
+    }
+
+    function syncCameraLimitInputs(scene) {
+        writeCameraLimitInputs(getCameraLimitSettings(scene));
+    }
+
+    function applyCameraLimitsToBuiltLayers(scene) {
+        if (!scene) return;
+        ["A", "B"].forEach(layerKey => {
+            const view = layerViews[layerKey];
+            if (!view) return;
+            view.setLimiter(createSceneCameraLimiter(scene, 4096, 100));
+        });
+    }
+
+    function updateCameraLimitDraft() {
+        const scene = findScene(currentSceneId);
+        if (!scene) return;
+        const settings = cameraLimitSettingsFromInputs();
+        writeCameraLimitsToScene(scene, settings);
+        writeCameraLimitInputs(settings);
+        applyCameraLimitsToBuiltLayers(scene);
+    }
+
     function getTripodLogoSettings(scene) {
         const settings = scene?.tripod_logo || {};
         return {
@@ -1663,6 +1751,12 @@ document.addEventListener("DOMContentLoaded", () => {
             tiltX: Math.max(-70, Math.min(70, Number(settings.tilt_x || 0))),
             tiltY: Math.max(-70, Math.min(70, Number(settings.tilt_y || 0))),
             radius: Math.max(350, Math.min(2400, Number(settings.radius || 900))),
+            backgroundEnabled: Boolean(settings.background_enabled),
+            backgroundColor: String(settings.background_color || "#FFFFFF"),
+            backgroundOpacity: Math.max(0, Math.min(1, Number(settings.background_opacity ?? 0.94))),
+            backgroundWidth: Math.max(72, Math.min(520, Number(settings.background_width || 160))),
+            backgroundHeight: Math.max(72, Math.min(520, Number(settings.background_height || 160))),
+            backgroundRadius: Math.max(0, Math.min(50, Number(settings.background_radius ?? 50))),
         };
     }
 
@@ -1698,6 +1792,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (tripodLogoTiltX) tripodLogoTiltX.value = settings.tiltX.toFixed(1);
         if (tripodLogoTiltY) tripodLogoTiltY.value = settings.tiltY.toFixed(1);
         if (tripodLogoRadius) tripodLogoRadius.value = String(Math.round(settings.radius));
+        if (tripodLogoBackgroundEnabled) tripodLogoBackgroundEnabled.checked = settings.backgroundEnabled;
+        if (tripodLogoBackgroundColor) tripodLogoBackgroundColor.value = settings.backgroundColor;
+        if (tripodLogoBackgroundOpacity) tripodLogoBackgroundOpacity.value = String(settings.backgroundOpacity);
+        if (tripodLogoBackgroundWidth) tripodLogoBackgroundWidth.value = String(Math.round(settings.backgroundWidth));
+        if (tripodLogoBackgroundHeight) tripodLogoBackgroundHeight.value = String(Math.round(settings.backgroundHeight));
+        if (tripodLogoBackgroundRadius) tripodLogoBackgroundRadius.value = String(Math.round(settings.backgroundRadius));
     }
 
     function writeTripodSettingsToScene(scene, settings) {
@@ -1712,6 +1812,12 @@ document.addEventListener("DOMContentLoaded", () => {
             tilt_x: settings.tiltX,
             tilt_y: settings.tiltY,
             radius: Math.round(settings.radius),
+            background_enabled: Boolean(settings.backgroundEnabled),
+            background_color: settings.backgroundColor,
+            background_opacity: settings.backgroundOpacity,
+            background_width: Math.round(settings.backgroundWidth),
+            background_height: Math.round(settings.backgroundHeight),
+            background_radius: Math.round(settings.backgroundRadius),
         };
     }
 
@@ -1727,6 +1833,12 @@ document.addEventListener("DOMContentLoaded", () => {
             tiltX: Math.max(-70, Math.min(70, Number(tripodLogoTiltX?.value || 0))),
             tiltY: Math.max(-70, Math.min(70, Number(tripodLogoTiltY?.value || 0))),
             radius: Math.max(350, Math.min(2400, Number(tripodLogoRadius?.value || 900))),
+            backgroundEnabled: Boolean(tripodLogoBackgroundEnabled?.checked),
+            backgroundColor: String(tripodLogoBackgroundColor?.value || "#FFFFFF"),
+            backgroundOpacity: Math.max(0, Math.min(1, Number(tripodLogoBackgroundOpacity?.value ?? 0.94))),
+            backgroundWidth: Math.max(72, Math.min(520, Number(tripodLogoBackgroundWidth?.value || 160))),
+            backgroundHeight: Math.max(72, Math.min(520, Number(tripodLogoBackgroundHeight?.value || 160))),
+            backgroundRadius: Math.max(0, Math.min(50, Number(tripodLogoBackgroundRadius?.value ?? 50))),
         };
     }
 
@@ -1746,12 +1858,23 @@ document.addEventListener("DOMContentLoaded", () => {
             && close(expected.rotation, persisted.rotation)
             && close(expected.tiltX, persisted.tiltX)
             && close(expected.tiltY, persisted.tiltY)
-            && Math.round(expected.radius) === Math.round(persisted.radius);
+            && Math.round(expected.radius) === Math.round(persisted.radius)
+            && Boolean(expected.backgroundEnabled) === Boolean(persisted.backgroundEnabled)
+            && String(expected.backgroundColor).toLowerCase() === String(persisted.backgroundColor).toLowerCase()
+            && close(expected.backgroundOpacity, persisted.backgroundOpacity)
+            && Math.round(expected.backgroundWidth) === Math.round(persisted.backgroundWidth)
+            && Math.round(expected.backgroundHeight) === Math.round(persisted.backgroundHeight)
+            && Math.round(expected.backgroundRadius) === Math.round(persisted.backgroundRadius);
     }
 
     function applyTripodRecordVisual(record, settings) {
         if (!record) return;
         record.node.style.setProperty("--builder-tripod-logo-size", `${settings.size}px`);
+        record.node.style.setProperty("--builder-tripod-background-width", `${settings.backgroundEnabled ? settings.backgroundWidth : settings.size}px`);
+        record.node.style.setProperty("--builder-tripod-background-height", `${settings.backgroundEnabled ? settings.backgroundHeight : settings.size}px`);
+        record.node.style.setProperty("--builder-tripod-background-color", settings.backgroundEnabled ? settings.backgroundColor : "transparent");
+        record.node.style.setProperty("--builder-tripod-background-opacity", settings.backgroundEnabled ? String(settings.backgroundOpacity) : "0");
+        record.node.style.setProperty("--builder-tripod-background-radius", `${settings.backgroundRadius}%`);
         record.hotspot.setPosition({
             yaw: degreesToRadians(settings.yaw),
             pitch: degreesToRadians(settings.pitch),
@@ -1890,6 +2013,67 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    const tripodLogoCropCache = new Map();
+
+    function getOpticallyCenteredLogoUrl(url) {
+        const sourceUrl = String(url || "").trim();
+        if (!sourceUrl) return Promise.resolve(sourceUrl);
+        if (tripodLogoCropCache.has(sourceUrl)) return tripodLogoCropCache.get(sourceUrl);
+
+        const promise = new Promise((resolve) => {
+            const image = new Image();
+            image.decoding = "async";
+            image.crossOrigin = "anonymous";
+            image.onload = () => {
+                try {
+                    const width = Math.max(1, image.naturalWidth || image.width || 1);
+                    const height = Math.max(1, image.naturalHeight || image.height || 1);
+                    const canvas = document.createElement("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+                    if (!ctx) return resolve(sourceUrl);
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(image, 0, 0, width, height);
+                    const pixels = ctx.getImageData(0, 0, width, height).data;
+                    let minX = width, minY = height, maxX = -1, maxY = -1;
+                    for (let y = 0; y < height; y += 1) {
+                        for (let x = 0; x < width; x += 1) {
+                            const alpha = pixels[(y * width + x) * 4 + 3];
+                            if (alpha <= 8) continue;
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                        }
+                    }
+                    if (maxX < minX || maxY < minY) return resolve(sourceUrl);
+                    const contentWidth = maxX - minX + 1;
+                    const contentHeight = maxY - minY + 1;
+                    const pad = Math.max(2, Math.round(Math.max(contentWidth, contentHeight) * 0.035));
+                    const sx = Math.max(0, minX - pad);
+                    const sy = Math.max(0, minY - pad);
+                    const sw = Math.min(width - sx, contentWidth + pad * 2);
+                    const sh = Math.min(height - sy, contentHeight + pad * 2);
+                    const output = document.createElement("canvas");
+                    output.width = sw;
+                    output.height = sh;
+                    const outCtx = output.getContext("2d");
+                    if (!outCtx) return resolve(sourceUrl);
+                    outCtx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+                    resolve(output.toDataURL("image/png"));
+                } catch (error) {
+                    console.debug("TRIPOD_LOGO_OPTICAL_CENTER_FALLBACK", error);
+                    resolve(sourceUrl);
+                }
+            };
+            image.onerror = () => resolve(sourceUrl);
+            image.src = sourceUrl;
+        });
+        tripodLogoCropCache.set(sourceUrl, promise);
+        return promise;
+    }
+
     function createSceneTripodLogo(scene, layerKey) {
         destroyTripodLogo(layerKey);
         const settings = getTripodLogoSettings(scene);
@@ -1899,15 +2083,31 @@ document.addEventListener("DOMContentLoaded", () => {
         const node = document.createElement("div");
         node.className = "builder-tripod-logo-hotspot";
         node.style.setProperty("--builder-tripod-logo-size", `${settings.size}px`);
+        node.style.setProperty("--builder-tripod-background-width", `${settings.backgroundEnabled ? settings.backgroundWidth : settings.size}px`);
+        node.style.setProperty("--builder-tripod-background-height", `${settings.backgroundEnabled ? settings.backgroundHeight : settings.size}px`);
+        node.style.setProperty("--builder-tripod-background-color", settings.backgroundEnabled ? settings.backgroundColor : "transparent");
+        node.style.setProperty("--builder-tripod-background-opacity", settings.backgroundEnabled ? String(settings.backgroundOpacity) : "0");
+        node.style.setProperty("--builder-tripod-background-radius", `${settings.backgroundRadius}%`);
         node.setAttribute("role", "button");
         node.setAttribute("aria-label", "Déplacer le logo du trépied");
         node.title = "Glisser pour déplacer le logo dans la sphère 360°";
+
+        const background = document.createElement("div");
+        background.className = "builder-tripod-logo-background";
+        node.appendChild(background);
+
+        const media = document.createElement("div");
+        media.className = "builder-tripod-logo-media";
+        node.appendChild(media);
 
         const image = document.createElement("img");
         image.src = logoUrl;
         image.alt = "";
         image.draggable = false;
-        node.appendChild(image);
+        media.appendChild(image);
+        getOpticallyCenteredLogoUrl(logoUrl).then((centeredUrl) => {
+            if (centeredUrl && image.isConnected) image.src = centeredUrl;
+        });
 
         const rotateHandle = document.createElement("button");
         rotateHandle.type = "button";
@@ -1995,7 +2195,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const source = Marzipano.ImageUrlSource.fromString(sceneData.image_360_url);
         const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
-        const limiter = Marzipano.RectilinearView.limit.traditional(4096, degreesToRadians(100));
+        const limiter = createSceneCameraLimiter(sceneData, 4096, 100);
 
         const initialYaw = degreesToRadians(sceneData.yaw_default || 0);
         const initialPitch = degreesToRadians(sceneData.pitch_default || 0);
@@ -2104,6 +2304,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (yawInput) yawInput.value = scene.yaw_default ?? 0;
         if (pitchInput) pitchInput.value = scene.pitch_default ?? 0;
         if (hfovInput) hfovInput.value = scene.hfov_default ?? 100;
+        syncTripodLogoInputs(scene);
+        syncCameraLimitInputs(scene);
 
         syncScenePublicUI(scene);
 
@@ -2166,6 +2368,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (pitchInput) pitchInput.value = targetScene.pitch_default ?? 0;
             if (hfovInput) hfovInput.value = targetScene.hfov_default ?? 100;
             syncTripodLogoInputs(targetScene);
+            syncCameraLimitInputs(targetScene);
 
             syncScenePublicUI(targetScene);
 
@@ -2329,6 +2532,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (yawInput) yawInput.value = targetScene.yaw_default ?? 0;
                 if (pitchInput) pitchInput.value = targetScene.pitch_default ?? 0;
                 if (hfovInput) hfovInput.value = targetScene.hfov_default ?? 100;
+                syncTripodLogoInputs(targetScene);
+                syncCameraLimitInputs(targetScene);
 
                 if (viewerSceneTitle) viewerSceneTitle.textContent = targetScene.title || "Untitled Scene";
                 if (activeSceneLabel) activeSceneLabel.textContent = targetScene.title || "Scene preview";
@@ -2456,9 +2661,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (hfovInput) hfovInput.value = radiansToDegrees(currentView.fov()).toFixed(2);
             }
 
+            const cameraDraft = cameraLimitSettingsFromInputs();
             const tripodDraft = settingsFromTripodInputs();
             const currentScene = findScene(currentSceneId);
-            if (currentScene) writeTripodSettingsToScene(currentScene, tripodDraft);
+            if (currentScene) {
+                writeCameraLimitsToScene(currentScene, cameraDraft);
+                writeTripodSettingsToScene(currentScene, tripodDraft);
+            }
 
             const payload = {
                 title: sceneTitleInput?.value || "",
@@ -2466,6 +2675,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 pitch_default: parseFloat(pitchInput?.value || 0),
                 hfov_default: parseFloat(hfovInput?.value || 100),
                 is_public: scenePublicInput ? Boolean(scenePublicInput.checked) : true,
+                camera_limits_enabled: Boolean(cameraDraft.enabled),
+                camera_pitch_min: Number(cameraDraft.pitchMin),
+                camera_pitch_max: Number(cameraDraft.pitchMax),
+                camera_limits_apply_all_scenes: Boolean(cameraLimitsApplyAllScenes?.checked),
                 tripod_logo_enabled: Boolean(tripodDraft.enabled),
                 tripod_logo_size: Math.round(tripodDraft.size),
                 tripod_logo_yaw: Number(tripodDraft.yaw),
@@ -2476,6 +2689,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 tripod_logo_tilt_x: Number(tripodDraft.tiltX),
                 tripod_logo_tilt_y: Number(tripodDraft.tiltY),
                 tripod_logo_radius: Math.round(tripodDraft.radius),
+                tripod_logo_background_enabled: Boolean(tripodDraft.backgroundEnabled),
+                tripod_logo_background_color: tripodDraft.backgroundColor,
+                tripod_logo_background_opacity: Number(tripodDraft.backgroundOpacity),
+                tripod_logo_background_width: Math.round(tripodDraft.backgroundWidth),
+                tripod_logo_background_height: Math.round(tripodDraft.backgroundHeight),
+                tripod_logo_background_radius: Math.round(tripodDraft.backgroundRadius),
                 tripod_logo_apply_all_scenes: Boolean(tripodLogoApplyAllScenes?.checked),
             };
 
@@ -2507,8 +2726,16 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!data?.persistence?.database_verified || !data?.persistence?.tripod_logo_verified) {
                 throw new Error("The server did not confirm the tripod logo database write.");
             }
+            if (!data?.persistence?.camera_limits_verified) {
+                throw new Error("The server did not confirm the camera limit database write.");
+            }
 
             const updatedScene = data.scene;
+            const persistedCamera = {
+                enabled: Boolean(data.persistence.camera_limits?.enabled),
+                pitchMin: Number(data.persistence.camera_limits?.pitch_min),
+                pitchMax: Number(data.persistence.camera_limits?.pitch_max),
+            };
             const persistedTripod = getTripodLogoSettings(updatedScene);
             if (!tripodSettingsMatch(tripodDraft, persistedTripod)) {
                 console.error("TRIPOD_LOGO_PERSISTENCE_MISMATCH", {
@@ -2523,6 +2750,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 (data?.persistence?.tripod_logo_applied_scene_ids || [updatedScene.id])
                     .map(value => String(value))
             );
+            const cameraAppliedSceneIds = new Set(
+                (data?.persistence?.camera_limits_applied_scene_ids || [updatedScene.id])
+                    .map(value => String(value))
+            );
 
             scenesData = scenesData.map(scene => {
                 const sceneId = String(scene.id);
@@ -2534,11 +2765,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     nextScene = { ...nextScene };
                     writeTripodSettingsToScene(nextScene, persistedTripod);
                 }
+                if (cameraAppliedSceneIds.has(sceneId)) {
+                    nextScene = { ...nextScene };
+                    writeCameraLimitsToScene(nextScene, persistedCamera);
+                }
                 return nextScene;
             });
 
             const savedScene = findScene(updatedScene.id);
             if (savedScene) {
+                writeCameraLimitsToScene(savedScene, persistedCamera);
+                writeCameraLimitInputs(persistedCamera);
+                applyCameraLimitsToBuiltLayers(savedScene);
                 writeTripodSettingsToScene(savedScene, persistedTripod);
                 writeTripodInputs(persistedTripod);
                 const record = getTripodLogoRecord(activeLayerKey);
@@ -3814,9 +4052,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     saveSceneBtn?.addEventListener("click", saveScene);
     scenePublicInput?.addEventListener("change", updateScenePublicDraft);
+    [cameraLimitsEnabled, cameraPitchMin, cameraPitchMax].forEach(input => {
+        input?.addEventListener("input", updateCameraLimitDraft);
+        input?.addEventListener("change", updateCameraLimitDraft);
+    });
     tripodLogoPlaceBtn?.addEventListener("click", placeTripodLogoAtCurrentView);
     tripodLogoNadirBtn?.addEventListener("click", placeTripodLogoAtNadir);
-    [tripodLogoEnabled, tripodLogoSize, tripodLogoYaw, tripodLogoPitch, tripodLogoOffsetX, tripodLogoOffsetY, tripodLogoRotation, tripodLogoTiltX, tripodLogoTiltY, tripodLogoRadius].forEach(input => {
+    [tripodLogoEnabled, tripodLogoSize, tripodLogoYaw, tripodLogoPitch, tripodLogoOffsetX, tripodLogoOffsetY, tripodLogoRotation, tripodLogoTiltX, tripodLogoTiltY, tripodLogoRadius, tripodLogoBackgroundEnabled, tripodLogoBackgroundColor, tripodLogoBackgroundOpacity, tripodLogoBackgroundWidth, tripodLogoBackgroundHeight, tripodLogoBackgroundRadius].forEach(input => {
         input?.addEventListener("input", () => updateTripodLogoDraft());
         input?.addEventListener("change", () => updateTripodLogoDraft());
     });

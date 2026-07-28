@@ -476,6 +476,20 @@ class Scene360(TimeStampedModel):
     pitch_default = models.FloatField(default=0)
     hfov_default = models.FloatField(default=100)
 
+    # Public/builder camera limits. Marzipano uses negative pitch for the
+    # upper hemisphere and positive pitch for the floor/nadir. These values
+    # limit the camera centre, while the traditional limiter still keeps the
+    # viewport inside the equirectangular image.
+    camera_limits_enabled = models.BooleanField(default=True)
+    camera_pitch_min = models.FloatField(
+        default=-82.0,
+        validators=[MinValueValidator(-89.5), MaxValueValidator(89.5)],
+    )
+    camera_pitch_max = models.FloatField(
+        default=62.0,
+        validators=[MinValueValidator(-89.5), MaxValueValidator(89.5)],
+    )
+
     # Optional organization logo used to cover the camera tripod in this scene.
     # The position is scene-specific because every panorama can have a slightly
     # different stitched nadir. Values are expressed in degrees / CSS pixels.
@@ -515,6 +529,25 @@ class Scene360(TimeStampedModel):
     tripod_logo_radius = models.PositiveSmallIntegerField(
         default=900,
         validators=[MinValueValidator(350), MaxValueValidator(2400)],
+    )
+    tripod_logo_background_enabled = models.BooleanField(default=False)
+    tripod_logo_background_color = models.CharField(max_length=9, default="#FFFFFF")
+    tripod_logo_background_opacity = models.FloatField(
+        default=0.94,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+    )
+    tripod_logo_background_width = models.PositiveSmallIntegerField(
+        default=160,
+        validators=[MinValueValidator(72), MaxValueValidator(520)],
+    )
+    tripod_logo_background_height = models.PositiveSmallIntegerField(
+        default=160,
+        validators=[MinValueValidator(72), MaxValueValidator(520)],
+    )
+    tripod_logo_background_radius = models.PositiveSmallIntegerField(
+        default=50,
+        validators=[MinValueValidator(0), MaxValueValidator(50)],
+        help_text="Background corner radius as a percentage.",
     )
 
     # Assets pipeline

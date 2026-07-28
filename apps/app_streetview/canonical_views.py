@@ -513,6 +513,9 @@ def publisher_page(request):
                 or getattr(settings, "GOOGLE_MAPS_BROWSER_KEY", "")
             ),
             "google_maps_map_id": getattr(settings, "GOOGLE_MAPS_MAP_ID", "DEMO_MAP_ID"),
+            "initial_organization_id": request.GET.get("organization", ""),
+            "initial_place_id": request.GET.get("place", ""),
+            "initial_tour_id": request.GET.get("tour", ""),
         },
     )
 

@@ -144,6 +144,15 @@ def _cleanup_direct_local_bytes(scene: StreetViewScene):
         return False
     if scene.google_maps_publish_status != PUBLISHED or scene.remote_only or not scene.image:
         return False
+
+    # Organization imports intentionally reference the original Twinscopes scene
+    # file instead of copying many large panoramas. Never delete shared storage
+    # bytes from the Street Projects cleanup workflow, otherwise the source tour
+    # would lose its image as well.
+    metadata = scene.exif_data or {}
+    if scene.tour.source_tour_id or metadata.get("shared_storage_reference"):
+        return False
+
     try:
         scene.image.delete(save=False)
     except Exception:

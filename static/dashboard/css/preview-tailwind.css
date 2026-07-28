@@ -7092,34 +7092,58 @@ body.ui-hidden #previewControlDock {
 ===================================================================== */
 .preview-tripod-logo {
     position: relative;
-    width: var(--preview-tripod-logo-size, 132px);
-    height: var(--preview-tripod-logo-size, 132px);
-    display: grid;
-    place-items: center;
-    box-sizing: border-box;
-    padding: clamp(8px, 9%, 15px);
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,.96);
-    background: rgba(255,255,255,.96);
-    box-shadow: 0 12px 34px rgba(2,6,23,.42), inset 0 0 0 1px rgba(15,23,42,.08);
-    transform-origin: center center;
-    pointer-events: none;
-    touch-action: none;
-    user-select: none;
-    overflow: visible;
-    transition: none !important;
-    animation: none !important;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+    width: var(--preview-tripod-background-width, var(--preview-tripod-logo-size, 132px));
+    height: var(--preview-tripod-background-height, var(--preview-tripod-logo-size, 132px));
+    display:grid;
+    place-items:center;
+    box-sizing:border-box;
+    transform-origin:center center;
+    pointer-events:none;
+    touch-action:none;
+    user-select:none;
+    overflow:visible;
+    transition:none!important;
+    animation:none!important;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
 }
-.preview-tripod-logo img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: contain;
-    pointer-events: none;
-    border-radius: inherit;
-    overflow: hidden;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+.preview-tripod-logo-background {
+    position:absolute;
+    inset:0;
+    border-radius:var(--preview-tripod-background-radius, 50%);
+    background:var(--preview-tripod-background-color, transparent);
+    opacity:var(--preview-tripod-background-opacity, 0);
+    border:1px solid rgba(255,255,255,.76);
+    box-shadow:0 12px 34px rgba(2,6,23,.42), inset 0 0 0 1px rgba(15,23,42,.08);
+    pointer-events:none;
+}
+.preview-tripod-logo-media {
+    position:absolute;
+    left:50%;
+    top:50%;
+    z-index:2;
+    width:var(--preview-tripod-logo-size, 132px);
+    height:var(--preview-tripod-logo-size, 132px);
+    display:grid;
+    place-items:center;
+    transform:translate(-50%, -50%);
+    transform-origin:center center;
+    pointer-events:none;
+    overflow:visible;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+}
+.preview-tripod-logo-media img {
+    width:100%;
+    height:100%;
+    max-width:100%;
+    max-height:100%;
+    display:block;
+    object-fit:contain;
+    object-position:50% 50%;
+    pointer-events:none;
+    overflow:hidden;
+    filter:drop-shadow(0 5px 14px rgba(2,6,23,.24));
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
 }

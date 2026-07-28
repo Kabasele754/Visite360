@@ -14,15 +14,15 @@
        ========================================================= */
 
     :root {
-        --sb-bg: #020617;
-        --sb-bg-2: #0f172a;
+        --sb-bg: #030303;
+        --sb-bg-2: #090909;
         --sb-panel: rgba(248, 250, 252, 0.96);
-        --sb-panel-dark: rgba(15, 23, 42, 0.96);
+        --sb-panel-dark: rgba(9, 9, 9, 0.97);
         --sb-card: rgba(255, 255, 255, 0.94);
-        --sb-card-dark: rgba(15, 23, 42, 0.90);
+        --sb-card-dark: rgba(12, 12, 12, 0.94);
         --sb-border: rgba(226, 232, 240, 0.95);
         --sb-border-dark: rgba(148, 163, 184, 0.24);
-        --sb-text: #0f172a;
+        --sb-text: #090909;
         --sb-muted: #64748b;
         --sb-text-dark: #f8fafc;
         --sb-muted-dark: #94a3b8;
@@ -62,7 +62,7 @@
         grid-template-columns: minmax(320px, 370px) minmax(0, 1fr) minmax(340px, 405px);
         height: calc(100vh - 64px);
         min-height: 0;
-        background: #020617;
+        background: #030303;
     }
 
     .studio-leftpanel,
@@ -197,7 +197,7 @@
         border-radius: 18px;
         background: #ffffff;
         padding: 12px 14px;
-        color: #0f172a;
+        color: #090909;
         font-size: 14px;
         font-weight: 750;
         outline: none;
@@ -340,7 +340,7 @@
     }
 
     .scene-meta strong {
-        color: #0f172a;
+        color: #090909;
         font-size: 13px;
         font-weight: 900;
     }
@@ -411,7 +411,7 @@
         min-width: 0;
         min-height: 0;
         flex-direction: column;
-        background: #020617;
+        background: #030303;
     }
 
     .viewer-toolbar,
@@ -470,7 +470,7 @@
 
     .tool-btn.active {
         background: #ffffff;
-        color: #0f172a;
+        color: #090909;
         box-shadow: 0 12px 28px rgba(255, 255, 255, 0.14);
     }
 
@@ -495,7 +495,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #0f172a;
+        background: #090909;
     }
 
     .panorama-viewer canvas {
@@ -919,7 +919,7 @@
 
     .hotspot-popup-content h4 {
         margin: 0;
-        color: #0f172a;
+        color: #090909;
         font-size: 18px;
         font-weight: 950;
     }
@@ -1266,7 +1266,7 @@
 
     .scene-public-title {
         margin: 0;
-        color: #0f172a;
+        color: #090909;
         font-size: 14px;
         font-weight: 950;
         letter-spacing: -0.01em;
@@ -1791,6 +1791,28 @@
     /* =========================================================
        SCENE TRIPOD LOGO CONTROLS V41
        ========================================================= */
+    .camera-limits-card {
+        border: 1px solid rgba(14, 165, 233, .24);
+        background: linear-gradient(145deg, rgba(14,165,233,.08), rgba(6,182,212,.035));
+    }
+    body.builder-dark .camera-limits-card {
+        border-color: rgba(103,232,249,.24);
+        background: linear-gradient(145deg, rgba(8,145,178,.14), rgba(2,6,23,.34));
+    }
+    .camera-limits-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .camera-limits-head strong { display:block; font-size:13px; font-weight:950; }
+    .camera-limits-head span { display:block; margin-top:4px; color:var(--sb-muted); font-size:10.5px; line-height:1.45; }
+    body.builder-dark .camera-limits-head span { color:var(--sb-muted-dark); }
+    .camera-limits-switch { position:relative; flex:0 0 auto; width:42px; height:24px; }
+    .camera-limits-switch input { position:absolute; opacity:0; pointer-events:none; }
+    .camera-limits-switch span { position:absolute; inset:0; border-radius:999px; background:#cbd5e1; transition:.2s ease; }
+    .camera-limits-switch span::after { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; border-radius:50%; background:#fff; transition:.2s ease; box-shadow:0 2px 8px rgba(15,23,42,.2); }
+    .camera-limits-switch input:checked + span { background:#06b6d4; }
+    .camera-limits-switch input:checked + span::after { transform:translateX(18px); }
+    .camera-limits-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+    .camera-limits-note { margin:10px 0 0; color:var(--sb-muted); font-size:10px; line-height:1.5; }
+    body.builder-dark .camera-limits-note { color:var(--sb-muted-dark); }
+
     .tripod-logo-card {
         background:
             radial-gradient(circle at top right, rgba(34,211,238,.14), transparent 38%),
@@ -1979,16 +2001,11 @@
 
     .builder-tripod-logo-hotspot {
         position: relative;
-        width: var(--builder-tripod-logo-size, 132px);
-        height: var(--builder-tripod-logo-size, 132px);
+        width: var(--builder-tripod-background-width, var(--builder-tripod-logo-size, 132px));
+        height: var(--builder-tripod-background-height, var(--builder-tripod-logo-size, 132px));
         display: grid;
         place-items: center;
         box-sizing: border-box;
-        padding: clamp(8px, 9%, 15px);
-        border-radius: 50%;
-        border: 2px solid rgba(255,255,255,.96);
-        background: rgba(255,255,255,.96);
-        box-shadow: 0 12px 34px rgba(2,6,23,.42), inset 0 0 0 1px rgba(15,23,42,.08);
         transform-origin: center center;
         pointer-events: auto;
         cursor: grab;
@@ -1996,7 +2013,17 @@
         user-select: none;
         overflow: visible;
         outline: 0 solid rgba(34,211,238,0);
-        transition: outline-width .16s ease, box-shadow .16s ease;
+        transition: outline-width .16s ease, filter .16s ease;
+    }
+    .builder-tripod-logo-background {
+        position:absolute;
+        inset:0;
+        border-radius:var(--builder-tripod-background-radius, 50%);
+        background:var(--builder-tripod-background-color, transparent);
+        opacity:var(--builder-tripod-background-opacity, 0);
+        border:1px solid rgba(255,255,255,.76);
+        box-shadow:0 12px 34px rgba(2,6,23,.42), inset 0 0 0 1px rgba(15,23,42,.08);
+        pointer-events:none;
     }
     .builder-tripod-logo-hotspot:hover,
     .builder-tripod-logo-hotspot.is-dragging,
@@ -2007,14 +2034,31 @@
         box-shadow: 0 18px 46px rgba(2,6,23,.52), 0 0 0 5px rgba(34,211,238,.14);
     }
     .builder-tripod-logo-hotspot.is-dragging { cursor: grabbing; }
-    .builder-tripod-logo-hotspot img {
-        width: 100%;
-        height: 100%;
-        display: block;
-        object-fit: contain;
-        pointer-events: none;
-        border-radius: inherit;
-        overflow: hidden;
+    .builder-tripod-logo-media {
+        position:absolute;
+        left:50%;
+        top:50%;
+        z-index:2;
+        width:var(--builder-tripod-logo-size, 132px);
+        height:var(--builder-tripod-logo-size, 132px);
+        display:grid;
+        place-items:center;
+        transform:translate(-50%, -50%);
+        transform-origin:center center;
+        pointer-events:none;
+        overflow:visible;
+    }
+    .builder-tripod-logo-media img {
+        width:100%;
+        height:100%;
+        max-width:100%;
+        max-height:100%;
+        display:block;
+        object-fit:contain;
+        object-position:50% 50%;
+        pointer-events:none;
+        overflow:hidden;
+        filter:drop-shadow(0 5px 14px rgba(2,6,23,.24));
     }
     .builder-tripod-logo-handle {
         position: absolute;
@@ -2724,6 +2768,38 @@
     </div>
 
 
+    <div class="rightpanel-card camera-limits-card">
+        <div class="camera-limits-head">
+            <div>
+                <strong>Limites de caméra 360°</strong>
+                <span>Définis mathématiquement jusqu’où le visiteur peut regarder vers le plafond et vers le sol.</span>
+            </div>
+            <label class="camera-limits-switch" for="cameraLimitsEnabled" aria-label="Activer les limites de caméra">
+                <input type="checkbox" id="cameraLimitsEnabled" checked>
+                <span></span>
+            </label>
+        </div>
+        <div class="camera-limits-grid">
+            <div class="form-group">
+                <label for="cameraPitchMin">Limite vers le haut</label>
+                <input type="number" id="cameraPitchMin" min="-89.5" max="89.5" step="0.5" value="-82">
+            </div>
+            <div class="form-group">
+                <label for="cameraPitchMax">Limite vers le sol</label>
+                <input type="number" id="cameraPitchMax" min="-89.5" max="89.5" step="0.5" value="62">
+            </div>
+        </div>
+        <label class="tripod-logo-apply-all" for="cameraLimitsApplyAllScenes">
+            <input type="checkbox" id="cameraLimitsApplyAllScenes" checked>
+            <span class="tripod-logo-apply-all-check" aria-hidden="true">✓</span>
+            <span class="tripod-logo-apply-all-copy">
+                <strong>Appliquer à toutes les scènes</strong>
+                <small>Les mêmes limites seront enregistrées pour tout le tour.</small>
+            </span>
+        </label>
+        <p class="camera-limits-note">Convention Marzipano : valeur négative = plafond, valeur positive = sol. Une limite sol de 55° à 68° protège généralement bien le trépied.</p>
+    </div>
+
     <div class="rightpanel-card tripod-logo-card">
         <div class="tripod-logo-hero">
             <div class="tripod-logo-preview" aria-hidden="true">
@@ -2793,6 +2869,43 @@
             <div class="form-group">
                 <label for="tripodLogoOffsetY">Ajustement Y</label>
                 <input type="number" id="tripodLogoOffsetY" min="-250" max="250" step="1" value="0">
+            </div>
+        </div>
+
+        <div class="tripod-logo-direct-help">
+            <span class="tripod-logo-direct-icon" aria-hidden="true">▣</span>
+            <span><strong>PNG background:</strong> activate a backdrop behind transparent logos and resize it independently to cover the tripod.</span>
+        </div>
+
+        <label class="tripod-logo-apply-all" for="tripodLogoBackgroundEnabled">
+            <input type="checkbox" id="tripodLogoBackgroundEnabled">
+            <span class="tripod-logo-apply-all-check" aria-hidden="true">✓</span>
+            <span class="tripod-logo-apply-all-copy">
+                <strong>Background behind the logo</strong>
+                <small>Useful for transparent PNG logos and wide tripod areas.</small>
+            </span>
+        </label>
+
+        <div class="tripod-logo-grid">
+            <div class="form-group">
+                <label for="tripodLogoBackgroundColor">Background color</label>
+                <input type="color" id="tripodLogoBackgroundColor" value="#ffffff">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoBackgroundOpacity">Opacity</label>
+                <input type="number" id="tripodLogoBackgroundOpacity" min="0" max="1" step="0.05" value="0.94">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoBackgroundWidth">Background width</label>
+                <input type="number" id="tripodLogoBackgroundWidth" min="72" max="520" step="4" value="160">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoBackgroundHeight">Background height</label>
+                <input type="number" id="tripodLogoBackgroundHeight" min="72" max="520" step="4" value="160">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoBackgroundRadius">Corner radius (%)</label>
+                <input type="number" id="tripodLogoBackgroundRadius" min="0" max="50" step="1" value="50">
             </div>
         </div>
 
@@ -2880,7 +2993,7 @@
 {{ scenes_json|json_script:"scenes-data" }}
 
 <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
-<script src="{% static 'dashboard/js/studio_builder.js' %}?v=tripod-logo-all-scenes-floor-anchor-44"></script>
+<script src="{% static 'dashboard/js/studio_builder.js' %}?v=tripod-logo-optical-center-48"></script>
 
 
 <script>
@@ -2901,7 +3014,7 @@
             if (toggleText) toggleText.textContent = isDark ? "Light" : "Dark";
         }
 
-        const savedTheme = localStorage.getItem("studio-builder-theme");
+        const savedTheme = localStorage.getItem("twinscopes-market-theme") || localStorage.getItem("studio-builder-theme");
         const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
         applyBuilderTheme(savedTheme || (prefersDark ? "dark" : "light"));
 
@@ -2909,6 +3022,10 @@
             toggleBtn.addEventListener("click", function () {
                 const nextTheme = body.classList.contains("builder-dark") ? "light" : "dark";
                 localStorage.setItem("studio-builder-theme", nextTheme);
+                localStorage.setItem("twinscopes-market-theme", nextTheme);
+                localStorage.setItem("twinscopes-dashboard-theme", nextTheme);
+                document.documentElement.dataset.marketTheme = nextTheme;
+                document.documentElement.dataset.dashboardTheme = nextTheme;
                 applyBuilderTheme(nextTheme);
             });
         }

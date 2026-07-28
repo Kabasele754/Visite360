@@ -51,6 +51,7 @@ urlpatterns = [
     path("oauth/callback/", views.google_oauth_callback, name="oauth_callback"),
 
     # Tours
+    path("projects/import-source-tour/", views.import_source_tour, name="import_source_tour"),
     path("tours/", views.list_tours, name="list_tours"),
     path("tours/create/", views.create_tour, name="create_tour"),
     path("tours/<int:tour_id>/", views.tour_detail, name="tour_detail"),

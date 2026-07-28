@@ -203,6 +203,12 @@ class ScenePublicSerializer(serializers.ModelSerializer):
             "tilt_x": float(getattr(obj, "tripod_logo_tilt_x", 0.0) or 0.0),
             "tilt_y": float(getattr(obj, "tripod_logo_tilt_y", 0.0) or 0.0),
             "radius": int(getattr(obj, "tripod_logo_radius", 900) or 900),
+            "background_enabled": bool(getattr(obj, "tripod_logo_background_enabled", False)),
+            "background_color": str(getattr(obj, "tripod_logo_background_color", "#FFFFFF") or "#FFFFFF"),
+            "background_opacity": float(getattr(obj, "tripod_logo_background_opacity", 0.94) or 0.0),
+            "background_width": int(getattr(obj, "tripod_logo_background_width", 160) or 160),
+            "background_height": int(getattr(obj, "tripod_logo_background_height", 160) or 160),
+            "background_radius": int(getattr(obj, "tripod_logo_background_radius", 50) or 0),
         }
 
     def get_image_360_url(self, obj):
