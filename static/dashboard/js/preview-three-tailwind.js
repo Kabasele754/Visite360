@@ -40,7 +40,6 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.m
     const infoAction = document.getElementById("previewInfoAction");
     const infoWhatsapp = document.getElementById("previewInfoWhatsapp");
     const infoContact = document.getElementById("previewInfoContact");
-    const brandOverlay = document.getElementById("brandOverlay");
     const controlDock = document.getElementById("previewControlDock");
 
     const MAX_FOV = 90;
@@ -633,7 +632,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.m
     function toggleFocusMode() {
         viewerState.focusModeEnabled = !viewerState.focusModeEnabled;
 
-        [brandOverlay, controlDock].forEach((el) => {
+        [controlDock].forEach((el) => {
             if (!el) return;
             el.style.opacity = viewerState.focusModeEnabled ? "0" : "1";
             el.style.pointerEvents = viewerState.focusModeEnabled ? "none" : "";

@@ -19,6 +19,7 @@
         </div>
       </div>
       <div class="top-actions">
+        <a class="btn btn-soft small" href="{% url 'apps.app_streetview:direct_projects' %}">☁️ Direct Google projects</a>
         <button id="openLibraryTopBtn" class="btn btn-soft small">🖼️ Google account library</button>
         <button id="runQualityTopBtn" class="btn btn-soft small">✅ Quality</button>
         <button id="quickPublishBtn" class="btn btn-primary small">Publish / continue</button>
@@ -209,7 +210,10 @@
               <section class="panel publish-panel">
                 <div class="panel-title">Publishing</div>
                 <button id="publishBtnSide" class="btn btn-primary btn-full">🚀 Publish in background</button>
+                <button id="syncGoogleStatusBtn" class="btn btn-soft btn-full">↻ Sync Google status</button>
+                <button id="auditConnectionsBtn" class="btn btn-soft btn-full">🧭 Audit & repair navigation</button>
                 <button id="deleteGooglePhotoBtn" class="btn btn-danger btn-full">Delete from Google</button>
+                <div id="googleVerificationSummary" class="google-verification-summary muted-box">Google acceptance and navigation verification will appear here.</div>
                 <div id="jobProgress" class="job-progress muted-box">No background job yet.</div>
               </section>
 

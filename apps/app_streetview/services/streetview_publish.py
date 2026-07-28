@@ -150,7 +150,15 @@ class StreetViewPublishClient:
             payload["pose"]["altitude"] = float(scene.altitude)
 
         if scene.capture_time:
-            payload["captureTime"] = {"seconds": int(scene.capture_time.timestamp())}
+            capture_time = scene.capture_time
+            if getattr(capture_time, "tzinfo", None) is None:
+                from datetime import timezone as dt_timezone
+                capture_time = capture_time.replace(tzinfo=dt_timezone.utc)
+            payload["captureTime"] = capture_time.isoformat().replace("+00:00", "Z")
+
+        google_place_id = str(getattr(scene, "google_place_id", "") or "").strip()
+        if google_place_id:
+            payload["places"] = [{"placeId": google_place_id}]
 
         response = self.session.post(
             self._url("/v1/photo"),

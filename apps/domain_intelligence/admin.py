@@ -8,6 +8,7 @@ from .models import (
     MedicalSpecialty,
     OrganizationIntelligenceProfile,
     OrganizationIntelligenceRun,
+    OrganizationEmbeddedResource,
     IntelligenceReviewItem,
     PractitionerAvailability,
     PropertyListingProfile,
@@ -89,3 +90,10 @@ class IntelligenceReviewItemAdmin(admin.ModelAdmin):
     search_fields = ("organization__name", "label", "target_field", "source_url")
     readonly_fields = ("created_at", "updated_at")
 
+
+
+@admin.register(OrganizationEmbeddedResource)
+class OrganizationEmbeddedResourceAdmin(admin.ModelAdmin):
+    list_display = ("label", "organization", "kind", "embed_mode", "is_verified", "is_active", "verified_at")
+    list_filter = ("kind", "embed_mode", "is_verified", "is_active")
+    search_fields = ("label", "organization__name", "url", "description")

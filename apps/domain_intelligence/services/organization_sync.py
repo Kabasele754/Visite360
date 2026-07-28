@@ -23,6 +23,7 @@ from apps.domain_intelligence.models import (
     IntelligenceReviewItem,
     OrganizationIntelligenceProfile,
     OrganizationIntelligenceRun,
+    OrganizationEmbeddedResource,
     PropertyListingProfile,
     VerifiedSourceFact,
 )
@@ -59,6 +60,79 @@ _AMENITY_WORDS = {
     "wheelchair": "Wheelchair access", "accessible": "Accessibility", "air conditioning": "Air conditioning",
     "security": "Security", "generator": "Backup power", "garden": "Garden", "balcony": "Balcony",
 }
+
+
+def _embedded_resource_kind(url: str, label: str = "") -> str:
+    haystack = f"{url} {label}".lower()
+    if any(word in haystack for word in ("book", "appointment", "reserve", "schedule", "calendly")):
+        return OrganizationEmbeddedResource.Kind.BOOKING
+    if any(word in haystack for word in ("crm", "portal", "patient", "client-login", "login")):
+        return OrganizationEmbeddedResource.Kind.CRM
+    if any(word in haystack for word in ("contact", "enquiry", "inquiry", "quote")):
+        return OrganizationEmbeddedResource.Kind.CONTACT
+    if any(word in haystack for word in ("form", "forms", "typeform", "jotform", "docs.google.com/forms")):
+        return OrganizationEmbeddedResource.Kind.FORM
+    if any(word in haystack for word in ("facebook.com", "instagram.com", "linkedin.com", "tiktok.com", "youtube.com")):
+        return OrganizationEmbeddedResource.Kind.SOCIAL
+    return OrganizationEmbeddedResource.Kind.WEBSITE
+
+
+def _sync_embedded_resources(organization: Organization, pages: list[CrawledPage], service_candidates: list[dict]) -> int:
+    """Create verified modal resources from links discovered on official pages."""
+    candidates: dict[str, dict] = {}
+
+    def add(url: Any, label: str, source_url: str = "", description: str = ""):
+        value = _clean_text(url, 1000)
+        parsed = urlparse(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            return
+        kind = _embedded_resource_kind(value, label)
+        candidates[value] = {
+            "label": _clean_text(label, 180) or "Official resource",
+            "kind": kind,
+            "source_url": _clean_text(source_url, 1000) or value,
+            "description": _clean_text(description, 1000),
+        }
+
+    add(organization.website_url, "Official website", organization.website_url, organization.description)
+    add(organization.booking_url, "Book or request an appointment", organization.website_url, "Verified booking resource published by the organization.")
+    for page in pages:
+        path = urlparse(page.url).path.lower()
+        if any(word in path for word in ("contact", "booking", "appointment", "reserve", "portal", "form", "enquiry", "inquiry")):
+            add(page.url, page.title or "Official resource", page.url, _clean_text(page.text, 320))
+    for candidate in service_candidates:
+        if isinstance(candidate, dict):
+            add(candidate.get("booking_url"), f"Book {candidate.get('name') or 'service'}", candidate.get("source_url") or organization.website_url, candidate.get("description") or "")
+    for field, label in (
+        ("facebook_url", "Facebook"), ("instagram_url", "Instagram"),
+        ("linkedin_url", "LinkedIn"), ("tiktok_url", "TikTok"), ("youtube_url", "YouTube"),
+    ):
+        add(getattr(organization, field, ""), label, organization.website_url)
+
+    count = 0
+    for url, values in candidates.items():
+        kind = values["kind"]
+        native_fallback = "booking" if kind in {OrganizationEmbeddedResource.Kind.BOOKING, OrganizationEmbeddedResource.Kind.CRM} else "contact" if kind in {OrganizationEmbeddedResource.Kind.CONTACT, OrganizationEmbeddedResource.Kind.FORM} else ""
+        resource, _ = OrganizationEmbeddedResource.objects.update_or_create(
+            organization=organization,
+            url=url,
+            defaults={
+                "label": values["label"],
+                "kind": kind,
+                "embed_mode": OrganizationEmbeddedResource.EmbedMode.AUTO,
+                "button_label": "Open booking" if native_fallback == "booking" else "Open resource",
+                "description": values["description"],
+                "allow_in_tour_agent": True,
+                "is_verified": True,
+                "is_active": True,
+                "sandbox_permissions": ["allow-forms", "allow-scripts", "allow-same-origin", "allow-popups-to-escape-sandbox"],
+                "source_url": values["source_url"],
+                "verified_at": timezone.now(),
+                "metadata": {"native_fallback": native_fallback, "discovered_from_official_website": True},
+            },
+        )
+        count += 1
+    return count
 
 
 def _clean_text(value: Any, limit: int = 4000) -> str:
@@ -778,6 +852,8 @@ def collect_organization_intelligence(run: OrganizationIntelligenceRun) -> dict[
             if outcome in {"created", "updated"}:
                 services_collected += 1
 
+        embedded_resources_collected = _sync_embedded_resources(organization, pages, service_candidates)
+
         _save_run_progress(
             run,
             "domain_enrichment",
@@ -838,6 +914,7 @@ def collect_organization_intelligence(run: OrganizationIntelligenceRun) -> dict[
             "knowledge_source_id": source.pk,
             "applied_fields": sorted(set(applied_fields)),
             "domain_profiles_created": profile_counts,
+            "embedded_resources_collected": embedded_resources_collected,
             "healthcare": healthcare_result,
             "readiness_status": readiness_after_result.status,
             "crawl": {
@@ -865,6 +942,7 @@ def collect_organization_intelligence(run: OrganizationIntelligenceRun) -> dict[
             "documents_indexed": documents_indexed,
             "chunks_indexed": chunks_indexed,
             "services_collected": services_collected,
+            "embedded_resources_collected": embedded_resources_collected,
             "review_items": run.review_items_created,
             "readiness_before": readiness_before,
             "readiness_after": readiness_after_result.score,

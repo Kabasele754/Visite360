@@ -1,11 +1,24 @@
 {% load static %}
 <div id="tourAiAgent" class="tour-ai-agent" data-tour-id="{{ tour.id }}" data-initial-scene-id="{% if scenes_json %}{{ scenes_json.0.id }}{% endif %}" aria-live="polite">
-  <button class="tour-ai-launcher" type="button" aria-expanded="false" aria-controls="tourAiPanel" aria-label="Open Twinscopes AI"><span class="tour-ai-pulse"></span><span>AI</span></button>
+  <button class="tour-ai-launcher" type="button" aria-expanded="false" aria-controls="tourAiPanel" aria-label="Open {{ preview_assistant_name }}">
+      <span class="tour-ai-launcher-label" aria-hidden="true">AI</span>
+  </button>
   <div class="tour-ai-nudge" hidden><button type="button" data-ai-open>Need help exploring this space?</button><button type="button" data-ai-dismiss aria-label="Dismiss">×</button></div>
-  <section id="tourAiPanel" class="tour-ai-panel" hidden aria-label="Twinscopes AI assistant">
+  <section id="tourAiPanel" class="tour-ai-panel" hidden aria-label="{{ preview_assistant_name }}">
     <header>
-      <div class="tour-ai-brand"><span class="tour-ai-brand-mark">AI</span><div><strong>Twinscopes AI</strong><small class="tour-ai-status">Scene-aware assistant</small></div></div>
-      <button type="button" data-ai-close aria-label="Close">×</button>
+      <div class="tour-ai-brand">
+        <span class="tour-ai-brand-mark">
+          {% if current_organization.logo %}
+            <img src="{{ current_organization.logo.url }}" alt="" decoding="async">
+          {% elif current_organization.ai_assistant_brand_mode == 'custom' and current_organization.ai_assistant_avatar %}
+            <img src="{{ current_organization.ai_assistant_avatar.url }}" alt="" decoding="async">
+          {% else %}
+            <span class="tour-ai-brand-fallback" aria-hidden="true">{{ current_organization.name|slice:":2"|upper }}</span>
+          {% endif %}
+        </span>
+        <div><strong>{{ preview_assistant_name }}</strong><small class="tour-ai-status">{{ preview_assistant_tagline }}</small></div>
+      </div>
+      <button type="button" class="tour-ai-panel-close" data-ai-close aria-label="Close assistant" title="Close assistant"><svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-close"></use></svg></button>
     </header>
     <div class="tour-ai-messages" data-ai-messages></div>
     <div class="tour-ai-quick" data-ai-quick>
@@ -15,13 +28,12 @@
       <button type="button" data-ai-prompt="I want to book an appointment">Book appointment</button>
       <button type="button" data-ai-contact>Contact</button>
     </div>
-    <div class="tour-ai-powered"><span>Twinscopes AI</span><small>Vision &amp; knowledge verified</small></div>
-    <form data-ai-form><input data-ai-input maxlength="1000" placeholder="Ask about this scene, products or business…" autocomplete="off"><button type="submit" data-ai-send>Send</button></form>
+    <form data-ai-form><input data-ai-input maxlength="2000" placeholder="Ask about this scene, products or business…" autocomplete="off"><button type="submit" data-ai-send>Send</button></form>
   </section>
 
   <div class="tour-ai-vision-backdrop" data-vision-backdrop hidden></div>
   <aside class="tour-ai-vision-sheet" data-vision-sheet hidden aria-modal="true" role="dialog" aria-label="Visual scene insight">
-    <button class="tour-ai-vision-close" type="button" data-vision-close aria-label="Close visual insight">×</button>
+    <button class="tour-ai-vision-close" type="button" data-vision-close aria-label="Close visual insight" title="Close visual insight"><svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-close"></use></svg></button>
     <div class="tour-ai-vision-loading" data-vision-loading hidden>
       <span class="tour-ai-vision-scan"></span><strong>Preparing visual details…</strong><small>This will update automatically</small>
     </div>
@@ -36,8 +48,7 @@
         <div class="tour-ai-vision-sources" data-vision-sources hidden></div>
         <div class="tour-ai-vision-actions">
           <button type="button" class="primary" data-vision-rescan hidden>Scan again</button>
-          <button type="button" class="primary" data-vision-ask>Ask Twinscopes AI</button>
-          <button type="button" data-vision-dismiss>Close</button>
+          <button type="button" class="primary" data-vision-ask>Ask assistant</button>
         </div>
       </div>
     </div>
@@ -53,15 +64,18 @@
           <h3 id="tourAiResourceTitle" data-resource-title>Information</h3>
         </div>
       </div>
-      <button type="button" class="tour-ai-resource-close" data-resource-close aria-label="Close information">×</button>
+      <div class="tour-ai-resource-header-actions">
+        <a class="tour-ai-resource-external" data-resource-external href="#" target="_blank" rel="noopener noreferrer" aria-label="Open in full size" title="Open in full size" hidden>↗</a>
+        <button type="button" class="tour-ai-resource-close" data-resource-close aria-label="Close information" title="Close information"><svg class="ts-control-icon" aria-hidden="true"><use href="#ts-icon-close"></use></svg></button>
+      </div>
     </header>
     <div class="tour-ai-resource-body" data-resource-body></div>
-    <footer class="tour-ai-resource-footer">
-      <button type="button" class="tour-ai-resource-copy" data-resource-copy hidden>Copy information</button>
-      <button type="button" class="tour-ai-resource-done" data-resource-close>Close</button>
-    </footer>
+    <div class="tour-ai-resource-embed" data-resource-embed hidden>
+      <div class="tour-ai-resource-embed-status" data-resource-embed-status>Preparing secure preview…</div>
+      <iframe data-resource-frame title="Connected service" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </div>
   </section>
 </div>
-<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=preview-formatted-chat-resources-22">
-<script>window.TOUR_AI_CONFIG={tourId:{{ tour.id }},selectionRequired:true,bootstrapUrl:"{% url 'tour_ai_agent:bootstrap' %}",messageUrl:"{% url 'tour_ai_agent:message' %}",signalUrl:"{% url 'tour_ai_agent:signal' %}",actionUrl:"{% url 'tour_ai_agent:action' %}",inspectUrl:"{% url 'tour_ai_agent:inspect-point' %}",locale:"{{ request.LANGUAGE_CODE|default:'en' }}",longPressMs:650};</script>
-<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=preview-formatted-chat-resources-22"></script>
+<link rel="stylesheet" href="{% static 'tour_ai_agent/tour-ai-agent.css' %}?v=assistant-interface-refinement-39">
+<script>window.TOUR_AI_CONFIG={tourId:{{ tour.id }},selectionRequired:true,bootstrapUrl:"{% url 'tour_ai_agent:bootstrap' %}",messageUrl:"{% url 'tour_ai_agent:message' %}",signalUrl:"{% url 'tour_ai_agent:signal' %}",actionUrl:"{% url 'tour_ai_agent:action' %}",inspectUrl:"{% url 'tour_ai_agent:inspect-point' %}",locale:"{{ request.LANGUAGE_CODE|default:'en' }}",longPressMs:650,allowEmbeddedResources:{{ current_organization.ai_allow_embedded_resources|yesno:'true,false' }},assistantName:"{{ preview_assistant_name|escapejs }}",externalEmbedTimeoutMs:{{ tour_ai_external_embed_timeout_ms|default:7000 }}};</script>
+<script defer src="{% static 'tour_ai_agent/tour-ai-agent.js' %}?v=assistant-interface-refinement-39"></script>

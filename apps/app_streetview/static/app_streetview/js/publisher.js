@@ -89,7 +89,7 @@
       backendId: item.id,
       title: item.title || `Scène ${item.id}`,
       description: item.description || '',
-      imageUrl: item.image_url || '',
+      imageUrl: item.image_url || item.google?.thumbnail_url || '',
       width: item.image_width || 0,
       height: item.image_height || 0,
       xmpDetected: !!item.xmp_detected,
@@ -111,7 +111,13 @@
         shareLink: item.google?.share_link || '',
         thumbnailUrl: item.google?.thumbnail_url || '',
         publishStatus: item.google?.publish_status || 'local',
+        mapsPublishStatus: item.google?.maps_publish_status || '',
+        transferStatus: item.google?.transfer_status || '',
+        viewCount: Number(item.google?.view_count || 0),
+        connectionStatus: item.google?.connection_sync_status || 'pending',
+        connectionAudit: item.google?.connection_audit || {},
         lastError: item.google?.last_error || '',
+        remoteOnly: !!item.google?.remote_only,
       },
     };
   }
@@ -160,9 +166,11 @@
     const out = [];
     out.push(scene.ratioOk ? '<span class="sv-badge ok">360</span>' : '<span class="sv-badge warn">Ratio ?</span>');
     out.push(hasGps(scene) ? '<span class="sv-badge ok">GPS</span>' : '<span class="sv-badge bad">GPS manquant</span>');
-    if (isConnected(scene)) out.push('<span class="sv-badge ok">Connectée</span>');
-    else if (isPublished(scene)) out.push('<span class="sv-badge blue">Publiée</span>');
+    if (String(scene.google.mapsPublishStatus || '').includes('REJECT')) out.push('<span class="sv-badge bad">Google rejected</span>');
+    else if (scene.google.mapsPublishStatus === 'PUBLISHED') out.push('<span class="sv-badge ok">Google accepted</span>');
+    else if (isPublished(scene)) out.push('<span class="sv-badge blue">Google processing</span>');
     else out.push('<span class="sv-badge">Locale</span>');
+    if (isPublished(scene)) out.push(`<span class="sv-badge ${['synced','not_required'].includes(scene.google.connectionStatus) ? 'ok' : 'warn'}">Links ${escapeHtml(scene.google.connectionStatus || 'pending')}</span>`);
     return out.join('');
   }
 
@@ -219,7 +227,13 @@
     try {
       const data = await api('tours/create/', {
         method: 'POST',
-        body: JSON.stringify({ title, description: '' }),
+        body: JSON.stringify({
+        title,
+        description: '',
+        storage_policy: $('newTourStoragePolicy')?.value || 'delete_after_verified',
+        auto_connect: true,
+        auto_sync_status: true,
+      }),
       });
       if (input) input.value = '';
       await loadTours({ silent: true });
@@ -290,7 +304,7 @@
     empty?.classList.toggle('hidden', app.scenes.length > 0);
     grid.innerHTML = app.scenes.map(scene => `
       <article class="sv-scene-card ${scene.id === app.selectedId ? 'active' : ''}" data-id="${scene.id}">
-        <img src="${escapeHtml(scene.imageUrl)}" alt="${escapeHtml(scene.title)}" loading="lazy">
+        ${scene.imageUrl ? `<img src="${escapeHtml(scene.imageUrl)}" alt="${escapeHtml(scene.title)}" loading="lazy">` : `<div class="sv-scene-placeholder">GOOGLE 360</div>`}
         <div class="sv-scene-card-body">
           <h3>${escapeHtml(scene.title)}</h3>
           <p>${hasGps(scene) ? `${scene.gps.lat}, ${scene.gps.lng}` : 'GPS manquant'}</p>
@@ -390,6 +404,67 @@
     } catch (err) {
       console.error(err);
       toast(err.message || 'Upload impossible.', 'bad');
+    }
+  }
+
+  function setDirectStatus(message, type = '') {
+    const box = $('directPublishStatus');
+    if (!box) return;
+    box.className = `sv-direct-status ${type}`.trim();
+    box.textContent = message;
+  }
+
+  async function directPublishScene() {
+    if (!app.tour) return toast('Create or select a Google project first.', 'bad');
+    const file = $('directImageInput')?.files?.[0];
+    const lat = $('directLatInput')?.value;
+    const lng = $('directLngInput')?.value;
+    if (!file) return setDirectStatus('Choose a 360 panorama first.', 'bad');
+    if (!lat || !lng) return setDirectStatus('Latitude and longitude are required.', 'bad');
+    const form = new FormData();
+    form.append('image', file);
+    form.append('title', $('directTitleInput')?.value.trim() || file.name.replace(/\.[^.]+$/, ''));
+    form.append('latitude', lat);
+    form.append('longitude', lng);
+    form.append('heading', $('directHeadingInput')?.value || '0');
+    form.append('pitch', '0');
+    form.append('roll', '0');
+    form.append('initial_fov', '90');
+    const capture = $('directCaptureTimeInput')?.value;
+    if (capture) form.append('capture_time', new Date(capture).toISOString());
+    const btn = $('directPublishBtn');
+    setLoading(btn, true, 'Uploading to Google...');
+    setDirectStatus('Validating the panorama, adding Photo Sphere metadata and streaming it to Google Street View...');
+    try {
+      const data = await api(`tours/${app.tour.id}/direct-publish-scene/`, { method: 'POST', body: form, headers: {} });
+      await reloadActiveTour();
+      setDirectStatus(`Google photo created (${data.scene?.google?.photo_id || 'indexing'}). The original bytes were not stored in Twinscopes.`, 'ok');
+      if ($('directImageInput')) $('directImageInput').value = '';
+      toast('Panorama sent directly to Google.');
+    } catch (err) {
+      console.error(err);
+      setDirectStatus(err.message || 'Direct Google upload failed.', 'bad');
+      toast(err.message || 'Direct Google upload failed.', 'bad');
+    } finally {
+      setLoading(btn, false);
+    }
+  }
+
+  async function syncDirectProjectStatus() {
+    if (!app.tour) return toast('Select a project first.', 'bad');
+    const btn = $('syncDirectStatusBtn') || $('syncProjectGoogleBtn');
+    setLoading(btn, true, 'Synchronizing...');
+    try {
+      const data = await api(`tours/${app.tour.id}/google-status-sync/`, { method: 'POST', body: JSON.stringify({}) });
+      await reloadActiveTour();
+      setDirectStatus(`Google status: ${data.published || 0} published, ${data.rejected || 0} rejected, ${data.connections_synced || 0} navigation states verified.`, data.rejected ? 'bad' : 'ok');
+      toast('Google acceptance status synchronized.');
+    } catch (err) {
+      console.error(err);
+      setDirectStatus(err.message || 'Google status synchronization failed.', 'bad');
+      toast(err.message || 'Google status synchronization failed.', 'bad');
+    } finally {
+      setLoading(btn, false);
     }
   }
 
@@ -812,6 +887,9 @@
     $('browseBtn')?.addEventListener('click', () => $('fileInput')?.click());
     $('fileInput')?.addEventListener('change', (e) => handleFiles(e.target.files));
     $('saveProjectQuickBtn')?.addEventListener('click', saveProject);
+    $('directPublishBtn')?.addEventListener('click', directPublishScene);
+    $('syncDirectStatusBtn')?.addEventListener('click', syncDirectProjectStatus);
+    $('syncProjectGoogleBtn')?.addEventListener('click', syncDirectProjectStatus);
     $('openMapBulkBtn')?.addEventListener('click', openMap);
     $('openMapBtn')?.addEventListener('click', openMap);
     $('saveSceneBtn')?.addEventListener('click', () => saveSelectedScene());

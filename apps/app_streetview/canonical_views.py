@@ -7,8 +7,6 @@ import time
 from decimal import Decimal, InvalidOperation
 from types import SimpleNamespace
 from django.conf import settings
-
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import close_old_connections, transaction
 from django.db.models import Count, Q
@@ -46,6 +44,7 @@ from .services.xmp import prepare_streetview_jpeg_with_xmp
 from .services.quality import run_quality_check, build_smart_link_suggestions
 from .services.analytics import record_history, record_analytics
 from .services.publish_runner import run_source_publish_job
+from .services.status_sync import sync_source_publication, repair_source_connections
 
 
 def _json(data=None, *, status=200):
@@ -244,6 +243,16 @@ def _send_source_connections(
         target_photo_ids = list(dict.fromkeys(target_photo_ids))
 
         if not target_photo_ids:
+            state.connection_sync_status = "not_required"
+            state.connection_audit = {
+                "expected": [],
+                "actual": [],
+                "missing": [],
+                "unexpected": [],
+                "checked_at": timezone.now().isoformat(),
+                "message": "This panorama has no outgoing Google navigation connection.",
+            }
+            state.save(update_fields=["connection_sync_status", "connection_audit", "updated_at"])
             results.append({
                 "scene_id": source_scene_id,
                 "state_id": state.id,
@@ -257,9 +266,23 @@ def _send_source_connections(
         for attempt in range(1, max_attempts + 1):
             try:
                 client.update_photo_connections(state.google_photo_id, target_photo_ids)
+                # Google accepted the update request. A later photo.get verification is
+                # still required before the dashboard calls the connection synchronized.
                 state.publish_status = StreetViewSourceSceneState.PublishStatus.CONNECTED
+                state.connection_sync_status = "verification_pending"
+                state.connection_audit = {
+                    "expected": target_photo_ids,
+                    "actual": [],
+                    "missing": target_photo_ids,
+                    "unexpected": [],
+                    "checked_at": timezone.now().isoformat(),
+                    "message": "Connection update accepted; waiting for Google indexing verification.",
+                }
                 state.last_error = ""
-                state.save(update_fields=["publish_status", "last_error", "updated_at"])
+                state.save(update_fields=[
+                    "publish_status", "connection_sync_status", "connection_audit",
+                    "last_error", "updated_at",
+                ])
                 updated += 1
                 suffix = "" if attempt == 1 else f" after {attempt} attempts"
                 results.append({
@@ -280,8 +303,17 @@ def _send_source_connections(
 
         if last_error is not None:
             warnings += 1
+            state.connection_sync_status = "retry_required"
+            state.connection_audit = {
+                "expected": target_photo_ids,
+                "actual": [],
+                "missing": target_photo_ids,
+                "unexpected": [],
+                "checked_at": timezone.now().isoformat(),
+                "message": "Google has not exposed the requested navigation links yet.",
+            }
             state.last_error = str(last_error)
-            state.save(update_fields=["last_error", "updated_at"])
+            state.save(update_fields=["connection_sync_status", "connection_audit", "last_error", "updated_at"])
             results.append({
                 "scene_id": source_scene_id,
                 "state_id": state.id,
@@ -1607,3 +1639,37 @@ def source_share_links(request, tour_id):
         })
     text = "\n".join([f"{item['title']}: {item['share_link']}" for item in links])
     return _json({"ok": True, "source_tour_id": publication.source_tour_id, "title": publication.source_tour.title, "count": len(links), "links": links, "share_text": text})
+
+
+@login_required
+@require_POST
+def source_sync_google_status(request, tour_id):
+    publication = _publication_for_source_tour(request, tour_id)
+    try:
+        client = _client_for_user(request)
+        result = sync_source_publication(client, publication)
+        record_history(publication, request.user, StreetViewHistoryEvent.Action.OTHER, "Google publication statuses synchronized.", metadata={"summary": result})
+        return _json(result)
+    except (StreetViewPublishError, GoogleStreetViewAuthError, Exception) as exc:
+        return _json({"ok": False, "error": "Google publication status synchronization failed.", "details": str(exc)}, status=400)
+
+
+@login_required
+@require_POST
+def source_audit_and_repair_connections(request, tour_id):
+    publication = _publication_for_source_tour(request, tour_id)
+    data = _body(request) or {}
+    attempts = max(1, min(int(data.get("attempts") or getattr(settings, "STREETVIEW_CONNECTION_REPAIR_ATTEMPTS", 5)), 10))
+    try:
+        client = _client_for_user(request)
+        before = sync_source_publication(client, publication)
+        repaired = repair_source_connections(client, publication, attempts=attempts)
+        after = sync_source_publication(client, publication)
+        record_history(
+            publication, request.user, StreetViewHistoryEvent.Action.CONNECTIONS_RETRIED,
+            "Google connections audited and repaired.",
+            metadata={"before": before, "repair": repaired, "after": after},
+        )
+        return _json({"ok": repaired.get("ok", False), "before": before, "repair": repaired, "after": after})
+    except (StreetViewPublishError, GoogleStreetViewAuthError, Exception) as exc:
+        return _json({"ok": False, "error": "Google connection audit failed.", "details": str(exc)}, status=400)

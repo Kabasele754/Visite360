@@ -23,6 +23,7 @@ from apps.app_streetview.services.streetview_publish import (
 )
 from apps.app_streetview.services.tokens import get_valid_access_token
 from apps.app_streetview.services.xmp import prepare_streetview_jpeg_with_xmp
+from apps.app_streetview.services.status_sync import sync_source_publication, repair_source_connections
 
 
 def google_share_link(photo_id: str) -> str:
@@ -213,8 +214,17 @@ def run_source_publish_job(job_id: int, options: dict | None = None) -> dict:
             state.google_share_link = fields["share_link"] or google_share_link(fields["photo_id"])
             state.google_thumbnail_url = fields["thumbnail_url"]
             state.publish_status = StreetViewSourceSceneState.PublishStatus.CREATED
+            state.google_maps_publish_status = created_payload.get("mapsPublishStatus") or "UNSPECIFIED_MAPS_PUBLISH_STATUS"
+            state.google_transfer_status = created_payload.get("transferStatus") or "TRANSFER_STATUS_UNKNOWN"
+            state.google_status_payload = created_payload
+            state.google_last_synced_at = timezone.now()
+            state.connection_sync_status = "pending"
             state.last_error = ""
-            state.save(update_fields=["google_photo_id", "google_share_link", "google_thumbnail_url", "publish_status", "last_error", "updated_at"])
+            state.save(update_fields=[
+                "google_photo_id", "google_share_link", "google_thumbnail_url", "publish_status",
+                "google_maps_publish_status", "google_transfer_status", "google_status_payload",
+                "google_last_synced_at", "connection_sync_status", "last_error", "updated_at",
+            ])
             job.published_scenes += 1
             job.save(update_fields=["published_scenes", "updated_at"])
             job.append_log("success", f"Google photo created: {state.google_photo_id}", source_scene_id=state.source_scene_id, share_link=state.google_share_link, step="creating", current=index, total=total)
@@ -224,16 +234,45 @@ def run_source_publish_job(job_id: int, options: dict | None = None) -> dict:
         if wait_seconds > 0:
             time.sleep(min(wait_seconds, 15))
 
-        set_job_stage(job, "connections", "Updating connections.", current=total, total=total)
+        set_job_stage(job, "connections", "Auditing and updating Google navigation connections.", current=total, total=total)
         from apps.app_streetview.canonical_views import _send_source_connections
 
-        result = _send_source_connections(client, publication)
-        for item in result.get("results", []):
+        initial_connections = _send_source_connections(client, publication)
+        for item in initial_connections.get("results", []):
             level = "success" if item.get("ok") else "warning"
-            job.append_log(level, item.get("message") or "Connection processed", source_scene_id=item.get("scene_id"), targets=item.get("targets", []), step="connections")
+            job.append_log(
+                level,
+                item.get("message") or "Connection processed",
+                source_scene_id=item.get("scene_id"),
+                targets=item.get("targets", []),
+                step="connections",
+            )
 
-        _refresh_publication_status(publication, warnings=int(result.get("warnings") or 0))
-        job.status = StreetViewSourcePublishJob.Status.SUCCEEDED_WITH_WARNINGS if result.get("warnings") else StreetViewSourcePublishJob.Status.SUCCEEDED
+        # Google may accept photo.create before the panorama is fully indexed. Refresh
+        # the authoritative Google status first, then repair and verify links with backoff.
+        set_job_stage(job, "verification", "Synchronizing Google publish status and verifying navigation.", current=total, total=total)
+        status_before = sync_source_publication(client, publication)
+        repair_attempts = max(1, min(int(options.get("connection_repair_attempts", 5) or 5), 10))
+        repaired = repair_source_connections(
+            client,
+            publication,
+            attempts=repair_attempts,
+            base_delay=float(options.get("connection_repair_base_delay", 2.0) or 2.0),
+        )
+        status_after = sync_source_publication(client, publication)
+        warnings = int(initial_connections.get("warnings") or 0)
+        warnings += sum(1 for item in repaired.get("results", []) if not item.get("ok"))
+        warnings += int(status_after.get("rejected") or 0)
+        result = {
+            "initial": initial_connections,
+            "status_before": status_before,
+            "repair": repaired,
+            "status_after": status_after,
+            "warnings": warnings,
+        }
+
+        _refresh_publication_status(publication, warnings=warnings)
+        job.status = StreetViewSourcePublishJob.Status.SUCCEEDED_WITH_WARNINGS if warnings else StreetViewSourcePublishJob.Status.SUCCEEDED
         job.finished_at = timezone.now()
         job.save(update_fields=["status", "finished_at", "updated_at"])
         set_job_stage(job, "done", "Done.", current=total, total=total, level="success")

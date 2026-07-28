@@ -62,6 +62,60 @@ class OrganizationIntelligenceProfile(TimeStampedModel):
         return f"{self.organization.name} — {self.get_domain_kind_display()}"
 
 
+class OrganizationEmbeddedResource(TimeStampedModel):
+    class Kind(models.TextChoices):
+        WEBSITE = "website", "Website"
+        BOOKING = "booking", "Booking"
+        CONTACT = "contact", "Contact form"
+        CRM = "crm", "CRM portal"
+        FORM = "form", "External form"
+        SOCIAL = "social", "Social profile"
+        OTHER = "other", "Other"
+
+    class EmbedMode(models.TextChoices):
+        AUTO = "auto", "Try embedded preview"
+        IFRAME = "iframe", "Embedded iframe"
+        NATIVE_BOOKING = "native_booking", "Twinscopes booking form"
+        NATIVE_CONTACT = "native_contact", "Twinscopes contact form"
+        SUMMARY = "summary", "Information only"
+
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="embedded_resources",
+    )
+    label = models.CharField(max_length=180)
+    kind = models.CharField(max_length=24, choices=Kind.choices, default=Kind.OTHER, db_index=True)
+    url = models.URLField(max_length=1000)
+    embed_mode = models.CharField(max_length=24, choices=EmbedMode.choices, default=EmbedMode.AUTO)
+    button_label = models.CharField(max_length=80, blank=True)
+    description = models.TextField(blank=True)
+    allow_in_tour_agent = models.BooleanField(default=True)
+    is_verified = models.BooleanField(default=False, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    sandbox_permissions = models.JSONField(default=list, blank=True)
+    source_url = models.URLField(max_length=1000, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("kind", "label")
+        indexes = [
+            models.Index(fields=("organization", "is_active", "is_verified"), name="di_embed_org_active_idx"),
+            models.Index(fields=("organization", "kind"), name="di_embed_org_kind_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=("organization", "url"), name="unique_embedded_resource_url_per_org"),
+        ]
+
+    def __str__(self):
+        return f"{self.organization.name} — {self.label}"
+
+    @property
+    def public_embed_allowed(self):
+        return bool(self.is_active and self.is_verified and self.allow_in_tour_agent)
+
+
 class HealthcareFacilityProfile(TimeStampedModel):
     place = models.OneToOneField(
         "places.Place",
@@ -161,8 +215,8 @@ class MedicalPractitioner(TimeStampedModel):
     class Meta:
         ordering = ("full_name",)
         indexes = [
-            models.Index(fields=("organization", "is_active")),
-            models.Index(fields=("organization", "specialty")),
+            models.Index(fields=("organization", "is_active"), name="domain_inte_organiz_81eeb1_idx"),
+            models.Index(fields=("organization", "specialty"), name="domain_inte_organiz_410a24_idx"),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -274,8 +328,8 @@ class PropertyListingProfile(TimeStampedModel):
 
     class Meta:
         indexes = [
-            models.Index(fields=("listing_type", "property_type", "bedrooms")),
-            models.Index(fields=("availability_status", "price")),
+            models.Index(fields=("listing_type", "property_type", "bedrooms"), name="domain_inte_listing_bf9aec_idx"),
+            models.Index(fields=("availability_status", "price"), name="domain_inte_availab_fa1930_idx"),
         ]
 
     def __str__(self):
@@ -341,7 +395,7 @@ class VerifiedSourceFact(TimeStampedModel):
     class Meta:
         ordering = ("-verified_at",)
         indexes = [
-            models.Index(fields=("organization", "entity_type", "field_name")),
+            models.Index(fields=("organization", "entity_type", "field_name"), name="domain_inte_organiz_e96250_idx"),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -422,8 +476,8 @@ class OrganizationIntelligenceRun(TimeStampedModel):
     class Meta:
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=("organization", "status")),
-            models.Index(fields=("status", "created_at")),
+            models.Index(fields=("organization", "status"), name="domain_inte_organiz_745294_idx"),
+            models.Index(fields=("status", "created_at"), name="domain_inte_status_a61cf2_idx"),
         ]
 
     def __str__(self):
@@ -496,8 +550,8 @@ class IntelligenceReviewItem(TimeStampedModel):
     class Meta:
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=("organization", "status")),
-            models.Index(fields=("target_model", "target_field")),
+            models.Index(fields=("organization", "status"), name="domain_inte_organiz_7a3a0e_idx"),
+            models.Index(fields=("target_model", "target_field"), name="domain_inte_target__0e0f10_idx"),
         ]
 
     def __str__(self):

@@ -94,3 +94,16 @@ button:disabled{opacity:.45;cursor:not-allowed}.hidden{display:none!important}.a
 
 /* Publish fallback + detailed progress */
 .job-stage{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px;font-weight:950;color:#e0f2fe;letter-spacing:.01em}.job-stage:before{content:"";width:9px;height:9px;border-radius:999px;background:linear-gradient(135deg,#22d3ee,#2f7cf6);box-shadow:0 0 0 5px rgba(34,211,238,.12)}.job-last{margin-top:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:12px;padding:8px 10px;color:#cbd5e1;font-size:11px;line-height:1.35}
+
+/* V29 — Google acceptance and connection verification */
+.google-verification-summary { display:grid; gap:.55rem; font-size:.78rem; }
+.google-verification-summary .verify-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.45rem; }
+.google-verification-summary .verify-cell { border:1px solid rgba(148,163,184,.18); border-radius:12px; padding:.6rem; background:rgba(15,23,42,.34); }
+.google-verification-summary .verify-cell b { display:block; font-size:1rem; color:#e6fbff; }
+.google-verification-summary .verify-cell span { color:#94a3b8; font-size:.7rem; }
+.google-verification-summary .verify-note { color:#cbd5e1; line-height:1.45; }
+.scene-google-detail { margin-top:.4rem; display:flex; flex-wrap:wrap; gap:.3rem; }
+.scene-google-detail small { border:1px solid rgba(148,163,184,.18); border-radius:999px; padding:.16rem .42rem; color:#b8c5d8; background:rgba(15,23,42,.46); }
+.scene-google-detail small.rejected { color:#fecaca; border-color:rgba(248,113,113,.42); background:rgba(127,29,29,.25); }
+.scene-google-detail small.synced { color:#a7f3d0; border-color:rgba(52,211,153,.38); background:rgba(6,78,59,.22); }
+@media (max-width:760px){ .google-verification-summary .verify-grid{grid-template-columns:1fr 1fr;} }

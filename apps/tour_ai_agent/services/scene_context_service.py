@@ -67,7 +67,7 @@ def get_scene_context(scene, *, tour=None) -> dict:
         matches = list(
             SceneProductMatch.objects.filter(scene=scene, product__status="active")
             .select_related("product", "product__category")
-            .order_by("-is_verified", "-confidence")[:12]
+            .order_by("-is_verified", "-confidence")[:8]
         )
 
     detected_objects = []
@@ -117,7 +117,7 @@ def get_scene_context(scene, *, tour=None) -> dict:
                 enterprise_insights = list(
                     enterprise.insights.order_by("-confidence").values(
                         "kind", "label", "title", "description", "confidence", "source_providers"
-                    )[:40]
+                    )[:12]
                 )
         except Exception:
             enterprise = None
@@ -139,18 +139,18 @@ def get_scene_context(scene, *, tour=None) -> dict:
         "title": scene.title if scene else "",
         "type": enterprise.scene_type if enterprise else (profile.final_scene_type if profile else ""),
         "summary": _clean_visual_text(enterprise.summary if enterprise else (profile.final_summary if profile else ""), 360),
-        "features": enterprise.features if enterprise else (profile.final_features if profile else []),
+        "features": list(enterprise.features if enterprise else (profile.final_features if profile else []))[:12],
         "analysis_source": "enterprise_vision" if enterprise else (profile.analysis_source if profile else ""),
         "analysis_confidence": round(float(enterprise.confidence), 3) if enterprise else (round(profile.analysis_confidence, 3) if profile else 0),
-        "detected_objects": enterprise_objects or list(deduped.values())[:30],
-        "recognized_text": enterprise.extracted_text[:5000] if enterprise else "",
+        "detected_objects": (enterprise_objects or list(deduped.values()))[:12],
+        "recognized_text": enterprise.extracted_text[:1200] if enterprise else "",
         "vision_pipeline": {
             "providers": enterprise.completed_providers,
             "analysis_id": str(enterprise.id),
             "insight_count": len(enterprise_insights),
         } if enterprise else {},
-        "visual_hypotheses": enterprise.products if enterprise else ((profile.gemini_payload or {}).get("product_hypotheses", []) if profile else []),
-        "suggested_questions": profile.suggested_questions if profile else [],
+        "visual_hypotheses": list(enterprise.products if enterprise else ((profile.gemini_payload or {}).get("product_hypotheses", []) if profile else []))[:8],
+        "suggested_questions": list(profile.suggested_questions if profile else [])[:6],
     }
 
     resolved_tour = tour or getattr(scene, "tour", None)

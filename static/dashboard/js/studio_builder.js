@@ -708,6 +708,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const scenePublicStatus = document.getElementById("scenePublicStatus");
     const scenePublicHelp = document.getElementById("scenePublicHelp");
     const sceneVisibilityPreview = document.getElementById("sceneVisibilityPreview");
+    const tripodLogoEnabled = document.getElementById("tripodLogoEnabled");
+    const tripodLogoApplyAllScenes = document.getElementById("tripodLogoApplyAllScenes");
+    const tripodLogoSize = document.getElementById("tripodLogoSize");
+    const tripodLogoYaw = document.getElementById("tripodLogoYaw");
+    const tripodLogoPitch = document.getElementById("tripodLogoPitch");
+    const tripodLogoOffsetX = document.getElementById("tripodLogoOffsetX");
+    const tripodLogoOffsetY = document.getElementById("tripodLogoOffsetY");
+    const tripodLogoRotation = document.getElementById("tripodLogoRotation");
+    const tripodLogoTiltX = document.getElementById("tripodLogoTiltX");
+    const tripodLogoTiltY = document.getElementById("tripodLogoTiltY");
+    const tripodLogoRadius = document.getElementById("tripodLogoRadius");
+    const tripodLogoPlaceBtn = document.getElementById("tripodLogoPlaceBtn");
+    const tripodLogoNadirBtn = document.getElementById("tripodLogoNadirBtn");
 
     const viewerSceneTitle = document.getElementById("viewerSceneTitle");
     const activeSceneLabel = document.getElementById("activeSceneLabel");
@@ -851,6 +864,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const viewers = { A: null, B: null };
     const layerViews = { A: null, B: null };
     const layerScenes = { A: null, B: null };
+    const tripodLogoHotspots = { A: null, B: null };
 
     function getLayerEl(key) {
         return key === "A" ? layerAEl : layerBEl;
@@ -1130,6 +1144,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (yawInput) yawInput.value = scene.yaw_default ?? 0;
         if (pitchInput) pitchInput.value = scene.pitch_default ?? 0;
         if (hfovInput) hfovInput.value = scene.hfov_default ?? 100;
+        syncTripodLogoInputs(scene);
 
         syncScenePublicUI(scene);
 
@@ -1635,6 +1650,339 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function getTripodLogoSettings(scene) {
+        const settings = scene?.tripod_logo || {};
+        return {
+            enabled: Boolean(settings.enabled),
+            size: Math.max(72, Math.min(320, Number(settings.size || 132))),
+            yaw: Math.max(-180, Math.min(180, Number(settings.yaw || 0))),
+            pitch: Math.max(-89.5, Math.min(89.5, Number(settings.pitch ?? 88.5))),
+            offsetX: Math.max(-250, Math.min(250, Number(settings.offset_x || 0))),
+            offsetY: Math.max(-250, Math.min(250, Number(settings.offset_y || 0))),
+            rotation: Math.max(-180, Math.min(180, Number(settings.rotation || 0))),
+            tiltX: Math.max(-70, Math.min(70, Number(settings.tilt_x || 0))),
+            tiltY: Math.max(-70, Math.min(70, Number(settings.tilt_y || 0))),
+            radius: Math.max(350, Math.min(2400, Number(settings.radius || 900))),
+        };
+    }
+
+    function tripodLogoExtraTransforms(settings) {
+        return [
+            `translateX(${settings.offsetX}px)`,
+            `translateY(${settings.offsetY}px)`,
+            `rotateZ(${settings.rotation}deg)`,
+            `rotateX(${settings.tiltX}deg)`,
+            `rotateY(${settings.tiltY}deg)`,
+        ].join(" ");
+    }
+
+    function getTripodLogoRecord(layerKey) {
+        return tripodLogoHotspots[layerKey] || null;
+    }
+
+    function destroyTripodLogo(layerKey) {
+        const record = getTripodLogoRecord(layerKey);
+        if (!record) return;
+        try { record.hotspot?.destroy?.(); } catch (error) { console.debug("TRIPOD_LOGO_DESTROY", error); }
+        tripodLogoHotspots[layerKey] = null;
+    }
+
+    function writeTripodInputs(settings) {
+        if (tripodLogoEnabled) tripodLogoEnabled.checked = settings.enabled;
+        if (tripodLogoSize) tripodLogoSize.value = String(Math.round(settings.size));
+        if (tripodLogoYaw) tripodLogoYaw.value = settings.yaw.toFixed(2);
+        if (tripodLogoPitch) tripodLogoPitch.value = settings.pitch.toFixed(2);
+        if (tripodLogoOffsetX) tripodLogoOffsetX.value = String(Math.round(settings.offsetX));
+        if (tripodLogoOffsetY) tripodLogoOffsetY.value = String(Math.round(settings.offsetY));
+        if (tripodLogoRotation) tripodLogoRotation.value = settings.rotation.toFixed(1);
+        if (tripodLogoTiltX) tripodLogoTiltX.value = settings.tiltX.toFixed(1);
+        if (tripodLogoTiltY) tripodLogoTiltY.value = settings.tiltY.toFixed(1);
+        if (tripodLogoRadius) tripodLogoRadius.value = String(Math.round(settings.radius));
+    }
+
+    function writeTripodSettingsToScene(scene, settings) {
+        scene.tripod_logo = {
+            enabled: Boolean(settings.enabled),
+            size: Math.round(settings.size),
+            yaw: settings.yaw,
+            pitch: settings.pitch,
+            offset_x: Math.round(settings.offsetX),
+            offset_y: Math.round(settings.offsetY),
+            rotation: settings.rotation,
+            tilt_x: settings.tiltX,
+            tilt_y: settings.tiltY,
+            radius: Math.round(settings.radius),
+        };
+    }
+
+    function settingsFromTripodInputs() {
+        return {
+            enabled: Boolean(tripodLogoEnabled?.checked),
+            size: Math.max(72, Math.min(320, Number(tripodLogoSize?.value || 132))),
+            yaw: Math.max(-180, Math.min(180, Number(tripodLogoYaw?.value || 0))),
+            pitch: Math.max(-89.5, Math.min(89.5, Number(tripodLogoPitch?.value || 88.5))),
+            offsetX: Math.max(-250, Math.min(250, Number(tripodLogoOffsetX?.value || 0))),
+            offsetY: Math.max(-250, Math.min(250, Number(tripodLogoOffsetY?.value || 0))),
+            rotation: Math.max(-180, Math.min(180, Number(tripodLogoRotation?.value || 0))),
+            tiltX: Math.max(-70, Math.min(70, Number(tripodLogoTiltX?.value || 0))),
+            tiltY: Math.max(-70, Math.min(70, Number(tripodLogoTiltY?.value || 0))),
+            radius: Math.max(350, Math.min(2400, Number(tripodLogoRadius?.value || 900))),
+        };
+    }
+
+    function tripodSettingsMatch(expected, persisted) {
+        if (!expected || !persisted) return false;
+        const close = (left, right, tolerance = 0.001) =>
+            Number.isFinite(Number(left)) &&
+            Number.isFinite(Number(right)) &&
+            Math.abs(Number(left) - Number(right)) <= tolerance;
+
+        return Boolean(expected.enabled) === Boolean(persisted.enabled)
+            && Math.round(expected.size) === Math.round(persisted.size)
+            && close(expected.yaw, persisted.yaw)
+            && close(expected.pitch, persisted.pitch)
+            && Math.round(expected.offsetX) === Math.round(persisted.offsetX)
+            && Math.round(expected.offsetY) === Math.round(persisted.offsetY)
+            && close(expected.rotation, persisted.rotation)
+            && close(expected.tiltX, persisted.tiltX)
+            && close(expected.tiltY, persisted.tiltY)
+            && Math.round(expected.radius) === Math.round(persisted.radius);
+    }
+
+    function applyTripodRecordVisual(record, settings) {
+        if (!record) return;
+        record.node.style.setProperty("--builder-tripod-logo-size", `${settings.size}px`);
+        record.hotspot.setPosition({
+            yaw: degreesToRadians(settings.yaw),
+            pitch: degreesToRadians(settings.pitch),
+        });
+        record.hotspot.setPerspective({
+            radius: settings.radius,
+            extraTransforms: tripodLogoExtraTransforms(settings),
+        });
+    }
+
+    function bindTripodLogoEditor(node, layerKey) {
+        const resizeHandle = node.querySelector(".builder-tripod-logo-resize");
+        const rotateHandle = node.querySelector(".builder-tripod-logo-rotate");
+
+        const stop = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        };
+
+        node.addEventListener("click", stop);
+        node.addEventListener("dblclick", stop);
+        node.addEventListener("wheel", stop, { passive: false });
+
+        node.addEventListener("pointerdown", (event) => {
+            if (event.target === resizeHandle || event.target === rotateHandle) return;
+            stop(event);
+            const view = layerViews[layerKey];
+            const layerEl = getLayerEl(layerKey);
+            const record = getTripodLogoRecord(layerKey);
+            const scene = findScene(currentSceneId);
+            if (!view || !layerEl || !record || !scene) return;
+
+            node.classList.add("is-dragging");
+            try { node.setPointerCapture(event.pointerId); } catch (_) {}
+
+            const move = (moveEvent) => {
+                stop(moveEvent);
+                const rect = layerEl.getBoundingClientRect();
+                const x = Math.max(0, Math.min(rect.width, moveEvent.clientX - rect.left));
+                const y = Math.max(0, Math.min(rect.height, moveEvent.clientY - rect.top));
+                const coords = view.screenToCoordinates({ x, y });
+                if (!coords) return;
+                const settings = getTripodLogoSettings(scene);
+                settings.enabled = true;
+                settings.yaw = Math.max(-180, Math.min(180, radiansToDegrees(coords.yaw)));
+                settings.pitch = Math.max(-89.5, Math.min(89.5, radiansToDegrees(coords.pitch)));
+                settings.offsetX = 0;
+                settings.offsetY = 0;
+                writeTripodSettingsToScene(scene, settings);
+                writeTripodInputs(settings);
+                record.hotspot.setPosition({ yaw: coords.yaw, pitch: coords.pitch });
+                record.hotspot.setPerspective({ radius: settings.radius, extraTransforms: tripodLogoExtraTransforms(settings) });
+            };
+
+            const finish = (upEvent) => {
+                stop(upEvent);
+                node.classList.remove("is-dragging");
+                node.removeEventListener("pointermove", move);
+                node.removeEventListener("pointerup", finish);
+                node.removeEventListener("pointercancel", finish);
+                notify("Position 360° du logo mise à jour. Sauvegarde la scène.", "success");
+            };
+
+            node.addEventListener("pointermove", move);
+            node.addEventListener("pointerup", finish);
+            node.addEventListener("pointercancel", finish);
+        });
+
+        resizeHandle?.addEventListener("pointerdown", (event) => {
+            stop(event);
+            const scene = findScene(currentSceneId);
+            const record = getTripodLogoRecord(layerKey);
+            if (!scene || !record) return;
+            const rect = node.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const startDistance = Math.max(1, Math.hypot(event.clientX - centerX, event.clientY - centerY));
+            const startSize = getTripodLogoSettings(scene).size;
+            node.classList.add("is-resizing");
+            try { resizeHandle.setPointerCapture(event.pointerId); } catch (_) {}
+
+            const move = (moveEvent) => {
+                stop(moveEvent);
+                const distance = Math.max(1, Math.hypot(moveEvent.clientX - centerX, moveEvent.clientY - centerY));
+                const settings = getTripodLogoSettings(scene);
+                settings.enabled = true;
+                settings.size = Math.max(72, Math.min(320, startSize * (distance / startDistance)));
+                writeTripodSettingsToScene(scene, settings);
+                writeTripodInputs(settings);
+                applyTripodRecordVisual(record, settings);
+            };
+            const finish = (upEvent) => {
+                stop(upEvent);
+                node.classList.remove("is-resizing");
+                resizeHandle.removeEventListener("pointermove", move);
+                resizeHandle.removeEventListener("pointerup", finish);
+                resizeHandle.removeEventListener("pointercancel", finish);
+            };
+            resizeHandle.addEventListener("pointermove", move);
+            resizeHandle.addEventListener("pointerup", finish);
+            resizeHandle.addEventListener("pointercancel", finish);
+        });
+
+        rotateHandle?.addEventListener("pointerdown", (event) => {
+            stop(event);
+            const scene = findScene(currentSceneId);
+            const record = getTripodLogoRecord(layerKey);
+            if (!scene || !record) return;
+            node.classList.add("is-rotating");
+            try { rotateHandle.setPointerCapture(event.pointerId); } catch (_) {}
+
+            const move = (moveEvent) => {
+                stop(moveEvent);
+                const rect = node.getBoundingClientRect();
+                const angle = Math.atan2(
+                    moveEvent.clientY - (rect.top + rect.height / 2),
+                    moveEvent.clientX - (rect.left + rect.width / 2)
+                ) * 180 / Math.PI + 90;
+                const settings = getTripodLogoSettings(scene);
+                settings.enabled = true;
+                settings.rotation = Math.max(-180, Math.min(180, ((angle + 540) % 360) - 180));
+                writeTripodSettingsToScene(scene, settings);
+                writeTripodInputs(settings);
+                applyTripodRecordVisual(record, settings);
+            };
+            const finish = (upEvent) => {
+                stop(upEvent);
+                node.classList.remove("is-rotating");
+                rotateHandle.removeEventListener("pointermove", move);
+                rotateHandle.removeEventListener("pointerup", finish);
+                rotateHandle.removeEventListener("pointercancel", finish);
+            };
+            rotateHandle.addEventListener("pointermove", move);
+            rotateHandle.addEventListener("pointerup", finish);
+            rotateHandle.addEventListener("pointercancel", finish);
+        });
+    }
+
+    function createSceneTripodLogo(scene, layerKey) {
+        destroyTripodLogo(layerKey);
+        const settings = getTripodLogoSettings(scene);
+        const logoUrl = String(config.organizationLogoUrl || "").trim();
+        if (!settings.enabled || !logoUrl || !layerScenes[layerKey]) return;
+
+        const node = document.createElement("div");
+        node.className = "builder-tripod-logo-hotspot";
+        node.style.setProperty("--builder-tripod-logo-size", `${settings.size}px`);
+        node.setAttribute("role", "button");
+        node.setAttribute("aria-label", "Déplacer le logo du trépied");
+        node.title = "Glisser pour déplacer le logo dans la sphère 360°";
+
+        const image = document.createElement("img");
+        image.src = logoUrl;
+        image.alt = "";
+        image.draggable = false;
+        node.appendChild(image);
+
+        const rotateHandle = document.createElement("button");
+        rotateHandle.type = "button";
+        rotateHandle.className = "builder-tripod-logo-handle builder-tripod-logo-rotate";
+        rotateHandle.setAttribute("aria-label", "Tourner le logo");
+        rotateHandle.textContent = "↻";
+        node.appendChild(rotateHandle);
+
+        const resizeHandle = document.createElement("button");
+        resizeHandle.type = "button";
+        resizeHandle.className = "builder-tripod-logo-handle builder-tripod-logo-resize";
+        resizeHandle.setAttribute("aria-label", "Redimensionner le logo");
+        resizeHandle.textContent = "↘";
+        node.appendChild(resizeHandle);
+
+        const hotspot = layerScenes[layerKey].hotspotContainer().createHotspot(
+            node,
+            {
+                yaw: degreesToRadians(settings.yaw),
+                pitch: degreesToRadians(settings.pitch),
+            },
+            {
+                perspective: {
+                    radius: settings.radius,
+                    extraTransforms: tripodLogoExtraTransforms(settings),
+                },
+            }
+        );
+        tripodLogoHotspots[layerKey] = { hotspot, node };
+        bindTripodLogoEditor(node, layerKey);
+    }
+
+    function syncTripodLogoInputs(scene) {
+        writeTripodInputs(getTripodLogoSettings(scene));
+    }
+
+    function updateTripodLogoDraft({ refresh = true } = {}) {
+        const scene = findScene(currentSceneId);
+        if (!scene) return;
+        const settings = settingsFromTripodInputs();
+        writeTripodSettingsToScene(scene, settings);
+        if (!refresh) return;
+        if (!settings.enabled) {
+            destroyTripodLogo(activeLayerKey);
+            return;
+        }
+        const record = getTripodLogoRecord(activeLayerKey);
+        if (record) applyTripodRecordVisual(record, settings);
+        else createSceneTripodLogo(scene, activeLayerKey);
+    }
+
+    function placeTripodLogoAtCurrentView() {
+        const view = layerViews[activeLayerKey];
+        if (!view) return;
+        if (tripodLogoEnabled) tripodLogoEnabled.checked = true;
+        if (tripodLogoYaw) tripodLogoYaw.value = radiansToDegrees(view.yaw()).toFixed(2);
+        if (tripodLogoPitch) tripodLogoPitch.value = radiansToDegrees(view.pitch()).toFixed(2);
+        if (tripodLogoOffsetX) tripodLogoOffsetX.value = "0";
+        if (tripodLogoOffsetY) tripodLogoOffsetY.value = "0";
+        updateTripodLogoDraft();
+        notify("Logo ancré au centre de la vue actuelle. Tu peux maintenant le glisser précisément.", "success");
+    }
+
+    function placeTripodLogoAtNadir() {
+        if (tripodLogoEnabled) tripodLogoEnabled.checked = true;
+        if (tripodLogoYaw) tripodLogoYaw.value = "0.00";
+        if (tripodLogoPitch) tripodLogoPitch.value = "88.50";
+        if (tripodLogoOffsetX) tripodLogoOffsetX.value = "0";
+        if (tripodLogoOffsetY) tripodLogoOffsetY.value = "0";
+        if (tripodLogoTiltX) tripodLogoTiltX.value = "0";
+        if (tripodLogoTiltY) tripodLogoTiltY.value = "0";
+        updateTripodLogoDraft();
+        notify("Logo placé au nadir en perspective 3D. Glisse-le si le trépied est décentré.", "success");
+    }
+
     function buildLayerScene(layerKey, sceneData) {
         if (!sceneData.image_360_url) {
             console.warn("No panorama URL for scene:", sceneData);
@@ -1667,6 +2015,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         layerScenes[layerKey].switchTo();
         createSceneHotspots(sceneData, layerKey);
+        createSceneTripodLogo(sceneData, layerKey);
 
         requestAnimationFrame(() => {
             try {
@@ -1816,6 +2165,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (yawInput) yawInput.value = targetScene.yaw_default ?? 0;
             if (pitchInput) pitchInput.value = targetScene.pitch_default ?? 0;
             if (hfovInput) hfovInput.value = targetScene.hfov_default ?? 100;
+            syncTripodLogoInputs(targetScene);
 
             syncScenePublicUI(targetScene);
 
@@ -2106,42 +2456,107 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (hfovInput) hfovInput.value = radiansToDegrees(currentView.fov()).toFixed(2);
             }
 
+            const tripodDraft = settingsFromTripodInputs();
+            const currentScene = findScene(currentSceneId);
+            if (currentScene) writeTripodSettingsToScene(currentScene, tripodDraft);
+
             const payload = {
                 title: sceneTitleInput?.value || "",
                 yaw_default: parseFloat(yawInput?.value || 0),
                 pitch_default: parseFloat(pitchInput?.value || 0),
                 hfov_default: parseFloat(hfovInput?.value || 100),
                 is_public: scenePublicInput ? Boolean(scenePublicInput.checked) : true,
+                tripod_logo_enabled: Boolean(tripodDraft.enabled),
+                tripod_logo_size: Math.round(tripodDraft.size),
+                tripod_logo_yaw: Number(tripodDraft.yaw),
+                tripod_logo_pitch: Number(tripodDraft.pitch),
+                tripod_logo_offset_x: Math.round(tripodDraft.offsetX),
+                tripod_logo_offset_y: Math.round(tripodDraft.offsetY),
+                tripod_logo_rotation: Number(tripodDraft.rotation),
+                tripod_logo_tilt_x: Number(tripodDraft.tiltX),
+                tripod_logo_tilt_y: Number(tripodDraft.tiltY),
+                tripod_logo_radius: Math.round(tripodDraft.radius),
+                tripod_logo_apply_all_scenes: Boolean(tripodLogoApplyAllScenes?.checked),
             };
 
             const response = await fetch(`${config.updateSceneBaseUrl}${currentSceneId}/update/`, {
                 method: "POST",
+                credentials: "same-origin",
+                cache: "no-store",
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRFToken": getCSRFToken(),
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Cache-Control": "no-cache",
                 },
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) {
-                notify("Unable to save scene.", "error");
-                return;
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (_) {
+                data = null;
             }
 
-            const data = await response.json();
-            const updatedScene = data.scene;
+            if (!response.ok || !data?.success || !data?.scene) {
+                const detail = data?.detail || "Unable to save scene.";
+                throw new Error(detail);
+            }
 
-            scenesData = scenesData.map(scene =>
-                String(scene.id) === String(updatedScene.id)
-                    ? { ...scene, ...updatedScene, hotspots: scene.hotspots || [] }
-                    : scene
+            if (!data?.persistence?.database_verified || !data?.persistence?.tripod_logo_verified) {
+                throw new Error("The server did not confirm the tripod logo database write.");
+            }
+
+            const updatedScene = data.scene;
+            const persistedTripod = getTripodLogoSettings(updatedScene);
+            if (!tripodSettingsMatch(tripodDraft, persistedTripod)) {
+                console.error("TRIPOD_LOGO_PERSISTENCE_MISMATCH", {
+                    expected: tripodDraft,
+                    persisted: persistedTripod,
+                    response: data,
+                });
+                throw new Error("The saved tripod position does not match the database response.");
+            }
+
+            const appliedSceneIds = new Set(
+                (data?.persistence?.tripod_logo_applied_scene_ids || [updatedScene.id])
+                    .map(value => String(value))
             );
 
+            scenesData = scenesData.map(scene => {
+                const sceneId = String(scene.id);
+                let nextScene = sceneId === String(updatedScene.id)
+                    ? { ...scene, ...updatedScene, hotspots: updatedScene.hotspots || scene.hotspots || [] }
+                    : scene;
+
+                if (appliedSceneIds.has(sceneId)) {
+                    nextScene = { ...nextScene };
+                    writeTripodSettingsToScene(nextScene, persistedTripod);
+                }
+                return nextScene;
+            });
+
+            const savedScene = findScene(updatedScene.id);
+            if (savedScene) {
+                writeTripodSettingsToScene(savedScene, persistedTripod);
+                writeTripodInputs(persistedTripod);
+                const record = getTripodLogoRecord(activeLayerKey);
+                if (record) applyTripodRecordVisual(record, persistedTripod);
+                else if (persistedTripod.enabled) createSceneTripodLogo(savedScene, activeLayerKey);
+            }
+
             renderSceneList();
-            notify("Scene saved successfully.", "success");
+            const appliedCount = Number(data?.persistence?.tripod_logo_applied_scene_count || 1);
+            notify(
+                appliedCount > 1
+                    ? `Logo enregistré sur ${appliedCount} scènes du tour.`
+                    : "Scene and tripod logo saved in the database.",
+                "success"
+            );
         } catch (error) {
-            console.error(error);
-            notify("Unable to save scene.", "error");
+            console.error("SCENE_SAVE_FAILED", error);
+            notify(error?.message || "Unable to save scene.", "error");
         } finally {
             setButtonLoading(saveSceneBtn, false);
         }
@@ -3399,6 +3814,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     saveSceneBtn?.addEventListener("click", saveScene);
     scenePublicInput?.addEventListener("change", updateScenePublicDraft);
+    tripodLogoPlaceBtn?.addEventListener("click", placeTripodLogoAtCurrentView);
+    tripodLogoNadirBtn?.addEventListener("click", placeTripodLogoAtNadir);
+    [tripodLogoEnabled, tripodLogoSize, tripodLogoYaw, tripodLogoPitch, tripodLogoOffsetX, tripodLogoOffsetY, tripodLogoRotation, tripodLogoTiltX, tripodLogoTiltY, tripodLogoRadius].forEach(input => {
+        input?.addEventListener("input", () => updateTripodLogoDraft());
+        input?.addEventListener("change", () => updateTripodLogoDraft());
+    });
     setCurrentViewBtn?.addEventListener("click", setCurrentViewToInputs);
     createCenterHotspotBtn?.addEventListener("click", createHotspotAtCenter);
 

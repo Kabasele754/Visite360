@@ -1,21 +1,23 @@
 /* =====================================================================
-   TWINSCOPE PREVIEW — SPATIAL RECONSTRUCTION + LOCATION V26
+   TWINSCOPE PREVIEW — SPATIAL RECONSTRUCTION + UNIFIED HOTSPOTS V28
 
    Modes:
    - Tour map: a real Three.js scene graph built from scene connections.
    - Point cloud: depth-projected panorama pixels rendered as 3D points.
    - Depth mesh: depth-projected panorama surface with discontinuity filtering.
-   - 360°: conventional panorama fallback.
+   - 360°: interactive Three.js panorama with the tour navigation links.
 
    A single panorama cannot provide a complete metric model. The depth modes
    require a generated relative depth map. The tour map works immediately and
    uses the actual navigation graph instead of displaying the panorama again.
+   Clicking a graph scene enters its linked 360° experience.
 ===================================================================== */
 (function () {
     "use strict";
 
     const config = window.PREVIEW_CONFIG || {};
     const sceneDataElement = document.getElementById("preview-scenes-data");
+    const sceneListDataElement = document.getElementById("preview-scene-list-data");
     const locationDataElement = document.getElementById(
         config.mapLocationElementId || "preview-location-data"
     );
@@ -29,8 +31,37 @@
         }
     };
 
-    const scenes = safeJson(sceneDataElement, []);
+    const initialScenes = safeJson(sceneDataElement, []);
+    const compactScenes = safeJson(sceneListDataElement, []);
+    const sceneRegistry = new Map();
+    const registerScene = (scene) => {
+        if (!scene) return null;
+        const key = String(scene.id ?? scene.scene_id ?? "");
+        if (!key) return null;
+        const existing = sceneRegistry.get(key);
+        if (existing) {
+            Object.assign(existing, scene);
+            return existing;
+        }
+        sceneRegistry.set(key, scene);
+        return scene;
+    };
+    compactScenes.forEach(registerScene);
+    initialScenes.forEach(registerScene);
+    const scenes = Array.from(sceneRegistry.values());
     const locationData = safeJson(locationDataElement, {});
+
+    async function hydrateScene(scene) {
+        if (!scene || scene.details_loaded === true) return scene;
+        const loader = window.TwinscopesPreview?.ensureSceneDetails;
+        if (typeof loader !== "function") return scene;
+        try {
+            const fullScene = await loader(scene);
+            return registerScene(fullScene) || scene;
+        } catch (_) {
+            return scene;
+        }
+    }
 
     const spatialButton = document.getElementById("previewSpatial3DBtn");
     const spatialModal = document.getElementById("previewSpatialModal");
@@ -107,6 +138,11 @@
         pickables: [],
         hovered: null,
         nodeObjects: [],
+        navigationSprites: [],
+        hotspotOverlay: null,
+        hotspotOverlays: [],
+        hoveredRoot: null,
+        suppressSceneEventId: null,
     };
 
     const mapState = {
@@ -293,7 +329,10 @@
         spatial.root = null;
         spatial.pickables = [];
         spatial.nodeObjects = [];
+        spatial.navigationSprites = [];
+        clearSpatialHotspotOverlays();
         spatial.hovered = null;
+        spatial.hoveredRoot = null;
     }
 
     function attachSpatialPointerControls(canvas) {
@@ -305,6 +344,7 @@
             spatial.pointerStartY = event.clientY;
             spatial.yawStart = spatial.yaw;
             spatial.pitchStart = spatial.pitch;
+            canvas.style.cursor = "grabbing";
             canvas.setPointerCapture?.(event.pointerId);
         });
 
@@ -313,31 +353,43 @@
             spatial.parallaxX = ((event.clientX - rect.left) / Math.max(rect.width, 1) - .5) * 2;
             spatial.parallaxY = ((event.clientY - rect.top) / Math.max(rect.height, 1) - .5) * 2;
 
-            if (spatial.currentMode === MODE.GRAPH) {
-                updateGraphHover(event);
-            }
+            updateSpatialHover(event);
 
             if (!spatial.pointerDown || spatial.motionEnabled) return;
             const dx = event.clientX - spatial.pointerStartX;
             const dy = event.clientY - spatial.pointerStartY;
             if (Math.abs(dx) + Math.abs(dy) > 5) spatial.pointerMoved = true;
             const sensitivity = window.matchMedia("(max-width: 760px)").matches ? .0043 : .0034;
-            spatial.yaw = spatial.yawStart - dx * sensitivity;
+            const naturalDrag = config.spatialNaturalDrag !== false;
+
+            // Direct-look navigation with independent axis correction.
+            // Horizontal and vertical signs are intentionally configured
+            // separately because an inside-out panorama sphere mirrors axes
+            // differently depending on the exported panorama orientation.
+            spatial.yaw = spatial.yawStart + dx * sensitivity * (naturalDrag ? 1 : -1);
+            const invertVertical = config.spatialInvertVerticalDrag !== false;
             spatial.pitch = clamp(
-                spatial.pitchStart + dy * sensitivity,
+                spatial.pitchStart + dy * sensitivity * (naturalDrag ? 1 : -1) * (invertVertical ? 1 : -1),
                 -Math.PI / 2 + .08,
                 Math.PI / 2 - .08
             );
         });
 
         const release = (event) => {
-            const shouldPick = spatial.pointerDown && !spatial.pointerMoved && spatial.currentMode === MODE.GRAPH;
+            const shouldPick = spatial.pointerDown && !spatial.pointerMoved;
             spatial.pointerDown = false;
-            if (shouldPick) pickGraphNode(event);
+            if (shouldPick) pickSpatialInteraction(event);
+            updateSpatialHover(event);
         };
         canvas.addEventListener("pointerup", release);
-        canvas.addEventListener("pointercancel", () => { spatial.pointerDown = false; });
-        canvas.addEventListener("pointerleave", () => { spatial.pointerDown = false; });
+        canvas.addEventListener("pointercancel", () => {
+            spatial.pointerDown = false;
+            canvas.style.cursor = spatial.hovered ? "pointer" : "grab";
+        });
+        canvas.addEventListener("pointerleave", () => {
+            spatial.pointerDown = false;
+            canvas.style.cursor = "grab";
+        });
 
         canvas.addEventListener("wheel", (event) => {
             event.preventDefault();
@@ -421,6 +473,12 @@
         if (spatial.translation.length() > maxMove) spatial.translation.setLength(maxMove);
     }
 
+    function stopSpatialLoop() {
+        if (!spatial.frameId) return;
+        window.cancelAnimationFrame(spatial.frameId);
+        spatial.frameId = null;
+    }
+
     function startSpatialLoop() {
         if (spatial.frameId) return;
         const render = () => {
@@ -449,7 +507,17 @@
                 const target = spatial.camera.position.clone().add(direction);
                 spatial.camera.lookAt(target);
             }
+
+            const pulseTime = performance.now() * .0022;
+            spatial.navigationSprites.forEach((sprite, index) => {
+                const base = sprite.userData?.baseScale;
+                if (!base || sprite === spatial.hovered) return;
+                const pulse = 1 + Math.sin(pulseTime + index * .8) * .025;
+                sprite.scale.set(base.x * pulse, base.y * pulse, base.z);
+            });
+
             spatial.renderer.render(spatial.scene, spatial.camera);
+            updateSpatialHotspotOverlays();
         };
         spatial.frameId = window.requestAnimationFrame(render);
     }
@@ -559,6 +627,7 @@
         const points = new spatial.THREE.Points(geometry, pointMaterial());
         const root = new spatial.THREE.Group();
         root.add(points);
+        root.add(buildNavigationLayer(scene, { radius: 6.1 }));
 
         panoramaTexture.dispose();
         depthTexture.dispose();
@@ -647,8 +716,255 @@
         );
         const root = new spatial.THREE.Group();
         root.add(mesh, edgePoints);
+        root.add(buildNavigationLayer(scene, { radius: 6.1 }));
         depthTexture.dispose();
         return root;
+    }
+
+    function normalizeSpatialHotspotKey(value) {
+        return String(value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/^business[-_/]/, "")
+            .replace(/\.(png|jpg|jpeg|svg|webp)$/i, "")
+            .replace(/[^a-z0-9_-]/g, "");
+    }
+
+    function hotspotTargetScene(hotspot) {
+        return findScene(
+            hotspot?.target_scene_id ??
+            hotspot?.target_scene ??
+            hotspot?.target_scene_scene_id
+        );
+    }
+
+    function isNavigationHotspot(hotspot) {
+        const type = normalizeSpatialHotspotKey(hotspot?.type);
+        return Boolean(hotspotTargetScene(hotspot)) || ["navigate", "door", "floor", "stairs", "elevator"].includes(type);
+    }
+
+    function isInformationHotspot(hotspot) {
+        return !isNavigationHotspot(hotspot);
+    }
+
+    function spatialHotspotsForScene(scene) {
+        return (scene?.hotspots || []).map((hotspot) => {
+            const yaw = Number(hotspot?.yaw);
+            const pitch = Number(hotspot?.pitch);
+            if (!Number.isFinite(yaw) || !Number.isFinite(pitch)) return null;
+            return {
+                hotspot,
+                target: hotspotTargetScene(hotspot),
+                kind: isNavigationHotspot(hotspot) ? "navigation" : "information",
+            };
+        }).filter(Boolean);
+    }
+
+    function navigationDirection(yaw, pitch) {
+        const THREE = spatial.THREE;
+        const resolvedYaw = Number(yaw || 0);
+        const resolvedPitch = Number(pitch || 0);
+        const cosPitch = Math.cos(resolvedPitch);
+        return new THREE.Vector3(
+            Math.sin(resolvedYaw) * cosPitch,
+            Math.sin(resolvedPitch),
+            Math.cos(resolvedYaw) * cosPitch
+        ).normalize();
+    }
+
+    function resolveSpatialHotspotIcon(hotspot, kind) {
+        const iconMap = config.iconMap || {};
+        const businessIconMap = config.businessIconMap || {};
+        const selected = normalizeSpatialHotspotKey(hotspot?.selected_icon || hotspot?.icon);
+        const type = normalizeSpatialHotspotKey(hotspot?.type);
+
+        if (kind === "navigation") {
+            return (
+                iconMap[selected] ||
+                iconMap[type] ||
+                iconMap.chevronforward ||
+                iconMap.arrowright ||
+                iconMap.default ||
+                ""
+            );
+        }
+
+        return (
+            businessIconMap[selected] ||
+            businessIconMap[type] ||
+            businessIconMap.info ||
+            iconMap.default ||
+            ""
+        );
+    }
+
+    function hotspotDisplaySize(hotspot, kind) {
+        const saved = Number(hotspot?.payload?.display?.size || hotspot?.display?.size || 0);
+        if (Number.isFinite(saved) && saved > 0) return clamp(saved, 42, 86);
+        return kind === "navigation" ? 66 : 58;
+    }
+
+    function ensureSpatialHotspotOverlay() {
+        if (spatial.hotspotOverlay?.isConnected) return spatial.hotspotOverlay;
+        const layer = document.createElement("div");
+        layer.className = "preview-spatial-hotspot-layer";
+        layer.setAttribute("aria-label", "Interactive tour hotspots");
+        spatialCanvasHost?.appendChild(layer);
+        spatial.hotspotOverlay = layer;
+        return layer;
+    }
+
+    function clearSpatialHotspotOverlays() {
+        spatial.hotspotOverlays.forEach((entry) => entry.element?.remove?.());
+        spatial.hotspotOverlays = [];
+        if (spatial.hotspotOverlay) spatial.hotspotOverlay.innerHTML = "";
+    }
+
+    function createSpatialHotspotElement(anchor) {
+        const data = anchor.userData?.spatialHotspot || {};
+        const hotspot = data.hotspot || {};
+        const target = data.target || null;
+        const kind = data.kind || "information";
+        const type = normalizeSpatialHotspotKey(hotspot.type) || "custom";
+        const selected = normalizeSpatialHotspotKey(hotspot.selected_icon || hotspot.icon || type);
+        const iconUrl = resolveSpatialHotspotIcon(hotspot, kind);
+        const title = String(
+            hotspot.label || hotspot.title || target?.title ||
+            (kind === "navigation" ? "Open connected scene" : "View information")
+        ).trim();
+        const size = hotspotDisplaySize(hotspot, kind);
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = [
+            "preview-hotspot",
+            "preview-spatial-hotspot",
+            `preview-spatial-hotspot--${kind}`,
+            `hotspot-type-${type}`,
+            kind === "navigation" ? "hotspot-kind-navigate" : `hotspot-kind-${type}`,
+            kind === "information" ? "hotspot-business-premium" : "hotspot-standard-premium",
+            "variant-flat",
+            "anchor-center",
+        ].filter(Boolean).join(" ");
+        button.dataset.hotspotType = type;
+        button.dataset.hotspotIcon = selected;
+        button.dataset.hotspotKind = kind;
+        button.dataset.spatialRole = kind === "navigation" ? "NAVIGATION" : "INFORMATION";
+        button.dataset.spatialTitle = title;
+        button.setAttribute(
+            "aria-label",
+            kind === "navigation"
+                ? `Open connected scene: ${title}`
+                : `Open information: ${title}`
+        );
+        button.title = kind === "navigation" ? `Continue to ${title}` : title;
+        button.style.width = `${size}px`;
+        button.style.height = `${size}px`;
+        button.style.setProperty("--hotspot-loader-delay", `${(Math.abs(Number(hotspot.id || 0)) % 7) * 110}ms`);
+
+        const wrap = document.createElement("span");
+        wrap.className = "hotspot-grow-wrap";
+        wrap.setAttribute("aria-hidden", "true");
+
+        const img = document.createElement("img");
+        img.src = iconUrl;
+        img.alt = "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.draggable = false;
+        wrap.appendChild(img);
+        button.appendChild(wrap);
+
+        button.addEventListener("pointerdown", (event) => event.stopPropagation());
+        button.addEventListener("pointerup", (event) => event.stopPropagation());
+        button.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (kind === "navigation" && target) {
+                await transitionSpatialScene(target, {
+                    mode: spatial.currentMode === MODE.GRAPH ? MODE.PANORAMA : spatial.currentMode,
+                    source: "spatial-hotspot",
+                    hotspot,
+                });
+                return;
+            }
+
+            if (kind === "information") {
+                closeSpatial();
+                window.setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent("twinscopes:open-hotspot", {
+                        detail: {
+                            hotspot,
+                            hotspotId: hotspot.id || hotspot.hotspot_id || null,
+                            sceneId: spatial.currentScene?.id ?? spatial.currentScene?.scene_id ?? null,
+                            source: "spatial-information-hotspot",
+                        },
+                    }));
+                }, 120);
+            }
+        });
+
+        return button;
+    }
+
+    function mountSpatialHotspotOverlays(root) {
+        clearSpatialHotspotOverlays();
+        if (!root || spatial.currentMode === MODE.GRAPH) return;
+        const layer = ensureSpatialHotspotOverlay();
+        root.traverse((object) => {
+            if (!object.userData?.spatialHotspot) return;
+            const element = createSpatialHotspotElement(object);
+            layer.appendChild(element);
+            spatial.hotspotOverlays.push({ anchor: object, element });
+        });
+    }
+
+    function updateSpatialHotspotOverlays() {
+        if (!spatial.camera || !spatial.renderer || !spatial.hotspotOverlays.length) return;
+        const canvas = spatial.renderer.domElement;
+        const rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const cameraPosition = new spatial.THREE.Vector3();
+        const cameraForward = new spatial.THREE.Vector3();
+        spatial.camera.getWorldPosition(cameraPosition);
+        spatial.camera.getWorldDirection(cameraForward);
+
+        spatial.hotspotOverlays.forEach((entry) => {
+            const world = new spatial.THREE.Vector3();
+            entry.anchor.getWorldPosition(world);
+            const toward = world.clone().sub(cameraPosition).normalize();
+            const facing = cameraForward.dot(toward) > 0.08;
+            const projected = world.clone().project(spatial.camera);
+            const onScreen = facing && projected.z > -1 && projected.z < 1 &&
+                projected.x > -1.18 && projected.x < 1.18 &&
+                projected.y > -1.18 && projected.y < 1.18;
+
+            if (!onScreen) {
+                entry.element.hidden = true;
+                return;
+            }
+
+            entry.element.hidden = false;
+            const x = (projected.x * 0.5 + 0.5) * rect.width;
+            const y = (-projected.y * 0.5 + 0.5) * rect.height;
+            const edgeFade = clamp(1 - Math.max(Math.abs(projected.x), Math.abs(projected.y)) * 0.24, 0.72, 1);
+            entry.element.style.opacity = String(edgeFade);
+            entry.element.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+        });
+    }
+
+    function buildNavigationLayer(scene, options = {}) {
+        const THREE = spatial.THREE;
+        const group = new THREE.Group();
+        const radius = Number(options.radius || 8.6);
+        spatialHotspotsForScene(scene).forEach(({ hotspot, target, kind }) => {
+            const anchor = new THREE.Object3D();
+            anchor.position.copy(navigationDirection(hotspot.yaw, hotspot.pitch).multiplyScalar(radius));
+            anchor.userData.spatialHotspot = { hotspot, target, kind };
+            group.add(anchor);
+        });
+        return group;
     }
 
     async function buildPanorama(scene) {
@@ -660,6 +976,7 @@
         const material = new spatial.THREE.MeshBasicMaterial({ map: texture });
         const root = new spatial.THREE.Group();
         root.add(new spatial.THREE.Mesh(geometry, material));
+        root.add(buildNavigationLayer(scene, { radius: 8.55 }));
         return root;
     }
 
@@ -850,16 +1167,22 @@
                     new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
                 );
                 image.userData.scene = scene;
+                image.userData.action = "scene-card";
+                image.userData.hoverRoot = group;
                 image.userData.pickable = true;
                 group.add(image);
                 spatial.pickables.push(image);
             } catch (_) {
                 backing.userData.scene = scene;
+                backing.userData.action = "scene-card";
+                backing.userData.hoverRoot = group;
                 backing.userData.pickable = true;
                 spatial.pickables.push(backing);
             }
         } else {
             backing.userData.scene = scene;
+            backing.userData.action = "scene-card";
+            backing.userData.hoverRoot = group;
             backing.userData.pickable = true;
             spatial.pickables.push(backing);
         }
@@ -867,6 +1190,8 @@
         const label = makeTextSprite(scene.title || "Scene", { active });
         label.position.set(0, active ? -1.23 : -1.05, .05);
         label.userData.scene = scene;
+        label.userData.action = "scene-card";
+        label.userData.hoverRoot = group;
         label.userData.pickable = true;
         group.add(label);
         spatial.pickables.push(label);
@@ -911,35 +1236,95 @@
         );
     }
 
-    function graphIntersection(event) {
+    function spatialIntersection(event) {
         if (!spatial.raycaster || !spatial.camera || !spatial.pickables.length) return null;
         spatial.raycaster.setFromCamera(pointerNdc(event), spatial.camera);
         return spatial.raycaster.intersectObjects(spatial.pickables, true)[0] || null;
     }
 
-    function updateGraphHover(event) {
+    function resetHoverScale() {
+        const root = spatial.hoveredRoot;
+        if (!root) return;
+        const base = root.userData?.baseScale;
+        if (base) root.scale.copy(base);
+        else root.scale.setScalar(1);
+        spatial.hoveredRoot = null;
+    }
+
+    function updateSpatialHover(event) {
         if (!spatial.renderer) return;
-        const intersection = graphIntersection(event);
+        const intersection = spatialIntersection(event);
         const next = intersection?.object || null;
-        if (spatial.hovered === next) return;
-        if (spatial.hovered?.parent) spatial.hovered.parent.scale.setScalar(1);
+        if (spatial.hovered === next) {
+            spatial.renderer.domElement.style.cursor = next ? "pointer" : (spatial.pointerDown ? "grabbing" : "grab");
+            return;
+        }
+        resetHoverScale();
         spatial.hovered = next;
-        if (next?.parent) next.parent.scale.setScalar(1.06);
+        const hoverRoot = next?.userData?.hoverRoot || next?.parent || null;
+        if (hoverRoot) {
+            spatial.hoveredRoot = hoverRoot;
+            const base = hoverRoot.userData?.baseScale;
+            if (base) hoverRoot.scale.set(base.x * 1.08, base.y * 1.08, base.z);
+            else hoverRoot.scale.setScalar(1.06);
+        }
         spatial.renderer.domElement.style.cursor = next ? "pointer" : (spatial.pointerDown ? "grabbing" : "grab");
     }
 
-    function pickGraphNode(event) {
-        const intersection = graphIntersection(event);
-        const scene = intersection?.object?.userData?.scene || intersection?.object?.parent?.userData?.scene;
+    async function transitionSpatialScene(scene, options = {}) {
         if (!scene) return;
-        currentSceneId = scene.id ?? scene.scene_id;
+        const nextId = scene.id ?? scene.scene_id;
+        currentSceneId = nextId;
         spatial.currentScene = scene;
-        if (spatialSceneSelect) spatialSceneSelect.value = String(currentSceneId);
+        spatial.suppressSceneEventId = String(nextId);
+        window.setTimeout(() => {
+            if (spatial.suppressSceneEventId === String(nextId)) {
+                spatial.suppressSceneEventId = null;
+            }
+        }, 5000);
+        if (spatialSceneSelect) spatialSceneSelect.value = String(nextId);
         if (spatialSceneLabel) spatialSceneLabel.textContent = scene.title || "360° scene";
+
         window.dispatchEvent(new CustomEvent("twinscopes:navigate-scene", {
-            detail: { sceneId: currentSceneId, title: scene.title || "", source: "spatial-map" },
+            detail: {
+                sceneId: nextId,
+                title: scene.title || "",
+                source: options.source || "spatial-navigation",
+                hotspotId: options.hotspot?.id || options.hotspot?.hotspot_id || null,
+            },
         }));
-        renderSpatialMode(MODE.GRAPH, scene, { preserveView: true });
+
+        const requestedMode = options.mode || MODE.PANORAMA;
+        const resolvedMode = (requestedMode === MODE.POINTS || requestedMode === MODE.MESH) && !sceneDepthUrl(scene)
+            ? MODE.PANORAMA
+            : requestedMode;
+        await renderSpatialMode(resolvedMode, scene);
+    }
+
+    function pickSpatialInteraction(event) {
+        const intersection = spatialIntersection(event);
+        const object = intersection?.object || null;
+        if (!object) return;
+        const data = object.userData || object.parent?.userData || {};
+        const scene = data.scene || object.parent?.userData?.scene;
+        if (!scene) return;
+
+        if (data.action === "navigation-hotspot") {
+            transitionSpatialScene(scene, {
+                mode: spatial.currentMode === MODE.GRAPH ? MODE.PANORAMA : spatial.currentMode,
+                source: "spatial-hotspot",
+                hotspot: data.hotspot,
+            });
+            return;
+        }
+
+        // A scene card is a portal: clicking its image immediately opens that
+        // scene as an interactive 360° panorama while keeping the main Preview
+        // synchronized with the same existing navigation graph.
+        const targetMode = config.spatialOpenPanoramaOnCardClick === false
+            ? MODE.GRAPH
+            : MODE.PANORAMA;
+        transitionSpatialScene(scene, { mode: targetMode, source: "spatial-map" });
     }
 
     function setModeBadge(mode) {
@@ -948,20 +1333,20 @@
             [MODE.GRAPH]: "SPATIAL TOUR MAP",
             [MODE.POINTS]: "DEPTH POINT CLOUD",
             [MODE.MESH]: "DEPTH SURFACE",
-            [MODE.PANORAMA]: "360° PANORAMA",
+            [MODE.PANORAMA]: "LINKED 360° PANORAMA",
         };
         spatialModeBadge.textContent = labels[mode] || "SPATIAL EXPERIENCE";
     }
 
     function setModeHint(mode) {
         if (mode === MODE.GRAPH) {
-            setSpatialHint("Drag to orbit", "Click a scene card to navigate through the tour.");
+            setSpatialHint("Explore the tour map", "Click any scene image to enter its interactive 360° view.");
         } else if (mode === MODE.POINTS) {
-            setSpatialHint("Real depth parallax", "Drag to look, use WASD or Step to move inside the point cloud.");
+            setSpatialHint("Real depth parallax", "Drag naturally to look around; click a navigation portal to continue.");
         } else if (mode === MODE.MESH) {
-            setSpatialHint("Depth-projected surface", "Move carefully: geometry is estimated from one panorama.");
+            setSpatialHint("Depth-projected surface", "Drag naturally to inspect it; existing scene links remain interactive.");
         } else {
-            setSpatialHint("360° fallback", "This mode displays the original panorama without reconstructed geometry.");
+            setSpatialHint("Linked 360° panorama", "Drag naturally to look around and click a portal to enter the connected scene.");
         }
     }
 
@@ -1005,7 +1390,9 @@
             showSpatialError("No scene is available", "Add a published 360° scene to use the spatial view.");
             return;
         }
+        if (scene && mode !== MODE.GRAPH) scene = await hydrateScene(scene);
         await ensureSpatialRenderer();
+        startSpatialLoop();
         const token = ++spatial.loadToken;
         spatial.requestedMode = mode;
         spatial.currentScene = scene || currentSceneFromUrl();
@@ -1022,7 +1409,7 @@
             [MODE.GRAPH]: ["Building the spatial tour map", "Connecting scenes from real navigation hotspots."],
             [MODE.POINTS]: ["Building the point cloud", "Projecting panorama pixels into estimated 3D depth."],
             [MODE.MESH]: ["Building the depth surface", "Creating a spatial mesh while protecting depth edges."],
-            [MODE.PANORAMA]: ["Loading the panorama", "Preparing the standard 360° fallback."],
+            [MODE.PANORAMA]: ["Loading the linked 360° scene", "Placing the existing navigation connections inside Three.js."],
         };
         showSpatialLoading(...loadingCopy[mode]);
 
@@ -1044,6 +1431,7 @@
             spatial.root = root;
             spatial.scene.add(root);
             spatial.currentMode = mode;
+            mountSpatialHotspotOverlays(root);
             setModeBadge(mode);
             setModeHint(mode);
             syncModeButtons(spatial.currentScene);
@@ -1129,6 +1517,10 @@
     function closeSpatial() {
         stopMotion();
         spatial.keys.clear();
+        stopSpatialLoop();
+        spatial.loadToken += 1;
+        clearSpatialRoot();
+        spatial.renderer?.renderLists?.dispose?.();
         closeModal(spatialModal);
     }
 
@@ -1419,10 +1811,8 @@
         if (!scene) return;
         currentSceneId = scene.id ?? scene.scene_id;
         spatial.currentScene = scene;
-        window.dispatchEvent(new CustomEvent("twinscopes:navigate-scene", {
-            detail: { sceneId: currentSceneId, title: scene.title || "", source: "spatial-picker" },
-        }));
-        renderSpatialMode(spatial.currentMode, scene);
+        const nextMode = spatial.currentMode === MODE.GRAPH ? MODE.PANORAMA : spatial.currentMode;
+        transitionSpatialScene(scene, { mode: nextMode, source: "spatial-picker" });
     });
 
     spatialMotionButton?.addEventListener("click", toggleMotion);
@@ -1442,6 +1832,12 @@
         if (!scene) return;
         spatial.currentScene = scene;
         if (spatialSceneSelect) spatialSceneSelect.value = String(currentSceneId || "");
+
+        if (spatial.suppressSceneEventId === String(currentSceneId)) {
+            spatial.suppressSceneEventId = null;
+            return;
+        }
+
         if (spatialModal?.classList.contains("open")) {
             renderSpatialMode(spatial.currentMode, scene, { preserveView: spatial.currentMode === MODE.GRAPH });
         }
@@ -1473,10 +1869,11 @@
         stopMotion();
         spatial.keys.clear();
         spatial.resizeObserver?.disconnect?.();
-        if (spatial.frameId) window.cancelAnimationFrame(spatial.frameId);
-        spatial.frameId = null;
+        stopSpatialLoop();
         clearSpatialRoot();
         spatial.renderer?.dispose?.();
+        spatial.renderer?.forceContextLoss?.();
+        spatial.renderer = null;
     });
 
     currentSceneId = currentSceneFromUrl()?.id ?? currentSceneFromUrl()?.scene_id ?? null;

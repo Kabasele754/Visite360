@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
+from types import SimpleNamespace
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -14,6 +16,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .models import (
@@ -31,6 +34,7 @@ from .services.project_export import build_project_export
 from .services.streetview_publish import StreetViewPublishClient, StreetViewPublishError, extract_google_photo_fields
 from .services.tokens import GoogleStreetViewAuthError, get_valid_access_token
 from .services.xmp import prepare_streetview_jpeg_with_xmp
+from .services.status_sync import sync_direct_project, repair_direct_connections
 
 
 def _json_response(data=None, *, status=200):
@@ -257,7 +261,19 @@ def create_tour(request):
     title = (data.get("title") or request.POST.get("title") or "Nouvelle visite Street View").strip()
     description = (data.get("description") or request.POST.get("description") or "").strip()
 
-    tour = StreetViewTour.objects.create(owner=request.user, title=title, description=description)
+    storage_policy = data.get("storage_policy") or request.POST.get("storage_policy") or StreetViewTour.StoragePolicy.KEEP_LOCAL
+    if storage_policy not in StreetViewTour.StoragePolicy.values:
+        storage_policy = StreetViewTour.StoragePolicy.KEEP_LOCAL
+    tour = StreetViewTour.objects.create(
+        owner=request.user,
+        title=title,
+        description=description,
+        project_mode=StreetViewTour.ProjectMode.DIRECT,
+        storage_policy=storage_policy,
+        google_place_id=(data.get("google_place_id") or request.POST.get("google_place_id") or "").strip(),
+        auto_connect=bool(data.get("auto_connect", True)),
+        auto_sync_status=bool(data.get("auto_sync_status", True)),
+    )
     return _json_response({"ok": True, "tour": tour_to_dict(tour, include_children=False)}, status=201)
 
 
@@ -280,7 +296,15 @@ def update_tour(request, tour_id):
         tour.title = (data.get("title") or tour.title).strip()
     if "description" in data:
         tour.description = data.get("description") or ""
-    tour.save(update_fields=["title", "description", "updated_at"])
+    if "storage_policy" in data and data.get("storage_policy") in StreetViewTour.StoragePolicy.values:
+        tour.storage_policy = data["storage_policy"]
+    if "google_place_id" in data:
+        tour.google_place_id = str(data.get("google_place_id") or "").strip()[:255]
+    if "auto_connect" in data:
+        tour.auto_connect = bool(data.get("auto_connect"))
+    if "auto_sync_status" in data:
+        tour.auto_sync_status = bool(data.get("auto_sync_status"))
+    tour.save(update_fields=["title", "description", "storage_policy", "google_place_id", "auto_connect", "auto_sync_status", "updated_at"])
     return _json_response({"ok": True, "tour": tour_to_dict(tour, include_children=False)})
 
 
@@ -659,6 +683,13 @@ def _send_google_connections(client, tour, *, only_scene_ids=None):
                 target_ids.append(target.google_photo_id)
 
         if not target_ids:
+            scene.connection_sync_status = "not_required"
+            scene.connection_audit = {
+                "expected": [], "actual": [], "missing": [], "unexpected": [],
+                "checked_at": timezone.now().isoformat(),
+                "message": "This panorama has no outgoing Google navigation connection.",
+            }
+            scene.save(update_fields=["connection_sync_status", "connection_audit", "updated_at"])
             results.append({
                 "scene_id": scene.id,
                 "title": scene.title,
@@ -671,10 +702,19 @@ def _send_google_connections(client, tour, *, only_scene_ids=None):
         try:
             client.update_photo_connections(scene.google_photo_id, target_ids)
             scene.publish_status = StreetViewScene.PublishStatus.CONNECTED
+            scene.connection_sync_status = "verification_pending"
+            scene.connection_audit = {
+                "expected": target_ids, "actual": [], "missing": target_ids, "unexpected": [],
+                "checked_at": timezone.now().isoformat(),
+                "message": "Connection update accepted; waiting for Google verification.",
+            }
             scene.last_error = ""
             if not scene.google_share_link:
                 scene.google_share_link = _google_share_link_from_photo_id(scene.google_photo_id)
-            scene.save(update_fields=["publish_status", "last_error", "google_share_link", "updated_at"])
+            scene.save(update_fields=[
+                "publish_status", "connection_sync_status", "connection_audit",
+                "last_error", "google_share_link", "updated_at",
+            ])
             updated += 1
             results.append({
                 "scene_id": scene.id,
@@ -685,8 +725,14 @@ def _send_google_connections(client, tour, *, only_scene_ids=None):
             })
         except StreetViewPublishError as exc:
             warnings += 1
+            scene.connection_sync_status = "retry_required"
+            scene.connection_audit = {
+                "expected": target_ids, "actual": [], "missing": target_ids, "unexpected": [],
+                "checked_at": timezone.now().isoformat(),
+                "message": "Google has not exposed the requested navigation links yet.",
+            }
             scene.last_error = str(exc)
-            scene.save(update_fields=["last_error", "updated_at"])
+            scene.save(update_fields=["connection_sync_status", "connection_audit", "last_error", "updated_at"])
             results.append({
                 "scene_id": scene.id,
                 "title": scene.title,
@@ -843,12 +889,24 @@ def retry_google_connections(request, tour_id):
             "oauth_url": request.build_absolute_uri(reverse("apps.app_streetview:oauth_start")),
         }, status=401)
 
-    result = _send_google_connections(client, tour)
+    initial = _send_google_connections(client, tour)
+    before = sync_direct_project(client, tour)
+    repair = repair_direct_connections(
+        client,
+        tour,
+        attempts=max(1, min(int(getattr(settings, "STREETVIEW_CONNECTION_REPAIR_ATTEMPTS", 5)), 10)),
+        base_delay=float(getattr(settings, "STREETVIEW_CONNECTION_REPAIR_BASE_DELAY", 2.0)),
+    )
+    after = sync_direct_project(client, tour)
+    ok = bool(repair.get("ok")) and not after.get("rejected")
     return _json_response({
-        "ok": result["warnings"] == 0,
-        **result,
+        "ok": ok,
+        "initial": initial,
+        "before": before,
+        "repair": repair,
+        "after": after,
         "tour": tour_to_dict(_owned_tour(request, tour_id), absolute_url_builder=lambda url: _absolute(request, url)),
-    }, status=200 if result["warnings"] == 0 else 207)
+    }, status=200 if ok else 207)
 
 
 @login_required
@@ -943,18 +1001,41 @@ def publish_tour(request, tour_id):
             scene.google_share_link = fields["share_link"] or _google_share_link_from_photo_id(fields["photo_id"])
             scene.google_thumbnail_url = fields["thumbnail_url"]
             scene.publish_status = StreetViewScene.PublishStatus.CREATED
+            scene.google_maps_publish_status = created_payload.get("mapsPublishStatus") or "UNSPECIFIED_MAPS_PUBLISH_STATUS"
+            scene.google_transfer_status = created_payload.get("transferStatus") or "TRANSFER_STATUS_UNKNOWN"
+            scene.google_status_payload = created_payload
+            scene.google_last_synced_at = timezone.now()
+            scene.connection_sync_status = "pending"
             scene.last_error = ""
-            scene.save(update_fields=["google_photo_id", "google_share_link", "google_thumbnail_url", "publish_status", "last_error", "updated_at"])
+            scene.save(update_fields=[
+                "google_photo_id", "google_share_link", "google_thumbnail_url", "publish_status",
+                "google_maps_publish_status", "google_transfer_status", "google_status_payload",
+                "google_last_synced_at", "connection_sync_status", "last_error", "updated_at",
+            ])
             job.published_scenes += 1
             job.save(update_fields=["published_scenes", "updated_at"])
             job.append_log("success", f"Photo créée sur Google Street View: {scene.google_photo_id}", scene_id=scene.id, share_link=scene.google_share_link)
 
-        result = _send_google_connections(client, tour)
-        for item in result["results"]:
+        initial_connections = _send_google_connections(client, tour)
+        for item in initial_connections["results"]:
             level = "success" if item.get("ok") else "warning"
             job.append_log(level, item.get("message") or "Connexion traitée", scene_id=item.get("scene_id"), targets=item.get("targets", []))
 
-        warnings = result["warnings"]
+        status_before = sync_direct_project(client, tour)
+        repaired = repair_direct_connections(
+            client,
+            tour,
+            attempts=max(1, min(int(getattr(settings, "STREETVIEW_CONNECTION_REPAIR_ATTEMPTS", 5)), 10)),
+            base_delay=float(getattr(settings, "STREETVIEW_CONNECTION_REPAIR_BASE_DELAY", 2.0)),
+        )
+        status_after = sync_direct_project(client, tour)
+        warnings = int(initial_connections.get("warnings") or 0)
+        warnings += sum(1 for item in repaired.get("results", []) if not item.get("ok"))
+        warnings += int(status_after.get("rejected") or 0)
+        result = {
+            "initial": initial_connections, "status_before": status_before,
+            "repair": repaired, "status_after": status_after, "warnings": warnings,
+        }
         tour.status = StreetViewTour.Status.PUBLISHED
         tour.published_at = timezone.now()
         tour.last_error = ""
@@ -1026,3 +1107,145 @@ def update_google_camera(request, scene_id):
 def publish_job_status(request, job_public_id):
     job = get_object_or_404(StreetViewPublishJob, public_id=job_public_id, user=request.user)
     return _json_response({"job": publish_job_to_dict(job)})
+
+
+@login_required
+@require_POST
+def direct_publish_scene(request, tour_id):
+    """Publish one 360 image without storing its original bytes in MEDIA_ROOT.
+
+    The uploaded file is written to a temporary file only long enough to validate,
+    inject Photo Sphere XMP and stream it to Google's upload session. The database
+    keeps metadata, Google status and navigation state, not the local image.
+    """
+    tour = _owned_tour(request, tour_id)
+    image_file = request.FILES.get("image") or request.FILES.get("file")
+    if not image_file:
+        return _json_response({"ok": False, "error": "A 360 image is required."}, status=400)
+    max_bytes = int(getattr(settings, "STREETVIEW_DIRECT_UPLOAD_MAX_BYTES", 120 * 1024 * 1024))
+    if int(getattr(image_file, "size", 0) or 0) > max_bytes:
+        return _json_response({"ok": False, "error": "The image is larger than the direct upload limit."}, status=413)
+
+    latitude = _as_decimal(request.POST.get("latitude"))
+    longitude = _as_decimal(request.POST.get("longitude"))
+    if latitude is None or longitude is None:
+        return _json_response({"ok": False, "error": "Latitude and longitude are required."}, status=400)
+
+    title = (request.POST.get("title") or Path(image_file.name).stem or "Street View panorama").strip()[:180]
+    heading = _as_float(request.POST.get("heading"), 0.0) or 0.0
+    pitch = _as_float(request.POST.get("pitch"), 0.0) or 0.0
+    roll = _as_float(request.POST.get("roll"), 0.0) or 0.0
+    initial_fov = _as_float(request.POST.get("initial_fov"), 90.0) or 90.0
+    capture_time = parse_datetime(request.POST.get("capture_time") or "")
+
+    suffix = Path(image_file.name).suffix.lower() or ".jpg"
+    fd, temp_path = tempfile.mkstemp(prefix="twinscopes-streetview-", suffix=suffix)
+    os.close(fd)
+    prepared_path = None
+    scene = None
+    try:
+        with open(temp_path, "wb") as target:
+            for chunk in image_file.chunks():
+                target.write(chunk)
+
+        metadata = extract_image_metadata(temp_path)
+        width = int(metadata.get("width") or 0)
+        height = int(metadata.get("height") or 0)
+        ratio = width / max(height, 1)
+        if width < 1024 or height < 512 or not 1.85 <= ratio <= 2.15:
+            return _json_response({
+                "ok": False,
+                "error": "The uploaded image is not a valid full 360 equirectangular panorama.",
+                "details": {"width": width, "height": height, "ratio": round(ratio, 4)},
+            }, status=400)
+
+        scene = StreetViewScene.objects.create(
+            tour=tour,
+            title=title,
+            image="",
+            image_width=width,
+            image_height=height,
+            file_size=int(getattr(image_file, "size", 0) or 0),
+            latitude=latitude,
+            longitude=longitude,
+            altitude=_as_float(request.POST.get("altitude")),
+            heading=heading,
+            pitch=pitch,
+            roll=roll,
+            initial_yaw=heading,
+            initial_pitch=pitch,
+            initial_fov=initial_fov,
+            capture_time=capture_time,
+            xmp_detected=bool(metadata.get("xmp_detected")),
+            exif_data=metadata,
+            publish_status=StreetViewScene.PublishStatus.UPLOADING,
+            remote_only=True,
+            order=(tour.scenes.aggregate(value=Max("order"))["value"] or 0) + 1,
+        )
+
+        client = _get_streetview_client_for_user(request)
+        upload_url = client.start_upload()
+        scene.upload_reference_url = upload_url
+        scene.save(update_fields=["upload_reference_url", "updated_at"])
+        proxy = SimpleNamespace(
+            id=scene.id,
+            title=scene.title,
+            image=SimpleNamespace(path=temp_path),
+            latitude=latitude,
+            longitude=longitude,
+            altitude=scene.altitude,
+            heading=heading,
+            pitch=pitch,
+            roll=roll,
+            initial_fov=initial_fov,
+            capture_time=capture_time,
+            google_place_id=tour.google_place_id,
+        )
+        prepared_path = prepare_streetview_jpeg_with_xmp(proxy)
+        client.upload_photo_bytes(upload_url, prepared_path)
+        created = client.create_photo(upload_url, proxy)
+        fields = extract_google_photo_fields(created)
+        scene.google_photo_id = fields["photo_id"]
+        scene.google_share_link = fields["share_link"] or _google_share_link_from_photo_id(fields["photo_id"])
+        scene.google_thumbnail_url = fields["thumbnail_url"]
+        scene.publish_status = StreetViewScene.PublishStatus.CREATED
+        scene.google_maps_publish_status = created.get("mapsPublishStatus") or "UNSPECIFIED_MAPS_PUBLISH_STATUS"
+        scene.google_transfer_status = created.get("transferStatus") or "TRANSFER_STATUS_UNKNOWN"
+        scene.google_status_payload = created
+        scene.google_last_synced_at = timezone.now()
+        scene.last_error = ""
+        scene.save(update_fields=[
+            "google_photo_id", "google_share_link", "google_thumbnail_url", "publish_status",
+            "google_maps_publish_status", "google_transfer_status", "google_status_payload",
+            "google_last_synced_at", "last_error", "updated_at",
+        ])
+        tour.status = StreetViewTour.Status.PUBLISHED
+        tour.published_at = timezone.now()
+        tour.last_error = ""
+        tour.save(update_fields=["status", "published_at", "last_error", "updated_at"])
+        return _json_response({"ok": True, "scene": scene_to_dict(scene, absolute_url_builder=lambda value: _absolute(request, value)), "storage": "google_only"}, status=201)
+    except (StreetViewPublishError, GoogleStreetViewAuthError, Exception) as exc:
+        if scene:
+            scene.publish_status = StreetViewScene.PublishStatus.FAILED
+            scene.last_error = str(exc)
+            scene.save(update_fields=["publish_status", "last_error", "updated_at"])
+        return _json_response({"ok": False, "error": "Google Street View could not publish this panorama.", "details": str(exc)}, status=400)
+    finally:
+        for path in {temp_path, prepared_path}:
+            if path:
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+
+
+@login_required
+@require_POST
+def sync_direct_project_status(request, tour_id):
+    tour = _owned_tour(request, tour_id)
+    try:
+        client = _get_streetview_client_for_user(request)
+        result = sync_direct_project(client, tour)
+    except (StreetViewPublishError, GoogleStreetViewAuthError, Exception) as exc:
+        return _json_response({"ok": False, "error": "Google status synchronization failed.", "details": str(exc)}, status=400)
+    return _json_response(result)

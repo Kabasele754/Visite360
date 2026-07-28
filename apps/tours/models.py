@@ -476,6 +476,47 @@ class Scene360(TimeStampedModel):
     pitch_default = models.FloatField(default=0)
     hfov_default = models.FloatField(default=100)
 
+    # Optional organization logo used to cover the camera tripod in this scene.
+    # The position is scene-specific because every panorama can have a slightly
+    # different stitched nadir. Values are expressed in degrees / CSS pixels.
+    tripod_logo_enabled = models.BooleanField(default=False)
+    tripod_logo_size = models.PositiveSmallIntegerField(
+        default=132,
+        validators=[MinValueValidator(72), MaxValueValidator(320)],
+    )
+    tripod_logo_yaw = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(-180), MaxValueValidator(180)],
+    )
+    tripod_logo_pitch = models.FloatField(
+        default=88.5,
+        validators=[MinValueValidator(-89.5), MaxValueValidator(89.5)],
+    )
+    tripod_logo_offset_x = models.SmallIntegerField(
+        default=0,
+        validators=[MinValueValidator(-250), MaxValueValidator(250)],
+    )
+    tripod_logo_offset_y = models.SmallIntegerField(
+        default=0,
+        validators=[MinValueValidator(-250), MaxValueValidator(250)],
+    )
+    tripod_logo_rotation = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(-180), MaxValueValidator(180)],
+    )
+    tripod_logo_tilt_x = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(-70), MaxValueValidator(70)],
+    )
+    tripod_logo_tilt_y = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(-70), MaxValueValidator(70)],
+    )
+    tripod_logo_radius = models.PositiveSmallIntegerField(
+        default=900,
+        validators=[MinValueValidator(350), MaxValueValidator(2400)],
+    )
+
     # Assets pipeline
     assets_status = models.CharField(
         max_length=20,
@@ -818,8 +859,8 @@ class SceneVisualQuality(TimeStampedModel):
     class Meta:
         ordering = ("scene__order", "scene_id")
         indexes = [
-            models.Index(fields=("status", "overall_score")),
-            models.Index(fields=("requires_reupload", "overall_score")),
+            models.Index(fields=("status", "overall_score"), name="tours_scene_status_608a1b_idx"),
+            models.Index(fields=("requires_reupload", "overall_score"), name="tours_scene_require_6fe367_idx"),
         ]
 
     def __str__(self):
@@ -891,9 +932,9 @@ class SceneObjectCandidate(TimeStampedModel):
             models.UniqueConstraint(fields=("analysis", "fingerprint"), name="unique_scene_object_candidate"),
         ]
         indexes = [
-            models.Index(fields=("scene", "review_status", "client_ready")),
-            models.Index(fields=("scene", "is_navigation_anchor", "confidence")),
-            models.Index(fields=("kind", "confidence")),
+            models.Index(fields=("scene", "review_status", "client_ready"), name="tours_scene_scene_i_403c49_idx"),
+            models.Index(fields=("scene", "is_navigation_anchor", "confidence"), name="tours_scene_scene_i_9bff47_idx"),
+            models.Index(fields=("kind", "confidence"), name="tours_scene_kind_f1259c_idx"),
         ]
 
     def __str__(self):
@@ -934,8 +975,8 @@ class TourArchitectureRun(TimeStampedModel):
     class Meta:
         ordering = ("-created_at",)
         indexes = [
-            models.Index(fields=("tour", "status", "created_at")),
-            models.Index(fields=("organization", "status", "created_at")),
+            models.Index(fields=("tour", "status", "created_at"), name="tours_tour_tour_id_41b7cf_idx"),
+            models.Index(fields=("organization", "status", "created_at"), name="tours_tour_organiz_eb723d_idx"),
         ]
 
     def __str__(self):
@@ -1013,8 +1054,8 @@ class SceneLinkProposal(TimeStampedModel):
             models.UniqueConstraint(fields=("run", "from_scene", "to_scene"), name="unique_architect_link_per_run"),
         ]
         indexes = [
-            models.Index(fields=("tour", "status", "confidence")),
-            models.Index(fields=("from_scene", "to_scene", "status")),
+            models.Index(fields=("tour", "status", "confidence"), name="tours_scene_tour_id_0b520b_idx"),
+            models.Index(fields=("from_scene", "to_scene", "status"), name="tours_scene_from_sc_35768f_idx"),
         ]
 
     def __str__(self):

@@ -219,7 +219,7 @@ def overview(request):
         ("Healthcare", ["healthcare-facilities", "medical-specialties", "practitioners", "practitioner-availability", "appointments", "verified-facts"]),
         ("Property & hospitality", ["property-listings", "hospitality"]),
         ("Marketplace", ["product-categories", "products", "orders"]),
-        ("AI & knowledge", ["ai-providers", "intelligence-profiles", "intelligence-runs", "intelligence-reviews", "knowledge-sources", "services", "vision-analyses", "ai-runs"]),
+        ("AI & knowledge", ["ai-providers", "intelligence-profiles", "intelligence-runs", "intelligence-reviews", "embedded-resources", "knowledge-sources", "services", "vision-analyses", "ai-runs"]),
         ("Insights", ["discovery-searches", "analytics-events"]),
     ]
 

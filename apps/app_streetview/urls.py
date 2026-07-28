@@ -7,6 +7,7 @@ app_name = "apps.app_streetview"
 urlpatterns = [
     # Optional page shell
     path("", canonical_views.publisher_page, name="publisher"),
+    path("projects/", views.publisher_page, name="direct_projects"),
 
 
     # Canonical publisher: uses existing Organization / Place / Tour / Scene360
@@ -30,6 +31,8 @@ urlpatterns = [
     path("source/publish-jobs/<uuid:job_public_id>/", canonical_views.source_publish_job_status, name="source_publish_job_status"),
     path("source/tours/<int:tour_id>/retry-connections/", canonical_views.source_retry_connections, name="source_retry_connections"),
     path("source/tours/<int:tour_id>/share-links/", canonical_views.source_share_links, name="source_share_links"),
+    path("source/tours/<int:tour_id>/google-status-sync/", canonical_views.source_sync_google_status, name="source_sync_google_status"),
+    path("source/tours/<int:tour_id>/connection-audit/", canonical_views.source_audit_and_repair_connections, name="source_audit_and_repair_connections"),
     path("source/scenes/<int:source_scene_id>/state/", canonical_views.source_scene_state_update, name="source_scene_state_update"),
     path("source/scenes/<int:source_scene_id>/mark-published/", canonical_views.source_mark_scene_published, name="source_mark_scene_published"),
     path("source/scenes/<int:source_scene_id>/delete-google-photo/", canonical_views.source_delete_google_photo, name="source_delete_google_photo"),
@@ -65,6 +68,8 @@ urlpatterns = [
 
     # Google Street View publication / sharing / connection helpers
     path("tours/<int:tour_id>/publish/", views.publish_tour, name="publish_tour"),
+    path("tours/<int:tour_id>/direct-publish-scene/", views.direct_publish_scene, name="direct_publish_scene"),
+    path("tours/<int:tour_id>/google-status-sync/", views.sync_direct_project_status, name="sync_direct_project_status"),
     path("tours/<int:tour_id>/auto-connect/", views.auto_connect_scenes, name="auto_connect_scenes"),
     path("tours/<int:tour_id>/retry-connections/", views.retry_google_connections, name="retry_google_connections"),
     path("tours/<int:tour_id>/share-links/", views.tour_share_links, name="tour_share_links"),

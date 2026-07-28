@@ -47,6 +47,14 @@ class StreetViewGoogleAccount(models.Model):
 
 
 class StreetViewTour(models.Model):
+    class ProjectMode(models.TextChoices):
+        DIRECT = "direct", "Direct Google project"
+        MANAGED = "managed", "Managed Street View project"
+
+    class StoragePolicy(models.TextChoices):
+        KEEP_LOCAL = "keep_local", "Keep local originals"
+        DELETE_AFTER_VERIFIED = "delete_after_verified", "Delete local bytes after Google verification"
+
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
         READY = "ready", "Ready"
@@ -58,6 +66,11 @@ class StreetViewTour(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="streetview_tours")
     title = models.CharField(max_length=180)
     description = models.TextField(blank=True)
+    project_mode = models.CharField(max_length=20, choices=ProjectMode.choices, default=ProjectMode.DIRECT)
+    storage_policy = models.CharField(max_length=32, choices=StoragePolicy.choices, default=StoragePolicy.KEEP_LOCAL)
+    google_place_id = models.CharField(max_length=255, blank=True)
+    auto_connect = models.BooleanField(default=True)
+    auto_sync_status = models.BooleanField(default=True)
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.DRAFT)
     last_error = models.TextField(blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
@@ -97,6 +110,7 @@ class StreetViewScene(models.Model):
     image = models.ImageField(
         upload_to=streetview_scene_upload_path,
         validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "tif", "tiff"])],
+        blank=True,
     )
     image_width = models.PositiveIntegerField(default=0)
     image_height = models.PositiveIntegerField(default=0)
@@ -123,6 +137,15 @@ class StreetViewScene(models.Model):
     google_thumbnail_url = models.URLField(blank=True)
     upload_reference_url = models.TextField(blank=True)
     publish_status = models.CharField(max_length=30, choices=PublishStatus.choices, default=PublishStatus.LOCAL)
+    google_maps_publish_status = models.CharField(max_length=64, blank=True, db_index=True)
+    google_transfer_status = models.CharField(max_length=64, blank=True)
+    google_view_count = models.PositiveBigIntegerField(default=0)
+    google_last_synced_at = models.DateTimeField(null=True, blank=True)
+    google_status_payload = models.JSONField(default=dict, blank=True)
+    connection_sync_status = models.CharField(max_length=32, blank=True, default="pending", db_index=True)
+    connection_audit = models.JSONField(default=dict, blank=True)
+    remote_only = models.BooleanField(default=False)
+    local_bytes_deleted_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
 
     order = models.PositiveIntegerField(default=0)
@@ -334,6 +357,13 @@ class StreetViewSourceSceneState(models.Model):
     google_thumbnail_url = models.URLField(blank=True)
     upload_reference_url = models.TextField(blank=True)
     publish_status = models.CharField(max_length=30, choices=PublishStatus.choices, default=PublishStatus.LOCAL)
+    google_maps_publish_status = models.CharField(max_length=64, blank=True, db_index=True)
+    google_transfer_status = models.CharField(max_length=64, blank=True)
+    google_view_count = models.PositiveBigIntegerField(default=0)
+    google_last_synced_at = models.DateTimeField(null=True, blank=True)
+    google_status_payload = models.JSONField(default=dict, blank=True)
+    connection_sync_status = models.CharField(max_length=32, blank=True, default="pending", db_index=True)
+    connection_audit = models.JSONField(default=dict, blank=True)
     last_error = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

@@ -10,7 +10,12 @@ from .selectors import get_user_organizations
 class OrganizationForm(ModelForm):
     class Meta:
         model = Organization
-        fields = ["name", "slug", "logo", "status"]
+        fields = [
+            "name", "slug", "logo", "status",
+            "ai_assistant_enabled", "ai_assistant_brand_mode",
+            "ai_assistant_name", "ai_assistant_tagline",
+            "ai_assistant_avatar", "ai_allow_embedded_resources",
+        ]
 
 
 @login_required

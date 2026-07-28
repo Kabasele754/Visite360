@@ -120,6 +120,13 @@ def source_scene_state_to_dict(state, absolute_url_builder=None):
             "last_error": state.last_error,
             "is_published": bool(state.google_photo_id),
             "is_connected": state.publish_status == "connected",
+            "maps_publish_status": state.google_maps_publish_status,
+            "transfer_status": state.google_transfer_status,
+            "view_count": state.google_view_count,
+            "last_synced_at": state.google_last_synced_at.isoformat() if state.google_last_synced_at else None,
+            "connection_sync_status": state.connection_sync_status,
+            "connection_audit": state.connection_audit,
+            "status_payload": state.google_status_payload,
         },
     }
 

@@ -157,6 +157,7 @@ CSP_HEADER = {
     "worker-src": ["'self'", "blob:"],
     "frame-src": [
         "'self'",
+        "https:",  # verified external CRM/booking resources opened in a sandboxed modal
         "https://js.stripe.com",
         "https://hooks.stripe.com",
         "https://www.paypal.com",

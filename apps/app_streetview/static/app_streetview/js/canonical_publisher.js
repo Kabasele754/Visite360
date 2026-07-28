@@ -413,6 +413,28 @@ function renderWorkspace() {
   renderSmartLinkSuggestions();
   renderAnalyticsSummary();
   renderHistoryList();
+  renderGoogleVerificationSummary();
+}
+
+function renderGoogleVerificationSummary() {
+  const box = $('googleVerificationSummary');
+  if (!box) return;
+  const all = scenes();
+  const published = all.filter(s => s.google?.photo_id);
+  const accepted = published.filter(s => s.google?.maps_publish_status === 'PUBLISHED');
+  const rejected = published.filter(s => String(s.google?.maps_publish_status || '').includes('REJECT'));
+  const connected = published.filter(s => ['synced', 'not_required'].includes(s.google?.connection_sync_status));
+  const attention = published.filter(s => !['synced', 'not_required'].includes(s.google?.connection_sync_status) || s.google?.maps_publish_status !== 'PUBLISHED');
+  box.classList.toggle('muted-box', !published.length);
+  box.innerHTML = published.length ? `
+    <div class="verify-grid">
+      <div class="verify-cell"><b>${accepted.length}/${published.length}</b><span>accepted by Google</span></div>
+      <div class="verify-cell"><b>${connected.length}/${published.length}</b><span>navigation verified</span></div>
+      <div class="verify-cell"><b>${rejected.length}</b><span>rejected</span></div>
+      <div class="verify-cell"><b>${attention.length}</b><span>need attention</span></div>
+    </div>
+    <div class="verify-note">Status comes from Google photo.get. Use “Audit & repair navigation” after indexing when only a few arrows appear.</div>
+  ` : 'Publish at least one panorama to synchronize Google acceptance and navigation.';
 }
 
 function renderSceneList() {
@@ -432,7 +454,12 @@ function renderSceneList() {
           <div class="status-row">
             ${pill(gpsOk ? 'GPS' : 'GPS ?', gpsOk ? 'good' : 'bad')}
             ${pill(google.is_published ? 'Google' : 'Local', google.is_published ? 'good' : 'warn')}
-            ${pill(google.is_connected ? 'Connected' : 'Not connected', google.is_connected ? 'good' : 'warn')}
+            ${pill(google.maps_publish_status || (google.is_published ? 'PROCESSING' : 'LOCAL'), String(google.maps_publish_status || '').includes('REJECT') ? 'bad' : (google.maps_publish_status === 'PUBLISHED' ? 'good' : 'warn'))}
+          </div>
+          <div class="scene-google-detail">
+            <small class="${String(google.maps_publish_status || '').includes('REJECT') ? 'rejected' : ''}">${esc(google.maps_publish_status || 'Not synchronized')}</small>
+            <small class="${['synced','not_required'].includes(google.connection_sync_status) ? 'synced' : ''}">links: ${esc(google.connection_sync_status || 'pending')}</small>
+            <small>${Number(google.view_count || 0).toLocaleString()} views</small>
           </div>
         </div>
       </article>`;
@@ -880,6 +907,49 @@ function alignToTarget() {
   toast('Camera aligned to the target scene. Click ✓ to save.');
 }
 
+async function syncGoogleStatus() {
+  if (!state.selectedTour) return toast('Choose a tour first.');
+  const btn = $('syncGoogleStatusBtn');
+  btn && (btn.disabled = true);
+  try {
+    const data = await requestJSON(`${API}source/tours/${state.selectedTour}/google-status-sync/`, { method: 'POST', body: JSON.stringify({}) });
+    $('publishLogs').textContent = JSON.stringify(data, null, 2);
+    const refreshed = await requestJSON(`${API}source/tours/${state.selectedTour}/`);
+    state.project = refreshed;
+    renderWorkspace();
+    toast(`Google status synchronized: ${data.published || 0} published, ${data.rejected || 0} rejected.`);
+  } catch (e) {
+    $('publishLogs').textContent = JSON.stringify(e.data || { error: e.message }, null, 2);
+    toast(e.message || 'Google status synchronization failed.');
+  } finally {
+    btn && (btn.disabled = false);
+  }
+}
+
+async function auditAndRepairConnections() {
+  if (!state.selectedTour) return toast('Choose a tour first.');
+  const btn = $('auditConnectionsBtn');
+  btn && (btn.disabled = true);
+  $('publishLogs').textContent = 'Auditing Google navigation connections...\n';
+  try {
+    const data = await requestJSON(`${API}source/tours/${state.selectedTour}/connection-audit/`, {
+      method: 'POST',
+      body: JSON.stringify({ attempts: 5 }),
+    });
+    $('publishLogs').textContent = JSON.stringify(data, null, 2);
+    const refreshed = await requestJSON(`${API}source/tours/${state.selectedTour}/`);
+    state.project = refreshed;
+    renderWorkspace();
+    const repaired = data.repair?.connections_synced || 0;
+    toast(data.ok ? `Navigation verified for ${repaired} panorama(s).` : 'Audit completed with connections still waiting for Google indexing.');
+  } catch (e) {
+    $('publishLogs').textContent = JSON.stringify(e.data || { error: e.message }, null, 2);
+    toast(e.message || 'Google connection audit failed.');
+  } finally {
+    btn && (btn.disabled = false);
+  }
+}
+
 async function retryGoogleConnections() {
   if (!state.selectedTour) return;
   $('publishLogs').textContent = 'Updating Google connections...\n';
@@ -1233,6 +1303,8 @@ function bindActions() {
   bindClick('quickPublishBtn', publishTour);
   bindClick('addManualConnectionBtn', addManualConnection);
   bindClick('retryConnectionsBtn', retryGoogleConnections);
+  bindClick('syncGoogleStatusBtn', syncGoogleStatus);
+  bindClick('auditConnectionsBtn', auditAndRepairConnections);
   bindClick('saveSceneBtn', saveScene);
   bindClick('deleteGooglePhotoBtn', deleteGooglePhoto);
   bindClick('copyAllLinksBtn', copyAllLinks);

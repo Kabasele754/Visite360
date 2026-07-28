@@ -39,4 +39,10 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=1, minute=50),
         "options": {"expires": 60 * 60 * 4},
     },
+    "streetview-google-status-sync": {
+        "task": "app_streetview.sync_google_publication_statuses",
+        "schedule": crontab(minute="*/30"),
+        "kwargs": {"repair_connections": False},
+        "options": {"expires": 60 * 25, "queue": "celery"},
+    },
 }

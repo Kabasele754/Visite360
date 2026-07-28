@@ -3290,7 +3290,7 @@ body {
 */
 .preview-layer.quality-upgrade-incoming {
     z-index: 4 !important;
-    pointer-events: auto !important;
+    pointer-events: none !important;
     opacity: 0 !important;
     transform: translate3d(0, 0, 0) scale(1) !important;
     filter: none !important;
@@ -3305,7 +3305,7 @@ body {
 
 .preview-layer.quality-upgrade-outgoing {
     z-index: 3 !important;
-    pointer-events: none !important;
+    pointer-events: auto !important;
     opacity: 1 !important;
     transform: translate3d(0, 0, 0) scale(1) !important;
     filter: none !important;
@@ -6627,4 +6627,499 @@ body.preview-tour-info-open::before {
     .preview-tour-details-modal--portal .preview-tour-details-facts {
         grid-template-columns: 1fr !important;
     }
+}
+
+
+/* =====================================================================
+   PREVIEW CONTROL DOCK V37 — VIEWPORT ANCHOR, NO TRANSLATE-X CONFLICT
+   Adapted from the stable production dock.
+
+   The outer element is now only a full-width viewport anchor. The inner
+   .preview-control-center owns the intrinsic toolbar width. This prevents:
+   - Tailwind translate utilities from competing with custom CSS;
+   - UI hide transforms from deleting horizontal centering;
+   - a wide/scrollable dock from pinning its visible content to the left.
+===================================================================== */
+#previewControlDock.preview-control-dock,
+#previewControlDock {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    z-index: var(--chrome-z, 88) !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 6px !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+    pointer-events: none !important;
+}
+
+#previewControlDock > .preview-control-center {
+    position: relative !important;
+    display: block !important;
+    width: fit-content !important;
+    max-width: calc(100vw - 12px) !important;
+    min-width: 0 !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    pointer-events: none !important;
+}
+
+#previewControlDock .dock-scroll {
+    display: block !important;
+    width: fit-content !important;
+    max-width: calc(100vw - 12px) !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    scrollbar-width: none !important;
+    overscroll-behavior-x: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    pointer-events: auto !important;
+}
+
+#previewControlDock .dock-row {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: max-content !important;
+    min-width: max-content !important;
+    max-width: none !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+}
+
+/* Keep the scene list attached to the centered toolbar, not to the viewport. */
+#previewControlDock .preview-control-center > #previewSceneRail,
+#previewControlDock .preview-control-center > .scene-stack-panel {
+    left: 0 !important;
+    right: auto !important;
+}
+
+/* Generic chrome hiding may animate vertically, but must never replace the
+   dock's centering because centering no longer relies on transform. */
+.ui-hidden #previewControlDock,
+body.ui-hidden #previewControlDock {
+    transform: none !important;
+}
+
+@media (max-width: 1024px) {
+    #previewControlDock.preview-control-dock,
+    #previewControlDock {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+        padding-inline: 6px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #previewControlDock.preview-control-dock,
+    #previewControlDock {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 7px) !important;
+        padding-inline: 5px !important;
+    }
+
+    #previewControlDock > .preview-control-center,
+    #previewControlDock .dock-scroll {
+        max-width: calc(100vw - 10px) !important;
+    }
+}
+
+/* =====================================================================
+   PREVIEW RESPONSIVE HEADER + CLEAN DIALOGS V38
+   - True viewport-centered organization chip.
+   - Mobile views/share/info column on the right.
+   - Share and information removed from the bottom dock.
+   - Dialog actions live in the header as compact icons.
+===================================================================== */
+#brandOverlay,
+.brand-overlay-wrap {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding-inline: 78px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+}
+
+#brandOverlay .brand-overlay-chip,
+#brandOverlay .brand-overlay-chip-centered,
+.brand-overlay-wrap .brand-overlay-chip,
+.brand-overlay-wrap .brand-overlay-chip-centered {
+    width: fit-content !important;
+    max-width: min(520px, calc(100vw - 156px)) !important;
+    margin-inline: auto !important;
+}
+
+.preview-top-action-button,
+.preview-tour-info-trigger {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+    font: inherit !important;
+    cursor: pointer !important;
+    transition: transform .18s ease, background .18s ease, border-color .18s ease !important;
+}
+
+.preview-top-action-button:hover,
+.preview-tour-info-trigger:hover,
+.preview-tour-details--top[open] > .preview-tour-info-trigger {
+    transform: translateY(-1px) !important;
+    background: rgba(255,255,255,.11) !important;
+    border-color: rgba(255,255,255,.98) !important;
+}
+
+.preview-top-action-button:active,
+.preview-tour-info-trigger:active {
+    transform: scale(.96) !important;
+}
+
+.preview-tour-details--top {
+    position: relative !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: auto !important;
+}
+
+.preview-tour-details--top > summary {
+    list-style: none !important;
+}
+
+.preview-tour-details--top > summary::-webkit-details-marker {
+    display: none !important;
+}
+
+.preview-tour-info-trigger {
+    min-width: 38px !important;
+    width: 38px !important;
+    padding-inline: 0 !important;
+}
+
+.preview-dialog-header-actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    flex: 0 0 auto !important;
+}
+
+.preview-dialog-icon-button,
+.preview-media-card header .preview-dialog-icon-button,
+.preview-tour-details-header .preview-dialog-icon-button {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 1px solid rgba(255,255,255,.20) !important;
+    border-radius: 999px !important;
+    color: #ffffff !important;
+    background: rgba(255,255,255,.055) !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+    transition: transform .16s ease, background .16s ease, border-color .16s ease !important;
+}
+
+.preview-dialog-icon-button:hover,
+.preview-media-card header .preview-dialog-icon-button:hover,
+.preview-tour-details-header .preview-dialog-icon-button:hover {
+    transform: translateY(-1px) !important;
+    border-color: rgba(103,232,249,.55) !important;
+    background: rgba(34,211,238,.10) !important;
+}
+
+.preview-dialog-icon-button .ts-control-icon {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+.preview-tour-details-header,
+.preview-tour-details-modal.preview-tour-details-modal--portal .preview-tour-details-header {
+    grid-template-columns: 46px minmax(0, 1fr) auto !important;
+}
+
+.preview-tour-details-footer {
+    display: none !important;
+}
+
+.preview-media-card {
+    grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+.preview-media-card > footer,
+#previewMediaFooter {
+    display: none !important;
+}
+
+.preview-media-card header {
+    gap: 12px !important;
+}
+
+.preview-media-card header > div:first-child {
+    min-width: 0 !important;
+}
+
+.preview-media-card header h3 {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.tour-shop-close .ts-control-icon,
+.tour-appointment-close .ts-control-icon {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+@media (max-width: 768px) {
+    #brandOverlay,
+    .brand-overlay-wrap {
+        top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+        padding-inline: 60px !important;
+    }
+
+    #brandOverlay .brand-overlay-chip,
+    #brandOverlay .brand-overlay-chip-centered,
+    .brand-overlay-wrap .brand-overlay-chip,
+    .brand-overlay-wrap .brand-overlay-chip-centered {
+        max-width: calc(100vw - 120px) !important;
+        min-height: 38px !important;
+        padding: 4px 10px 4px 5px !important;
+        gap: 7px !important;
+    }
+
+    #brandOverlay .brand-logo-frame,
+    .brand-overlay-wrap .brand-logo-frame {
+        width: 28px !important;
+        min-width: 28px !important;
+        height: 28px !important;
+        min-height: 28px !important;
+    }
+
+    #brandOverlay .brand-company-name,
+    .brand-overlay-wrap .brand-company-name {
+        max-width: calc(100vw - 164px) !important;
+        font-size: 11px !important;
+    }
+
+    .preview-top-right-stats {
+        top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+        right: max(10px, env(safe-area-inset-right, 0px)) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-end !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
+    }
+
+    .preview-top-right-stats .preview-tour-stat-badge {
+        width: 42px !important;
+        min-width: 42px !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 6px !important;
+        gap: 4px !important;
+    }
+
+    .preview-top-right-stats .preview-tour-info-trigger {
+        width: 42px !important;
+        min-width: 42px !important;
+        justify-content: center !important;
+    }
+
+    .preview-top-right-stats .preview-tour-stat-badge-number {
+        font-size: 10.5px !important;
+    }
+
+    .preview-top-right-stats .preview-tour-stat-badge-label {
+        display: none !important;
+    }
+
+    .preview-tour-details-header,
+    .preview-tour-details-modal.preview-tour-details-modal--portal .preview-tour-details-header {
+        grid-template-columns: 40px minmax(0, 1fr) auto !important;
+        gap: 9px !important;
+    }
+
+    .preview-dialog-header-actions {
+        gap: 6px !important;
+    }
+
+    .preview-dialog-icon-button,
+    .preview-media-card header .preview-dialog-icon-button,
+    .preview-tour-details-header .preview-dialog-icon-button {
+        width: 36px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    #brandOverlay,
+    .brand-overlay-wrap {
+        padding-inline: 56px !important;
+    }
+
+    #brandOverlay .brand-overlay-chip,
+    #brandOverlay .brand-overlay-chip-centered,
+    .brand-overlay-wrap .brand-overlay-chip,
+    .brand-overlay-wrap .brand-overlay-chip-centered {
+        max-width: calc(100vw - 112px) !important;
+    }
+
+    #brandOverlay .brand-company-name,
+    .brand-overlay-wrap .brand-company-name {
+        max-width: calc(100vw - 154px) !important;
+        font-size: 10.5px !important;
+    }
+}
+
+.preview-dialog-icon-button[hidden] {
+    display: none !important;
+}
+
+/* =====================================================================
+   PREVIEW TOP ACTION STACK V40
+   - Views, shares and information share one compact vertical rail.
+   - Resets the legacy fixed positioning inherited by the information details.
+===================================================================== */
+.preview-top-right-stats {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    width: 50px !important;
+}
+
+.preview-top-right-stats > .preview-tour-stat-badge,
+.preview-top-right-stats > .preview-tour-details,
+.preview-top-right-stats > .preview-tour-details > summary {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.preview-top-right-stats > .preview-tour-stat-badge,
+.preview-top-right-stats > .preview-tour-details > summary {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    padding: 0 6px !important;
+    border-radius: 999px !important;
+}
+
+.preview-top-right-stats > .preview-tour-details,
+.preview-top-right-stats > .preview-tour-details[open],
+.preview-top-right-stats .preview-tour-details--top,
+.preview-top-right-stats .preview-tour-details--top[open] {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    padding: 0 !important;
+    color: inherit !important;
+    pointer-events: auto !important;
+}
+
+.preview-top-right-stats .preview-tour-info-trigger {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    padding: 0 !important;
+}
+
+.preview-top-right-stats .preview-tour-info-trigger .preview-tour-stat-badge-label {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .preview-top-right-stats {
+        width: 42px !important;
+        gap: 6px !important;
+    }
+
+    .preview-top-right-stats > .preview-tour-stat-badge,
+    .preview-top-right-stats > .preview-tour-details,
+    .preview-top-right-stats > .preview-tour-details > summary,
+    .preview-top-right-stats .preview-tour-info-trigger {
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        max-height: 34px !important;
+    }
+}
+
+
+/* =====================================================================
+   SCENE-SPECIFIC TRIPOD LOGO V41
+   Rendered only when enabled from the dashboard builder.
+===================================================================== */
+.preview-tripod-logo {
+    position: relative;
+    width: var(--preview-tripod-logo-size, 132px);
+    height: var(--preview-tripod-logo-size, 132px);
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    padding: clamp(8px, 9%, 15px);
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.96);
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 12px 34px rgba(2,6,23,.42), inset 0 0 0 1px rgba(15,23,42,.08);
+    transform-origin: center center;
+    pointer-events: none;
+    touch-action: none;
+    user-select: none;
+    overflow: visible;
+    transition: none !important;
+    animation: none !important;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+.preview-tripod-logo img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+    border-radius: inherit;
+    overflow: hidden;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }

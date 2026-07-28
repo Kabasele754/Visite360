@@ -21,6 +21,7 @@
       </div>
 
       <div class="sv-top-actions">
+        <a href="{% url 'apps.app_streetview:publisher' %}" class="sv-btn sv-btn-soft">Existing Twinscopes tours</a>
         <div id="googlePill" class="sv-pill muted">Google...</div>
         <a id="connectGoogle" href="/apis/streetview/oauth/start/" class="sv-btn sv-btn-primary">Connecter Google</a>
       </div>
@@ -39,8 +40,12 @@
           </div>
 
           <div class="sv-create-box">
-            <input id="newTourTitle" class="sv-input" placeholder="Nom du projet, ex: Boutique Gombe">
-            <button id="createTourBtn" class="sv-btn sv-btn-primary w-full">+ Créer une visite</button>
+            <input id="newTourTitle" class="sv-input" placeholder="Project name, e.g. Boutique Gombe">
+            <select id="newTourStoragePolicy" class="sv-input">
+              <option value="delete_after_verified">Google-first: remove local bytes after verification</option>
+              <option value="keep_local">Keep local originals</option>
+            </select>
+            <button id="createTourBtn" class="sv-btn sv-btn-primary w-full">+ Create Google project</button>
           </div>
 
           <div id="tourList" class="sv-tour-list"></div>
@@ -83,6 +88,30 @@
                 </div>
                 <button id="saveProjectQuickBtn" class="sv-btn sv-btn-soft">Sauvegarder</button>
               </div>
+
+              <section class="sv-direct-panel">
+                <div class="sv-panel-head">
+                  <div>
+                    <span class="sv-kicker">Google-only upload</span>
+                    <h3>Publish without storing the original panorama</h3>
+                    <p>The file is validated in a temporary directory, sent to Google Street View, then removed from Twinscopes.</p>
+                  </div>
+                  <span class="sv-badge blue">Low server storage</span>
+                </div>
+                <div class="sv-direct-grid">
+                  <label>Panorama<input id="directImageInput" class="sv-input" type="file" accept="image/jpeg,image/png,image/webp,image/tiff"></label>
+                  <label>Title<input id="directTitleInput" class="sv-input" placeholder="Entrance, lobby, room..."></label>
+                  <label>Latitude<input id="directLatInput" class="sv-input" type="number" step="0.0000001" placeholder="-26.2041"></label>
+                  <label>Longitude<input id="directLngInput" class="sv-input" type="number" step="0.0000001" placeholder="28.0473"></label>
+                  <label>Heading<input id="directHeadingInput" class="sv-input" type="number" step="0.1" value="0"></label>
+                  <label>Capture time<input id="directCaptureTimeInput" class="sv-input" type="datetime-local"></label>
+                </div>
+                <div class="sv-action-row">
+                  <button id="directPublishBtn" class="sv-btn sv-btn-primary">Upload directly to Google</button>
+                  <button id="syncDirectStatusBtn" class="sv-btn sv-btn-soft">Sync Google acceptance</button>
+                </div>
+                <div id="directPublishStatus" class="sv-direct-status">Select a project and a 2:1 equirectangular panorama.</div>
+              </section>
 
               <div id="dropZone" class="sv-dropzone">
                 <input id="fileInput" type="file" multiple accept="image/*" hidden>
@@ -212,6 +241,7 @@
 
               <div class="sv-action-row mt-4">
                 <button id="retryConnectionsBtn" class="sv-btn sv-btn-soft">Réessayer les connexions Google</button>
+                <button id="syncProjectGoogleBtn" class="sv-btn sv-btn-soft">Synchroniser acceptation Google</button>
                 <button id="loadShareLinksBtn" class="sv-btn sv-btn-soft">Afficher les liens publiés</button>
                 <button id="copyAllLinksBtn" class="sv-btn sv-btn-soft">Copier tous les liens</button>
               </div>

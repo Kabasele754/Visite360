@@ -1787,6 +1787,335 @@
     .architect-builder-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.architect-builder-metrics span{padding:9px;border:1px solid var(--sb-border);border-radius:12px;color:var(--sb-muted);font-size:10px}.architect-builder-metrics b{display:block;color:var(--sb-text);font-size:16px}body.builder-dark .architect-builder-metrics span{border-color:var(--sb-border-dark);color:var(--sb-muted-dark)}body.builder-dark .architect-builder-metrics b{color:var(--sb-text-dark)}
     .architect-builder-open{display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:13px;background:#0e7490;color:white!important;font-size:12px;font-weight:900;text-decoration:none}
 
+
+    /* =========================================================
+       SCENE TRIPOD LOGO CONTROLS V41
+       ========================================================= */
+    .tripod-logo-card {
+        background:
+            radial-gradient(circle at top right, rgba(34,211,238,.14), transparent 38%),
+            var(--sb-card) !important;
+    }
+    body.builder-dark .tripod-logo-card {
+        background:
+            radial-gradient(circle at top right, rgba(34,211,238,.16), transparent 38%),
+            var(--sb-card-dark) !important;
+    }
+    .tripod-logo-hero {
+        display: grid;
+        grid-template-columns: 58px minmax(0,1fr) auto;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+    .tripod-logo-preview {
+        width: 56px;
+        height: 56px;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        border-radius: 50%;
+        border: 2px solid rgba(8,145,178,.28);
+        background: #fff;
+        box-shadow: 0 12px 30px rgba(8,145,178,.14);
+    }
+    .tripod-logo-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 5px;
+    }
+    .tripod-logo-copy strong {
+        display: block;
+        color: var(--sb-text);
+        font-size: 13px;
+        font-weight: 950;
+    }
+    .tripod-logo-copy span {
+        display: block;
+        margin-top: 4px;
+        color: var(--sb-muted);
+        font-size: 11px;
+        line-height: 1.45;
+    }
+    body.builder-dark .tripod-logo-copy strong { color: var(--sb-text-dark); }
+    body.builder-dark .tripod-logo-copy span { color: var(--sb-muted-dark); }
+    .tripod-logo-switch {
+        position: relative;
+        width: 48px;
+        height: 28px;
+        flex: 0 0 auto;
+    }
+    .tripod-logo-switch input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .tripod-logo-switch span {
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+        background: #cbd5e1;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+    .tripod-logo-switch span::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 3px 9px rgba(15,23,42,.22);
+        transition: .2s ease;
+    }
+    .tripod-logo-switch input:checked + span {
+        background: linear-gradient(135deg, #0891b2, #22d3ee);
+    }
+    .tripod-logo-switch input:checked + span::after {
+        transform: translateX(20px);
+    }
+    .tripod-logo-apply-all {
+        display: grid;
+        grid-template-columns: 28px minmax(0,1fr);
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 12px;
+        padding: 11px;
+        border: 1px solid rgba(34,211,238,.24);
+        border-radius: 14px;
+        color: var(--sb-text);
+        background: rgba(34,211,238,.065);
+        cursor: pointer;
+        user-select: none;
+    }
+    body.builder-dark .tripod-logo-apply-all {
+        color: var(--sb-text-dark);
+        background: rgba(34,211,238,.075);
+    }
+    .tripod-logo-apply-all > input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .tripod-logo-apply-all-check {
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border-radius: 9px;
+        border: 1px solid rgba(8,145,178,.30);
+        color: transparent;
+        background: rgba(255,255,255,.72);
+        font-size: 15px;
+        font-weight: 950;
+        transition: .18s ease;
+    }
+    body.builder-dark .tripod-logo-apply-all-check {
+        background: rgba(255,255,255,.06);
+    }
+    .tripod-logo-apply-all > input:checked + .tripod-logo-apply-all-check {
+        border-color: transparent;
+        color: #00131b;
+        background: linear-gradient(135deg, #67e8f9, #22d3ee);
+        box-shadow: 0 8px 18px rgba(34,211,238,.18);
+    }
+    .tripod-logo-apply-all-copy strong,
+    .tripod-logo-apply-all-copy small {
+        display: block;
+    }
+    .tripod-logo-apply-all-copy strong {
+        font-size: 11.5px;
+        font-weight: 950;
+    }
+    .tripod-logo-apply-all-copy small {
+        margin-top: 3px;
+        color: var(--sb-muted);
+        font-size: 9.5px;
+        line-height: 1.4;
+    }
+    body.builder-dark .tripod-logo-apply-all-copy small { color: var(--sb-muted-dark); }
+
+    .tripod-logo-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0,1fr));
+        gap: 10px;
+    }
+    .tripod-logo-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .tripod-logo-action {
+        min-height: 40px;
+        border-radius: 13px;
+        border: 1px solid var(--sb-border);
+        color: var(--sb-text);
+        background: rgba(255,255,255,.72);
+        font-size: 11px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+    body.builder-dark .tripod-logo-action {
+        border-color: var(--sb-border-dark);
+        color: var(--sb-text-dark);
+        background: rgba(255,255,255,.055);
+    }
+    .tripod-logo-action.is-primary {
+        border-color: transparent;
+        color: #00131b;
+        background: linear-gradient(135deg, #67e8f9, #22d3ee);
+    }
+    .tripod-logo-help {
+        margin: 11px 0 0;
+        color: var(--sb-muted);
+        font-size: 10.5px;
+        line-height: 1.55;
+    }
+    body.builder-dark .tripod-logo-help { color: var(--sb-muted-dark); }
+
+    .builder-tripod-logo-hotspot {
+        position: relative;
+        width: var(--builder-tripod-logo-size, 132px);
+        height: var(--builder-tripod-logo-size, 132px);
+        display: grid;
+        place-items: center;
+        box-sizing: border-box;
+        padding: clamp(8px, 9%, 15px);
+        border-radius: 50%;
+        border: 2px solid rgba(255,255,255,.96);
+        background: rgba(255,255,255,.96);
+        box-shadow: 0 12px 34px rgba(2,6,23,.42), inset 0 0 0 1px rgba(15,23,42,.08);
+        transform-origin: center center;
+        pointer-events: auto;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+        overflow: visible;
+        outline: 0 solid rgba(34,211,238,0);
+        transition: outline-width .16s ease, box-shadow .16s ease;
+    }
+    .builder-tripod-logo-hotspot:hover,
+    .builder-tripod-logo-hotspot.is-dragging,
+    .builder-tripod-logo-hotspot.is-resizing,
+    .builder-tripod-logo-hotspot.is-rotating {
+        outline: 3px solid rgba(34,211,238,.72);
+        outline-offset: 4px;
+        box-shadow: 0 18px 46px rgba(2,6,23,.52), 0 0 0 5px rgba(34,211,238,.14);
+    }
+    .builder-tripod-logo-hotspot.is-dragging { cursor: grabbing; }
+    .builder-tripod-logo-hotspot img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+        pointer-events: none;
+        border-radius: inherit;
+        overflow: hidden;
+    }
+    .builder-tripod-logo-handle {
+        position: absolute;
+        z-index: 3;
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        border: 2px solid #fff;
+        color: #00131b;
+        background: #22d3ee;
+        box-shadow: 0 7px 18px rgba(2,6,23,.42);
+        cursor: pointer;
+        touch-action: none;
+    }
+    .builder-tripod-logo-resize {
+        right: -12px;
+        bottom: -12px;
+        border-radius: 8px;
+        cursor: nwse-resize;
+    }
+    .builder-tripod-logo-rotate {
+        left: 50%;
+        top: -34px;
+        border-radius: 999px;
+        transform: translateX(-50%);
+        cursor: grab;
+    }
+    .builder-tripod-logo-rotate::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 22px;
+        width: 2px;
+        height: 13px;
+        background: rgba(255,255,255,.9);
+        transform: translateX(-50%);
+    }
+    .tripod-logo-direct-help {
+        display: grid;
+        grid-template-columns: 34px minmax(0,1fr);
+        gap: 9px;
+        align-items: center;
+        margin: 12px 0;
+        padding: 10px;
+        border: 1px solid rgba(34,211,238,.20);
+        border-radius: 14px;
+        color: var(--sb-muted);
+        background: rgba(34,211,238,.07);
+        font-size: 10.5px;
+        line-height: 1.45;
+    }
+    body.builder-dark .tripod-logo-direct-help { color: var(--sb-muted-dark); }
+    .tripod-logo-direct-icon {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 11px;
+        color: #00131b;
+        background: #67e8f9;
+        font-size: 17px;
+        font-weight: 950;
+    }
+    @media (max-width: 460px) {
+        .tripod-logo-grid,
+        .tripod-logo-actions { grid-template-columns: 1fr; }
+    }
+
+    /* V42: the properties rail always remains independently scrollable. */
+    .studio-rightpanel {
+        align-self: stretch !important;
+        height: 100% !important;
+        max-height: calc(100vh - 64px) !important;
+        min-height: 0 !important;
+        overflow-y: scroll !important;
+        overflow-x: hidden !important;
+        overscroll-behavior: contain !important;
+        scrollbar-gutter: stable !important;
+        padding-bottom: 120px !important;
+    }
+    .studio-rightpanel > .rightpanel-card {
+        flex: 0 0 auto !important;
+    }
+    @media (max-width: 1280px) {
+        .studio-rightpanel {
+            height: auto !important;
+            max-height: none !important;
+            top: 78px !important;
+            bottom: 14px !important;
+        }
+    }
+    @media (max-width: 720px) {
+        .studio-rightpanel {
+            top: 68px !important;
+            bottom: 10px !important;
+            padding-bottom: 104px !important;
+        }
+    }
+
 </style>
 {% endblock %}
 
@@ -2394,6 +2723,88 @@
         </form>
     </div>
 
+
+    <div class="rightpanel-card tripod-logo-card">
+        <div class="tripod-logo-hero">
+            <div class="tripod-logo-preview" aria-hidden="true">
+                {% if current_organization.logo %}
+                    <img src="{{ current_organization.logo.url }}" alt="">
+                {% else %}
+                    <strong>{{ current_organization.name|slice:":2"|upper }}</strong>
+                {% endif %}
+            </div>
+            <div class="tripod-logo-copy">
+                <strong>Logo sur le trépied</strong>
+                <span>Utilise le logo de {{ current_organization.name }} pour couvrir le trépied de cette scène.</span>
+            </div>
+            <label class="tripod-logo-switch" for="tripodLogoEnabled" aria-label="Activer le logo sur le trépied">
+                <input type="checkbox" id="tripodLogoEnabled">
+                <span></span>
+            </label>
+        </div>
+
+        <div class="tripod-logo-direct-help">
+            <span class="tripod-logo-direct-icon" aria-hidden="true">↔</span>
+            <span><strong>Placement direct :</strong> glisse le logo dans le panorama. Utilise la poignée carrée pour l’agrandir et la poignée ronde pour le tourner.</span>
+        </div>
+
+        <label class="tripod-logo-apply-all" for="tripodLogoApplyAllScenes">
+            <input type="checkbox" id="tripodLogoApplyAllScenes" checked>
+            <span class="tripod-logo-apply-all-check" aria-hidden="true">✓</span>
+            <span class="tripod-logo-apply-all-copy">
+                <strong>Afficher sur toutes les scènes</strong>
+                <small>À l’enregistrement, cette position et ce style seront appliqués à toutes les scènes du tour.</small>
+            </span>
+        </label>
+
+        <div class="tripod-logo-grid">
+            <div class="form-group">
+                <label for="tripodLogoSize">Taille</label>
+                <input type="number" id="tripodLogoSize" min="72" max="320" step="2" value="132">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoRadius">Profondeur 3D</label>
+                <input type="number" id="tripodLogoRadius" min="350" max="2400" step="25" value="900">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoPitch">Latitude / hauteur</label>
+                <input type="number" id="tripodLogoPitch" min="-89.5" max="89.5" step="0.1" value="88.5">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoYaw">Longitude / rotation</label>
+                <input type="number" id="tripodLogoYaw" min="-180" max="180" step="0.1" value="0">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoRotation">Rotation visuelle</label>
+                <input type="number" id="tripodLogoRotation" min="-180" max="180" step="1" value="0">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoTiltX">Inclinaison verticale</label>
+                <input type="number" id="tripodLogoTiltX" min="-70" max="70" step="1" value="0">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoTiltY">Inclinaison horizontale</label>
+                <input type="number" id="tripodLogoTiltY" min="-70" max="70" step="1" value="0">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoOffsetX">Ajustement X</label>
+                <input type="number" id="tripodLogoOffsetX" min="-250" max="250" step="1" value="0">
+            </div>
+            <div class="form-group">
+                <label for="tripodLogoOffsetY">Ajustement Y</label>
+                <input type="number" id="tripodLogoOffsetY" min="-250" max="250" step="1" value="0">
+            </div>
+        </div>
+
+        <div class="tripod-logo-actions">
+            <button type="button" id="tripodLogoPlaceBtn" class="tripod-logo-action is-primary">Placer au centre de la vue</button>
+            <button type="button" id="tripodLogoNadirBtn" class="tripod-logo-action">Nadir automatique</button>
+        </div>
+        <p class="tripod-logo-help">
+            La position, la taille et l’inclinaison sont enregistrées avec la scène et reproduites à l’identique dans le preview public.
+        </p>
+    </div>
+
     <div class="rightpanel-card architect-builder-card">
         <div class="section-title-row">
             <div>
@@ -2429,6 +2840,7 @@
 <script>
     window.BUILDER_CONFIG = {
         organizationSlug: "{{ current_organization.slug }}",
+        organizationLogoUrl: "{% if current_organization.logo %}{{ current_organization.logo.url|escapejs }}{% endif %}",
         tourId: "{{ tour.id }}",
         uploadScenesUrl: "{% url 'dashboard-upload-scenes-ajax' current_organization.slug tour.id %}",
         reorderScenesUrl: "{% url 'dashboard-reorder-scenes-ajax' current_organization.slug tour.id %}",
@@ -2468,7 +2880,7 @@
 {{ scenes_json|json_script:"scenes-data" }}
 
 <script src="https://unpkg.com/marzipano/dist/marzipano.js"></script>
-<script src="{% static 'dashboard/js/studio_builder.js' %}?v=media-floor-final-20260712"></script>
+<script src="{% static 'dashboard/js/studio_builder.js' %}?v=tripod-logo-all-scenes-floor-anchor-44"></script>
 
 
 <script>

@@ -20,6 +20,20 @@ def contact_options(organization, tour=None):
             "youtube": getattr(organization, "youtube_url", ""),
         }.items() if value
     }
+    try:
+        resources = list(
+            organization.embedded_resources.filter(
+                is_active=True,
+                is_verified=True,
+                allow_in_tour_agent=True,
+            ).values(
+                "id", "label", "kind", "url", "embed_mode",
+                "button_label", "description", "sandbox_permissions",
+            )[:20]
+        )
+    except Exception:
+        resources = []
+
     return {
         "organization_id": organization.id,
         "organization_name": organization.name,
@@ -28,4 +42,6 @@ def contact_options(organization, tour=None):
         "website": website or "",
         "booking_url": booking_url or "",
         "social_links": social,
+        "resources": resources,
+        "allow_embedded_resources": bool(getattr(organization, "ai_allow_embedded_resources", True)),
     }

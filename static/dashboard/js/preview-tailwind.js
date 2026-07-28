@@ -53,11 +53,86 @@ document.addEventListener("DOMContentLoaded", () => {
         : scenes.filter((scene) => scene?.is_public !== false);
 
     const sceneLookup = new Map();
-    scenes.forEach((scene) => {
-        [scene?.id, scene?.scene_id, scene?.uuid, scene?.slug]
+    const sceneDetailPromises = new Map();
+    const sceneDetailControllers = new Map();
+
+    function rawSceneKeys(scene) {
+        return [scene?.id, scene?.scene_id, scene?.uuid, scene?.slug]
             .filter((value) => value !== undefined && value !== null && value !== "")
-            .forEach((value) => sceneLookup.set(String(value), scene));
-    });
+            .map((value) => String(value));
+    }
+
+    function registerScene(scene) {
+        if (!scene || typeof scene !== "object") return scene;
+        const existing = rawSceneKeys(scene)
+            .map((key) => sceneLookup.get(key))
+            .find(Boolean);
+        const target = existing || scene;
+        if (existing && existing !== scene) Object.assign(existing, scene);
+        rawSceneKeys(target).forEach((key) => sceneLookup.set(key, target));
+        return target;
+    }
+
+    sceneList = sceneList.map(registerScene);
+    scenes = scenes.map(registerScene);
+
+    function sceneHasDetails(scene) {
+        if (!scene) return false;
+        if (scene.details_loaded === true) return true;
+        const assets = scene.assets || {};
+        return Boolean(
+            (Array.isArray(scene.hotspots) && scene.hotspots.some((item) => item?.payload || item?.description || item?.media_file_url)) ||
+            assets.viewer_mobile || assets.viewer_desktop || assets.desktop || assets.mobile ||
+            scene.image_360_url || scene.image_360_mobile_url
+        );
+    }
+
+    function sceneDetailUrl(sceneId) {
+        const template = String(config.sceneDetailUrlTemplate || "");
+        return template && sceneId !== undefined && sceneId !== null
+            ? template.replace("{sceneId}", encodeURIComponent(String(sceneId)))
+            : "";
+    }
+
+    async function ensureSceneDetails(sceneOrId) {
+        const reference = typeof sceneOrId === "object" ? registerScene(sceneOrId) : sceneLookup.get(String(sceneOrId));
+        if (!reference) return null;
+        if (sceneHasDetails(reference)) return reference;
+
+        const sceneId = reference.id ?? reference.scene_id;
+        const key = String(sceneId ?? "");
+        const url = sceneDetailUrl(sceneId);
+        if (!key || !url) return reference;
+        if (sceneDetailPromises.has(key)) return sceneDetailPromises.get(key);
+
+        const controller = new AbortController();
+        sceneDetailControllers.set(key, controller);
+        const promise = fetch(url, {
+            method: "GET",
+            credentials: "same-origin",
+            headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+            signal: controller.signal,
+        })
+            .then(async (response) => {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.scene) throw new Error(data.detail || "Scene unavailable");
+                const merged = registerScene(data.scene);
+                if (!scenes.includes(merged)) scenes.push(merged);
+                scenes.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+                return merged;
+            })
+            .catch((error) => {
+                if (error?.name !== "AbortError") console.warn("SCENE_DETAILS_LOAD_FAILED", { sceneId, message: error?.message || String(error) });
+                return reference;
+            })
+            .finally(() => {
+                sceneDetailPromises.delete(key);
+                sceneDetailControllers.delete(key);
+            });
+
+        sceneDetailPromises.set(key, promise);
+        return promise;
+    }
 
     const previewViewer = $("previewViewer");
     const previewLayerA = $("previewLayerA");
@@ -173,7 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const layerSceneId = { A: null, B: null };
 
     const MIN_FOV = degToRad(6);
-    const MAX_FOV = degToRad(132);
+    const MAX_FOV = degToRad(100);
     const ZERO_ZOOM_FOV = MAX_FOV;
 
     function degToRad(deg) {
@@ -189,6 +264,19 @@ document.addEventListener("DOMContentLoaded", () => {
         while (value > Math.PI) value -= 2 * Math.PI;
         while (value < -Math.PI) value += 2 * Math.PI;
         return value;
+    }
+
+    function createFloorAnchoredLimiter(resolution, maxFov, sceneData) {
+        // Match the stable builder camera exactly. Marzipano's traditional
+        // limiter keeps the viewport inside the equirectangular sphere while
+        // preserving the hotspot's saved yaw/pitch. The previous dynamic
+        // pitch clamp changed with every FOV update and made a near-nadir
+        // perspective hotspot appear to slide around on mobile.
+        void sceneData;
+        return Marzipano.RectilinearView.limit.traditional(
+            Math.max(Number(resolution || 0), 4096),
+            Math.min(Number(maxFov || MAX_FOV), degToRad(100))
+        );
     }
 
     function isMobileViewport() {
@@ -558,9 +646,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getSceneKeys(scene) {
-        return [scene?.id, scene?.scene_id, scene?.uuid, scene?.slug]
-            .filter((value) => value !== undefined && value !== null && value !== "")
-            .map((value) => String(value));
+        return rawSceneKeys(scene);
     }
 
     function sceneMatchesId(scene, sceneId) {
@@ -603,8 +689,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const sceneParam = url.searchParams.get("s");
         if (!sceneParam) return null;
 
-        return scenes.find(scene =>
+        return getNavigationSceneList().find(scene =>
             String(scene.id) === String(sceneParam) ||
+            String(scene.scene_id) === String(sceneParam) ||
             String(scene.slug) === String(sceneParam) ||
             String(scene.uuid) === String(sceneParam)
         ) || null;
@@ -853,6 +940,22 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (_) {}
     }
 
+    function mirrorViewParametersDuringUpgrade(sourceView, targetView) {
+        if (!sourceView || !targetView) return () => {};
+        let active = true;
+        let frameId = 0;
+        const tick = () => {
+            if (!active) return;
+            copyViewParameters(sourceView, targetView);
+            frameId = window.requestAnimationFrame(tick);
+        };
+        frameId = window.requestAnimationFrame(tick);
+        return () => {
+            active = false;
+            if (frameId) window.cancelAnimationFrame(frameId);
+        };
+    }
+
     function cancelProgressiveWork() {
         progressiveGeneration += 1;
         clearTimeout(progressiveUpgradeTimer);
@@ -869,25 +972,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function preloadNeighbourScenes(sceneData, generation) {
         const list = getNavigationSceneList();
-        if (!list.length || generation !== progressiveGeneration) return;
+        const profile = getConnectionProfile();
+        if (!list.length || generation !== progressiveGeneration || profile.saveData || profile.slowNetwork) return;
 
         let index = findSceneListIndex(sceneData?.id);
         if (index < 0) index = 0;
+        const candidate = list[(index + 1) % list.length];
+        if (!candidate || sceneMatchesId(candidate, sceneData?.id)) return;
 
-        const candidates = [
-            list[(index + 1) % list.length],
-            list[(index - 1 + list.length) % list.length]
-        ].filter(Boolean);
-
-        runWhenIdle(() => {
-            if (generation !== progressiveGeneration || document.hidden) return;
-            candidates.forEach((entry) => {
-                const neighbour = findScene(entry?.id) || findScene(entry?.scene_id) || entry;
-                const plan = getProgressiveLoadPlan(neighbour);
-                const target = plan.compatible || plan.light;
-                if (target?.url) preloadDecodedImage(target.url, { priority: "low" });
-            });
-        }, 1800);
+        runWhenIdle(async () => {
+            if (generation !== progressiveGeneration || document.hidden || isTransitioning) return;
+            const neighbour = await ensureSceneDetails(candidate);
+            if (!neighbour || generation !== progressiveGeneration || document.hidden || isTransitioning) return;
+            const plan = getProgressiveLoadPlan(neighbour);
+            const target = profile.mediumNetwork ? plan.light : (plan.compatible || plan.light);
+            if (target?.url) preloadDecodedImage(target.url, { priority: "low" });
+        }, 1900);
     }
 
     async function silentlyUpgradeCurrentScene(sceneData, generation, preferredEntry = null) {
@@ -924,13 +1024,27 @@ document.addEventListener("DOMContentLoaded", () => {
             quality: upgradeEntry.quality,
             preserveHotspots: true
         });
-        if (!built || generation !== progressiveGeneration) return false;
+        if (!built || generation !== progressiveGeneration) {
+            if (built) destroyLayerViewer(incomingKey);
+            return false;
+        }
 
         copyViewParameters(outgoingView, views[incomingKey]);
+        // Keep the two panorama layers on the exact same camera while the HD
+        // layer fades in. This prevents two perspective tripod logos from
+        // briefly diverging when the user drags or zooms during the upgrade.
+        const stopUpgradeViewMirror = mirrorViewParametersDuringUpgrade(
+            outgoingView,
+            views[incomingKey]
+        );
 
         const outgoingEl = getLayerEl(outgoingKey);
         const incomingEl = getLayerEl(incomingKey);
-        if (!outgoingEl || !incomingEl) return false;
+        if (!outgoingEl || !incomingEl) {
+            stopUpgradeViewMirror();
+            destroyLayerViewer(incomingKey);
+            return false;
+        }
 
         closeAllFloorPopovers(null, { restoreFocus: false });
         prepareLayersForTransition(outgoingKey, incomingKey);
@@ -945,8 +1059,20 @@ document.addEventListener("DOMContentLoaded", () => {
         incomingEl.classList.add("quality-upgrade-visible");
 
         await new Promise((resolve) => setTimeout(resolve, 520));
-        if (generation !== progressiveGeneration || isTransitioning) return false;
+        if (generation !== progressiveGeneration || isTransitioning) {
+            incomingEl.classList.remove("active-layer", "quality-upgrade-incoming", "quality-upgrade-visible");
+            incomingEl.classList.add("standby-layer");
+            incomingEl.style.opacity = "0";
+            outgoingEl.classList.remove("standby-layer", "quality-upgrade-outgoing");
+            outgoingEl.classList.add("active-layer");
+            outgoingEl.style.opacity = "1";
+            stopUpgradeViewMirror();
+            destroyLayerViewer(incomingKey);
+            syncLayerAccessibility(outgoingKey);
+            return false;
+        }
 
+        stopUpgradeViewMirror();
         outgoingEl.classList.remove("active-layer", "quality-upgrade-outgoing");
         outgoingEl.classList.add("standby-layer");
         outgoingEl.style.opacity = "0";
@@ -961,6 +1087,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         activeLayerKey = incomingKey;
         syncLayerAccessibility(activeLayerKey);
+        destroyLayerViewer(outgoingKey);
         updateAllViewerSizes();
         syncZoomButtonsState();
 
@@ -1427,6 +1554,26 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.classList.add("info-panel-open");
     }
 
+    window.addEventListener("twinscopes:open-hotspot", (event) => {
+        const detail = event.detail || {};
+        let hotspot = detail.hotspot || null;
+
+        if (!hotspot && detail.hotspotId != null) {
+            const ownerScene = findScene(detail.sceneId) || findScene(currentSceneId);
+            hotspot = (ownerScene?.hotspots || []).find((item) =>
+                String(item.id ?? item.hotspot_id ?? "") === String(detail.hotspotId)
+            ) || null;
+        }
+
+        if (!hotspot) return;
+        closeSceneStack();
+        if (hotspot.type === "pdf" || hotspot.type === "video") {
+            openMediaHotspot(hotspot);
+            return;
+        }
+        openInfoPanel(hotspot);
+    });
+
     function stopAutorotate({ suppress = false } = {}) {
         if (suppress) autorotateSuppressedByUser = true;
         autorotateEnabled = false;
@@ -1503,7 +1650,7 @@ document.addEventListener("DOMContentLoaded", () => {
             card.className = "scene-stack-mini-card";
             const thumb = getSceneThumbnailUrl(scene);
             card.innerHTML = thumb
-                ? `<img src="${thumb}" alt="${scene.title || 'Scene'}">`
+                ? `<img src="${thumb}" alt="${scene.title || 'Scene'}" loading="lazy" decoding="async">`
                 : `<div class="scene-thumb-placeholder">360</div>`;
             sceneStackMiniPreview.appendChild(card);
         });
@@ -1524,7 +1671,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const thumb = getSceneThumbnailUrl(scene);
             button.innerHTML = `
                 <div class="scene-thumb">
-                    ${thumb ? `<img src="${thumb}" alt="${scene.title || 'Scene'}">` : `<div class="scene-thumb-placeholder">360</div>`}
+                    ${thumb ? `<img src="${thumb}" alt="${scene.title || 'Scene'}" loading="lazy" decoding="async">` : `<div class="scene-thumb-placeholder">360</div>`}
                 </div>
                 <div class="scene-body">
                     <strong class="scene-title">${scene.title || "Untitled Scene"}</strong>
@@ -1568,6 +1715,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewMediaTitle = $("previewMediaTitle");
     const previewMediaKicker = $("previewMediaKicker");
     const previewMediaFooter = $("previewMediaFooter");
+    const previewMediaExternalAction = $("previewMediaExternalAction");
     const previewFloorNavigator = $("previewFloorNavigator");
     let mediaModalPreviousFocus = null;
     let activePdfRenderToken = 0;
@@ -1606,6 +1754,10 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaModal?.classList.remove("open");
         previewMediaModal?.setAttribute("inert", "");
         previewMediaModal?.setAttribute("aria-hidden", "true");
+        if (previewMediaExternalAction) {
+            previewMediaExternalAction.hidden = true;
+            previewMediaExternalAction.removeAttribute("href");
+        }
         const focusTarget = mediaModalPreviousFocus;
         mediaModalPreviousFocus = null;
         restoreFocusSafely(focusTarget);
@@ -2122,31 +2274,35 @@ document.addEventListener("DOMContentLoaded", () => {
         previewMediaTitle.textContent = hotspot.title || hotspot.label || (hotspot.type === "pdf" ? "Document" : "Video");
         previewMediaKicker.textContent = hotspot.type === "pdf" ? "PDF DOCUMENT" : "VIDEO";
         previewMediaBody.innerHTML = "";
-        previewMediaFooter.innerHTML = "";
+        if (previewMediaFooter) {
+            previewMediaFooter.innerHTML = "";
+            previewMediaFooter.hidden = true;
+        }
+
+        const setExternalAction = (url) => {
+            if (!previewMediaExternalAction) return;
+            if (url) {
+                previewMediaExternalAction.href = url;
+                previewMediaExternalAction.hidden = false;
+            } else {
+                previewMediaExternalAction.hidden = true;
+                previewMediaExternalAction.removeAttribute("href");
+            }
+        };
 
         if (hotspot.type === "pdf") {
             const url = c.document_stream_url || hotspot.document_stream_url || c.document_url || hotspot.media_file_url || "";
-            const downloadUrl = c.download_url || hotspot.media_file_url || url;
+            setExternalAction(url);
             if (!url) {
                 previewMediaBody.innerHTML = `<div class="preview-media-empty">${previewLocaleIsFrench() ? "Ce document n’est pas disponible." : "This document is not available."}</div>`;
             } else {
-                const fr = previewLocaleIsFrench();
-                previewMediaFooter.innerHTML = `
-                    <button type="button" class="preview-media-action preview-media-action-secondary" data-pdf-reload>${fr ? "Recharger" : "Reload"}</button>
-                    <a class="preview-media-action preview-media-action-secondary" href="${escapeAttr(url)}" target="_blank" rel="noopener">${fr ? "Plein écran" : "Full screen"}</a>
-                    ${c.allow_download === false ? "" : `<a class="preview-media-action preview-media-action-primary" href="${escapeAttr(downloadUrl)}" download>${fr ? "Télécharger" : "Download"}</a>`}`;
-
-                previewMediaFooter.querySelector("[data-pdf-reload]")?.addEventListener("click", () => {
-                    renderPdfInsideDialog(url);
-                });
-
-                // Laisse deux frames au dialog mobile pour recevoir sa vraie taille.
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => renderPdfInsideDialog(url));
                 });
             }
         } else {
             const url = c.video_url || hotspot.media_file_url || "";
+            setExternalAction(url);
             const embed = toEmbedUrl(url, !!c.autoplay, !!c.muted);
             if (embed) {
                 previewMediaBody.innerHTML = `<iframe class="preview-video-frame" src="${escapeAttr(embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
@@ -2638,6 +2794,51 @@ document.addEventListener("DOMContentLoaded", () => {
         return node;
     }
 
+    function getPreviewTripodLogoSettings(sceneData) {
+        const settings = sceneData?.tripod_logo || {};
+        return {
+            enabled: Boolean(settings.enabled),
+            size: clamp(Number(settings.size || 132), 72, 320),
+            yaw: clamp(Number(settings.yaw || 0), -180, 180),
+            pitch: clamp(Number(settings.pitch ?? 88.5), -89.5, 89.5),
+            offsetX: clamp(Number(settings.offset_x || 0), -250, 250),
+            offsetY: clamp(Number(settings.offset_y || 0), -250, 250),
+            rotation: clamp(Number(settings.rotation || 0), -180, 180),
+            tiltX: clamp(Number(settings.tilt_x || 0), -70, 70),
+            tiltY: clamp(Number(settings.tilt_y || 0), -70, 70),
+            radius: clamp(Number(settings.radius || 900), 350, 2400),
+        };
+    }
+
+    function previewTripodExtraTransforms(settings) {
+        return [
+            `translateX(${settings.offsetX}px)`,
+            `translateY(${settings.offsetY}px)`,
+            `rotateZ(${settings.rotation}deg)`,
+            `rotateX(${settings.tiltX}deg)`,
+            `rotateY(${settings.tiltY}deg)`,
+        ].join(" ");
+    }
+
+    function buildTripodLogoNode(sceneData) {
+        const settings = getPreviewTripodLogoSettings(sceneData);
+        const logoUrl = String(config.organizationLogoUrl || "").trim();
+        if (!settings.enabled || !logoUrl) return null;
+
+        const node = document.createElement("div");
+        node.className = "preview-tripod-logo";
+        node.style.setProperty("--preview-tripod-logo-size", `${settings.size}px`);
+        node.setAttribute("aria-hidden", "true");
+
+        const image = document.createElement("img");
+        image.src = logoUrl;
+        image.alt = "";
+        image.decoding = "async";
+        image.draggable = false;
+        node.appendChild(image);
+        return { node, settings };
+    }
+
     function buildHotspotNode(hotspot, sceneData) {
         const display = hotspot.payload?.display || {};
         const variant = display.variant || "pin";
@@ -2737,10 +2938,29 @@ document.addEventListener("DOMContentLoaded", () => {
         return node;
     }
 
+    function destroyLayerViewer(key) {
+        const viewer = viewers[key];
+        const view = views[key];
+        try {
+            if (viewer && typeof viewer.destroy === "function") viewer.destroy();
+            else if (viewer && marzipanoScenes[key] && typeof viewer.destroyScene === "function") viewer.destroyScene(marzipanoScenes[key]);
+        } catch (error) {
+            console.warn("VIEWER_DESTROY_FAILED", { key, message: error?.message || String(error) });
+        }
+        try { view?.destroy?.(); } catch (_) {}
+        viewers[key] = null;
+        views[key] = null;
+        marzipanoScenes[key] = null;
+        layerQuality[key] = "none";
+        layerSceneId[key] = null;
+        const mount = getMountEl(key);
+        if (mount) mount.replaceChildren();
+    }
+
     function ensureViewer(key) {
         const mount = getMountEl(key);
         if (!mount) return null;
-        mount.innerHTML = "";
+        destroyLayerViewer(key);
 
         try {
             viewers[key] = new Marzipano.Viewer(mount, {
@@ -2771,9 +2991,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         { tileSize: 512, size: 2048 }
                     ]
                 ),
-                limiter: Marzipano.RectilinearView.limit.traditional(
+                limiter: createFloorAnchoredLimiter(
                     Math.max(Number(sceneData.face_size || 0), Number(sceneData.max_resolution || 0), mobile ? 2048 : 4096),
-                    MAX_FOV
+                    MAX_FOV,
+                    sceneData
                 )
             };
         }
@@ -2794,7 +3015,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return {
             source: Marzipano.ImageUrlSource.fromString(selectedImageUrl),
             geometry: new Marzipano.EquirectGeometry([{ width: logicalResolution }]),
-            limiter: Marzipano.RectilinearView.limit.traditional(logicalResolution, MAX_FOV)
+            limiter: createFloorAnchoredLimiter(logicalResolution, MAX_FOV, sceneData)
         };
     }
 
@@ -2839,6 +3060,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 pitch: Number(hotspot.pitch || 0)
             });
         });
+
+        const tripodLogoRecord = buildTripodLogoNode(sceneData);
+        if (tripodLogoRecord) {
+            const tripodSettings = tripodLogoRecord.settings;
+            marzipanoScenes[layerKey].hotspotContainer().createHotspot(
+                tripodLogoRecord.node,
+                {
+                    yaw: degToRad(tripodSettings.yaw),
+                    pitch: degToRad(tripodSettings.pitch),
+                },
+                {
+                    perspective: {
+                        radius: tripodSettings.radius,
+                        extraTransforms: previewTripodExtraTransforms(tripodSettings),
+                    },
+                }
+            );
+        }
 
         bindSurfaceScaling(layerKey);
         updateSurfaceHotspots(layerKey);
@@ -2900,7 +3139,11 @@ document.addEventListener("DOMContentLoaded", () => {
             await preloadDecodedImage(firstEntry.url, { priority: "high" });
         }
 
-        if (generation !== progressiveGeneration) return;
+        if (generation !== progressiveGeneration) {
+            setSceneLoadingPreview(targetScene, false);
+            isTransitioning = false;
+            return;
+        }
 
         const built = buildSceneOnLayer(incomingKey, targetScene, {
             imageUrl: firstEntry?.url || "",
@@ -2920,7 +3163,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!outgoingEl || !incomingEl) {
             activeLayerKey = incomingKey;
             syncLayerAccessibility(activeLayerKey);
+            destroyLayerViewer(outgoingKey);
             currentSceneId = targetScene.id;
+            updateSceneMeta(targetScene);
+            syncSceneInUrl(targetScene);
             setSceneLoadingPreview(targetScene, false);
             isTransitioning = false;
             scheduleProgressiveUpgrade(targetScene, generation);
@@ -2969,9 +3215,6 @@ document.addEventListener("DOMContentLoaded", () => {
         previewViewer?.classList.remove("is-walk-transition");
         previewViewer?.classList.add("is-cinematic-transition", "transitioning");
 
-        currentSceneId = targetScene.id;
-        updateSceneMeta(targetScene);
-        syncSceneInUrl(targetScene);
         setSceneLoadingPreview(targetScene, false);
 
         requestAnimationFrame(() => {
@@ -2980,7 +3223,20 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         setTimeout(() => {
-            if (generation !== progressiveGeneration) return;
+            if (generation !== progressiveGeneration) {
+                incomingEl.classList.remove("active-layer", "layer-incoming", "layer-outgoing");
+                incomingEl.classList.add("standby-layer");
+                incomingEl.style.opacity = "0";
+                outgoingEl.classList.remove("standby-layer", "layer-outgoing", "layer-incoming");
+                outgoingEl.classList.add("active-layer");
+                outgoingEl.style.opacity = "1";
+                destroyLayerViewer(incomingKey);
+                syncLayerAccessibility(outgoingKey);
+                previewViewer?.classList.remove("is-cinematic-transition", "transitioning", "is-walk-transition");
+                setSceneLoadingPreview(targetScene, false);
+                isTransitioning = false;
+                return;
+            }
 
             outgoingEl.classList.remove("active-layer", "layer-outgoing", "layer-incoming");
             outgoingEl.classList.add("standby-layer");
@@ -2991,9 +3247,13 @@ document.addEventListener("DOMContentLoaded", () => {
             incomingEl.style.opacity = "1";
 
             previewViewer?.classList.remove("is-cinematic-transition", "transitioning", "is-walk-transition");
+            currentSceneId = targetScene.id;
+            updateSceneMeta(targetScene);
+            syncSceneInUrl(targetScene);
             closeMediaHotspot();
             activeLayerKey = incomingKey;
             syncLayerAccessibility(activeLayerKey);
+            destroyLayerViewer(outgoingKey);
             isTransitioning = false;
             updateAllViewerSizes();
             syncZoomButtonsState();
@@ -3005,12 +3265,38 @@ document.addEventListener("DOMContentLoaded", () => {
         }, cinematicMs);
     }
 
+    function startCinematicSwitch(targetScene) {
+        void cinematicSwitchScene(targetScene).catch((error) => {
+            console.warn("SCENE_TRANSITION_FAILED", error);
+            const standbyKey = standbyLayerKey();
+            destroyLayerViewer(standbyKey);
+            const activeEl = getLayerEl(activeLayerKey);
+            const standbyEl = getLayerEl(standbyKey);
+            activeEl?.classList.remove("standby-layer", "layer-outgoing", "layer-incoming", "quality-upgrade-outgoing");
+            activeEl?.classList.add("active-layer");
+            if (activeEl) activeEl.style.opacity = "1";
+            standbyEl?.classList.remove("active-layer", "layer-outgoing", "layer-incoming", "quality-upgrade-incoming", "quality-upgrade-visible");
+            standbyEl?.classList.add("standby-layer");
+            if (standbyEl) standbyEl.style.opacity = "0";
+            previewViewer?.classList.remove("is-cinematic-transition", "transitioning", "is-walk-transition");
+            setSceneLoadingPreview(targetScene, false);
+            syncLayerAccessibility(activeLayerKey);
+            isTransitioning = false;
+            updateAllViewerSizes();
+        });
+    }
+
     async function navigateToScene(targetSceneId, hotspot) {
         if (isTransitioning) return;
 
-        const targetScene = findScene(targetSceneId);
+        const targetReference = findScene(targetSceneId);
         const currentView = getCurrentView();
-        if (!targetScene || !currentView) return;
+        if (!targetReference || !currentView) return;
+        const targetScene = await ensureSceneDetails(targetReference);
+        if (!targetScene || !sceneHasDetails(targetScene) || isTransitioning) {
+            showToast("Scene unavailable");
+            return;
+        }
 
         isTransitioning = true;
         closeInfoPanel();
@@ -3052,12 +3338,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }, isMobileViewport() ? 160 : 180);
 
         setTimeout(() => {
-            cinematicSwitchScene(targetScene);
+            startCinematicSwitch(targetScene);
         }, isMobileViewport() ? 380 : 420);
     }
 
-    function goToSceneWithWalk(targetScene) {
+    async function goToSceneWithWalk(targetScene) {
         if (!targetScene || isTransitioning) return;
+        const detailedScene = await ensureSceneDetails(targetScene);
+        if (!detailedScene || !sceneHasDetails(detailedScene) || isTransitioning) {
+            showToast("Scene unavailable");
+            return;
+        }
+        targetScene = detailedScene;
         isTransitioning = true;
         closeInfoPanel();
         closeSceneStack();
@@ -3068,7 +3360,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const currentView = getCurrentView();
         if (!currentView) {
-            cinematicSwitchScene(targetScene);
+            startCinematicSwitch(targetScene);
             return;
         }
 
@@ -3081,7 +3373,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         syncZoomButtonsState();
 
-        setTimeout(() => cinematicSwitchScene(targetScene), isMobileViewport() ? 380 : 420);
+        setTimeout(() => startCinematicSwitch(targetScene), isMobileViewport() ? 380 : 420);
     }
 
     function zoomToFov(nextFov, duration = 220) {
@@ -3179,8 +3471,21 @@ document.addEventListener("DOMContentLoaded", () => {
             showToast("Link copied");
         } catch (_) {
             try {
-                window.prompt("Copy this link", shareUrl);
-                await trackTourShare("other");
+                const fallback = document.createElement("textarea");
+                fallback.value = shareUrl;
+                fallback.setAttribute("readonly", "");
+                fallback.style.position = "fixed";
+                fallback.style.opacity = "0";
+                fallback.style.pointerEvents = "none";
+                document.body.appendChild(fallback);
+                fallback.select();
+                const copied = document.execCommand("copy");
+                fallback.remove();
+                if (copied) {
+                    await trackTourShare("copy_link");
+                    showToast("Link copied");
+                    return;
+                }
             } catch (_) {}
             showToast("Share unavailable");
         }
@@ -3958,24 +4263,39 @@ document.addEventListener("DOMContentLoaded", () => {
     setupMobileZoomGestures();
     setupVisionLongPress();
 
-    const initialScene = getInitialSceneFromUrl() || scenes[0];
-    currentSceneId = initialScene.id;
+    let initialScene = getInitialSceneFromUrl() || scenes[0] || sceneList[0] || null;
+    currentSceneId = initialScene?.id ?? initialScene?.scene_id ?? null;
+
+    window.TwinscopesPreview = {
+        ...(window.TwinscopesPreview || {}),
+        findScene,
+        ensureSceneDetails,
+        getScenes: () => getNavigationSceneList(),
+        getCurrentSceneId: () => currentSceneId,
+    };
 
     // Public bridge used by the Three.js spatial tour map. The spatial module
     // never reaches into Marzipano internals; it asks the main Preview to
     // perform the normal cinematic scene transition.
-    window.addEventListener("twinscopes:navigate-scene", (event) => {
+    window.addEventListener("twinscopes:navigate-scene", async (event) => {
         const requestedId = event.detail?.sceneId;
         const targetScene = findScene(requestedId);
         if (!targetScene || isTransitioning) return;
         closeInfoPanel();
         closeSceneStack();
-        goToSceneWithWalk(targetScene);
+        await goToSceneWithWalk(targetScene);
     });
 
     async function bootProgressivePreview() {
         cancelProgressiveWork();
         const generation = progressiveGeneration;
+        initialScene = await ensureSceneDetails(initialScene);
+        if (!initialScene || !sceneHasDetails(initialScene)) {
+            setSceneLoadingPreview(initialScene, true, "Panorama unavailable");
+            isTransitioning = false;
+            return;
+        }
+        currentSceneId = initialScene.id ?? initialScene.scene_id;
         const plan = getProgressiveLoadPlan(initialScene);
         const firstEntry = await getBestInitialEntry(initialScene);
 
@@ -4017,6 +4337,15 @@ document.addEventListener("DOMContentLoaded", () => {
             }, 920);
         });
     }
+
+    window.addEventListener("pagehide", () => {
+        cancelProgressiveWork();
+        stopAutorotate({ suppress: true });
+        sceneDetailControllers.forEach((controller) => controller.abort());
+        sceneDetailControllers.clear();
+        destroyLayerViewer("A");
+        destroyLayerViewer("B");
+    }, { once: true });
 
     bootProgressivePreview();
 });

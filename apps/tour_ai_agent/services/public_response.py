@@ -62,6 +62,28 @@ def serialize_public_contact(contact: dict | None) -> dict:
         url = _safe_public_url(value)
         if url:
             social_links[_clean_text(key, limit=30)] = url
+    resources = []
+    for item in (source.get("resources") or [])[:20]:
+        if not isinstance(item, dict):
+            continue
+        url = _safe_public_url(item.get("url"))
+        if not url:
+            continue
+        resources.append({
+            "id": item.get("id"),
+            "label": _clean_text(item.get("label") or "Connected resource", limit=160),
+            "kind": _clean_text(item.get("kind") or "other", limit=24),
+            "url": url,
+            "embed_mode": _clean_text(item.get("embed_mode") or "auto", limit=24),
+            "button_label": _clean_text(item.get("button_label") or "", limit=80),
+            "description": _clean_text(item.get("description") or "", limit=260),
+            "sandbox_permissions": [
+                _clean_text(value, limit=40)
+                for value in (item.get("sandbox_permissions") or [])[:12]
+                if _clean_text(value, limit=40)
+            ],
+            "verified": True,
+        })
     return {
         "organization_id": source.get("organization_id"),
         "organization_name": _clean_text(source.get("organization_name"), limit=160),
@@ -70,4 +92,6 @@ def serialize_public_contact(contact: dict | None) -> dict:
         "website": _safe_public_url(source.get("website")),
         "booking_url": _safe_public_url(source.get("booking_url")),
         "social_links": social_links,
+        "resources": resources,
+        "allow_embedded_resources": bool(source.get("allow_embedded_resources", True)),
     }

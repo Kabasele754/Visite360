@@ -169,6 +169,7 @@ class ScenePublicSerializer(serializers.ModelSerializer):
     hotspots = serializers.SerializerMethodField()
     hotspot_count = serializers.SerializerMethodField()
     has_panorama = serializers.SerializerMethodField()
+    tripod_logo = serializers.SerializerMethodField()
 
     class Meta:
         model = Scene360
@@ -180,6 +181,7 @@ class ScenePublicSerializer(serializers.ModelSerializer):
             "yaw_default",
             "pitch_default",
             "hfov_default",
+            "tripod_logo",
             "image_360_url",
             "image_360_mobile_url",
             "image_360_preview_url",
@@ -188,6 +190,20 @@ class ScenePublicSerializer(serializers.ModelSerializer):
             "hotspot_count",
             "hotspots",
         ]
+
+    def get_tripod_logo(self, obj):
+        return {
+            "enabled": bool(getattr(obj, "tripod_logo_enabled", False)),
+            "size": int(getattr(obj, "tripod_logo_size", 132) or 132),
+            "yaw": float(getattr(obj, "tripod_logo_yaw", 0.0) or 0.0),
+            "pitch": float(88.5 if getattr(obj, "tripod_logo_pitch", None) is None else obj.tripod_logo_pitch),
+            "offset_x": int(getattr(obj, "tripod_logo_offset_x", 0) or 0),
+            "offset_y": int(getattr(obj, "tripod_logo_offset_y", 0) or 0),
+            "rotation": float(getattr(obj, "tripod_logo_rotation", 0.0) or 0.0),
+            "tilt_x": float(getattr(obj, "tripod_logo_tilt_x", 0.0) or 0.0),
+            "tilt_y": float(getattr(obj, "tripod_logo_tilt_y", 0.0) or 0.0),
+            "radius": int(getattr(obj, "tripod_logo_radius", 900) or 900),
+        }
 
     def get_image_360_url(self, obj):
         return absolute_url(self.context.get("request"), obj.image_360)

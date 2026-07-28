@@ -13,8 +13,8 @@ from apps.tours.models import (
 
 @admin.register(Scene360)
 class Scene360Admin(admin.ModelAdmin):
-    list_display = ("id", "title", "tour", "order", "ai_analysis_status", "ai_analyzed_at")
-    list_filter = ("ai_analysis_status", "tour__organization")
+    list_display = ("id", "title", "tour", "order", "tripod_logo_enabled", "ai_analysis_status", "ai_analyzed_at")
+    list_filter = ("tripod_logo_enabled", "ai_analysis_status", "tour__organization")
     search_fields = ("title", "tour__title", "tour__organization__name")
 
 

@@ -12,11 +12,16 @@ from apps.tour_ai_agent.services.conversation_service import get_or_create_conve
 from apps.tour_ai_agent.services.scene_context_service import get_scene_context
 from apps.tour_ai_agent.services.conversion_service import record_action
 from apps.tour_ai_agent.agents.orchestrator import run_agent
+from apps.tour_ai_agent.agents.intent_router import detect_intent
 from apps.tour_ai_agent.tools.cart_tools import add_product_to_cart
 from apps.tour_ai_agent.tools.booking_tools import create_appointment, booking_form_payload
 from apps.tour_ai_agent.tools.lead_tools import create_sales_lead
 from apps.tour_ai_agent.tools.contact_tools import contact_options
-from apps.tour_ai_agent.services.grounded_context import build_organization_grounding
+from apps.tour_ai_agent.services.grounded_context import (
+    build_organization_grounding,
+    build_organization_profile,
+    should_use_semantic_grounding,
+)
 from apps.tour_ai_agent.services.public_response import serialize_public_contact, serialize_public_sources
 from django.core import signing
 from apps.vision_ai.models import VisionAnalysis, VisionInsight
@@ -166,6 +171,9 @@ def message(request):
     text = (payload.get("message") or "").strip()
     if not text:
         return JsonResponse({"ok": False, "error": "Message is required"}, status=400)
+    max_message_chars = int(getattr(settings, "TOUR_AI_MAX_MESSAGE_CHARS", 2000))
+    if len(text) > max_message_chars:
+        return JsonResponse({"ok": False, "error": f"Message is too long (maximum {max_message_chars} characters)"}, status=400)
     conversation, tour, scene, visitor_id = _conversation(request, payload)
     request_id = str(payload.get("request_id") or "")[:80]
     if request_id:
@@ -175,7 +183,13 @@ def message(request):
             return JsonResponse({"ok": True, "conversation_id": conversation.id, **cached, "duplicate": True})
     add_message(conversation, "user", text, {"scene_id": scene.id if scene else None, "request_id": request_id})
     context = get_scene_context(scene, tour=tour) if scene else {"organization": {"id": tour.organization_id, "name": tour.organization.name}, "place": {}, "scene": {}, "products": [], "catalogue_status": {}}
-    context.update(build_organization_grounding(tour.organization, text))
+    detected_intent = detect_intent(text)
+    if should_use_semantic_grounding(text, detected_intent):
+        context.update(build_organization_grounding(tour.organization, text, limit=4))
+    else:
+        context.update(build_organization_profile(tour.organization))
+        context.setdefault("knowledge_sources", [])
+        context.setdefault("domain_intelligence", {})
     context.update({
         "tour": {"id": tour.id, "title": tour.title, "organization": tour.organization.name},
         "locale": conversation.locale,

@@ -14,6 +14,7 @@ from apps.domain_intelligence.models import (
     OrganizationIntelligenceProfile,
     OrganizationIntelligenceRun,
     IntelligenceReviewItem,
+    OrganizationEmbeddedResource,
     PractitionerAvailability,
     PropertyListingProfile,
 )
@@ -91,7 +92,7 @@ RESOURCE_DEFINITIONS = {
         key="organizations", label="Organizations", singular="Organization", icon="🏢", model=Organization,
         columns=(("name", "Name"), ("slug", "Slug"), ("status", "Status"), ("website_url", "Website"), ("created_at", "Created")),
         search_fields=("name", "slug", "website_url", "public_email", "public_phone"),
-        form_fields=("name", "slug", "logo", "status", "description", "website_url", "booking_url", "public_email", "public_phone", "facebook_url", "instagram_url", "tiktok_url", "linkedin_url", "youtube_url", "ai_use_website", "ai_auto_discover_social_links"),
+        form_fields=("name", "slug", "logo", "status", "description", "website_url", "booking_url", "public_email", "public_phone", "facebook_url", "instagram_url", "tiktok_url", "linkedin_url", "youtube_url", "ai_use_website", "ai_auto_discover_social_links", "ai_assistant_enabled", "ai_assistant_brand_mode", "ai_assistant_name", "ai_assistant_tagline", "ai_assistant_avatar", "ai_allow_embedded_resources"),
         description="Manage platform organizations, public contact details and AI website access.",
     ),
     "places": ResourceDefinition(
@@ -114,6 +115,14 @@ RESOURCE_DEFINITIONS = {
         search_fields=("organization__name", "domain_kind", "last_sync_status"),
         form_fields=("organization", "domain_kind", "default_locale", "timezone", "country_code", "auto_sync_website", "website_sync_max_pages", "last_synced_at", "last_sync_status", "metadata"),
         select_related=("organization",), description="Configure healthcare, real-estate, hospitality and general AI behavior.",
+    ),
+    "embedded-resources": ResourceDefinition(
+        key="embedded-resources", label="Embedded organization resources", singular="Embedded resource", icon="▣", model=OrganizationEmbeddedResource,
+        columns=(("organization", "Organization"), ("label", "Resource"), ("kind", "Kind"), ("embed_mode", "Display"), ("is_verified", "Verified"), ("is_active", "Active")),
+        search_fields=("organization__name", "label", "kind", "url", "description"),
+        form_fields=("organization", "label", "kind", "url", "embed_mode", "button_label", "description", "allow_in_tour_agent", "is_verified", "is_active", "sandbox_permissions", "source_url", "verified_at", "metadata"),
+        select_related=("organization",), order_by=("organization__name", "label"),
+        description="Manage verified websites, booking systems, CRM forms and contact resources displayed safely inside the Tour AI modal.",
     ),
     "intelligence-runs": ResourceDefinition(
         key="intelligence-runs", label="Intelligence collection runs", singular="Intelligence collection run", icon="◉", model=OrganizationIntelligenceRun,

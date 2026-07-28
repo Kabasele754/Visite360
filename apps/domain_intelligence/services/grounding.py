@@ -11,7 +11,8 @@ from apps.domain_intelligence.models import (
 )
 
 
-def build_domain_grounding(organization, query: str = "", *, limit: int = 20) -> dict:
+def build_domain_grounding(organization, query: str = "", *, limit: int = 6) -> dict:
+    limit = max(1, min(int(limit or 6), 10))
     normalized = str(query or "").strip()
     practitioners_qs = MedicalPractitioner.objects.select_related("specialty", "place").filter(
         organization=organization,
@@ -36,7 +37,7 @@ def build_domain_grounding(organization, query: str = "", *, limit: int = 20) ->
             "name": item.full_name,
             "title": item.professional_title,
             "specialty": item.specialty.name if item.specialty else "",
-            "bio": item.bio[:1200],
+            "bio": item.bio[:600],
             "languages": item.languages,
             "public_contact": item.public_contact_payload(),
             "booking_mode": item.booking_mode,
@@ -61,7 +62,7 @@ def build_domain_grounding(organization, query: str = "", *, limit: int = 20) ->
         for item in HealthcareFacilityProfile.objects.select_related("place").filter(
             place__organization=organization,
             is_active=True,
-        )[:20]
+        )[:limit]
     ]
     properties = [
         {
@@ -82,7 +83,7 @@ def build_domain_grounding(organization, query: str = "", *, limit: int = 20) ->
         }
         for item in PropertyListingProfile.objects.select_related("place").filter(
             place__organization=organization,
-        )[:30]
+        )[:limit]
     ]
     hospitality = [
         {
@@ -99,7 +100,7 @@ def build_domain_grounding(organization, query: str = "", *, limit: int = 20) ->
         for item in HospitalityProfile.objects.select_related("place").filter(
             place__organization=organization,
             is_available=True,
-        )[:30]
+        )[:limit]
     ]
     facts = [
         {

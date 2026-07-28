@@ -120,6 +120,18 @@ def build_tour_manifest(tour: Tour) -> dict:
             "yaw_default": scene.yaw_default,
             "pitch_default": scene.pitch_default,
             "hfov_default": scene.hfov_default,
+            "tripod_logo": {
+                "enabled": bool(getattr(scene, "tripod_logo_enabled", False)),
+                "size": int(getattr(scene, "tripod_logo_size", 132) or 132),
+                "yaw": float(getattr(scene, "tripod_logo_yaw", 0.0) or 0.0),
+                "pitch": float(88.5 if getattr(scene, "tripod_logo_pitch", None) is None else scene.tripod_logo_pitch),
+                "offset_x": int(getattr(scene, "tripod_logo_offset_x", 0) or 0),
+                "offset_y": int(getattr(scene, "tripod_logo_offset_y", 0) or 0),
+                "rotation": float(getattr(scene, "tripod_logo_rotation", 0.0) or 0.0),
+                "tilt_x": float(getattr(scene, "tripod_logo_tilt_x", 0.0) or 0.0),
+                "tilt_y": float(getattr(scene, "tripod_logo_tilt_y", 0.0) or 0.0),
+                "radius": int(getattr(scene, "tripod_logo_radius", 900) or 900),
+            },
 
             "hotspots": [
                 {

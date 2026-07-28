@@ -35,7 +35,10 @@
     eyebrow: root.querySelector("[data-resource-eyebrow]"),
     title: root.querySelector("[data-resource-title]"),
     body: root.querySelector("[data-resource-body]"),
-    copy: root.querySelector("[data-resource-copy]"),
+    external: root.querySelector("[data-resource-external]"),
+    embed: root.querySelector("[data-resource-embed]"),
+    embedStatus: root.querySelector("[data-resource-embed-status]"),
+    frame: root.querySelector("[data-resource-frame]"),
     closeButtons: root.querySelectorAll("[data-resource-close]"),
   };
 
@@ -51,6 +54,10 @@
   let lastInspectionPoint = null;
   let activeResource = null;
   let resourcePreviousFocus = null;
+  let resourceFrameTimer = null;
+  let activeMessageController = null;
+  let stopActiveThinking = null;
+  let sceneSignalTimer = null;
   let longPressMs = Number(cfg.longPressMs || 650);
 
   const csrfToken = (() => {
@@ -282,10 +289,30 @@
     const rows = [];
     if (contact.phone) rows.push({label: "Phone", kind: "phone", value: contact.phone});
     if (contact.email) rows.push({label: "Email", kind: "email", value: contact.email});
-    if (contact.website) rows.push({label: "Official website", kind: "url", value: contact.website, url: contact.website});
-    if (contact.booking_url) rows.push({label: "Appointments", kind: "url", value: contact.booking_url, url: contact.booking_url});
-    Object.entries(contact.social_links || {}).forEach(([network, url]) => rows.push({label: network.charAt(0).toUpperCase() + network.slice(1), kind: "url", value: url, url}));
-    return rows;
+    if (contact.website) rows.push({label: "Official website", kind: "url", value: contact.website, url: contact.website, embed_mode: "auto", embed_allowed: contact.allow_embedded_resources !== false});
+    if (contact.booking_url) rows.push({label: "Appointments", kind: "booking", value: contact.booking_url, url: contact.booking_url, embed_mode: "auto", embed_allowed: contact.allow_embedded_resources !== false, native_fallback: "booking"});
+    Object.entries(contact.social_links || {}).forEach(([network, url]) => rows.push({label: network.charAt(0).toUpperCase() + network.slice(1), kind: "url", value: url, url, embed_mode: "summary"}));
+    (contact.resources || []).forEach((item) => rows.push({
+      label: item.label || item.button_label || "Connected service",
+      title: item.label || "Connected service",
+      kind: item.kind || "url",
+      value: item.url,
+      url: item.url,
+      description: item.description || "",
+      embed_mode: item.embed_mode || "auto",
+      embed_allowed: item.verified !== false && contact.allow_embedded_resources !== false,
+      native_fallback: ["booking", "crm"].includes(item.kind) ? "booking" : ["contact", "form"].includes(item.kind) ? "contact" : "",
+      sandbox_permissions: item.sandbox_permissions || [],
+      verified: item.verified !== false,
+      resource_id: item.id,
+    }));
+    const seen = new Set();
+    return rows.filter((item) => {
+      const key = `${item.kind}:${item.url || item.value || item.label}`.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   function appendContactCard(wrap, contact = {}, force = false) {
@@ -317,7 +344,8 @@
       appendContactCard(wrap, meta.contact || {}, meta.intent === "contact" || meta.showContact === true);
     }
     if (role === "assistant" && meta.provider) {
-      wrap.appendChild(element("small", "tour-ai-source", meta.degraded ? "Twinscopes AI · Local mode" : "Twinscopes AI"));
+      const assistantLabel = text(cfg.assistantName || "Assistant");
+      wrap.appendChild(element("small", "tour-ai-source", meta.degraded ? `${assistantLabel} · Local mode` : assistantLabel));
     }
     messages.appendChild(wrap);
     messages.scrollTop = messages.scrollHeight;
@@ -325,7 +353,10 @@
   }
 
   function iconForResource(kind) {
-    return ({phone: "☎", email: "@", source: "✓", contact_collection: "i", url: "↗"})[kind] || "i";
+    return ({
+      phone: "☎", email: "@", source: "✓", contact_collection: "i", url: "↗",
+      website: "◎", booking: "▣", crm: "◇", form: "✎", contact: "✉", social: "◌",
+    })[kind] || "i";
   }
 
   function resourceRow(label, value, info) {
@@ -336,10 +367,71 @@
     return button;
   }
 
+  function normalizeResourceInfo(raw = {}) {
+    const info = raw && typeof raw === "object" ? {...raw} : {};
+    info.kind = text(info.kind || "text").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 32) || "text";
+    info.title = cardText(info.title || info.label || "Information", 180) || "Information";
+    info.value = cardText(info.value || info.url || "", 1200);
+    info.url = safeResourceUrl(info.url || (info.kind === "url" || info.kind === "booking" || info.kind === "crm" || info.kind === "form" ? info.value : ""));
+    info.copyValue = text(info.copyValue || info.value || info.url).trim().slice(0, 2000);
+    info.embed_mode = text(info.embed_mode || "auto").toLowerCase();
+    info.embed_allowed = info.embed_allowed !== false && cfg.allowEmbeddedResources !== false;
+    info.native_fallback = text(info.native_fallback || (["booking", "crm"].includes(info.kind) ? "booking" : ["contact", "form"].includes(info.kind) ? "contact" : ""));
+    info.sandbox_permissions = Array.isArray(info.sandbox_permissions) ? info.sandbox_permissions : [];
+    return info;
+  }
+
+  function resetEmbeddedResource() {
+    if (resourceFrameTimer) window.clearTimeout(resourceFrameTimer);
+    resourceFrameTimer = null;
+    if (resource.frame) {
+      resource.frame.removeAttribute("src");
+      resource.frame.onload = null;
+    }
+    if (resource.embed) {
+      resource.embed.hidden = true;
+      resource.embed.classList.remove("is-loaded");
+    }
+    if (resource.body) resource.body.hidden = false;
+    if (resource.embedStatus) resource.embedStatus.textContent = "Preparing secure preview…";
+  }
+
+  function resourceSandbox(info) {
+    const allowed = new Set(["allow-forms", "allow-scripts", "allow-same-origin", "allow-downloads", "allow-popups", "allow-popups-to-escape-sandbox"]);
+    const requested = info.sandbox_permissions.filter((value) => allowed.has(value));
+    const defaults = ["allow-forms", "allow-scripts", "allow-same-origin", "allow-popups-to-escape-sandbox"];
+    return [...new Set(requested.length ? requested : defaults)].join(" ");
+  }
+
+  function openEmbeddedResource() {
+    const info = normalizeResourceInfo(activeResource || {});
+    if (!resource.frame || !resource.embed || !info.url || !info.embed_allowed) return;
+    resource.body.hidden = true;
+    resource.embed.hidden = false;
+    resource.embed.classList.remove("is-loaded");
+    resource.embedStatus.textContent = "Loading the verified provider…";
+    resource.frame.setAttribute("sandbox", resourceSandbox(info));
+    resource.frame.setAttribute("allow", "payment 'none'; geolocation 'none'; camera 'none'; microphone 'none'; clipboard-write 'self'");
+    resource.frame.onload = () => {
+      if (resourceFrameTimer) window.clearTimeout(resourceFrameTimer);
+      resourceFrameTimer = null;
+      resource.embedStatus.textContent = "Connected provider preview";
+      resource.embed.classList.add("is-loaded");
+    };
+    resource.frame.src = info.url;
+    resourceFrameTimer = window.setTimeout(() => {
+      if (resource.embedStatus) {
+        resource.embedStatus.textContent = "This provider may block embedded views. Use the open icon in the header to continue in full size.";
+      }
+    }, Math.max(2500, Number(cfg.externalEmbedTimeoutMs || 7000)));
+    sendSignal("ai_resource_embedded", {kind: info.kind, resource_id: info.resource_id || ""});
+  }
+
+
   function renderResourceBody(info) {
     clear(resource.body);
     if (info.kind === "contact_collection") {
-      const intro = element("p", "tour-ai-resource-intro", "Select a verified contact detail to view it inside Twinscopes.");
+      const intro = element("p", "tour-ai-resource-intro", "Select a verified contact detail.");
       resource.body.appendChild(intro);
       const rows = element("div", "tour-ai-resource-list");
       contactItems(info.contact || {}).forEach((item) => rows.appendChild(resourceRow(item.label, item.value, {...item, title: item.label, copyValue: item.value})));
@@ -353,20 +445,28 @@
       resource.body.appendChild(trust);
       if (info.summary) { const summary = element("p", "tour-ai-resource-summary"); summary.textContent = info.summary; resource.body.appendChild(summary); }
       if (info.source) resource.body.appendChild(resourceRow("Source", info.source, {kind: "text", title: "Source", value: info.source, copyValue: info.source}));
-      if (info.url) resource.body.appendChild(resourceRow("Web address", info.url, {kind: "url", title: info.title || "Web address", url: info.url, value: info.url, copyValue: info.url}));
+      if (info.url) resource.body.appendChild(resourceRow("Web address", info.url, {kind: "url", title: info.title || "Web address", url: info.url, value: info.url, copyValue: info.url, embed_mode: "auto", embed_allowed: true}));
       return;
     }
 
     const value = info.value || info.url || "";
     const panel = element("div", "tour-ai-resource-value-card");
-    panel.append(element("small", "", info.kind === "phone" ? "PUBLIC PHONE" : info.kind === "email" ? "PUBLIC EMAIL" : info.kind === "url" ? "CONNECTED WEB ADDRESS" : "INFORMATION"), element("strong", "", value));
+    const webKinds = ["url", "website", "booking", "crm", "form", "contact", "social"];
+    const kindLabel = info.kind === "phone" ? "PUBLIC PHONE"
+      : info.kind === "email" ? "PUBLIC EMAIL"
+      : info.kind === "booking" ? "VERIFIED BOOKING RESOURCE"
+      : info.kind === "crm" ? "CONNECTED CLIENT PORTAL"
+      : info.kind === "form" || info.kind === "contact" ? "VERIFIED FORM"
+      : webKinds.includes(info.kind) ? "CONNECTED WEB ADDRESS"
+      : "INFORMATION";
+    panel.append(element("small", "", kindLabel), element("strong", "", value));
     resource.body.appendChild(panel);
-    if (info.kind === "url") {
+    if (webKinds.includes(info.kind)) {
       let host = "Official connected source";
       try { host = new URL(info.url).hostname.replace(/^www\./, ""); } catch (_) {}
-      resource.body.appendChild(element("p", "tour-ai-resource-note", `This address belongs to ${host}. Twinscopes displays it here without sending you away from the virtual tour.`));
+      resource.body.appendChild(element("p", "tour-ai-resource-note", `This address belongs to ${host}. It is displayed here without sending you away from the virtual tour.`));
     } else if (info.kind === "phone" || info.kind === "email") {
-      resource.body.appendChild(element("p", "tour-ai-resource-note", "This public contact detail is displayed inside Twinscopes. Use Copy information to save it."));
+      resource.body.appendChild(element("p", "tour-ai-resource-note", "This public contact detail is displayed securely. Use the action icon in the header to continue."));
     }
   }
 
@@ -376,42 +476,85 @@
     resource.modal.dataset.portalized = "1";
   }
 
-  function openResourceModal(info = {}) {
-    if (!resource.modal || !resource.backdrop) return;
-    portalizeResourceModal();
-    activeResource = info;
-    resourcePreviousFocus = document.activeElement;
-    resource.icon.textContent = iconForResource(info.kind);
-    resource.eyebrow.textContent = info.eyebrow || (info.kind === "source" ? "Verified source" : info.kind === "contact_collection" ? "Organization contact" : "Verified information");
-    resource.title.textContent = info.title || "Information";
-    renderResourceBody(info);
-    resource.copy.hidden = !info.copyValue;
-    resource.copy.textContent = "Copy information";
-    resource.backdrop.hidden = false; resource.modal.hidden = false;
-    document.documentElement.classList.add("tour-ai-resource-open");
-    requestAnimationFrame(() => { resource.backdrop.classList.add("is-open"); resource.modal.classList.add("is-open"); resource.modal.querySelector("[data-resource-close]")?.focus(); });
-    sendSignal("ai_resource_opened", {kind: info.kind || "information", citation: info.citation || ""});
+  function openResourceModal(rawInfo = {}) {
+    if (!resource.modal || !resource.backdrop || !resource.body) {
+      reportTechnicalError("AI-RESOURCE-UI", new Error("Resource modal is unavailable"), {tourId: cfg.tourId});
+      return;
+    }
+    const info = normalizeResourceInfo(rawInfo);
+    try {
+      portalizeResourceModal();
+      resetEmbeddedResource();
+      activeResource = info;
+      resourcePreviousFocus = document.activeElement;
+      resource.icon.textContent = iconForResource(info.kind);
+      resource.eyebrow.textContent = info.eyebrow || (info.kind === "source" ? "Verified source" : info.kind === "contact_collection" ? "Organization contact" : "Verified information");
+      resource.title.textContent = info.title;
+      renderResourceBody(info);
+
+      let externalUrl = info.url || "";
+      if (!externalUrl && info.kind === "phone" && info.value) externalUrl = `tel:${info.value}`;
+      if (!externalUrl && info.kind === "email" && info.value) externalUrl = `mailto:${info.value}`;
+      if (resource.external) {
+        if (externalUrl) {
+          resource.external.href = externalUrl;
+          resource.external.hidden = false;
+          resource.external.textContent = info.kind === "phone" ? "☎" : info.kind === "email" ? "@" : "↗";
+          resource.external.setAttribute("aria-label", info.kind === "phone" ? "Call" : info.kind === "email" ? "Send email" : "Open in full size");
+          resource.external.setAttribute("title", info.kind === "phone" ? "Call" : info.kind === "email" ? "Send email" : "Open in full size");
+        } else {
+          resource.external.hidden = true;
+          resource.external.removeAttribute("href");
+        }
+      }
+
+      const previewable = Boolean(
+        info.url &&
+        /^https?:/i.test(info.url) &&
+        info.embed_allowed &&
+        !["summary", "native_booking", "native_contact"].includes(info.embed_mode)
+      );
+
+      resource.backdrop.hidden = false;
+      resource.modal.hidden = false;
+      document.documentElement.classList.add("tour-ai-resource-open");
+      requestAnimationFrame(() => {
+        resource.backdrop.classList.add("is-open");
+        resource.modal.classList.add("is-open");
+        resource.modal.querySelector("[data-resource-close]")?.focus();
+        if (previewable) requestAnimationFrame(openEmbeddedResource);
+      });
+      sendSignal("ai_resource_opened", {kind: info.kind || "information", citation: info.citation || "", resource_id: info.resource_id || ""});
+    } catch (error) {
+      const reference = reportTechnicalError("AI-RESOURCE", error, {tourId: cfg.tourId, kind: info.kind, citation: info.citation || ""});
+      resetEmbeddedResource();
+      clear(resource.body);
+      resource.body.appendChild(element("div", "tour-ai-resource-empty", `This information could not be displayed. Reference: ${reference}`));
+      if (resource.external) {
+        resource.external.hidden = true;
+        resource.external.removeAttribute("href");
+      }
+      resource.backdrop.hidden = false;
+      resource.modal.hidden = false;
+      document.documentElement.classList.add("tour-ai-resource-open");
+      requestAnimationFrame(() => { resource.backdrop.classList.add("is-open"); resource.modal.classList.add("is-open"); });
+    }
   }
 
   function closeResourceModal() {
     if (!resource.modal || resource.modal.hidden) return;
+    resetEmbeddedResource();
     resource.backdrop.classList.remove("is-open"); resource.modal.classList.remove("is-open");
     document.documentElement.classList.remove("tour-ai-resource-open");
     window.setTimeout(() => { resource.backdrop.hidden = true; resource.modal.hidden = true; }, 170);
+    if (resource.external) {
+      resource.external.hidden = true;
+      resource.external.removeAttribute("href");
+    }
     const focusTarget = resourcePreviousFocus; activeResource = null; resourcePreviousFocus = null;
-    if (focusTarget?.focus) window.setTimeout(() => focusTarget.focus(), 180);
+    if (focusTarget?.focus && isOpen()) window.setTimeout(() => focusTarget.focus({preventScroll: true}), 180);
   }
 
-  async function copyActiveResource() {
-    const value = text(activeResource?.copyValue).trim(); if (!value) return;
-    try {
-      await navigator.clipboard.writeText(value);
-      resource.copy.textContent = "Copied";
-    } catch (_) {
-      const area = document.createElement("textarea"); area.value = value; area.style.position = "fixed"; area.style.opacity = "0"; document.body.appendChild(area); area.select(); document.execCommand("copy"); area.remove(); resource.copy.textContent = "Copied";
-    }
-    window.setTimeout(() => { if (!resource.copy.hidden) resource.copy.textContent = "Copy information"; }, 1600);
-  }
 
   async function showContactInformation() {
     try {
@@ -450,7 +593,9 @@
   function createThinkingIndicator() {
     const box = element("div", "tour-ai-thinking");
     box.setAttribute("role", "status");
-    box.innerHTML = `<div class="tour-ai-thinking-head"><span class="tour-ai-avatar">AI</span><div><strong>${localeIsFrench() ? "Twinscopes prépare votre réponse" : "Twinscopes is preparing your answer"}</strong><small data-thinking-label>${localeIsFrench() ? "Un instant…" : "Just a moment…"}</small></div></div><div class="tour-ai-dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="tour-ai-thinking-steps" data-thinking-steps></div>`;
+    const assistantLabel = text(cfg.assistantName || "Assistant");
+    const avatarLabel = assistantLabel.trim().slice(0, 2).toUpperCase() || "•";
+    box.innerHTML = `<div class="tour-ai-thinking-head"><span class="tour-ai-avatar">${avatarLabel}</span><div><strong>${localeIsFrench() ? `${assistantLabel} prépare votre réponse` : `${assistantLabel} is preparing your answer`}</strong><small data-thinking-label>${localeIsFrench() ? "Un instant…" : "Just a moment…"}</small></div></div><div class="tour-ai-dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="tour-ai-thinking-steps" data-thinking-steps></div>`;
     messages.appendChild(box); messages.scrollTop = messages.scrollHeight; return box;
   }
 
@@ -500,38 +645,89 @@
     finally { bootstrapPromise = null; }
   }
 
-  async function sendSignal(signalType, data = {}) { try { await post(cfg.signalUrl, payload({signal_type: signalType, payload: data})); } catch (_) {} }
+  async function sendSignal(signalType, data = {}) {
+    if (!bootstrapped && signalType !== "ai_agent_opened") return;
+    try { await post(cfg.signalUrl, payload({signal_type: signalType, payload: data})); } catch (_) {}
+  }
+
   async function openPanel() {
+    if (isOpen) return;
+    isOpen = true;
+    panel.hidden = false;
+    root.classList.add("is-open");
+    nudge.hidden = true;
+    launcher.setAttribute("aria-expanded", "true");
+    updateMobileOffset();
     try {
       await bootstrap();
     } catch (error) {
-      const reference = reportTechnicalError("AI-START", error, {tourId: cfg.tourId, sceneId: currentSceneId});
+      reportTechnicalError("AI-START", error, {tourId: cfg.tourId, sceneId: currentSceneId});
       if (!messages.children.length) addMessage(friendlyRequestFailure(), "assistant", {degraded: true, provider: "local"});
     }
-    isOpen = true; panel.hidden = false; nudge.hidden = true; launcher.setAttribute("aria-expanded", "true"); updateMobileOffset(); input?.focus(); sendSignal("ai_agent_opened");
+    if (isOpen) {
+      try { input?.focus?.({preventScroll: true}); } catch (_) { input?.focus?.(); }
+      sendSignal("ai_agent_opened");
+    }
   }
-  function closePanel() { isOpen = false; panel.hidden = true; launcher.setAttribute("aria-expanded", "false"); }
+
+  function closePanel() {
+    isOpen = false;
+    try { input?.blur?.(); } catch (_) {}
+    activeMessageController?.abort();
+    activeMessageController = null;
+    stopActiveThinking?.();
+    stopActiveThinking = null;
+    closeVision();
+    if (resource.modal && !resource.modal.hidden) closeResourceModal();
+    panel.hidden = true;
+    root.classList.remove("is-open", "is-busy");
+    launcher.setAttribute("aria-expanded", "false");
+    setBusy(false);
+    window.setTimeout(() => window.dispatchEvent(new Event("resize")), 190);
+  }
 
   async function sendMessage(value, options = {}) {
     const clean = text(value).trim(); if (!clean || busy) return;
+    await bootstrap().catch(() => {});
     addMessage(options.displayText || clean, "user"); input.value = ""; setBusy(true);
-    const thinking = createThinkingIndicator(); const stopThinking = animateThinking(thinking);
+    const thinking = createThinkingIndicator();
+    const stopThinking = animateThinking(thinking);
+    stopActiveThinking = stopThinking;
+    activeMessageController?.abort();
+    const controller = new AbortController();
+    activeMessageController = controller;
     try {
       const requestId = crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
       const data = await post(cfg.messageUrl, payload({
         message: clean,
         request_id: requestId,
         vision_insight_id: options.visionInsightId || undefined,
-      }));
-      conversationId = data.conversation_id || conversationId; stopThinking(); renderReasoningSummary(thinking, data.reasoning_steps || []);
-      await new Promise((resolve) => setTimeout(resolve, 320)); thinking.remove();
-      addMessage(data.text || "I’m here to help.", "assistant", data); addProductCards(data.products || []);
+      }), controller.signal);
+      conversationId = data.conversation_id || conversationId;
+      stopThinking();
+      stopActiveThinking = null;
+      renderReasoningSummary(thinking, data.reasoning_steps || []);
+      await new Promise((resolve) => setTimeout(resolve, 220));
+      thinking.remove();
+      if (isOpen) {
+        addMessage(data.text || "I’m here to help.", "assistant", data);
+        addProductCards(data.products || []);
+      }
     } catch (error) {
-      stopThinking(); thinking.remove();
-      const reference = reportTechnicalError("AI-MSG", error, {tourId: cfg.tourId, sceneId: currentSceneId});
-      addMessage(friendlyRequestFailure(), "assistant", {degraded: true, provider: "local"});
+      stopThinking();
+      stopActiveThinking = null;
+      thinking.remove();
+      if (error?.name !== "AbortError" && isOpen) {
+        reportTechnicalError("AI-MSG", error, {tourId: cfg.tourId, sceneId: currentSceneId});
+        addMessage(friendlyRequestFailure(), "assistant", {degraded: true, provider: "local"});
+      }
+    } finally {
+      if (activeMessageController === controller) activeMessageController = null;
+      setBusy(false);
+      if (isOpen && !panel.hidden) {
+        try { input?.focus?.({preventScroll: true}); } catch (_) { input?.focus?.(); }
+      }
     }
-    finally { setBusy(false); input.focus(); }
   }
 
   function openVisionLoading() {
@@ -613,12 +809,13 @@
         pitch: Number(point.pitch),
         selection: point.selection || null,
       });
-      const maxAttempts = 80;
+      const maxAttempts = 10;
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         const data = await post(cfg.inspectUrl, requestPayload, controller.signal);
         renderVision(data);
         if (data.status !== "analyzing") return;
-        const waitMs = Math.max(1200, Math.min(Number(data.retry_after_ms || 3000), 10000));
+        const serverWait = Number(data.retry_after_ms || 2200);
+        const waitMs = Math.max(1200, Math.min(serverWait + attempt * 700, 9000));
         await new Promise((resolve, reject) => {
           const timer = window.setTimeout(resolve, waitMs);
           controller.signal.addEventListener("abort", () => {
@@ -669,7 +866,6 @@
   root.querySelector("[data-ai-contact]")?.addEventListener("click", showContactInformation);
   resource.closeButtons?.forEach((button) => button.addEventListener("click", closeResourceModal));
   resource.backdrop?.addEventListener("click", closeResourceModal);
-  resource.copy?.addEventListener("click", copyActiveResource);
   root.querySelectorAll("[data-vision-close],[data-vision-dismiss]").forEach((button) => button.addEventListener("click", closeVision));
   vision.backdrop?.addEventListener("click", closeVision);
   vision.rescan?.addEventListener("click", () => {
@@ -696,7 +892,13 @@
 
   function updateScene(sceneId, title = "") {
     if (!sceneId || String(sceneId) === String(currentSceneId)) return;
-    currentSceneId = String(sceneId); closeVision(); sendSignal("scene_changed", {scene_title: title});
+    currentSceneId = String(sceneId);
+    closeVision();
+    if (sceneSignalTimer) window.clearTimeout(sceneSignalTimer);
+    sceneSignalTimer = window.setTimeout(() => {
+      sceneSignalTimer = null;
+      sendSignal("scene_changed", {scene_title: title});
+    }, 1200);
   }
   document.addEventListener("click", (event) => { const trigger = event.target.closest("[data-scene-id]"); if (trigger) updateScene(trigger.dataset.sceneId, trigger.dataset.sceneTitle || trigger.textContent.trim()); }, true);
   window.addEventListener("twinscopes:scene-changed", (event) => updateScene(event.detail?.sceneId, event.detail?.title || ""));
@@ -707,6 +909,7 @@
     if (event.key !== "Escape") return;
     if (resource.modal && !resource.modal.hidden) closeResourceModal();
     else if (!vision.sheet.hidden) closeVision();
+    else if (isOpen) closePanel();
   });
 
   window.TwinscopesAgent = {
@@ -716,5 +919,12 @@
     action: (actionType, actionPayload = {}) => post(cfg.actionUrl, payload({action_type: actionType, payload: actionPayload})),
   };
 
-  updateMobileOffset(); bootstrap().catch(() => {});
+  updateMobileOffset();
+  window.addEventListener("pagehide", () => {
+    activeMessageController?.abort();
+    insightRequest?.abort();
+    stopActiveThinking?.();
+    if (sceneSignalTimer) window.clearTimeout(sceneSignalTimer);
+    sceneSignalTimer = null;
+  }, {once: true});
 })();

@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q, Prefetch
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -463,7 +464,60 @@ def _scene_spatial_payload(request, scene):
     }
 
 
-def _serialize_scene_payload(request, scene, include_hotspots=True, prefetch=None):
+def _serialize_scene_index_payload(request, scene):
+    """
+    Payload public compact pour la liste des scènes.
+
+    Il contient uniquement ce qui est nécessaire pour afficher la navigation et
+    construire la topologie légère. Les panoramas haute qualité, les contenus
+    détaillés des hotspots et les analyses IA sont récupérés à la demande.
+    """
+    assets = _scene_assets_payload(request, scene)
+    navigation_hotspots = []
+
+    for hotspot in scene.hotspots.all():
+        target_id = hotspot.target_scene_id
+        if not target_id or hotspot.type not in {
+            Hotspot.Type.NAVIGATE,
+            Hotspot.Type.FLOOR,
+            Hotspot.Type.DOOR,
+        }:
+            continue
+        navigation_hotspots.append({
+            "id": hotspot.id,
+            "hotspot_id": hotspot.hotspot_id,
+            "type": hotspot.type,
+            "label": hotspot.label or "",
+            "yaw": hotspot.yaw,
+            "pitch": hotspot.pitch,
+            "target_scene": target_id,
+            "target_scene_id": target_id,
+            "is_ai_generated": bool(getattr(hotspot, "is_ai_generated", False)),
+        })
+
+    return {
+        "id": scene.id,
+        "scene_id": scene.scene_id,
+        "title": scene.title,
+        "order": scene.order,
+        "status": getattr(scene, "status", ""),
+        "is_public": bool(getattr(scene, "is_public", True)),
+        "thumbnail_url": assets["thumbnail"] or assets["light"],
+        "image_360_preview_url": assets["light"],
+        "assets": {
+            "thumbnail": assets["thumbnail"] or assets["light"],
+            "light": assets["light"],
+        },
+        "yaw_default": scene.yaw_default if scene.yaw_default is not None else 0,
+        "pitch_default": scene.pitch_default if scene.pitch_default is not None else 0,
+        "hfov_default": scene.hfov_default if scene.hfov_default is not None else 100,
+        "spatial": _scene_spatial_payload(request, scene),
+        "hotspots": navigation_hotspots,
+        "details_loaded": False,
+    }
+
+
+def _serialize_scene_payload(request, scene, include_hotspots=True, prefetch=None, *, include_ai_metadata=True, include_prefetch=True):
     assets = _scene_assets_payload(request, scene)
     tiles = _scene_tiles_payload(request, scene)
     statuses = _scene_statuses_payload(scene)
@@ -500,17 +554,32 @@ def _serialize_scene_payload(request, scene, include_hotspots=True, prefetch=Non
         "yaw_default": scene.yaw_default if scene.yaw_default is not None else 0,
         "pitch_default": scene.pitch_default if scene.pitch_default is not None else 0,
         "hfov_default": scene.hfov_default if scene.hfov_default is not None else 100,
+        "tripod_logo": {
+            "enabled": bool(getattr(scene, "tripod_logo_enabled", False)),
+            "size": int(getattr(scene, "tripod_logo_size", 132) or 132),
+            "yaw": float(getattr(scene, "tripod_logo_yaw", 0.0) or 0.0),
+            "pitch": float(88.5 if getattr(scene, "tripod_logo_pitch", None) is None else scene.tripod_logo_pitch),
+            "offset_x": int(getattr(scene, "tripod_logo_offset_x", 0) or 0),
+            "offset_y": int(getattr(scene, "tripod_logo_offset_y", 0) or 0),
+                "rotation": float(getattr(scene, "tripod_logo_rotation", 0.0) or 0.0),
+                "tilt_x": float(getattr(scene, "tripod_logo_tilt_x", 0.0) or 0.0),
+                "tilt_y": float(getattr(scene, "tripod_logo_tilt_y", 0.0) or 0.0),
+                "radius": int(getattr(scene, "tripod_logo_radius", 900) or 900),
+        },
 
-        "ai_analysis": getattr(scene, "ai_analysis", {}) or {},
-        "ai_hotspot_suggestions": getattr(scene, "ai_hotspot_suggestions", []) or [],
+        **({
+            "ai_analysis": getattr(scene, "ai_analysis", {}) or {},
+            "ai_hotspot_suggestions": getattr(scene, "ai_hotspot_suggestions", []) or [],
+        } if include_ai_metadata else {}),
         "spatial": spatial,
 
-        "prefetch": prefetch or getattr(scene, "prefetch_manifest", {}) or {},
+        **({"prefetch": prefetch or getattr(scene, "prefetch_manifest", {}) or {}} if include_prefetch else {}),
 
         "hotspots": [
             _serialize_hotspot_payload(request, hotspot)
             for hotspot in scene.hotspots.all()
         ] if include_hotspots else [],
+        "details_loaded": True,
     }
 
 def _get_tour_with_scenes_queryset():
@@ -1135,6 +1204,16 @@ def _build_preview_payload_version(tour, scenes):
             "image_360_original": _safe_file_name(getattr(scene, "image_360_original", None)),
             "thumbnail_image": _safe_file_name(getattr(scene, "thumbnail_image", None)),
             "tiles_manifest": getattr(scene, "tiles_manifest", {}) or {},
+            "tripod_logo_enabled": bool(getattr(scene, "tripod_logo_enabled", False)),
+            "tripod_logo_size": int(getattr(scene, "tripod_logo_size", 132) or 132),
+            "tripod_logo_yaw": float(getattr(scene, "tripod_logo_yaw", 0.0) or 0.0),
+            "tripod_logo_pitch": float(88.5 if getattr(scene, "tripod_logo_pitch", None) is None else scene.tripod_logo_pitch),
+            "tripod_logo_offset_x": int(getattr(scene, "tripod_logo_offset_x", 0) or 0),
+            "tripod_logo_offset_y": int(getattr(scene, "tripod_logo_offset_y", 0) or 0),
+            "tripod_logo_rotation": float(getattr(scene, "tripod_logo_rotation", 0.0) or 0.0),
+            "tripod_logo_tilt_x": float(getattr(scene, "tripod_logo_tilt_x", 0.0) or 0.0),
+            "tripod_logo_tilt_y": float(getattr(scene, "tripod_logo_tilt_y", 0.0) or 0.0),
+            "tripod_logo_radius": int(getattr(scene, "tripod_logo_radius", 900) or 900),
         }
 
         parts.append(json.dumps(scene_part, sort_keys=True, default=str))
@@ -1294,26 +1373,60 @@ def tour_preview_view(request, organization_slug, tour_id):
         organization=organization,
     )
 
-    all_scenes = list(
-        tour.scenes
-        .all()
-        .order_by("order", "id")
+    all_scenes = list(tour.scenes.all().order_by("order", "id"))
+    can_view_private = bool(request.user.is_authenticated)
+    visible_scenes = (
+        all_scenes
+        if can_view_private
+        else [scene for scene in all_scenes if bool(getattr(scene, "is_public", True))]
     )
-    public_list_scenes = [
-        scene for scene in all_scenes
-        if bool(getattr(scene, "is_public", True))
-    ]
+
+    if not visible_scenes:
+        visible_scenes = all_scenes[:1] if can_view_private else []
+
+    requested_scene = str(request.GET.get("s") or "").strip()
+    initial_scene = None
+    if requested_scene:
+        initial_scene = next(
+            (
+                scene for scene in visible_scenes
+                if requested_scene in {str(scene.id), str(scene.scene_id or "")}
+            ),
+            None,
+        )
+    if initial_scene is None and visible_scenes:
+        initial_scene = visible_scenes[0]
+
     seo_context = build_tour_preview_seo(
         request,
         tour=tour,
         organization=organization,
-        scenes=public_list_scenes or all_scenes,
+        scenes=visible_scenes or all_scenes,
     )
 
     place = getattr(tour, "place", None)
     preview_latitude = getattr(place, "latitude", None) or getattr(tour, "lat", None)
     preview_longitude = getattr(place, "longitude", None) or getattr(tour, "lng", None)
+    configured_assistant_name = str(getattr(organization, "ai_assistant_name", "") or "").strip()
+    if not configured_assistant_name or configured_assistant_name.lower() in {
+        "twinscopes ai",
+        "twinscope ai",
+        "artificial intelligence",
+        "intelligence artificielle",
+    }:
+        configured_assistant_name = f"{organization.name} Assistant"
+
+    configured_assistant_tagline = str(getattr(organization, "ai_assistant_tagline", "") or "").strip()
+    if not configured_assistant_tagline or configured_assistant_tagline.lower() in {
+        "scene-aware assistant",
+        "ai assistant",
+        "assistant ia",
+    }:
+        configured_assistant_tagline = "How can we help?"
+
     preview_runtime_context = {
+        "preview_assistant_name": configured_assistant_name,
+        "preview_assistant_tagline": configured_assistant_tagline,
         "google_maps_browser_key": (
             getattr(settings, "GOOGLE_MAPS_BROWSER_KEY", "")
             or getattr(settings, "GOOGLE_MAPS_API_KEY", "")
@@ -1337,14 +1450,34 @@ def tour_preview_view(request, organization_slug, tour_id):
             getattr(settings, "PREVIEW_SPATIAL_DEPTH_INVERT", True)
         ),
         "preview_spatial_point_budget": int(
-            getattr(settings, "PREVIEW_SPATIAL_POINT_BUDGET", 42000)
+            getattr(settings, "PREVIEW_SPATIAL_POINT_BUDGET", 24000)
         ),
         "preview_spatial_mesh_segments": int(
-            getattr(settings, "PREVIEW_SPATIAL_MESH_SEGMENTS", 220)
+            getattr(settings, "PREVIEW_SPATIAL_MESH_SEGMENTS", 140)
         ),
         "preview_spatial_graph_max_nodes": int(
-            getattr(settings, "PREVIEW_SPATIAL_GRAPH_MAX_NODES", 48)
+            getattr(settings, "PREVIEW_SPATIAL_GRAPH_MAX_NODES", 36)
         ),
+        "preview_spatial_natural_drag": bool(
+            getattr(settings, "PREVIEW_SPATIAL_NATURAL_DRAG", True)
+        ),
+        "preview_spatial_invert_vertical_drag": bool(
+            getattr(settings, "PREVIEW_SPATIAL_INVERT_VERTICAL_DRAG", True)
+        ),
+        "preview_spatial_open_panorama_on_card_click": bool(
+            getattr(settings, "PREVIEW_SPATIAL_OPEN_PANORAMA_ON_CARD_CLICK", True)
+        ),
+        "tour_ai_external_embed_timeout_ms": int(
+            getattr(settings, "TOUR_AI_EXTERNAL_EMBED_TIMEOUT_MS", 7000)
+        ),
+        "preview_scene_detail_url_template": reverse(
+            "tour-preview-scene-data",
+            kwargs={
+                "organization_slug": organization.slug,
+                "tour_id": tour.id,
+                "scene_id": 999999999,
+            },
+        ).replace("999999999", "{sceneId}"),
         "preview_location": {
             "latitude": float(preview_latitude) if preview_latitude is not None else None,
             "longitude": float(preview_longitude) if preview_longitude is not None else None,
@@ -1360,62 +1493,23 @@ def tour_preview_view(request, organization_slug, tour_id):
         },
     }
 
-    payload_version = _build_preview_payload_version(tour, all_scenes)
-
-    cache_key = (
-        f"tour_preview_payload:v7:"
-        f"{request.get_host()}:"
-        f"{organization.slug}:"
-        f"{tour.id}:"
-        f"{payload_version}"
+    scenes_payload = (
+        [
+            _serialize_scene_payload(
+                request=request,
+                scene=initial_scene,
+                include_hotspots=True,
+                include_ai_metadata=False,
+                include_prefetch=False,
+            )
+        ]
+        if initial_scene
+        else []
     )
-
-    cached_payload = cache.get(cache_key)
-
-    if cached_payload is not None:
-        return render(
-            request,
-            "dashboard/tours/preview.html",
-            {
-                "tour": tour,
-                "current_organization": organization,
-                "scenes_json": cached_payload["scenes_json"],
-                "scene_list_json": cached_payload["scene_list_json"],
-                "appointment_types": AppointmentType.objects.filter(organization=organization, is_active=True),
-                "tour_products": Product.objects.filter(organization=organization, status=Product.Status.ACTIVE).order_by("-is_featured", "-created_at")[:8],
-                **preview_runtime_context,
-                **seo_context,
-            },
-        )
-
-    prefetch_map = _build_prefetch_map(request, all_scenes)
-
-    scenes_payload = [
-        _serialize_scene_payload(
-            request=request,
-            scene=scene,
-            include_hotspots=True,
-            prefetch=prefetch_map.get(scene.id),
-        )
-        for scene in all_scenes
-    ]
-
     scene_list_payload = [
-        _serialize_scene_payload(
-            request=request,
-            scene=scene,
-            include_hotspots=False,
-            prefetch=prefetch_map.get(scene.id),
-        )
-        for scene in public_list_scenes
+        _serialize_scene_index_payload(request, scene)
+        for scene in visible_scenes
     ]
-
-    payload = {
-        "scenes_json": scenes_payload,
-        "scene_list_json": scene_list_payload,
-    }
-
-    cache.set(cache_key, payload, 60 * 3)
 
     return render(
         request,
@@ -1431,6 +1525,43 @@ def tour_preview_view(request, organization_slug, tour_id):
             **seo_context,
         },
     )
+
+
+@require_GET
+def tour_preview_scene_data_view(request, organization_slug, tour_id, scene_id):
+    """Charge une scène publique complète seulement lorsqu'elle est demandée."""
+    organization = _get_org_or_403(request, organization_slug, allow_public=True)
+    if not organization:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+
+    tour = get_object_or_404(Tour, id=tour_id, organization=organization)
+    scene = get_object_or_404(
+        Scene360.objects.select_related("tour", "organization").prefetch_related(
+            Prefetch(
+                "hotspots",
+                queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
+            )
+        ),
+        id=scene_id,
+        tour=tour,
+        organization=organization,
+    )
+
+    if not request.user.is_authenticated and not bool(getattr(scene, "is_public", True)):
+        return JsonResponse({"detail": "Not found"}, status=404)
+
+    response = JsonResponse({
+        "success": True,
+        "scene": _serialize_scene_payload(
+            request=request,
+            scene=scene,
+            include_hotspots=True,
+            include_ai_metadata=False,
+            include_prefetch=False,
+        ),
+    })
+    response["Cache-Control"] = "private, max-age=180" if request.user.is_authenticated else "public, max-age=180"
+    return response
 
 # =============================================================================
 # SCENES AJAX
@@ -1490,13 +1621,14 @@ def upload_scenes_ajax_view(request, organization_slug, tour_id):
 
 @login_required
 @require_POST
+@transaction.atomic
 def update_scene_ajax_view(request, organization_slug, scene_id):
     organization = _get_org_or_403(request, organization_slug)
     if not organization:
         return JsonResponse({"detail": "Forbidden"}, status=403)
 
     scene = get_object_or_404(
-        Scene360.objects.select_related("tour").prefetch_related(
+        Scene360.objects.select_for_update().select_related("tour").prefetch_related(
             Prefetch(
                 "hotspots",
                 queryset=Hotspot.objects.select_related("target_scene").order_by("id"),
@@ -1508,47 +1640,244 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse({"detail": "Invalid JSON payload."}, status=400)
+
+    changed_fields = []
+
+    def _assign(field_name, value):
+        if getattr(scene, field_name) != value:
+            setattr(scene, field_name, value)
+            changed_fields.append(field_name)
 
     if "title" in payload:
         title = (payload.get("title") or "").strip()
         if title:
-            scene.title = title
+            _assign("title", title)
+
+    def _safe_float(key, current, minimum, maximum):
+        if key not in payload:
+            return current
+        try:
+            value = float(payload.get(key))
+        except (TypeError, ValueError):
+            return current
+        return max(minimum, min(maximum, value))
 
     if "yaw_default" in payload:
-        scene.yaw_default = payload.get("yaw_default", scene.yaw_default)
-
+        _assign("yaw_default", _safe_float("yaw_default", scene.yaw_default, -180.0, 180.0))
     if "pitch_default" in payload:
-        scene.pitch_default = payload.get("pitch_default", scene.pitch_default)
-
+        _assign("pitch_default", _safe_float("pitch_default", scene.pitch_default, -89.5, 89.5))
     if "hfov_default" in payload:
-        scene.hfov_default = payload.get("hfov_default", scene.hfov_default)
+        _assign("hfov_default", _safe_float("hfov_default", scene.hfov_default, 20.0, 160.0))
 
     if payload.get("order") is not None:
-        scene.order = payload["order"]
+        try:
+            _assign("order", max(0, int(payload["order"])))
+        except (TypeError, ValueError):
+            pass
 
     if payload.get("status") in {
         Scene360.Status.DRAFT,
         Scene360.Status.PUBLISHED,
         Scene360.Status.INACTIVE,
     }:
-        scene.status = payload["status"]
+        _assign("status", payload["status"])
 
-    # Nouveau : sauvegarder l'affichage dans le preview
     if "is_public" in payload:
-        scene.is_public = _payload_bool(
-            payload.get("is_public"),
-            default=bool(getattr(scene, "is_public", True)),
+        _assign(
+            "is_public",
+            _payload_bool(payload.get("is_public"), default=bool(scene.is_public)),
         )
 
-    scene.save()
-    build_tour_manifest(scene.tour)
+    # Save general scene values independently from the 360 tripod editor.
+    # update_fields prevents a stale in-memory value from overwriting a tripod
+    # setting that was just edited in another request.
+    if changed_fields:
+        scene.save(update_fields=[*dict.fromkeys(changed_fields), "updated_at"])
+
+    tripod_keys = {
+        "tripod_logo_enabled",
+        "tripod_logo_size",
+        "tripod_logo_yaw",
+        "tripod_logo_pitch",
+        "tripod_logo_offset_x",
+        "tripod_logo_offset_y",
+        "tripod_logo_rotation",
+        "tripod_logo_tilt_x",
+        "tripod_logo_tilt_y",
+        "tripod_logo_radius",
+    }
+    tripod_requested = any(key in payload for key in tripod_keys)
+    tripod_apply_all_scenes = _payload_bool(
+        payload.get("tripod_logo_apply_all_scenes"),
+        default=False,
+    )
+    tripod_applied_scene_ids = [scene.pk]
+
+    def _bounded_number(key, current, minimum, maximum, cast=float):
+        if key not in payload:
+            return current
+        try:
+            value = cast(payload.get(key))
+        except (TypeError, ValueError):
+            return current
+        return max(minimum, min(maximum, value))
+
+    tripod_updates = {}
+    if tripod_requested:
+        tripod_updates = {
+            "tripod_logo_enabled": _payload_bool(
+                payload.get("tripod_logo_enabled"),
+                default=bool(scene.tripod_logo_enabled),
+            ),
+            "tripod_logo_size": _bounded_number(
+                "tripod_logo_size", scene.tripod_logo_size, 72, 320, int
+            ),
+            "tripod_logo_yaw": _bounded_number(
+                "tripod_logo_yaw", scene.tripod_logo_yaw, -180.0, 180.0, float
+            ),
+            "tripod_logo_pitch": _bounded_number(
+                "tripod_logo_pitch", scene.tripod_logo_pitch, -89.5, 89.5, float
+            ),
+            "tripod_logo_offset_x": _bounded_number(
+                "tripod_logo_offset_x", scene.tripod_logo_offset_x, -250, 250, int
+            ),
+            "tripod_logo_offset_y": _bounded_number(
+                "tripod_logo_offset_y", scene.tripod_logo_offset_y, -250, 250, int
+            ),
+            "tripod_logo_rotation": _bounded_number(
+                "tripod_logo_rotation", scene.tripod_logo_rotation, -180.0, 180.0, float
+            ),
+            "tripod_logo_tilt_x": _bounded_number(
+                "tripod_logo_tilt_x", scene.tripod_logo_tilt_x, -70.0, 70.0, float
+            ),
+            "tripod_logo_tilt_y": _bounded_number(
+                "tripod_logo_tilt_y", scene.tripod_logo_tilt_y, -70.0, 70.0, float
+            ),
+            "tripod_logo_radius": _bounded_number(
+                "tripod_logo_radius", scene.tripod_logo_radius, 350, 2400, int
+            ),
+            "updated_at": timezone.now(),
+        }
+
+        # QuerySet.update performs a direct database write. It deliberately
+        # bypasses model-side image processing and guarantees that every
+        # tripod field is committed together in this transaction.
+        updated_rows = Scene360.objects.filter(
+            pk=scene.pk,
+            organization=organization,
+        ).update(**tripod_updates)
+        if updated_rows != 1:
+            transaction.set_rollback(True)
+            return JsonResponse(
+                {"detail": "Tripod logo settings could not be persisted."},
+                status=409,
+            )
+
+        if tripod_apply_all_scenes:
+            sibling_queryset = Scene360.objects.select_for_update().filter(
+                tour_id=scene.tour_id,
+                organization=organization,
+            ).exclude(pk=scene.pk)
+            sibling_ids = list(sibling_queryset.values_list("pk", flat=True))
+            if sibling_ids:
+                updated_siblings = Scene360.objects.filter(pk__in=sibling_ids).update(**tripod_updates)
+                if updated_siblings != len(sibling_ids):
+                    transaction.set_rollback(True)
+                    return JsonResponse(
+                        {"detail": "The tripod logo could not be applied to every scene."},
+                        status=409,
+                    )
+                tripod_applied_scene_ids.extend(sibling_ids)
 
     scene.refresh_from_db()
 
-    return JsonResponse({
+    persisted_tripod = {
+        "enabled": bool(scene.tripod_logo_enabled),
+        "size": int(scene.tripod_logo_size),
+        "yaw": float(scene.tripod_logo_yaw),
+        "pitch": float(scene.tripod_logo_pitch),
+        "offset_x": int(scene.tripod_logo_offset_x),
+        "offset_y": int(scene.tripod_logo_offset_y),
+        "rotation": float(scene.tripod_logo_rotation),
+        "tilt_x": float(scene.tripod_logo_tilt_x),
+        "tilt_y": float(scene.tripod_logo_tilt_y),
+        "radius": int(scene.tripod_logo_radius),
+    }
+
+    if tripod_requested:
+        expected_tripod = {
+            "enabled": bool(tripod_updates["tripod_logo_enabled"]),
+            "size": int(tripod_updates["tripod_logo_size"]),
+            "yaw": float(tripod_updates["tripod_logo_yaw"]),
+            "pitch": float(tripod_updates["tripod_logo_pitch"]),
+            "offset_x": int(tripod_updates["tripod_logo_offset_x"]),
+            "offset_y": int(tripod_updates["tripod_logo_offset_y"]),
+            "rotation": float(tripod_updates["tripod_logo_rotation"]),
+            "tilt_x": float(tripod_updates["tripod_logo_tilt_x"]),
+            "tilt_y": float(tripod_updates["tripod_logo_tilt_y"]),
+            "radius": int(tripod_updates["tripod_logo_radius"]),
+        }
+
+        numeric_keys = {
+            "yaw", "pitch", "rotation", "tilt_x", "tilt_y"
+        }
+        verified = all(
+            abs(persisted_tripod[key] - expected_tripod[key]) < 0.0001
+            if key in numeric_keys
+            else persisted_tripod[key] == expected_tripod[key]
+            for key in expected_tripod
+        )
+        if not verified:
+            transaction.set_rollback(True)
+            return JsonResponse(
+                {
+                    "detail": "The tripod logo was not confirmed by the database.",
+                    "expected": expected_tripod,
+                    "persisted": persisted_tripod,
+                },
+                status=409,
+            )
+
+        if tripod_apply_all_scenes:
+            verification_rows = Scene360.objects.filter(
+                pk__in=tripod_applied_scene_ids,
+                tour_id=scene.tour_id,
+                organization=organization,
+                tripod_logo_enabled=expected_tripod["enabled"],
+                tripod_logo_size=expected_tripod["size"],
+                tripod_logo_yaw=expected_tripod["yaw"],
+                tripod_logo_pitch=expected_tripod["pitch"],
+                tripod_logo_offset_x=expected_tripod["offset_x"],
+                tripod_logo_offset_y=expected_tripod["offset_y"],
+                tripod_logo_rotation=expected_tripod["rotation"],
+                tripod_logo_tilt_x=expected_tripod["tilt_x"],
+                tripod_logo_tilt_y=expected_tripod["tilt_y"],
+                tripod_logo_radius=expected_tripod["radius"],
+            ).count()
+            if verification_rows != len(tripod_applied_scene_ids):
+                transaction.set_rollback(True)
+                return JsonResponse(
+                    {
+                        "detail": "The tripod logo was not confirmed on every scene.",
+                        "expected_scene_count": len(tripod_applied_scene_ids),
+                        "persisted_scene_count": verification_rows,
+                    },
+                    status=409,
+                )
+
+    build_tour_manifest(scene.tour)
+
+    response = JsonResponse({
         "success": True,
+        "persistence": {
+            "database_verified": True,
+            "tripod_logo_verified": bool(tripod_requested),
+            "tripod_logo_applied_to_all_scenes": bool(tripod_requested and tripod_apply_all_scenes),
+            "tripod_logo_applied_scene_ids": tripod_applied_scene_ids if tripod_requested else [],
+            "tripod_logo_applied_scene_count": len(tripod_applied_scene_ids) if tripod_requested else 0,
+        },
         "scene": _serialize_scene_payload(
             request=request,
             scene=scene,
@@ -1556,6 +1885,9 @@ def update_scene_ajax_view(request, organization_slug, scene_id):
             prefetch=None,
         ),
     })
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    return response
 
 @login_required
 @require_POST

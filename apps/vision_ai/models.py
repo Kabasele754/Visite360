@@ -133,8 +133,8 @@ class VisionInsight(TimeStampedModel):
     class Meta:
         ordering = ("-confidence", "id")
         indexes = [
-            models.Index(fields=("analysis", "kind", "confidence")),
-            models.Index(fields=("analysis", "yaw", "pitch")),
+            models.Index(fields=("analysis", "kind", "confidence"), name="vision_ai_v_analysi_70db40_idx"),
+            models.Index(fields=("analysis", "yaw", "pitch"), name="vision_ai_v_analysi_6641c1_idx"),
         ]
 
     def __str__(self):
